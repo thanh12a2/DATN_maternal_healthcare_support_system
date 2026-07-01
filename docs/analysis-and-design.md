@@ -16,10 +16,27 @@
 
 Describe or diagram the high-level Business Process to be automated.
 
-- **Domain**: *(fill in)*
+- **Domain**: Hệ thống quản lý khám thai và chăm sóc thai phụ
 - **Business Process**: *(fill in)*
-- **Actors**: *(fill in)*
-- **Scope**: *(fill in)*
+- **Actors**: Thai phụ, Lễ tân, Bác sĩ, Y tá/Điều dưỡng/Hộ sinh, Admin.
+- **Scope**: 
+    - Thai phụ (Web/App): 
+        1. Đăng ký khám, cung cấp hồ sơ khám thai, nhận số thứ tự, nhận thông báo và thực hiện lịch khám.
+        2. Theo dõi hồ sơ sức khỏe, phác đồ điều trị, hóa đơn, đơn thuốc,...
+        3. Hỏi đáp, nhận tư vấn qua Chatbot AI.
+        4. Theo dõi cổng thông tin bệnh viện.
+    - Lễ tân (Web):
+        1. Theo dõi lịch khám của thai phụ. 
+        2. Gửi thông báo tới bác sĩ, thai phụ (trong các abnormal cases).
+        3. Process quá trình khám của thai phụ mà không thể tự động hóa (thanh toán tiền mặt, thực hiện hồ sơ vật lý, ...).
+    - Bác sĩ (Web):
+        1. Trả lời, giải đáp thắc mắc của thai phụ (thông qua forum, chat, ...)
+    - Y tá/Điều dưỡng/Hộ sinh (Web):
+        1. Nhập liệu thông tin liên quan đến dịch vụ khám.
+        2. Scan hồ sơ và lưu lên hệ thống. 
+    - Admin: 
+        1. Quản lý.
+
 
 **Process Diagram:**
 
