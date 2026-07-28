@@ -1,0 +1,41 @@
+_format_version: "3.0"
+_transform: true
+
+# Routes use Docker Compose service names, which are resolvable on app-network.
+services:
+  - name: service-a
+    url: http://service-a:5000
+    routes:
+      - name: service-a-route
+        paths:
+          - /api/service-a
+        strip_path: true
+
+  - name: service-b
+    url: http://service-b:5000
+    routes:
+      - name: service-b-route
+        paths:
+          - /api/service-b
+        strip_path: true
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+      exposed_headers:
+        - "*"
+      credentials: true
+      max_age: 3600

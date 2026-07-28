@@ -15,12 +15,63 @@ services:
 
   # ─── API Gateway ─────────────────────────────────
   gateway:
-    build: ./gateway
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
     ports:
       - "${GATEWAY_PORT:-8080}:8000"
+      # The Kong Admin API is intentionally available only from this machine.
+      - "127.0.0.1:${KONG_ADMIN_PORT:-8001}:8001"
+      # Kong Manager is intentionally available only from this machine.
+      - "127.0.0.1:${KONG_MANAGER_PORT:-8002}:8002"
     depends_on:
-      - service-a
-      - service-b
+      kong-init:
+        condition: service_completed_successfully
+      service-a:
+        condition: service_started
+      service-b:
+        condition: service_started
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+    networks:
+      - app-network
+
+  # Kong's PostgreSQL data store. It is internal-only and persisted in kong-data.
+  kong-database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
+      POSTGRES_USER: ${KONG_PG_USER:-kong}
+      POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+    volumes:
+      - kong-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  # Initializes a new Kong database and imports docs/api-specs/kong.yml once.
+  kong-init:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    command: ["/usr/local/bin/init-kong.sh"]
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+    depends_on:
+      kong-database:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -82,5 +133,5 @@ networks:
   app-network:
     driver: bridge
 
-# volumes:
-#   db-data:
+volumes:
+  kong-data:
