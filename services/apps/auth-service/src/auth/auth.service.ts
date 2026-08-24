@@ -7,6 +7,7 @@ import {
 import { AccountStatus } from '@prisma/client';
 import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
 import { PasswordHasherService } from '../security/password-hasher.service';
+import { AccessTokenService } from '../tokens/access-token.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -17,6 +18,7 @@ export class AuthService {
   constructor(
     private readonly accountsRepository: AccountsRepository,
     private readonly passwordHasherService: PasswordHasherService,
+    private readonly accessTokenService: AccessTokenService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
@@ -65,7 +67,13 @@ export class AuthService {
 
     await this.accountsRepository.markLastLoginAt(account.userId, new Date());
 
+    const signedAccessToken = this.accessTokenService.signAccessToken({
+      userId: account.userId,
+      role: account.role,
+    });
+
     return {
+      ...signedAccessToken,
       user: {
         userId: account.userId,
         email: account.email,

@@ -84,10 +84,16 @@ services:
         APP_NAME: auth-service
     ports:
       # Auth OpenAPI local server: http://localhost:5003
-      - "${AUTH_SERVICE_PORT:-5003}:5003"
+      - "${AUTH_SERVICE_PORT:-5003}:${AUTH_SERVICE_INTERNAL_PORT:-5003}"
     environment:
-      PORT: 5003
+      PORT: ${AUTH_SERVICE_INTERNAL_PORT:-5003}
       AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public
+      AUTH_JWT_PRIVATE_KEY: ${AUTH_JWT_PRIVATE_KEY:-}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
+      AUTH_ACCESS_TOKEN_TTL_SECONDS: ${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}
     depends_on:
       auth-database:
         condition: service_healthy
@@ -122,9 +128,9 @@ services:
       args:
         APP_NAME: sample-service
     ports:
-      - "${SAMPLE_SERVICE_PORT:-5001}:5000"
+      - "${SAMPLE_SERVICE_PORT:-5001}:${SAMPLE_SERVICE_INTERNAL_PORT:-5000}"
     environment:
-      PORT: 5000
+      PORT: ${SAMPLE_SERVICE_INTERNAL_PORT:-5000}
     networks:
       - app-network
 

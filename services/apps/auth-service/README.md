@@ -141,7 +141,7 @@ Response hiện tại:
 }
 ```
 
-Lưu ý phase hiện tại **chưa phát hành `accessToken` hoặc `refreshToken`**. JWT signing và refresh session sẽ được implement ở phase sau.
+Login thành công hiện phát hành short-lived JWT access token RS256.
 
 Security behavior hiện tại:
 
@@ -151,7 +151,91 @@ Security behavior hiện tại:
 - Login sai account/password/status đều trả lỗi chung `401 Invalid credentials`.
 - Không tiết lộ account tồn tại hay không.
 - Login thành công cập nhật `last_login_at`.
-- Response không trả password hash/token.
+- Response không trả password hash.
+- Access token không chứa password, refresh token, medical data hoặc unnecessary PII.
+- Refresh token/session chưa được implement ở phase hiện tại.
+
+## JWT access token foundation
+
+Login thành công trả response dạng:
+
+```json
+{
+  "accessToken": "jwt",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "userId": "uuid",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Access token được ký bằng RS256. Private key phải đến từ environment variable, không commit vào repository.
+
+### JWT environment variables
+
+```env
+AUTH_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----"
+AUTH_JWT_ISSUER=maternal-healthcare-auth
+AUTH_JWT_AUDIENCE=maternal-healthcare-api
+AUTH_JWT_KEY_ID=local-dev-key
+AUTH_ACCESS_TOKEN_TTL_SECONDS=900
+```
+
+Default nếu không set:
+
+- `AUTH_JWT_ISSUER`: `maternal-healthcare-auth`
+- `AUTH_JWT_AUDIENCE`: `maternal-healthcare-api`
+- `AUTH_JWT_KEY_ID`: `local-dev-key`
+- `AUTH_ACCESS_TOKEN_TTL_SECONDS`: `900`
+
+Bắt buộc phải set:
+
+- `AUTH_JWT_PRIVATE_KEY`
+
+### JWT claims tối thiểu
+
+Access token hiện chứa:
+
+| Claim | Ý nghĩa |
+|---|---|
+| `iss` | Issuer |
+| `aud` | Audience |
+| `sub` | Account/user id |
+| `jti` | Token id |
+| `iat` | Issued at |
+| `exp` | Expiration |
+| `role` | Role coarse-grained |
+
+Không đưa vào JWT:
+
+- Password/credential metadata.
+- Refresh token.
+- Medical record.
+- Diagnosis.
+- Prescription.
+- Treatment plan.
+- Địa chỉ, CCCD, số điện thoại, ngày sinh nếu không cần thiết.
+
+### Generate RSA key pair local-dev
+
+PowerShell:
+
+```powershell
+openssl genrsa -out auth-private.pem 2048
+openssl rsa -in auth-private.pem -pubout -out auth-public.pem
+```
+
+Đưa private key vào env dạng escaped newline:
+
+```powershell
+$privateKey = (Get-Content .\auth-private.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
+$env:AUTH_JWT_PRIVATE_KEY=$privateKey
+```
+
+Public key sẽ dùng ở phase Kong JWT validation sau. Không commit private key vào repository.
 
 ## Auth Database foundation
 

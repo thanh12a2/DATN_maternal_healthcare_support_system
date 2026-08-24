@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, Prisma } from '@prisma/client';
 import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
 import { PasswordHasherService } from '../security/password-hasher.service';
+import { AccessTokenService } from '../tokens/access-token.service';
 import { AuthService } from './auth.service';
 import { AuthRole } from './dto/auth-role.enum';
 
@@ -19,10 +20,15 @@ const passwordHasherServiceMock = () => ({
   verifyPassword: jest.fn(),
 });
 
+const accessTokenServiceMock = () => ({
+  signAccessToken: jest.fn(),
+});
+
 describe('AuthService', () => {
   let authService: AuthService;
   let accountsRepository: ReturnType<typeof accountsRepositoryMock>;
   let passwordHasherService: ReturnType<typeof passwordHasherServiceMock>;
+  let accessTokenService: ReturnType<typeof accessTokenServiceMock>;
 
   beforeEach(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -30,12 +36,14 @@ describe('AuthService', () => {
         AuthService,
         { provide: AccountsRepository, useFactory: accountsRepositoryMock },
         { provide: PasswordHasherService, useFactory: passwordHasherServiceMock },
+        { provide: AccessTokenService, useFactory: accessTokenServiceMock },
       ],
     }).compile();
 
     authService = moduleRef.get<AuthService>(AuthService);
     accountsRepository = moduleRef.get(AccountsRepository);
     passwordHasherService = moduleRef.get(PasswordHasherService);
+    accessTokenService = moduleRef.get(AccessTokenService);
   });
 
   describe('register', () => {
@@ -106,7 +114,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should login active account with normalized email and valid password', async () => {
+    it('should login active account with normalized email, valid password, and access token', async () => {
       accountsRepository.findAccountForLoginByEmail.mockResolvedValue({
         userId: 'account-id',
         email: 'patient@example.com',
@@ -116,6 +124,11 @@ describe('AuthService', () => {
       } as never);
       passwordHasherService.verifyPassword.mockResolvedValue(true as never);
       accountsRepository.markLastLoginAt.mockResolvedValue(undefined as never);
+      accessTokenService.signAccessToken.mockReturnValue({
+        accessToken: 'signed-access-token',
+        tokenType: 'Bearer',
+        expiresIn: 900,
+      } as never);
 
       await expect(
         authService.login({
@@ -123,6 +136,9 @@ describe('AuthService', () => {
           password: 'Password123!',
         }),
       ).resolves.toEqual({
+        accessToken: 'signed-access-token',
+        tokenType: 'Bearer',
+        expiresIn: 900,
         user: {
           userId: 'account-id',
           email: 'patient@example.com',
@@ -139,6 +155,10 @@ describe('AuthService', () => {
         'account-id',
         expect.any(Date),
       );
+      expect(accessTokenService.signAccessToken).toHaveBeenCalledWith({
+        userId: 'account-id',
+        role: AuthRole.Patient,
+      });
     });
 
     it('should throw UnauthorizedException when account does not exist', async () => {
@@ -150,6 +170,7 @@ describe('AuthService', () => {
 
       expect(passwordHasherService.verifyPassword).not.toHaveBeenCalled();
       expect(accountsRepository.markLastLoginAt).not.toHaveBeenCalled();
+      expect(accessTokenService.signAccessToken).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
@@ -167,6 +188,7 @@ describe('AuthService', () => {
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
       expect(accountsRepository.markLastLoginAt).not.toHaveBeenCalled();
+      expect(accessTokenService.signAccessToken).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when account is not active', async () => {
@@ -184,6 +206,7 @@ describe('AuthService', () => {
 
       expect(passwordHasherService.verifyPassword).not.toHaveBeenCalled();
       expect(accountsRepository.markLastLoginAt).not.toHaveBeenCalled();
+      expect(accessTokenService.signAccessToken).not.toHaveBeenCalled();
     });
   });
 });
