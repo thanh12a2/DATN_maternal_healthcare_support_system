@@ -3,20 +3,24 @@ _transform: true
 
 # Routes use Docker Compose service names, which are resolvable on app-network.
 services:
-  - name: service-a
-    url: http://service-a:5000
+  - name: auth-service
+    url: http://auth-service:5003
     routes:
-      - name: service-a-route
+      - name: auth-service-route
         paths:
-          - /api/service-a
-        strip_path: true
+          - /auth
+        strip_path: false
+      - name: auth-service-health-route
+        paths:
+          - /health
+        strip_path: false
 
-  - name: service-b
-    url: http://service-b:5000
+  - name: sample-service
+    url: http://sample-service:5000
     routes:
-      - name: service-b-route
+      - name: sample-service-route
         paths:
-          - /api/service-b
+          - /api/sample-service
         strip_path: true
 
 plugins:

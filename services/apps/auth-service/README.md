@@ -78,6 +78,81 @@ Auth Service bootstrap đã bật global `ValidationPipe` với:
 - `forbidNonWhitelisted: true`
 - `transform: true`
 
+## Auth endpoints hiện tại
+
+### `POST /auth/register`
+
+Endpoint đăng ký account foundation đã được implement để ghi dữ liệu vào Auth Database.
+
+Request body:
+
+```json
+{
+  "email": "patient@example.com",
+  "password": "Password123!",
+  "role": "PATIENT"
+}
+```
+
+Response hiện tại:
+
+```json
+{
+  "user": {
+    "userId": "uuid",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Lưu ý phase hiện tại **chưa phát hành `accessToken` hoặc `refreshToken`**. JWT signing và refresh session sẽ được implement ở phase sau.
+
+Security behavior hiện tại:
+
+- Email được normalize bằng `trim().toLowerCase()` trước khi lưu.
+- Password được hash bằng Argon2id trước khi lưu vào bảng `credentials`.
+- Response không trả password hash.
+- Duplicate email trả `409 Conflict`.
+- Role hợp lệ nhưng chưa seed trong DB được coi là lỗi cấu hình server.
+
+### `POST /auth/login`
+
+Endpoint đăng nhập foundation đã được implement để xác thực credential bằng Auth Database.
+
+Request body:
+
+```json
+{
+  "email": "patient@example.com",
+  "password": "Password123!"
+}
+```
+
+Response hiện tại:
+
+```json
+{
+  "user": {
+    "userId": "uuid",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Lưu ý phase hiện tại **chưa phát hành `accessToken` hoặc `refreshToken`**. JWT signing và refresh session sẽ được implement ở phase sau.
+
+Security behavior hiện tại:
+
+- Email được normalize bằng `trim().toLowerCase()` trước khi lookup.
+- Chỉ account `ACTIVE` được login.
+- Password được verify bằng Argon2id thông qua `PasswordHasherService`.
+- Login sai account/password/status đều trả lỗi chung `401 Invalid credentials`.
+- Không tiết lộ account tồn tại hay không.
+- Login thành công cập nhật `last_login_at`.
+- Response không trả password hash/token.
+
 ## Auth Database foundation
 
 Auth Service sở hữu database riêng cho identity/security data. Không dùng Kong database và không truy cập database của service khác.
@@ -127,6 +202,43 @@ services/prisma/seed.ts
 
 Script này upsert các role cơ bản và có thể chạy lại an toàn.
 
+### Docker Compose Auth Database
+
+`docker-compose.yml` hiện có PostgreSQL riêng cho Auth Service:
+
+```text
+auth-database
+```
+
+Default host port:
+
+```text
+localhost:5433 -> auth-database:5432
+```
+
+Default credentials local-dev:
+
+```env
+AUTH_DB_NAME=auth
+AUTH_DB_USER=auth
+AUTH_DB_PASSWORD=authpass
+AUTH_DB_PORT=5433
+```
+
+Khi Auth Service chạy trong Docker network, app dùng connection string container nội bộ:
+
+```env
+AUTH_DATABASE_URL=postgresql://auth:authpass@auth-database:5432/auth?schema=public
+```
+
+Khi chạy Prisma migration từ máy host, dùng host port `5433`:
+
+```cmd
+set AUTH_DATABASE_URL=postgresql://auth:authpass@localhost:5433/auth?schema=public
+npm.cmd run prisma:migrate:dev
+npm.cmd run prisma:seed
+```
+
 ### Prisma commands
 
 Chạy trong thư mục `services`:
@@ -138,7 +250,7 @@ npm.cmd run prisma:migrate:deploy
 npm.cmd run prisma:seed
 ```
 
-Lưu ý: các lệnh migrate/seed cần `AUTH_DATABASE_URL` trỏ tới PostgreSQL Auth Database đang chạy. Phase hiện tại chưa thêm Docker Compose cho Auth DB, nên migration thật sẽ được chạy sau khi infrastructure DB được cấu hình.
+Lưu ý: các lệnh migrate/seed cần `AUTH_DATABASE_URL` trỏ tới PostgreSQL Auth Database đang chạy.
 
 ## Lợi ích kiến trúc
 

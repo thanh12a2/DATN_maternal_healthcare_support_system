@@ -27,9 +27,9 @@ services:
     depends_on:
       kong-init:
         condition: service_completed_successfully
-      service-a:
+      auth-service:
         condition: service_started
-      service-b:
+      sample-service:
         condition: service_started
     environment:
       KONG_DATABASE: postgres
@@ -75,52 +75,67 @@ services:
     networks:
       - app-network
 
-  # ─── Service A ───────────────────────────────────
-  service-a:
-    build: ./services/service-a
+  # ─── Auth Service ────────────────────────────────
+  auth-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: auth-service
     ports:
-      - "${SERVICE_A_PORT:-5001}:5000"
-    env_file:
-      - .env
-    networks:
-      - app-network
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-
-  # ─── Service B ───────────────────────────────────
-  service-b:
-    build: ./services/service-b
-    ports:
-      - "${SERVICE_B_PORT:-5002}:5000"
-    env_file:
-      - .env
+      # Auth OpenAPI local server: http://localhost:5003
+      - "${AUTH_SERVICE_PORT:-5003}:5003"
+    environment:
+      PORT: 5003
+      AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public
+    depends_on:
+      auth-database:
+        condition: service_healthy
     networks:
       - app-network
 
-  # ─── Shared Infrastructure (uncomment as needed) ─
-  # db:
-  #   image: postgres:16-alpine    # or mysql:8, mongo:7, etc.
-  #   ports:
-  #     - "${DB_PORT:-5432}:5432"
-  #   environment:
-  #     POSTGRES_DB: ${DB_NAME:-mydb}
-  #     POSTGRES_USER: ${DB_USER:-admin}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-  #   volumes:
-  #     - db-data:/var/lib/postgresql/data
-  #   networks:
-  #     - app-network
+  # Auth Service owns this database. Do not use Kong's database for auth data.
+  auth-database:
+    image: postgres:16-alpine
+    ports:
+      # Host port is 5433 to avoid conflicting with local PostgreSQL on 5432.
+      - "${AUTH_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-authpass}
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
 
+  # ─── Sample Service ──────────────────────────────
+  sample-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: sample-service
+    ports:
+      - "${SAMPLE_SERVICE_PORT:-5001}:5000"
+    environment:
+      PORT: 5000
+    networks:
+      - app-network
+
+  # ─── Future Shared Infrastructure ────────────────
   # redis:
   #   image: redis:7-alpine
   #   ports:
   #     - "6379:6379"
   #   networks:
   #     - app-network
-
+  #
   # rabbitmq:
   #   image: rabbitmq:3-management-alpine
   #   ports:
@@ -135,3 +150,4 @@ networks:
 
 volumes:
   kong-data:
+  auth-data:
