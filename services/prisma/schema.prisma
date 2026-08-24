@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AUTH_DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+  PENDING_VERIFICATION
+}
+
+enum AuthRoleCode {
+  PATIENT
+  RECEPTIONIST
+  DOCTOR
+  NURSE
+  ADMIN
+}
+
+model Account {
+  id          String        @id @default(uuid()) @db.Uuid
+  email       String        @unique @db.VarChar(255)
+  status      AccountStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lastLoginAt DateTime?     @map("last_login_at") @db.Timestamptz(6)
+
+  credential Credential?
+  roles      AccountRole[]
+
+  @@map("accounts")
+}
+
+model Credential {
+  accountId         String    @id @map("account_id") @db.Uuid
+  passwordHash      String    @map("password_hash")
+  passwordUpdatedAt DateTime  @default(now()) @map("password_updated_at") @db.Timestamptz(6)
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(6)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("credentials")
+}
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  code        AuthRoleCode @unique
+  description String?
+
+  accounts AccountRole[]
+
+  @@map("roles")
+}
+
+model AccountRole {
+  accountId String @map("account_id") @db.Uuid
+  roleId    String @map("role_id") @db.Uuid
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([accountId, roleId])
+  @@map("account_roles")
+}

@@ -37,7 +37,7 @@ Service         Service      Service
 
 ## Security foundation hiện tại
 
-Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho các phase auth tiếp theo, chưa implement register/login/JWT/refresh token/database.
+Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho các phase auth tiếp theo, chưa implement register/login/JWT/refresh token.
 
 ### Dependencies đã thêm
 
@@ -45,6 +45,8 @@ Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho 
 - `class-validator`: validate DTO input như email, password length và role.
 - `class-transformer`: hỗ trợ NestJS `ValidationPipe` transform request payload vào DTO class.
 - `argon2`: hash password bằng Argon2id theo target architecture.
+- `@prisma/client`: Prisma runtime client để Auth Service truy cập Auth Database.
+- `prisma`: Prisma CLI dùng cho generate client, migration và seed.
 
 ### Password hashing
 
@@ -75,6 +77,68 @@ Auth Service bootstrap đã bật global `ValidationPipe` với:
 - `whitelist: true`
 - `forbidNonWhitelisted: true`
 - `transform: true`
+
+## Auth Database foundation
+
+Auth Service sở hữu database riêng cho identity/security data. Không dùng Kong database và không truy cập database của service khác.
+
+Prisma schema nằm tại:
+
+```text
+services/prisma/schema.prisma
+```
+
+Datasource dùng biến môi trường:
+
+```env
+AUTH_DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+```
+
+Các model foundation hiện có:
+
+- `Account` -> bảng `accounts`
+  - email normalized/unique,
+  - status,
+  - timestamps,
+  - last login timestamp.
+- `Credential` -> bảng `credentials`
+  - `password_hash`,
+  - `password_updated_at`,
+  - `failed_login_count`,
+  - `locked_until`.
+- `Role` -> bảng `roles`
+  - role code: `PATIENT`, `RECEPTIONIST`, `DOCTOR`, `NURSE`, `ADMIN`.
+- `AccountRole` -> bảng `account_roles`
+  - mapping many-to-many giữa account và role.
+
+Migration đầu tiên nằm tại:
+
+```text
+services/prisma/migrations/20260824142300_auth_foundation/migration.sql
+```
+
+Migration này tạo schema foundation và seed roles cơ bản idempotent bằng `ON CONFLICT DO NOTHING`.
+
+Seed script bổ sung nằm tại:
+
+```text
+services/prisma/seed.ts
+```
+
+Script này upsert các role cơ bản và có thể chạy lại an toàn.
+
+### Prisma commands
+
+Chạy trong thư mục `services`:
+
+```cmd
+npm.cmd run prisma:generate
+npm.cmd run prisma:migrate:dev
+npm.cmd run prisma:migrate:deploy
+npm.cmd run prisma:seed
+```
+
+Lưu ý: các lệnh migrate/seed cần `AUTH_DATABASE_URL` trỏ tới PostgreSQL Auth Database đang chạy. Phase hiện tại chưa thêm Docker Compose cho Auth DB, nên migration thật sẽ được chạy sau khi infrastructure DB được cấu hình.
 
 ## Lợi ích kiến trúc
 
