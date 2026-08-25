@@ -14,6 +14,10 @@ services:
         paths:
           - /health
         strip_path: false
+      - name: auth-service-jwks-route
+        paths:
+          - /.well-known
+        strip_path: false
 
   - name: sample-service
     url: http://sample-service:5000

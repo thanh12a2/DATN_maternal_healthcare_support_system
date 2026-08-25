@@ -20,3 +20,9 @@ export interface SignedAccessToken {
   tokenType: 'Bearer';
   expiresIn: number;
 }
+
+export interface VerifiedAccessToken {
+  userId: string;
+  role: AuthRole;
+  tokenId: string;
+}

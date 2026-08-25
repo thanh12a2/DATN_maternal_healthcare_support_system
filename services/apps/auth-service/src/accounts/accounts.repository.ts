@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, AuthRoleCode } from '@prisma/client';
 import { AuthRole } from '../auth/dto/auth-role.enum';
 import { PrismaService } from '../database/prisma.service';
-import { AccountForLogin, RegisteredAccount, RegisterAccountInput } from './accounts.types';
+import {
+  AccountAuthProfile,
+  AccountForLogin,
+  RegisteredAccount,
+  RegisterAccountInput,
+} from './accounts.types';
 
 @Injectable()
 export class AccountsRepository {
@@ -70,6 +75,33 @@ export class AccountsRepository {
       email: account.email,
       status: account.status,
       passwordHash: credential.passwordHash,
+      role: accountRole.role.code as unknown as AuthRole,
+    };
+  }
+
+  async findAuthProfileById(accountId: string): Promise<AccountAuthProfile | null> {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const accountRole = account?.roles[0];
+
+    if (!account || !accountRole) {
+      return null;
+    }
+
+    return {
+      userId: account.id,
+      email: account.email,
+      status: account.status,
       role: accountRole.role.code as unknown as AuthRole,
     };
   }

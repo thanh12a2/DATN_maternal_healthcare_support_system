@@ -104,6 +104,8 @@ AUTH_JWT_ISSUER=maternal-healthcare-auth
 AUTH_JWT_AUDIENCE=maternal-healthcare-api
 AUTH_JWT_KEY_ID=local-dev-key
 AUTH_ACCESS_TOKEN_TTL_SECONDS=900
+AUTH_REFRESH_TOKEN_PEPPER=replace-with-local-dev-refresh-token-pepper
+AUTH_REFRESH_TOKEN_TTL_DAYS=30
 ```
 
 Thông thường có thể giữ nguyên các giá trị trên nếu máy không bị trùng port.
@@ -283,6 +285,8 @@ $env:AUTH_JWT_ISSUER="maternal-healthcare-auth"
 $env:AUTH_JWT_AUDIENCE="maternal-healthcare-api"
 $env:AUTH_JWT_KEY_ID="local-dev-key"
 $env:AUTH_ACCESS_TOKEN_TTL_SECONDS="900"
+$env:AUTH_REFRESH_TOKEN_PEPPER="replace-with-local-dev-refresh-token-pepper"
+$env:AUTH_REFRESH_TOKEN_TTL_DAYS="30"
 
 npm.cmd run start
 ```
@@ -311,7 +315,34 @@ Expected:
 
 ## 10. Test bằng Postman
 
-### 10.1 Register
+### 10.1 JWKS public key
+
+Request:
+
+```http
+GET http://localhost:5003/.well-known/jwks.json
+```
+
+Expected:
+
+```json
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "n": "...",
+      "e": "...",
+      "kid": "local-dev-key",
+      "alg": "RS256",
+      "use": "sig"
+    }
+  ]
+}
+```
+
+JWKS không được chứa private key hoặc các field private JWK như `d`, `p`, `q`, `dp`, `dq`, `qi`.
+
+### 10.2 Register
 
 Request:
 
@@ -352,7 +383,7 @@ Nếu gọi lại cùng email:
 409 Conflict
 ```
 
-### 10.2 Login
+### 10.3 Login
 
 Request:
 
@@ -379,6 +410,7 @@ Expected:
 ```json
 {
   "accessToken": "...",
+  "refreshToken": "...",
   "tokenType": "Bearer",
   "expiresIn": 900,
   "user": {
@@ -387,6 +419,115 @@ Expected:
     "role": "PATIENT"
   }
 }
+```
+
+### 10.4 Get current user
+
+Copy `accessToken` từ response login.
+
+Request:
+
+```http
+GET http://localhost:5003/auth/me
+Authorization: Bearer PASTE_ACCESS_TOKEN_FROM_LOGIN
+```
+
+Expected:
+
+```http
+200 OK
+```
+
+```json
+{
+  "user": {
+    "userId": "...",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Không có token, token sai, token hết hạn, hoặc account không active sẽ trả:
+
+```http
+401 Unauthorized
+```
+
+### 10.5 Refresh token
+
+Copy `refreshToken` từ response login.
+
+Request:
+
+```http
+POST http://localhost:5003/auth/refresh
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "PASTE_REFRESH_TOKEN_FROM_LOGIN"
+}
+```
+
+Expected:
+
+```http
+200 OK
+```
+
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "new-refresh-token",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "userId": "...",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Sau refresh thành công, refresh token cũ đã bị rotate. Nếu gọi lại bằng token cũ, expected:
+
+```http
+401 Unauthorized
+```
+
+### 10.6 Logout
+
+Dùng refresh token mới nhất từ login/refresh.
+
+Request:
+
+```http
+POST http://localhost:5003/auth/logout
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "PASTE_CURRENT_REFRESH_TOKEN"
+}
+```
+
+Expected:
+
+```http
+204 No Content
+```
+
+Sau logout, gọi `/auth/refresh` bằng refresh token đó sẽ trả:
+
+```http
+401 Unauthorized
 ```
 
 Sai password hoặc account không tồn tại:
@@ -608,6 +749,8 @@ $env:AUTH_JWT_ISSUER="maternal-healthcare-auth"
 $env:AUTH_JWT_AUDIENCE="maternal-healthcare-api"
 $env:AUTH_JWT_KEY_ID="local-dev-key"
 $env:AUTH_ACCESS_TOKEN_TTL_SECONDS="900"
+$env:AUTH_REFRESH_TOKEN_PEPPER="replace-with-local-dev-refresh-token-pepper"
+$env:AUTH_REFRESH_TOKEN_TTL_DAYS="30"
 npm.cmd run start
 ```
 

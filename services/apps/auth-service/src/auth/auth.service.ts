@@ -7,11 +7,15 @@ import {
 import { AccountStatus } from '@prisma/client';
 import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
 import { PasswordHasherService } from '../security/password-hasher.service';
+import { InvalidRefreshSessionError, SessionsService } from '../sessions/sessions.service';
 import { AccessTokenService } from '../tokens/access-token.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { MeResponseDto } from './dto/me-response.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
+import { TokenResponseDto } from './dto/token-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +23,7 @@ export class AuthService {
     private readonly accountsRepository: AccountsRepository,
     private readonly passwordHasherService: PasswordHasherService,
     private readonly accessTokenService: AccessTokenService,
+    private readonly sessionsService: SessionsService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
@@ -71,15 +76,78 @@ export class AuthService {
       userId: account.userId,
       role: account.role,
     });
+    const refreshSession = await this.sessionsService.createRefreshSession(account.userId);
 
     return {
       ...signedAccessToken,
+      refreshToken: refreshSession.refreshToken,
       user: {
         userId: account.userId,
         email: account.email,
         role: account.role,
       },
     };
+  }
+
+  async refresh(refreshTokenDto: RefreshTokenDto): Promise<TokenResponseDto> {
+    try {
+      const refreshedSession = await this.sessionsService.refreshSession(refreshTokenDto.refreshToken);
+      const account = await this.accountsRepository.findAuthProfileById(refreshedSession.accountId);
+
+      if (!account || account.status !== AccountStatus.ACTIVE) {
+        throw this.invalidCredentialsException();
+      }
+
+      const signedAccessToken = this.accessTokenService.signAccessToken({
+        userId: account.userId,
+        role: account.role,
+      });
+
+      return {
+        ...signedAccessToken,
+        refreshToken: refreshedSession.refreshToken,
+        user: {
+          userId: account.userId,
+          email: account.email,
+          role: account.role,
+        },
+      };
+    } catch (error) {
+      if (error instanceof InvalidRefreshSessionError) {
+        throw this.invalidCredentialsException();
+      }
+
+      throw error;
+    }
+  }
+
+  async getMe(accessToken: string): Promise<MeResponseDto> {
+    const verifiedToken = this.accessTokenService.verifyAccessToken(accessToken);
+    const account = await this.accountsRepository.findAuthProfileById(verifiedToken.userId);
+
+    if (!account || account.status !== AccountStatus.ACTIVE) {
+      throw this.invalidCredentialsException();
+    }
+
+    return {
+      user: {
+        userId: account.userId,
+        email: account.email,
+        role: account.role,
+      },
+    };
+  }
+
+  async logout(refreshTokenDto: RefreshTokenDto): Promise<void> {
+    try {
+      await this.sessionsService.logoutSession(refreshTokenDto.refreshToken);
+    } catch (error) {
+      if (error instanceof InvalidRefreshSessionError) {
+        throw this.invalidCredentialsException();
+      }
+
+      throw error;
+    }
   }
 
   private normalizeEmail(email: string): string {

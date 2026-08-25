@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { generateKeyPairSync } from 'crypto';
+import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import jwt from 'jsonwebtoken';
@@ -10,6 +11,7 @@ import { AccessTokenClaims } from './access-token.types';
 describe('AccessTokenService', () => {
   let accessTokenService: AccessTokenService;
   let publicKey: string;
+  let privateKey: string;
 
   beforeEach(async () => {
     const keyPair = generateKeyPairSync('rsa', {
@@ -25,6 +27,7 @@ describe('AccessTokenService', () => {
     });
 
     publicKey = keyPair.publicKey;
+    privateKey = keyPair.privateKey;
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,7 +37,8 @@ describe('AccessTokenService', () => {
           useValue: {
             get: (key: string) =>
               ({
-                AUTH_JWT_PRIVATE_KEY: keyPair.privateKey,
+                AUTH_JWT_PRIVATE_KEY: privateKey,
+                AUTH_JWT_PUBLIC_KEY: publicKey,
                 AUTH_JWT_ISSUER: 'test-issuer',
                 AUTH_JWT_AUDIENCE: 'test-audience',
                 AUTH_JWT_KEY_ID: 'test-key-id',
@@ -73,5 +77,43 @@ describe('AccessTokenService', () => {
     expect(decoded).not.toHaveProperty('password');
     expect(decoded).not.toHaveProperty('refreshToken');
     expect(decoded).not.toHaveProperty('medicalRecord');
+  });
+
+  it('should verify a valid RS256 access token', () => {
+    const signedToken = accessTokenService.signAccessToken({
+      userId: 'account-id',
+      role: AuthRole.Patient,
+    });
+
+    expect(accessTokenService.verifyAccessToken(signedToken.accessToken)).toEqual({
+      userId: 'account-id',
+      role: AuthRole.Patient,
+      tokenId: expect.any(String),
+    });
+  });
+
+  it('should reject invalid access token', () => {
+    expect(() => accessTokenService.verifyAccessToken('invalid-token')).toThrow(UnauthorizedException);
+  });
+
+  it('should reject token signed with wrong audience', () => {
+    const invalidAudienceToken = jwt.sign(
+      {
+        iss: 'test-issuer',
+        aud: 'wrong-audience',
+        sub: 'account-id',
+        jti: 'token-id',
+        role: AuthRole.Patient,
+      },
+      privateKey,
+      {
+        algorithm: 'RS256',
+        expiresIn: 900,
+      },
+    );
+
+    expect(() => accessTokenService.verifyAccessToken(invalidAudienceToken)).toThrow(
+      UnauthorizedException,
+    );
   });
 });

@@ -20,3 +20,10 @@ export interface AccountForLogin {
   passwordHash: string;
   role: AuthRole;
 }
+
+export interface AccountAuthProfile {
+  userId: string;
+  email: string;
+  status: AccountStatus;
+  role: AuthRole;
+}

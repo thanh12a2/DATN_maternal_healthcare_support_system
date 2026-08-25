@@ -4,10 +4,17 @@ import { AuthModule } from './auth/auth.module';
 import { AuthServiceController } from './auth-service.controller';
 import { AuthServiceService } from './auth-service.service';
 import { DatabaseModule } from './database/database.module';
+import { JwksModule } from './jwks/jwks.module';
 import { SecurityModule } from './security/security.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule, DatabaseModule, SecurityModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    AuthModule,
+    DatabaseModule,
+    JwksModule,
+    SecurityModule,
+  ],
   controllers: [AuthServiceController],
   providers: [AuthServiceService],
 })

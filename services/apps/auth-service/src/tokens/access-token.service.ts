@@ -1,8 +1,13 @@
 import { randomUUID } from 'crypto';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
-import { AccessTokenClaims, AccessTokenSubject, SignedAccessToken } from './access-token.types';
+import {
+  AccessTokenClaims,
+  AccessTokenSubject,
+  SignedAccessToken,
+  VerifiedAccessToken,
+} from './access-token.types';
 
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 
@@ -39,6 +44,36 @@ export class AccessTokenService {
     };
   }
 
+  verifyAccessToken(accessToken: string): VerifiedAccessToken {
+    const publicKey = this.getRequiredConfig('AUTH_JWT_PUBLIC_KEY');
+    const issuer = this.getConfigOrDefault('AUTH_JWT_ISSUER', 'maternal-healthcare-auth');
+    const audience = this.getConfigOrDefault('AUTH_JWT_AUDIENCE', 'maternal-healthcare-api');
+
+    try {
+      const claims = jwt.verify(accessToken, this.normalizePem(publicKey), {
+        algorithms: ['RS256'],
+        issuer,
+        audience,
+      }) as AccessTokenClaims;
+
+      if (!claims.sub || !claims.role || !claims.jti) {
+        throw new UnauthorizedException('Invalid access token');
+      }
+
+      return {
+        userId: claims.sub,
+        role: claims.role,
+        tokenId: claims.jti,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Invalid access token');
+    }
+  }
+
   private getAccessTokenTtlSeconds(): number {
     const configuredTtl = this.configService.get<string>('AUTH_ACCESS_TOKEN_TTL_SECONDS');
 
@@ -70,6 +105,13 @@ export class AccessTokenService {
   }
 
   private normalizePem(value: string): string {
-    return value.replace(/\\n/g, '\n');
+    const trimmedValue = value.trim();
+    const unquotedValue =
+      (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+      (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"))
+        ? trimmedValue.slice(1, -1)
+        : trimmedValue;
+
+    return unquotedValue.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
   }
 }

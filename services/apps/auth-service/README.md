@@ -141,7 +141,7 @@ Response hiện tại:
 }
 ```
 
-Login thành công hiện phát hành short-lived JWT access token RS256.
+Login thành công hiện phát hành short-lived JWT access token RS256 và opaque refresh token.
 
 Security behavior hiện tại:
 
@@ -153,7 +153,46 @@ Security behavior hiện tại:
 - Login thành công cập nhật `last_login_at`.
 - Response không trả password hash.
 - Access token không chứa password, refresh token, medical data hoặc unnecessary PII.
-- Refresh token/session chưa được implement ở phase hiện tại.
+- Refresh token là opaque random token, không phải JWT.
+- Auth Database chỉ lưu HMAC-SHA256 hash của refresh token, không lưu plaintext refresh token.
+- Refresh endpoint đã implement refresh token rotation.
+- Logout endpoint đã implement revoke refresh session.
+
+## JWKS endpoint
+
+Auth Service expose public key theo JWKS format:
+
+```http
+GET /.well-known/jwks.json
+```
+
+Response dạng:
+
+```json
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "n": "...",
+      "e": "...",
+      "kid": "local-dev-key",
+      "alg": "RS256",
+      "use": "sig"
+    }
+  ]
+}
+```
+
+Endpoint này chỉ expose public key material, không expose private key.
+
+Biến env dùng bởi JWKS:
+
+```env
+AUTH_JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\\n...\\n-----END PUBLIC KEY-----"
+AUTH_JWT_KEY_ID=local-dev-key
+```
+
+JWKS endpoint là foundation cho phase Kong JWT validation sau này.
 
 ## JWT access token foundation
 
@@ -162,6 +201,7 @@ Login thành công trả response dạng:
 ```json
 {
   "accessToken": "jwt",
+  "refreshToken": "opaque-refresh-token",
   "tokenType": "Bearer",
   "expiresIn": 900,
   "user": {
@@ -182,6 +222,8 @@ AUTH_JWT_ISSUER=maternal-healthcare-auth
 AUTH_JWT_AUDIENCE=maternal-healthcare-api
 AUTH_JWT_KEY_ID=local-dev-key
 AUTH_ACCESS_TOKEN_TTL_SECONDS=900
+AUTH_REFRESH_TOKEN_PEPPER=replace-with-local-dev-refresh-token-pepper
+AUTH_REFRESH_TOKEN_TTL_DAYS=30
 ```
 
 Default nếu không set:
@@ -194,6 +236,7 @@ Default nếu không set:
 Bắt buộc phải set:
 
 - `AUTH_JWT_PRIVATE_KEY`
+- `AUTH_REFRESH_TOKEN_PEPPER`
 
 ### JWT claims tối thiểu
 
@@ -236,6 +279,124 @@ $env:AUTH_JWT_PRIVATE_KEY=$privateKey
 ```
 
 Public key sẽ dùng ở phase Kong JWT validation sau. Không commit private key vào repository.
+
+## Refresh token/session foundation
+
+Login hiện tạo một record trong bảng `auth_sessions` và trả refresh token plaintext cho client một lần.
+
+Database chỉ lưu:
+
+```text
+refresh_token_hash
+```
+
+Hash được tạo bằng:
+
+```text
+HMAC-SHA256(refreshToken, AUTH_REFRESH_TOKEN_PEPPER)
+```
+
+Environment variables:
+
+```env
+AUTH_REFRESH_TOKEN_PEPPER=replace-with-local-dev-refresh-token-pepper
+AUTH_REFRESH_TOKEN_TTL_DAYS=30
+```
+
+Refresh token hiện tại được issue khi login và rotate khi gọi refresh.
+
+### `POST /auth/refresh`
+
+Request body:
+
+```json
+{
+  "refreshToken": "opaque-refresh-token-from-login"
+}
+```
+
+Response:
+
+```json
+{
+  "accessToken": "new-jwt",
+  "refreshToken": "new-opaque-refresh-token",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "userId": "uuid",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Refresh flow:
+
+- Hash refresh token bằng `AUTH_REFRESH_TOKEN_PEPPER`.
+- Tìm session theo `refresh_token_hash`.
+- Reject nếu session không tồn tại, hết hạn hoặc đã revoke.
+- Load account/role và chỉ cho account `ACTIVE` refresh.
+- Rotate refresh token bằng cách update `refresh_token_hash`, `expires_at`, `last_used_at`.
+- Issue access token mới.
+
+Sau refresh thành công, refresh token cũ không còn dùng được.
+
+### `GET /auth/me`
+
+Request:
+
+```http
+GET /auth/me
+Authorization: Bearer <accessToken>
+```
+
+Response:
+
+```json
+{
+  "user": {
+    "userId": "uuid",
+    "email": "patient@example.com",
+    "role": "PATIENT"
+  }
+}
+```
+
+Behavior:
+
+- Extract Bearer token từ `Authorization` header.
+- Verify access token bằng `AUTH_JWT_PUBLIC_KEY` với RS256.
+- Verify `iss` và `aud`.
+- Load account profile từ Auth DB bằng `sub` trong token.
+- Chỉ account `ACTIVE` được trả profile.
+- Invalid/missing/expired token trả `401 Unauthorized`.
+
+Lưu ý: `/auth/me` là Auth Service endpoint. Business APIs sau này vẫn không được gọi Auth Service đồng bộ để validate access token; validation cho business routes sẽ thuộc Kong/JWT offline validation phase.
+
+### `POST /auth/logout`
+
+Request body:
+
+```json
+{
+  "refreshToken": "opaque-refresh-token"
+}
+```
+
+Response:
+
+```http
+204 No Content
+```
+
+Logout flow:
+
+- Hash refresh token bằng `AUTH_REFRESH_TOKEN_PEPPER`.
+- Tìm session theo `refresh_token_hash`.
+- Reject nếu session không tồn tại, hết hạn hoặc đã revoke.
+- Set `revoked_at` và `revoked_reason = 'logout'`.
+- Sau logout, refresh token đó không còn dùng được để refresh.
 
 ## Auth Database foundation
 

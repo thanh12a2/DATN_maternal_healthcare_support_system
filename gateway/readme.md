@@ -26,6 +26,7 @@ Gateway must not contain business logic.
 |---|---|---|---|
 | `/auth/*` | Auth Service | `http://auth-service:5003/auth/*` | Public auth endpoints, register/login/refresh/logout future implementation |
 | `/health` | Auth Service | `http://auth-service:5003/health` | Auth Service health check |
+| `/.well-known/jwks.json` | Auth Service | `http://auth-service:5003/.well-known/jwks.json` | Public JWKS for future JWT validation |
 | `/api/sample-service/*` | Sample Service | `http://sample-service:5000/*` | Template/sample route |
 
 Current Kong config is in:

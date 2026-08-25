@@ -1,12 +1,3 @@
-import { AuthRole } from './auth-role.enum';
+import { TokenResponseDto } from './token-response.dto';
 
-export interface LoginResponseDto {
-  accessToken: string;
-  tokenType: 'Bearer';
-  expiresIn: number;
-  user: {
-    userId: string;
-    email: string;
-    role: AuthRole;
-  };
-}
+export type LoginResponseDto = TokenResponseDto;
