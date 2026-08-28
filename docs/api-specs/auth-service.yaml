@@ -134,7 +134,7 @@ components:
       required:
         - email
         - password
-        - role
+      description: Public registration always creates a PATIENT account. Staff/admin roles must be assigned through an admin-only flow.
       properties:
         email:
           type: string
@@ -142,9 +142,6 @@ components:
         password:
           type: string
           format: password
-        role:
-          type: string
-          example: patient
     AuthLoginRequest:
       type: object
       required:

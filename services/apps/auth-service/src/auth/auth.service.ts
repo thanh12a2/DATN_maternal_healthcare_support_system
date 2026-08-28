@@ -9,6 +9,7 @@ import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts
 import { PasswordHasherService } from '../security/password-hasher.service';
 import { InvalidRefreshSessionError, SessionsService } from '../sessions/sessions.service';
 import { AccessTokenService } from '../tokens/access-token.service';
+import { AuthRole } from './dto/auth-role.enum';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { MeResponseDto } from './dto/me-response.dto';
@@ -34,7 +35,7 @@ export class AuthService {
       const registeredAccount = await this.accountsRepository.createAccountWithCredential({
         email: normalizedEmail,
         passwordHash,
-        role: registerDto.role,
+        role: AuthRole.Patient,
       });
 
       return {

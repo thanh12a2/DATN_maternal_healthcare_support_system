@@ -356,8 +356,7 @@ Body:
 ```json
 {
   "email": "patient@example.com",
-  "password": "Password123!",
-  "role": "PATIENT"
+  "password": "Password123!"
 }
 ```
 

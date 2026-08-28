@@ -9,7 +9,10 @@ export function AuthShell() {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    cardRef.current?.scrollTo({ top: 0 });
+    if (typeof cardRef.current?.scrollTo === 'function') {
+      cardRef.current.scrollTo({ top: 0 });
+    }
+
     window.setTimeout(() => {
       const firstInput = cardRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>('input, select');
       firstInput?.focus();

@@ -38,7 +38,7 @@ flowchart TD
     R --> S[Bác sĩ thực hiện khám lâm sàng]
     S --> T[Bác sĩ tổng hợp kết quả xét nghiệm/siêu âm]
     T --> U[Bác sĩ chẩn đoán, kê đơn, lập phác đồ điều trị]
-    U --> V[Y tá/điều dưỡng scan hồ sơ và gửi lên hệ thống]
+    U --> V[Y tá/điều dưỡng gửi hồ sơ khám bản mềm lên hệ thống]
     V --> W[Hệ thống luân chuyển hồ sơ giữa các phòng khám/dịch vụ]
     W --> X[Hồ sơ và kết quả được hiển thị cho bác sĩ]
     X --> Y[Quy trình khám hoàn tất]

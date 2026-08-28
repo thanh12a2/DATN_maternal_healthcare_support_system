@@ -42,7 +42,7 @@ Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho 
 ### Dependencies đã thêm
 
 - `@nestjs/config`: chuẩn bị quản lý cấu hình qua environment variables cho JWT, database, token TTL, key/secret ở các phase sau.
-- `class-validator`: validate DTO input như email, password length và role.
+- `class-validator`: validate DTO input như email và password length.
 - `class-transformer`: hỗ trợ NestJS `ValidationPipe` transform request payload vào DTO class.
 - `argon2`: hash password bằng Argon2id theo target architecture.
 - `@prisma/client`: Prisma runtime client để Auth Service truy cập Auth Database.
@@ -67,7 +67,7 @@ Các DTO nền tảng đã được tạo:
 - `RegisterDto`
   - `email`: email hợp lệ.
   - `password`: string, tối thiểu 8 ký tự.
-  - `role`: một trong `PATIENT`, `RECEPTIONIST`, `DOCTOR`, `NURSE`, `ADMIN`.
+  - Public register không nhận `role`; backend luôn gán `PATIENT`.
 - `LoginDto`
   - `email`: email hợp lệ.
   - `password`: string, tối thiểu 8 ký tự.
@@ -89,8 +89,7 @@ Request body:
 ```json
 {
   "email": "patient@example.com",
-  "password": "Password123!",
-  "role": "PATIENT"
+  "password": "Password123!"
 }
 ```
 
@@ -114,7 +113,9 @@ Security behavior hiện tại:
 - Password được hash bằng Argon2id trước khi lưu vào bảng `credentials`.
 - Response không trả password hash.
 - Duplicate email trả `409 Conflict`.
-- Role hợp lệ nhưng chưa seed trong DB được coi là lỗi cấu hình server.
+- Public register luôn tạo role `PATIENT`.
+- Các role khác chỉ được cấp qua admin-only flow ở phase sau.
+- Nếu role `PATIENT` chưa seed trong DB thì được coi là lỗi cấu hình server.
 
 ### `POST /auth/login`
 

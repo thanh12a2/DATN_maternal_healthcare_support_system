@@ -48,9 +48,8 @@ async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
   const payload = (await response.json().catch(() => null)) as ApiErrorPayload | T | null;
 
   if (!response.ok) {
-    const message = Array.isArray((payload as ApiErrorPayload | null)?.message)
-      ? ((payload as ApiErrorPayload).message as string[]).join(' ')
-      : (payload as ApiErrorPayload | null)?.message;
+    const rawMessage = (payload as ApiErrorPayload | null)?.message;
+    const message = Array.isArray(rawMessage) ? rawMessage.join(' ') : rawMessage;
 
     throw new AuthApiError(message || 'Không thể xử lý yêu cầu. Vui lòng thử lại.', response.status);
   }
@@ -62,7 +61,7 @@ export async function login(values: LoginFormValues): Promise<LoginResponse> {
   return requestJson<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({
-      email: values.identity.trim().toLowerCase(),
+      email: values.email.trim().toLowerCase(),
       password: values.password,
     }),
   });
@@ -74,7 +73,6 @@ export async function register(values: RegisterFormValues): Promise<RegisterResp
     body: JSON.stringify({
       email: values.email.trim().toLowerCase(),
       password: values.password,
-      role: 'PATIENT',
     }),
   });
 }
