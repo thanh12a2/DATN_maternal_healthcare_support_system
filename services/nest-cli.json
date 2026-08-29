@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
+    "patient-service": {
+      "type": "application",
+      "root": "apps/patient-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/patient-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/patient-service/tsconfig.app.json"
+      }
+    },
     "sample-service": {
       "type": "application",
       "root": "apps/sample-service",
