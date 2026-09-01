@@ -1,23 +1,28 @@
 # Auth Service Setup Guide
 
-Tài liệu này hướng dẫn setup Authentication Service sau khi fork/clone repository về máy local.
+Tài liệu này hướng dẫn setup và test **Authentication Service** sau khi fork/clone repository về máy local.
 
-Scope hiện tại của Auth Service:
+Auth Service hiện tại đã implement:
 
 - `GET /health`
+- `GET /.well-known/jwks.json`
 - `POST /auth/register`
 - `POST /auth/login`
+- `GET /auth/me`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 - Auth Database PostgreSQL riêng
 - Prisma schema/migration/seed
 - Password hashing bằng Argon2id
-- Access JWT signing bằng RS256
+- Access JWT signing/verification bằng RS256
+- Refresh token/session bằng opaque refresh token + HMAC hash trong DB
 
 Chưa implement ở phase hiện tại:
 
-- Refresh token/session
-- Logout
-- JWKS endpoint
-- Kong JWT validation plugin
+- Kong JWT validation cho protected business routes
+- Admin-only role assignment
+- Password reset/change password
+- Audit/throttling nâng cao
 
 ---
 
@@ -25,7 +30,7 @@ Chưa implement ở phase hiện tại:
 
 Cần có:
 
-- Node.js, npm
+- Node.js + npm
 - Docker Desktop
 - Git
 - PowerShell hoặc CMD trên Windows
@@ -39,7 +44,7 @@ docker --version
 docker compose version
 ```
 
-Nếu PowerShell không nhận `node`/`npm`, thử dùng đường dẫn Node mặc định:
+Nếu PowerShell không nhận `node`, thử:
 
 ```powershell
 & "C:\Program Files\nodejs\node.exe" -v
@@ -59,16 +64,9 @@ Hoặc thay path theo nơi bạn clone repo.
 
 ---
 
-## 3. Cài dependencies cho NestJS services
+## 3. Cài dependencies cho backend services
 
 ```powershell
-cd D:\DATN_maternal_healthcare_support_system\services
-npm.cmd install
-```
-
-Nếu dùng CMD:
-
-```cmd
 cd D:\DATN_maternal_healthcare_support_system\services
 npm.cmd install
 ```
@@ -90,27 +88,30 @@ File cần có path:
 D:\DATN_maternal_healthcare_support_system\.env
 ```
 
-Các config default local-dev quan trọng:
+Các giá trị local-dev quan trọng:
 
 ```env
 AUTH_SERVICE_PORT=5003
 AUTH_SERVICE_INTERNAL_PORT=5003
+
 AUTH_DB_NAME=auth
 AUTH_DB_USER=auth
 AUTH_DB_PASSWORD=authpass
 AUTH_DB_PORT=5433
 AUTH_DATABASE_URL=postgresql://auth:authpass@localhost:5433/auth?schema=public
+
 AUTH_JWT_ISSUER=maternal-healthcare-auth
 AUTH_JWT_AUDIENCE=maternal-healthcare-api
 AUTH_JWT_KEY_ID=local-dev-key
 AUTH_ACCESS_TOKEN_TTL_SECONDS=900
-AUTH_REFRESH_TOKEN_PEPPER=replace-with-local-dev-refresh-token-pepper
+
+AUTH_REFRESH_TOKEN_PEPPER=local-dev-change-me-long-random-value-123456
 AUTH_REFRESH_TOKEN_TTL_DAYS=30
 ```
 
-Thông thường có thể giữ nguyên các giá trị trên nếu máy không bị trùng port.
+Nếu máy không bị trùng port, có thể giữ nguyên các giá trị trên.
 
-Bắt buộc cần thay 2 field JWT key:
+Bắt buộc cần thay 2 field JWT key bằng key thật:
 
 ```env
 AUTH_JWT_PRIVATE_KEY="..."
@@ -133,15 +134,10 @@ Chạy từ project root:
 
 ```powershell
 cd D:\DATN_maternal_healthcare_support_system
-```
-
-Nếu `node` đã có trong PATH:
-
-```powershell
 node generate-auth-keys.cjs
 ```
 
-Nếu PowerShell không nhận `node`, dùng đường dẫn Node mặc định trên Windows:
+Nếu PowerShell không nhận `node`, dùng đường dẫn Node mặc định:
 
 ```powershell
 & "C:\Program Files\nodejs\node.exe" generate-auth-keys.cjs
@@ -154,7 +150,7 @@ auth-private.pem
 auth-public.pem
 ```
 
-Lưu ý: không xóa `generate-auth-keys.cjs` vì đây là script setup đã có sẵn trong repo.
+Không xóa `generate-auth-keys.cjs` vì đây là script setup có sẵn trong repo.
 
 ---
 
@@ -193,7 +189,15 @@ Copy output và paste vào `.env`:
 AUTH_JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n"
 ```
 
-Lưu ý:
+Kiểm tra không còn placeholder:
+
+```powershell
+Select-String -Path .env -Pattern "REPLACE_WITH"
+```
+
+Expected: không in gì liên quan tới `AUTH_JWT_PRIVATE_KEY` hoặc `AUTH_JWT_PUBLIC_KEY`.
+
+Lưu ý bảo mật:
 
 - Không commit `.env`
 - Không commit `auth-private.pem`
@@ -201,36 +205,78 @@ Lưu ý:
 
 ---
 
-## 7. Chạy Auth Database bằng Docker Compose
+## 7. Cách chạy Auth Service khuyến nghị bằng Docker Compose
 
 Từ project root:
 
 ```powershell
 cd D:\DATN_maternal_healthcare_support_system
-docker compose up -d auth-database
+docker compose up -d auth-service --build --force-recreate
 ```
+
+Compose sẽ tự chạy các dependency cần thiết:
+
+- `auth-database`
+- `auth-migrate`
+- `auth-service`
+
+Trong đó:
+
+- `auth-database` là PostgreSQL riêng của Auth Service.
+- `auth-migrate` chạy Prisma migration/seed rồi exit.
+- `auth-service` chỉ start sau khi migrate xong.
 
 Kiểm tra container:
 
 ```powershell
-docker compose ps auth-database
+docker compose ps
 ```
 
-Đợi status `healthy`.
-
-Auth Database mapping mặc định:
+Bạn cần thấy Auth Service có port mapping:
 
 ```text
-localhost:5433 -> auth-database:5432
+0.0.0.0:5003->5003/tcp
+```
+
+Nếu chỉ thấy:
+
+```text
+5003/tcp
+```
+
+mà không có `0.0.0.0:5003->5003`, nghĩa là port chưa được publish ra host hoặc container chưa recreate sau khi sửa compose.
+
+Xem logs:
+
+```powershell
+docker compose logs -f auth-service
+```
+
+Expected log có:
+
+```text
+Nest application successfully started
+```
+
+Auth Service chạy tại:
+
+```text
+http://localhost:5003
 ```
 
 ---
 
-## 8. Generate Prisma Client, migrate và seed
+## 8. Chạy migration/seed thủ công khi cần
 
-Chạy từ thư mục `services`.
+Nếu muốn chạy thủ công từ host hoặc debug migration:
 
-PowerShell:
+```powershell
+cd D:\DATN_maternal_healthcare_support_system
+
+docker compose up -d auth-database
+```
+
+Sau đó trong thư mục `services`:
 
 ```powershell
 cd D:\DATN_maternal_healthcare_support_system\services
@@ -241,38 +287,24 @@ npm.cmd run prisma:migrate:deploy
 npm.cmd run prisma:seed
 ```
 
-Nếu đây là lần đầu setup local và muốn dùng `migrate dev`:
-
-```powershell
-npm.cmd run prisma:migrate:dev
-```
-
-Nếu Prisma hỏi:
-
-```text
-? Enter a name for the new migration:
-```
-
-mà migration `20260824142300_auth_foundation` đã apply rồi, hãy nhấn `Ctrl + C` để tránh tạo migration không cần thiết, sau đó dùng:
-
-```powershell
-npm.cmd run prisma:migrate:deploy
-npm.cmd run prisma:seed
-```
-
 Kiểm tra trạng thái migration:
 
 ```powershell
 npx.cmd prisma migrate status
 ```
 
+Lưu ý:
+
+- Khi chạy Prisma từ host, dùng `localhost:5433`.
+- Khi Auth Service chạy trong Docker, connection string dùng `auth-database:5432` do Docker Compose cấu hình.
+
 ---
 
 ## 9. Chạy Auth Service local bằng npm
 
-Vẫn trong thư mục `services`.
+Nếu không chạy bằng Docker, có thể chạy local như sau.
 
-PowerShell:
+Terminal PowerShell:
 
 ```powershell
 cd D:\DATN_maternal_healthcare_support_system\services
@@ -281,29 +313,45 @@ $env:AUTH_DATABASE_URL="postgresql://auth:authpass@localhost:5433/auth?schema=pu
 $env:PORT=5003
 
 $env:AUTH_JWT_PRIVATE_KEY=(Get-Content ..\auth-private.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
+$env:AUTH_JWT_PUBLIC_KEY=(Get-Content ..\auth-public.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
 $env:AUTH_JWT_ISSUER="maternal-healthcare-auth"
 $env:AUTH_JWT_AUDIENCE="maternal-healthcare-api"
 $env:AUTH_JWT_KEY_ID="local-dev-key"
 $env:AUTH_ACCESS_TOKEN_TTL_SECONDS="900"
-$env:AUTH_REFRESH_TOKEN_PEPPER="replace-with-local-dev-refresh-token-pepper"
+
+$env:AUTH_REFRESH_TOKEN_PEPPER="local-dev-change-me-long-random-value-123456"
 $env:AUTH_REFRESH_TOKEN_TTL_DAYS="30"
 
-npm.cmd run start
+npx.cmd nest start auth-service
 ```
 
-Auth Service chạy tại:
+Auth Service local chạy tại:
 
 ```text
 http://localhost:5003
 ```
 
-Health check:
+---
+
+## 10. Test bằng Postman — direct Auth Service
+
+Base URL:
 
 ```text
+http://localhost:5003
+```
+
+### 10.1 Health check
+
+```http
 GET http://localhost:5003/health
 ```
 
 Expected:
+
+```http
+200 OK
+```
 
 ```json
 {
@@ -313,11 +361,7 @@ Expected:
 
 ---
 
-## 10. Test bằng Postman
-
-### 10.1 JWKS public key
-
-Request:
+### 10.2 JWKS public key
 
 ```http
 GET http://localhost:5003/.well-known/jwks.json
@@ -340,11 +384,22 @@ Expected:
 }
 ```
 
-JWKS không được chứa private key hoặc các field private JWK như `d`, `p`, `q`, `dp`, `dq`, `qi`.
+JWKS không được chứa private key hoặc private JWK fields:
 
-### 10.2 Register
+```text
+d
+p
+q
+dp
+dq
+qi
+```
 
-Request:
+---
+
+### 10.3 Register
+
+Public register **không nhận role**. Backend luôn gán role `PATIENT`.
 
 ```http
 POST http://localhost:5003/auth/register
@@ -382,9 +437,27 @@ Nếu gọi lại cùng email:
 409 Conflict
 ```
 
-### 10.3 Login
+Nếu cố gửi role:
 
-Request:
+```json
+{
+  "email": "hacker@example.com",
+  "password": "Password123!",
+  "role": "ADMIN"
+}
+```
+
+Expected:
+
+```http
+400 Bad Request
+```
+
+Vì `role` không nằm trong `RegisterDto` và global `ValidationPipe` đang bật `forbidNonWhitelisted`.
+
+---
+
+### 10.4 Login
 
 ```http
 POST http://localhost:5003/auth/login
@@ -420,11 +493,25 @@ Expected:
 }
 ```
 
-### 10.4 Get current user
+Sai password hoặc email không tồn tại:
+
+```http
+401 Unauthorized
+```
+
+```json
+{
+  "message": "Invalid credentials",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+---
+
+### 10.5 Get current user
 
 Copy `accessToken` từ response login.
-
-Request:
 
 ```http
 GET http://localhost:5003/auth/me
@@ -447,17 +534,17 @@ Expected:
 }
 ```
 
-Không có token, token sai, token hết hạn, hoặc account không active sẽ trả:
+Không có token, token sai, token hết hạn, hoặc account không active:
 
 ```http
 401 Unauthorized
 ```
 
-### 10.5 Refresh token
+---
+
+### 10.6 Refresh token
 
 Copy `refreshToken` từ response login.
-
-Request:
 
 ```http
 POST http://localhost:5003/auth/refresh
@@ -492,17 +579,17 @@ Expected:
 }
 ```
 
-Sau refresh thành công, refresh token cũ đã bị rotate. Nếu gọi lại bằng token cũ, expected:
+Sau refresh thành công, refresh token cũ đã bị rotate. Nếu gọi lại bằng token cũ:
 
 ```http
 401 Unauthorized
 ```
 
-### 10.6 Logout
+---
+
+### 10.7 Logout
 
 Dùng refresh token mới nhất từ login/refresh.
-
-Request:
 
 ```http
 POST http://localhost:5003/auth/logout
@@ -523,50 +610,17 @@ Expected:
 204 No Content
 ```
 
+Không có response body.
+
 Sau logout, gọi `/auth/refresh` bằng refresh token đó sẽ trả:
 
 ```http
 401 Unauthorized
 ```
 
-Sai password hoặc account không tồn tại:
-
-```http
-401 Unauthorized
-```
-
-```json
-{
-  "message": "Invalid credentials"
-}
-```
-
 ---
 
-## 11. Chạy bằng Docker Compose
-
-Sau khi đã tạo `.env` ở project root và thay JWT keys:
-
-```powershell
-cd D:\DATN_maternal_healthcare_support_system
-docker compose up auth-service --build
-```
-
-Auth Service Docker chạy tại:
-
-```text
-http://localhost:5003
-```
-
-Lưu ý:
-
-- Docker Compose dùng root `.env` tự động.
-- `AUTH_DATABASE_URL` trong container trỏ tới `auth-database:5432`, không phải `localhost:5433`.
-- Nếu đổi `AUTH_DB_USER`, `AUTH_DB_PASSWORD`, `AUTH_DB_NAME`, cần đảm bảo database/volume tương ứng được tạo lại hoặc migrate đúng.
-
----
-
-## 12. Test qua Kong Gateway
+## 11. Test qua Kong Gateway
 
 Kong route hiện tại trong:
 
@@ -579,38 +633,124 @@ Routes liên quan Auth:
 ```text
 /health -> auth-service:5003/health
 /auth/* -> auth-service:5003/auth/*
+/.well-known/jwks.json -> auth-service:5003/.well-known/jwks.json
 ```
 
 Chạy gateway:
 
 ```powershell
-docker compose up gateway --build
+cd D:\DATN_maternal_healthcare_support_system
+docker compose up -d gateway --build --force-recreate
 ```
 
 Test:
 
-```text
+```http
 GET http://localhost:8080/health
+GET http://localhost:8080/.well-known/jwks.json
 POST http://localhost:8080/auth/register
 POST http://localhost:8080/auth/login
+POST http://localhost:8080/auth/refresh
+POST http://localhost:8080/auth/logout
 ```
 
-Lưu ý quan trọng:
+Lưu ý:
 
 `gateway/init-kong.sh` chỉ import `docs/api-specs/kong.yml` khi Kong database bootstrap lần đầu. Nếu `kong-data` đã tồn tại từ config cũ, route mới có thể chưa được import.
 
-Local reset Kong config:
+Reset riêng Kong config local nếu cần:
 
 ```powershell
-docker compose down --volumes
-docker compose up gateway --build
+docker compose down
+docker volume ls
 ```
 
-Cẩn thận: `down --volumes` sẽ xóa local volumes, bao gồm cả database volumes nếu đang dùng. Không dùng với dữ liệu quan trọng.
+Tìm volume:
+
+```text
+maternal-healthcare-support-system_kong-data
+```
+
+Xóa đúng volume Kong:
+
+```powershell
+docker volume rm maternal-healthcare-support-system_kong-data
+```
+
+Start lại:
+
+```powershell
+docker compose up -d gateway --build --force-recreate
+```
+
+Không dùng `docker compose down --volumes` nếu không muốn xóa cả Auth DB data.
 
 ---
 
-## 13. Chạy test/build
+## 12. Test với frontend
+
+Frontend mặc định gọi API qua Kong:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Chạy toàn bộ các service cần cho Auth UI:
+
+```powershell
+cd D:\DATN_maternal_healthcare_support_system
+docker compose up -d auth-service gateway frontend --build --force-recreate
+```
+
+Mở browser:
+
+```text
+http://localhost:3000
+```
+
+UI hiện tại:
+
+- Login: `email`, `password`
+- Register: `email`, `password`
+- Public register luôn tạo role `PATIENT`
+- Không có chọn role trên UI
+
+---
+
+## 13. Xem DB bằng DBeaver/PostgreSQL client
+
+Auth DB local-dev:
+
+| Field | Value |
+|---|---|
+| Host | `localhost` |
+| Port | `5433` |
+| Database | `auth` |
+| Username | `auth` |
+| Password | `authpass` |
+
+Sau khi connect, xem schema:
+
+```text
+public
+  tables
+    accounts
+    credentials
+    roles
+    account_roles
+    auth_sessions
+```
+
+Kiểm tra:
+
+- `roles` có `PATIENT`, `RECEPTIONIST`, `DOCTOR`, `NURSE`, `ADMIN`
+- `credentials.password_hash` bắt đầu bằng `$argon2id$`
+- `auth_sessions.refresh_token_hash` không phải plaintext refresh token
+- Sau logout, session có `revoked_at` và `revoked_reason = logout`
+
+---
+
+## 14. Chạy test/build
 
 Từ thư mục `services`:
 
@@ -633,39 +773,63 @@ BUILD_EXIT_CODE:0
 
 ---
 
-## 14. Các lỗi thường gặp
+## 15. Các lỗi thường gặp
 
-### Lỗi: `Environment variable not found: AUTH_DATABASE_URL`
+### 15.1 `ECONNREFUSED 127.0.0.1:5003`
 
-Set env trong terminal hiện tại:
+Auth Service chưa publish port ra host hoặc container chưa chạy.
+
+Kiểm tra:
+
+```powershell
+docker compose ps auth-service
+```
+
+Expected phải có:
+
+```text
+0.0.0.0:5003->5003/tcp
+```
+
+Nếu không có, recreate:
+
+```powershell
+docker compose up -d auth-service --build --force-recreate
+```
+
+---
+
+### 15.2 `Environment variable not found: AUTH_DATABASE_URL`
+
+Khi chạy Prisma từ host, set env:
 
 ```powershell
 $env:AUTH_DATABASE_URL="postgresql://auth:authpass@localhost:5433/auth?schema=public"
 ```
 
-Sau đó chạy lại Prisma command.
-
 ---
 
-### Lỗi: `Can't reach database server at localhost:5433`
+### 15.3 `Can't reach database server at localhost:5433`
 
-Kiểm tra DB container:
-
-```powershell
-docker compose ps auth-database
-```
-
-Nếu chưa chạy:
+DB chưa chạy hoặc port không đúng.
 
 ```powershell
 docker compose up -d auth-database
+docker compose ps auth-database
+Test-NetConnection localhost -Port 5433
+```
+
+Expected:
+
+```text
+TcpTestSucceeded : True
 ```
 
 ---
 
-### Lỗi Prisma `EPERM rename query_engine-windows.dll.node`
+### 15.4 Prisma `EPERM rename query_engine-windows.dll.node`
 
-Thường do Node/Nest/Prisma Studio đang giữ file Prisma engine trên Windows.
+Thường do Node/Nest/Prisma Studio đang giữ Prisma engine trên Windows.
 
 Cách xử lý:
 
@@ -680,35 +844,65 @@ npm.cmd run prisma:generate
 
 ---
 
-### Lỗi login: `Missing required configuration: AUTH_JWT_PRIVATE_KEY`
+### 15.5 Login lỗi private key
 
-Bạn chưa set private key.
+Nếu gặp:
 
-Nếu chạy local bằng npm, set env:
-
-```powershell
-$env:AUTH_JWT_PRIVATE_KEY=(Get-Content ..\auth-private.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
+```text
+secretOrPrivateKey must be an asymmetric key when using RS256
 ```
 
-Nếu chạy Docker Compose, kiểm tra root `.env` có:
+Kiểm tra `.env` còn placeholder không:
 
-```env
-AUTH_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```powershell
+Select-String -Path .env -Pattern "REPLACE_WITH"
+```
+
+Kiểm tra container nhận key thật, không in full private key:
+
+```powershell
+docker compose exec auth-service node -e "const k=process.env.AUTH_JWT_PRIVATE_KEY||''; console.log({length:k.length,prefix:k.slice(0,35),hasReplace:k.includes('REPLACE_WITH')})"
+```
+
+Expected:
+
+```js
+{
+  length: 1700,
+  prefix: '-----BEGIN PRIVATE KEY-----...',
+  hasReplace: false
+}
 ```
 
 ---
 
-## 15. Security notes
+### 15.6 Login/refresh lỗi thiếu pepper
 
-Không commit các file này:
+Nếu refresh token/session lỗi, kiểm tra:
+
+```env
+AUTH_REFRESH_TOKEN_PEPPER=local-dev-change-me-long-random-value-123456
+AUTH_REFRESH_TOKEN_TTL_DAYS=30
+```
+
+Sau khi sửa `.env`, recreate container:
+
+```powershell
+docker compose up -d auth-service --build --force-recreate
+```
+
+---
+
+## 16. Security notes
+
+Không commit:
 
 ```text
 .env
 auth-private.pem
-auth-public.pem
 ```
 
-Private key chỉ dùng local-dev. Production/staging phải dùng secret manager hoặc mechanism bảo mật tương đương.
+Private key chỉ dùng local-dev. Production/staging phải dùng secret manager hoặc cơ chế bảo mật tương đương.
 
 Access token hiện không chứa medical data hoặc unnecessary PII. Token claims hiện tại gồm:
 
@@ -722,41 +916,45 @@ exp
 role
 ```
 
+Refresh token:
+
+- là opaque token, không phải JWT,
+- chỉ trả về client một lần,
+- DB chỉ lưu HMAC-SHA256 hash,
+- được rotate khi gọi `/auth/refresh`,
+- bị revoke khi gọi `/auth/logout`.
+
 ---
 
-## 16. Checklist setup nhanh
+## 17. Checklist setup nhanh
 
 ```powershell
 cd D:\DATN_maternal_healthcare_support_system
 copy .env.example .env
 
-# Generate keys bằng script có sẵn ở project root, rồi paste key vào .env hoặc set env trực tiếp.
+# Generate keys bằng script có sẵn ở project root
 node generate-auth-keys.cjs
 
-docker compose up -d auth-database
+# Convert key, paste vào .env:
+$privateKey = (Get-Content .\auth-private.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
+$publicKey = (Get-Content .\auth-public.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
+$privateKey
+$publicKey
 
-cd D:\DATN_maternal_healthcare_support_system\services
-npm.cmd install
-$env:AUTH_DATABASE_URL="postgresql://auth:authpass@localhost:5433/auth?schema=public"
-npm.cmd run prisma:generate
-npm.cmd run prisma:migrate:deploy
-npm.cmd run prisma:seed
+# Sau khi sửa .env xong:
+docker compose up -d auth-service --build --force-recreate
 
-$env:PORT=5003
-$env:AUTH_JWT_PRIVATE_KEY=(Get-Content ..\auth-private.pem -Raw).Replace("`r`n", "\n").Replace("`n", "\n")
-$env:AUTH_JWT_ISSUER="maternal-healthcare-auth"
-$env:AUTH_JWT_AUDIENCE="maternal-healthcare-api"
-$env:AUTH_JWT_KEY_ID="local-dev-key"
-$env:AUTH_ACCESS_TOKEN_TTL_SECONDS="900"
-$env:AUTH_REFRESH_TOKEN_PEPPER="replace-with-local-dev-refresh-token-pepper"
-$env:AUTH_REFRESH_TOKEN_TTL_DAYS="30"
-npm.cmd run start
+docker compose ps auth-service
 ```
 
-Sau đó test:
+Test nhanh:
 
 ```text
 GET  http://localhost:5003/health
+GET  http://localhost:5003/.well-known/jwks.json
 POST http://localhost:5003/auth/register
 POST http://localhost:5003/auth/login
+GET  http://localhost:5003/auth/me
+POST http://localhost:5003/auth/refresh
+POST http://localhost:5003/auth/logout
 ```
