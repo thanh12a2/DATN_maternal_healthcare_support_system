@@ -25,9 +25,6 @@ services:
           - /api/doctors
         strip_path: true
 
-      - { name: auth-service-route, paths: [/auth], strip_path: false }
-      - { name: auth-service-health-route, paths: [/health], strip_path: false }
-      - { name: auth-service-jwks-route, paths: [/.well-known], strip_path: false }
   - name: patient-service
     url: http://patient-service:5004/patients
     routes:

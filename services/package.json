@@ -26,7 +26,7 @@
     "start:doctor:dev": "nest start doctor-service --watch",
     "prisma:generate:doctor": "prisma generate --schema prisma/doctor/schema.prisma",
     "prisma:migrate:doctor": "prisma migrate deploy --schema prisma/doctor/schema.prisma",
-    "prisma:seed:doctor": "ts-node prisma/doctor/seed.ts"
+    "prisma:seed:doctor": "ts-node prisma/doctor/seed.ts",
     "prisma:generate:patient": "prisma generate --schema prisma/patient/schema.prisma",
     "prisma:migrate:patient": "prisma migrate deploy --schema prisma/patient/schema.prisma",
     "test:patient": "jest --runInBand --testPathPatterns=apps/patient-service/src",

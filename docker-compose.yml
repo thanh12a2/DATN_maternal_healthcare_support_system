@@ -22,10 +22,7 @@ services:
         condition: service_started
       sample-service:
         condition: service_started
-      kong-init: { condition: service_completed_successfully }
-      auth-service: { condition: service_started }
       patient-service: { condition: service_started }
-      sample-service: { condition: service_started }
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
@@ -92,16 +89,6 @@ services:
       AUTH_REFRESH_TOKEN_PEPPER: ${AUTH_REFRESH_TOKEN_PEPPER:-}
       AUTH_REFRESH_TOKEN_TTL_DAYS: ${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
       INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
-      PORT: 5003
-      AUTH_DATABASE_URL: "postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public"
-      AUTH_JWT_PRIVATE_KEY: "${AUTH_JWT_PRIVATE_KEY:-}"
-      AUTH_JWT_PUBLIC_KEY: "${AUTH_JWT_PUBLIC_KEY:-}"
-      AUTH_JWT_ISSUER: "${AUTH_JWT_ISSUER:-maternal-healthcare-auth}"
-      AUTH_JWT_AUDIENCE: "${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}"
-      AUTH_JWT_KEY_ID: "${AUTH_JWT_KEY_ID:-local-dev-key}"
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: "${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}"
-      AUTH_REFRESH_TOKEN_PEPPER: "${AUTH_REFRESH_TOKEN_PEPPER:-}"
-      AUTH_REFRESH_TOKEN_TTL_DAYS: "${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}"
     depends_on:
       auth-migrate: { condition: service_completed_successfully }
     networks: [app-network]
@@ -123,6 +110,22 @@ services:
     networks: [app-network]
 
   # ─── Doctor Service ─────────────────────────────
+  doctor-migrate:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      target: migrator
+      args:
+        APP_NAME: doctor-service
+    environment:
+      PRISMA_SCHEMA: prisma/doctor/schema.prisma
+      DOCTOR_DATABASE_URL: "postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public"
+    depends_on:
+      doctor-database:
+        condition: service_healthy
+    networks:
+      - app-network
+
   doctor-service:
     build:
       context: ./services
@@ -137,11 +140,13 @@ services:
       AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
-      AUTH_ACCOUNT_LOOKUP_URL: ${DOCTOR_AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
+      AUTH_ACCOUNT_LOOKUP_URL: ${AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
       INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
     depends_on:
-      doctor-database:
-        condition: service_healthy
+      doctor-migrate:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
     networks:
       - app-network
 
@@ -164,7 +169,6 @@ services:
       - app-network
 
   # ─── Sample Service ──────────────────────────────
-  sample-service:
   patient-migrate:
     build:
       context: ./services
@@ -235,6 +239,4 @@ volumes:
   kong-data:
   auth-data:
   doctor-data:
-  kong-data: {}
-  auth-data: {}
   patient-data: {}
