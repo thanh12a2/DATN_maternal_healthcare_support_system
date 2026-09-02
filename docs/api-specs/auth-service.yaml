@@ -127,8 +127,53 @@ paths:
         '401':
           description: Unauthorized
 
+  /internal/accounts/{accountId}:
+    get:
+      summary: Internal account lookup for trusted services
+      operationId: internalAccountLookup
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: x-internal-service-secret
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account status and selected role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalAccountLookupResponse'
+        '403':
+          description: Invalid internal service secret
+        '404':
+          description: Account not found
+
 components:
   schemas:
+    InternalAccountLookupResponse:
+      type: object
+      required:
+        - accountId
+        - status
+        - role
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, LOCKED, DISABLED, PENDING_VERIFICATION]
+        role:
+          type: string
+          enum: [PATIENT, RECEPTIONIST, DOCTOR, NURSE, ADMIN]
+
     AuthRegisterRequest:
       type: object
       required:

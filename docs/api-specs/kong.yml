@@ -4,6 +4,27 @@ services:
   - name: auth-service
     url: http://auth-service:5003
     routes:
+      - name: auth-service-route
+        paths:
+          - /auth
+        strip_path: false
+      - name: auth-service-health-route
+        paths:
+          - /health
+        strip_path: false
+      - name: auth-service-jwks-route
+        paths:
+          - /.well-known
+        strip_path: false
+
+  - name: doctor-service
+    url: http://doctor-service:5005
+    routes:
+      - name: doctor-service-route
+        paths:
+          - /api/doctors
+        strip_path: true
+
       - { name: auth-service-route, paths: [/auth], strip_path: false }
       - { name: auth-service-health-route, paths: [/health], strip_path: false }
       - { name: auth-service-jwks-route, paths: [/.well-known], strip_path: false }

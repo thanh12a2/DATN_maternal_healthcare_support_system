@@ -28,6 +28,7 @@ Gateway must not contain business logic.
 | `/health` | Auth Service | `http://auth-service:5003/health` | Auth Service health check |
 | `/.well-known/jwks.json` | Auth Service | `http://auth-service:5003/.well-known/jwks.json` | Public JWKS for future JWT validation |
 | `/api/sample-service/*` | Sample Service | `http://sample-service:5000/*` | Template/sample route |
+| `/api/doctors/*` | Doctor Service | `http://doctor-service:5005/*` | Doctor directory and availability; internal routes are not public |
 
 Current Kong config is in:
 

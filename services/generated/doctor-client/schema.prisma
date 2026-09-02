@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/doctor-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DOCTOR_DATABASE_URL")
+}
+
+enum DoctorStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum SpecialtyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum AvailabilityType {
+  UNAVAILABLE
+  EXTRA_AVAILABLE
+}
+
+enum AvailabilityStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum AvailabilityReasonCode {
+  SICK_LEAVE
+  PERSONAL_LEAVE
+  TRAINING
+  EMERGENCY
+  EXTRA_SHIFT
+  OTHER
+}
+
+model Doctor {
+  id             String               @id @default(uuid()) @db.Uuid
+  accountId      String               @unique @map("account_id") @db.Uuid
+  licenseNumber  String               @unique @map("license_number") @db.VarChar(50)
+  status         DoctorStatus         @default(DRAFT)
+  version        Int                  @default(1)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  profile        DoctorProfile?
+  specialties    DoctorSpecialty[]
+  schedules      DoctorSchedule[]
+  availabilities DoctorAvailability[]
+  idempotencies  IdempotencyRecord[]
+  audits         AuditRecord[]
+  outboxEvents   OutboxEvent[]
+
+  @@map("doctors")
+}
+
+model DoctorProfile {
+  doctorId          String   @id @map("doctor_id") @db.Uuid
+  fullName          String   @map("full_name") @db.VarChar(150)
+  professionalTitle String?  @map("professional_title") @db.VarChar(100)
+  biography         String?  @db.VarChar(2000)
+  practiceStartYear Int?     @map("practice_start_year")
+  languages         String[] @default([])
+  photoUrl          String?  @map("photo_url") @db.VarChar(2048)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctor            Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_profiles")
+}
+
+model Specialty {
+  id          String            @id @default(uuid()) @db.Uuid
+  code        String            @unique @db.VarChar(50)
+  name        String            @unique @db.VarChar(120)
+  description String?           @db.VarChar(1000)
+  status      SpecialtyStatus   @default(ACTIVE)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctors     DoctorSpecialty[]
+
+  @@map("specialties")
+}
+
+model DoctorSpecialty {
+  doctorId    String    @map("doctor_id") @db.Uuid
+  specialtyId String    @map("specialty_id") @db.Uuid
+  isPrimary   Boolean   @default(false) @map("is_primary")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  doctor      Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Restrict)
+
+  @@id([doctorId, specialtyId])
+  @@index([specialtyId])
+  @@map("doctor_specialties")
+}
+
+model DoctorSchedule {
+  id                  String         @id @default(uuid()) @db.Uuid
+  doctorId            String         @map("doctor_id") @db.Uuid
+  dayOfWeek           Int            @map("day_of_week") @db.SmallInt
+  startTime           String         @map("start_time") @db.VarChar(8)
+  endTime             String         @map("end_time") @db.VarChar(8)
+  slotDurationMinutes Int            @default(30) @map("slot_duration_minutes")
+  effectiveFrom       DateTime       @map("effective_from") @db.Date
+  effectiveTo         DateTime?      @map("effective_to") @db.Date
+  timezone            String         @default("Asia/Bangkok") @db.VarChar(64)
+  departmentId        String?        @map("department_id") @db.Uuid
+  roomId              String?        @map("room_id") @db.Uuid
+  status              ScheduleStatus @default(ACTIVE)
+  version             Int            @default(1)
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctor              Doctor         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, status, dayOfWeek, effectiveFrom, effectiveTo])
+  @@map("doctor_schedules")
+}
+
+model DoctorAvailability {
+  id         String                 @id @default(uuid()) @db.Uuid
+  doctorId   String                 @map("doctor_id") @db.Uuid
+  type       AvailabilityType
+  startAt    DateTime               @map("start_at") @db.Timestamptz(6)
+  endAt      DateTime               @map("end_at") @db.Timestamptz(6)
+  reasonCode AvailabilityReasonCode @map("reason_code")
+  note       String?                @db.VarChar(500)
+  status     AvailabilityStatus     @default(ACTIVE)
+  createdBy  String                 @map("created_by") @db.Uuid
+  version    Int                    @default(1)
+  createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctor     Doctor                 @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, status, startAt, endAt])
+  @@map("doctor_availabilities")
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(uuid()) @db.Uuid
+  key          String   @db.VarChar(128)
+  endpoint     String   @db.VarChar(255)
+  requestHash  String   @map("request_hash") @db.VarChar(64)
+  statusCode   Int      @map("status_code")
+  responseBody Json     @map("response_body")
+  doctorId     String?  @map("doctor_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  doctor       Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@unique([endpoint, key])
+  @@index([createdAt])
+  @@map("idempotency_records")
+}
+
+model AuditRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  eventType  String   @map("event_type") @db.VarChar(100)
+  actorId    String?  @map("actor_id") @db.Uuid
+  doctorId   String?  @map("doctor_id") @db.Uuid
+  resourceId String?  @map("resource_id") @db.Uuid
+  requestId  String?  @map("request_id") @db.Uuid
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  doctor     Doctor?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@index([doctorId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("audit_records")
+}
+
+model OutboxEvent {
+  id               String   @id @default(uuid()) @db.Uuid
+  eventType        String   @map("event_type") @db.VarChar(100)
+  aggregateType    String   @map("aggregate_type") @db.VarChar(100)
+  aggregateId      String   @map("aggregate_id") @db.Uuid
+  aggregateVersion Int      @map("aggregate_version")
+  correlationId    String?  @map("correlation_id") @db.Uuid
+  payload          Json
+  status           String   @default("PENDING") @db.VarChar(20)
+  attempts         Int      @default(0)
+  occurredAt       DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  doctor           Doctor   @relation(fields: [aggregateId], references: [id], onDelete: Cascade)
+
+  @@index([status, occurredAt])
+  @@index([aggregateId, aggregateVersion])
+  @@map("outbox_events")
+}

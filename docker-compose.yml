@@ -14,6 +14,14 @@ services:
       - "127.0.0.1:${KONG_ADMIN_PORT:-8001}:8001"
       - "127.0.0.1:${KONG_MANAGER_PORT:-8002}:8002"
     depends_on:
+      kong-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+      sample-service:
+        condition: service_started
       kong-init: { condition: service_completed_successfully }
       auth-service: { condition: service_started }
       patient-service: { condition: service_started }
@@ -73,6 +81,17 @@ services:
     ports:
       - "${AUTH_SERVICE_PORT:-5003}:5003"
     environment:
+      PORT: ${AUTH_SERVICE_INTERNAL_PORT:-5003}
+      AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public
+      AUTH_JWT_PRIVATE_KEY: ${AUTH_JWT_PRIVATE_KEY:-}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
+      AUTH_ACCESS_TOKEN_TTL_SECONDS: ${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}
+      AUTH_REFRESH_TOKEN_PEPPER: ${AUTH_REFRESH_TOKEN_PEPPER:-}
+      AUTH_REFRESH_TOKEN_TTL_DAYS: ${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
+      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
       PORT: 5003
       AUTH_DATABASE_URL: "postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public"
       AUTH_JWT_PRIVATE_KEY: "${AUTH_JWT_PRIVATE_KEY:-}"
@@ -103,6 +122,49 @@ services:
       retries: 10
     networks: [app-network]
 
+  # ─── Doctor Service ─────────────────────────────
+  doctor-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: doctor-service
+    ports:
+      - "${DOCTOR_SERVICE_PORT:-5005}:${DOCTOR_SERVICE_INTERNAL_PORT:-5005}"
+    environment:
+      PORT: ${DOCTOR_SERVICE_INTERNAL_PORT:-5005}
+      DOCTOR_DATABASE_URL: postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_ACCOUNT_LOOKUP_URL: ${DOCTOR_AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
+      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+    depends_on:
+      doctor-database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  doctor-database:
+    image: postgres:16-alpine
+    ports:
+      - "${DOCTOR_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: ${DOCTOR_DB_NAME:-doctor}
+      POSTGRES_USER: ${DOCTOR_DB_USER:-doctor}
+      POSTGRES_PASSWORD: ${DOCTOR_DB_PASSWORD:-doctorpass}
+    volumes:
+      - doctor-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  # ─── Sample Service ──────────────────────────────
+  sample-service:
   patient-migrate:
     build:
       context: ./services
@@ -170,6 +232,9 @@ services:
 networks:
   app-network: { driver: bridge }
 volumes:
+  kong-data:
+  auth-data:
+  doctor-data:
   kong-data: {}
   auth-data: {}
   patient-data: {}
