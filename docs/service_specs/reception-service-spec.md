@@ -1,7 +1,7 @@
 # Receptionist Service Specification
 
 > **Service:** `receptionist-service`  
-> **Port:** `5005`  
+> **Port:** `5006`  
 > **Public gateway path:** `/api/receptionists`  
 > **Status:** Receptionist profile operations implemented; Admission orchestration blocked by downstream contracts  
 > **Scope decision:** Chỉ quản lý hồ sơ nghiệp vụ cơ bản của lễ tân. Không quản lý ca làm.
@@ -495,7 +495,7 @@ Auth Service:
 
 | Variable | Required | Example |
 |---|---:|---|
-| `PORT` | No | `5005` |
+| `PORT` | No | `5006` |
 | `RECEPTIONIST_DATABASE_URL` | Yes | `postgresql://...@receptionist-database:5432/receptionist` |
 | `AUTH_JWT_PUBLIC_KEY` | Yes | Mounted PEM |
 | `AUTH_JWT_ISSUER` | Yes | `maternal-healthcare-auth` |
@@ -528,7 +528,7 @@ Auth Service:
 
 ### Implementation hiện tại
 
-- Nest app và port `5005`: implemented.
+- Nest app và port `5006`: implemented.
 - `/health`, global validation, request/error envelope: implemented.
 - JWT RS256, roles và own authorization: implemented.
 - Receptionist/Profile read/update/deactivate: implemented.

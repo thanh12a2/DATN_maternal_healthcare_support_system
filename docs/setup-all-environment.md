@@ -1,6 +1,6 @@
 # Setup toàn bộ môi trường và services
 
-Tài liệu này hướng dẫn chạy Auth, Doctor, Patient, Sample, Kong và Frontend bằng Docker hoặc chạy app local với PostgreSQL trong Docker.
+Tài liệu này hướng dẫn setup và chạy Auth, Doctor, Receptionist, Patient, Sample, Kong và Frontend bằng Docker hoặc chạy các NestJS app local với PostgreSQL trong Docker.
 
 ## 1. Yêu cầu
 
@@ -11,232 +11,249 @@ Tài liệu này hướng dẫn chạy Auth, Doctor, Patient, Sample, Kong và F
 
 Kiểm tra:
 
-~~~powershell
+```powershell
 docker version
 docker compose version
 node --version
 npm --version
-~~~
+```
 
 ## 2. Port local
 
-| Thành phần | Port |
-|---|---:|
-| Frontend | 3000 |
-| Kong proxy | 8080 |
-| Kong Admin/Manager | 8001 / 8002 |
-| Auth API | 5003 |
-| Doctor API | 5005 |
-| Patient API | 5004 |
-| Sample API | 5001 |
-| Auth PostgreSQL | 5433 |
-| Doctor PostgreSQL | 5435 |
-| Patient PostgreSQL | 5434 |
+| Thành phần | URL/port |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Kong proxy | http://localhost:8080 |
+| Kong Admin/Manager | http://localhost:8001 / 8002 |
+| Auth API | http://localhost:5003 |
+| Doctor API | http://localhost:5005 |
+| Receptionist API | http://localhost:5006 |
+| Patient API | http://localhost:5004 |
+| Sample API | http://localhost:5001 |
+| Auth PostgreSQL | localhost:5433 |
+| Doctor PostgreSQL | localhost:5435 |
+| Receptionist PostgreSQL | localhost:5436 |
+| Patient PostgreSQL | localhost:5434 |
 
-Trong Docker network, app dùng hostname như auth-database, doctor-database, patient-database và port PostgreSQL 5432. Từ Windows/pgAdmin dùng localhost và port ở bảng trên.
+Trong Docker network dùng hostname service và port PostgreSQL 5432. Từ Windows/pgAdmin dùng localhost và host port ở bảng trên.
 
-## 3. Các script setup
+## 3. Script setup
 
-- scripts/setup-local.ps1: tạo env/key, migrate database và chạy setup Docker/local.
-- scripts/load-env.ps1: nạp root .env vào PowerShell hiện tại.
-- scripts/generate-internal-keys.cjs: tạo key pair cho internal service JWT.
+### 3.1. Chỉ chuẩn bị .env và keys
 
-Script setup không chạy docker compose down -v, không xóa volume và không reset database.
-
-## 4. Chuẩn bị environment và keys
-
-Từ project root:
-
-~~~powershell
+```powershell
 cd D:\DATN_maternal_healthcare_support_system
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode PrepareOnly
-~~~
+```
 
-Script tạo hoặc bổ sung:
+Script tạo hoặc bổ sung .env, Auth RSA key pair, Patient internal RSA key pair, database secrets, Auth refresh pepper, Patient AES key và Patient lookup pepper. Script không tạo account Receptionist, không xóa volume và không chạy `docker compose down -v`.
 
-- .env.
-- auth-private.pem và auth-public.pem.
-- patient-internal-private.pem và patient-internal-public.pem.
-- Password database khi .env mới hoặc còn placeholder.
-- Auth refresh-token pepper.
-- Patient AES-256 national ID key.
-- Patient national ID lookup pepper.
+### 3.2. Chạy toàn bộ bằng Docker
 
-Không commit .env hoặc *.pem.
-
-## 5. Chạy toàn bộ bằng Docker
-
-~~~powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker
-~~~
+```
 
 Không build lại image:
 
-~~~powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker -NoBuild
-~~~
+```
 
-Flow Docker:
+Flow:
 
-1. Validate Docker và Compose.
-2. Build image nếu không có NoBuild.
-3. Start PostgreSQL.
-4. Chờ Auth, Doctor và Patient database healthy.
-5. Chạy auth-migrate.
-6. Chạy doctor-migrate.
-7. Chạy patient-migrate.
-8. Start Auth, Doctor, Patient, Sample, Gateway và Frontend.
+1. Kiểm tra Docker và Compose.
+2. Build image nếu không có `-NoBuild`.
+3. Start Auth, Doctor, Receptionist và Patient PostgreSQL.
+4. Chờ database healthy.
+5. Chạy `auth-migrate`, `doctor-migrate`, `receptionist-migrate`, `patient-migrate`.
+6. Chỉ start các app sau khi migration tương ứng exit code 0.
+7. Start Auth, Doctor, Receptionist, Patient, Sample, Gateway và Frontend.
 
 Kiểm tra:
 
-~~~powershell
+```powershell
 docker compose ps -a
-~~~
+```
 
-Kỳ vọng:
+Migration job hợp lệ có trạng thái `Exited (0)`. App/database chính phải `Up`, database phải `healthy` nếu có healthcheck.
 
-- auth-migrate, doctor-migrate, patient-migrate: Exited (0).
-- auth-database, doctor-database, patient-database: Up (healthy).
-- auth-service, doctor-service, patient-service, sample-service, gateway, frontend: Up.
+### 3.3. Chạy app local, database bằng Docker
 
-## 6. Chạy app local, database bằng Docker
-
-~~~powershell
+```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Local
-~~~
+```
 
-Lệnh này start ba database, generate Prisma clients, migrate Auth/Doctor/Patient và chạy seed.
+Lệnh này start bốn database, generate Prisma clients, migrate Auth/Doctor/Receptionist/Patient và seed Auth roles/Doctor seed.
 
-Trong mỗi terminal app phải load environment trước:
+Trong mỗi terminal chạy app, nạp env trước:
 
-~~~powershell
+```powershell
 cd D:\DATN_maternal_healthcare_support_system
 . .\scripts\load-env.ps1
 cd services
-~~~
+```
 
 Auth:
 
-~~~powershell
+```powershell
 npm run start:dev -- auth-service
-~~~
+```
 
 Doctor:
 
-~~~powershell
+```powershell
 npm run start:doctor:dev
-~~~
+```
+
+Receptionist:
+
+```powershell
+npm run start:receptionist:dev
+```
 
 Patient:
 
-~~~powershell
+```powershell
 npx nest start patient-service --watch
-~~~
+```
 
 Sample:
 
-~~~powershell
+```powershell
 npm run start:dev -- sample-service
-~~~
+```
 
-Do not use npm run start:prod for Patient/Doctor because the current generic script points to Auth. Use the explicit commands above.
+## 4. Prisma commands thủ công
 
-## 7. Prisma commands thủ công
+Từ thư mục `services`, sau khi load env:
 
-Từ services, sau khi load env:
-
-~~~powershell
+```powershell
 npm ci
 npm run prisma:generate
 npm run prisma:generate:doctor
+npm run prisma:generate:receptionist
 npm run prisma:generate:patient
+
 npm run prisma:migrate:deploy
 npm run prisma:migrate:doctor
+npm run prisma:migrate:receptionist
 npm run prisma:migrate:patient
+
 npm run prisma:seed
 npm run prisma:seed:doctor
-~~~
+```
 
-Doctor migration tạo các bảng doctors, doctor_profiles, specialties, doctor_specialties, doctor_schedules, doctor_availabilities, idempotency_records, audit_records và outbox_events.
+Doctor và Receptionist đều sở hữu database/schema riêng. Không truy cập database của service khác.
 
-## 8. Health check
+## 5. Health checks
 
-~~~powershell
+```powershell
 curl.exe -i http://localhost:5003/health
 curl.exe -i http://localhost:5004/health
 curl.exe -i http://localhost:5004/ready
 curl.exe -i http://localhost:5005/health
+curl.exe -i http://localhost:5006/health
 curl.exe -i http://localhost:8080/health
-~~~
+```
 
-Auth health qua Kong là /health, không phải /auth/health.
+Auth health qua Kong là `/health`, không phải `/auth/health`.
 
-## 9. pgAdmin4
+## 6. pgAdmin4
 
 Auth:
 
-~~~text
+```text
 Host: localhost
 Port: 5433
 Database: auth
 Username: auth
 Password: AUTH_DB_PASSWORD trong .env
-~~~
+```
 
 Doctor:
 
-~~~text
+```text
 Host: localhost
 Port: 5435
 Database: doctor
 Username: doctor
 Password: DOCTOR_DB_PASSWORD trong .env
-~~~
+```
+
+Receptionist:
+
+```text
+Host: localhost
+Port: 5436
+Database: receptionist
+Username: receptionist
+Password: RECEPTIONIST_DB_PASSWORD trong .env
+```
 
 Patient:
 
-~~~text
+```text
 Host: localhost
 Port: 5434
 Database: patient
 Username: patient
 Password: PATIENT_DB_PASSWORD trong .env
-~~~
+```
 
-## 10. Troubleshooting Doctor
+## 7. Troubleshooting
 
-Nếu gặp relation public.specialties does not exist:
+### `relation public.specialties does not exist`
 
-~~~powershell
+Doctor migration chưa chạy hoặc database đang dùng volume cũ chưa có migration:
+
+```powershell
 docker compose ps -a doctor-migrate doctor-service
 docker compose logs --no-color doctor-migrate
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker -NoBuild
-~~~
+```
 
-Không cần xóa volume; doctor-migrate sẽ apply migration còn thiếu.
+### Receptionist service không start
 
-Nếu password database bị lỗi sau khi đổi .env, nhớ rằng PostgreSQL volume giữ password lúc init lần đầu. Không chạy down -v nếu cần giữ dữ liệu. Với local disposable mới, có thể chủ động chạy:
+Kiểm tra port và migration:
 
-~~~powershell
+```powershell
+docker compose ps -a receptionist-database receptionist-migrate receptionist-service
+docker compose logs --no-color receptionist-migrate receptionist-service
+```
+
+Receptionist app dùng 5006, database host dùng 5436. Doctor vẫn dùng 5005/5435.
+
+### Đổi database password
+
+PostgreSQL volume giữ password lúc init lần đầu. Đổi password trong .env không tự đổi password role trong volume. Nếu cần giữ dữ liệu, phải đổi password role trong PostgreSQL; nếu là local disposable mới có thể chủ động dùng `docker compose down -v` rồi setup lại.
+
+## 8. Reset local data
+
+Chỉ chạy khi chấp nhận xóa dữ liệu local:
+
+```powershell
 docker compose down -v
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker
-~~~
+```
 
-## 11. Security
+Lệnh này xóa volume Kong, Auth, Doctor, Receptionist và Patient.
 
-- Không commit .env, private key hoặc token.
+## 9. Security
+
+- Không commit .env hoặc private key.
 - Không dùng local secrets cho production.
-- Không log JWT/password/national ID/raw PII.
+- Không log password, JWT, national ID hoặc raw PII.
 - Không dùng User JWT thay internal service JWT.
-- Mỗi service chỉ truy cập database của bounded context của mình.
-- Compose đang publish database ports cho local debugging; production nên bỏ publish ports.
+- Compose local publish database ports để debug; production nên bỏ publish ports.
 
-## 12. Verification checklist
+## 10. Verification checklist
 
-~~~powershell
+```powershell
 docker compose config --quiet
 docker compose ps -a
-docker compose logs --no-color --tail 100 doctor-migrate
-curl.exe -i http://localhost:5004/ready
+docker compose logs --no-color --tail 100 receptionist-migrate
+curl.exe -i http://localhost:5006/health
 curl.exe -i http://localhost:5005/health
-~~~
+curl.exe -i http://localhost:5004/ready
+```

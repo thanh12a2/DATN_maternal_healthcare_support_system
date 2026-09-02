@@ -18,6 +18,6 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
   app.enableShutdownHooks();
 
-  await app.listen(process.env.PORT ?? 5005);
+  await app.listen(process.env.PORT ?? 5006);
 }
 void bootstrap();

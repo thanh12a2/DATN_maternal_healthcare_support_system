@@ -25,7 +25,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./apps/auth-service/test/jest-e2e.json",
-    "test:e2e:receptionist": "jest --config ./apps/receptionist-service/test/jest-e2e.json"
+    "test:e2e:receptionist": "jest --config ./apps/receptionist-service/test/jest-e2e.json",
+    "start:receptionist": "nest start receptionist-service",
+    "start:receptionist:dev": "nest start receptionist-service --watch",
+    "prisma:migrate:receptionist": "prisma migrate deploy --schema prisma/receptionist/schema.prisma",
     "start:doctor": "nest start doctor-service",
     "start:doctor:dev": "nest start doctor-service --watch",
     "prisma:generate:doctor": "prisma generate --schema prisma/doctor/schema.prisma",

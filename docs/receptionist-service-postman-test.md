@@ -1,6 +1,6 @@
 # Hướng dẫn test Receptionist Service bằng Postman
 
-> **Service trực tiếp:** `http://localhost:5005`  
+> **Service trực tiếp:** `http://localhost:5006`  
 > **Auth Service:** `http://localhost:5003`  
 > **Gateway:** `http://localhost:8080`  
 > **Phạm vi hiện tại:** hồ sơ nghiệp vụ cơ bản của lễ tân; không có API ca làm hoặc Admission.
@@ -89,7 +89,7 @@ Chạy migration và seed role:
 Set-Location services
 
 $env:AUTH_DATABASE_URL="postgresql://auth:authpass@localhost:5433/auth?schema=public"
-$env:RECEPTIONIST_DATABASE_URL="postgresql://receptionist:receptionistpass@localhost:5435/receptionist?schema=public"
+$env:RECEPTIONIST_DATABASE_URL="postgresql://receptionist:receptionistpass@localhost:5436/receptionist?schema=public"
 
 npm install
 npm run prisma:generate
@@ -122,7 +122,7 @@ Trong Postman, chọn **Environments → Create environment** và đặt tên `M
 | Variable | Initial value |
 |---|---|
 | `authBaseUrl` | `http://localhost:5003` |
-| `receptionBaseUrl` | `http://localhost:5005` |
+| `receptionBaseUrl` | `http://localhost:5006` |
 | `gatewayBaseUrl` | `http://localhost:8080` |
 | `adminToken` | để trống |
 | `receptionistToken` | để trống |
@@ -799,7 +799,7 @@ Authorization: Bearer {{receptionistToken}}
 
 ## 19. Test qua Kong Gateway
 
-Chỉ test Gateway sau khi direct service `5005` hoạt động.
+Chỉ test Gateway sau khi direct service `5006` hoạt động.
 
 Khởi động Gateway:
 

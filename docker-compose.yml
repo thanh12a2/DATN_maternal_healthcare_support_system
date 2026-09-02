@@ -172,6 +172,22 @@ services:
 
   # Receptionist Service owns workforce/admission-orchestration state.
   # Admission HTTP routes remain disabled until downstream API contracts exist.
+  receptionist-migrate:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      target: migrator
+      args:
+        APP_NAME: receptionist-service
+    environment:
+      PRISMA_SCHEMA: prisma/receptionist/schema.prisma
+      RECEPTIONIST_DATABASE_URL: "postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public"
+    depends_on:
+      receptionist-database:
+        condition: service_healthy
+    networks:
+      - app-network
+
   receptionist-service:
     build:
       context: ./services
@@ -179,9 +195,9 @@ services:
       args:
         APP_NAME: receptionist-service
     ports:
-      - "${RECEPTIONIST_SERVICE_PORT:-5005}:5005"
+      - "${RECEPTIONIST_SERVICE_PORT:-5006}:5006"
     environment:
-      PORT: 5005
+      PORT: 5006
       RECEPTIONIST_DATABASE_URL: postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
       AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
@@ -189,15 +205,17 @@ services:
       AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
       RECEPTION_IDEMPOTENCY_TTL_HOURS: ${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
     depends_on:
-      receptionist-database:
-        condition: service_healthy
+      receptionist-migrate:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
     networks:
       - app-network
 
   receptionist-database:
     image: postgres:16-alpine
     ports:
-      - "${RECEPTIONIST_DB_PORT:-5435}:5432"
+      - "${RECEPTIONIST_DB_PORT:-5436}:5432"
     environment:
       POSTGRES_DB: ${RECEPTIONIST_DB_NAME:-receptionist}
       POSTGRES_USER: ${RECEPTIONIST_DB_USER:-receptionist}

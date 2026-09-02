@@ -131,6 +131,7 @@ $dbs = @(
   @('KONG_PG_PASSWORD','KONG_PG_DATABASE','kong','KONG_PG_USER','kong'),
   @('AUTH_DB_PASSWORD','AUTH_DB_NAME','auth','AUTH_DB_USER','auth'),
   @('DOCTOR_DB_PASSWORD','DOCTOR_DB_NAME','doctor','DOCTOR_DB_USER','doctor'),
+  @('RECEPTIONIST_DB_PASSWORD','RECEPTIONIST_DB_NAME','receptionist','RECEPTIONIST_DB_USER','receptionist'),
   @('PATIENT_DB_PASSWORD','PATIENT_DB_NAME','patient','PATIENT_DB_USER','patient')
 )
 foreach ($db in $dbs) {
@@ -143,6 +144,7 @@ foreach ($db in $dbs) {
 $urls = @(
   @('AUTH_DATABASE_URL','AUTH_DB_USER','AUTH_DB_PASSWORD','AUTH_DB_NAME','AUTH_DB_PORT','5433'),
   @('DOCTOR_DATABASE_URL','DOCTOR_DB_USER','DOCTOR_DB_PASSWORD','DOCTOR_DB_NAME','DOCTOR_DB_PORT','5435'),
+  @('RECEPTIONIST_DATABASE_URL','RECEPTIONIST_DB_USER','RECEPTIONIST_DB_PASSWORD','RECEPTIONIST_DB_NAME','RECEPTIONIST_DB_PORT','5436'),
   @('PATIENT_DATABASE_URL','PATIENT_DB_USER','PATIENT_DB_PASSWORD','PATIENT_DB_NAME','PATIENT_DB_PORT','5434')
 )
 foreach ($url in $urls) {
@@ -214,15 +216,17 @@ if ($Mode -eq 'Docker') {
   else { Run-Command 'docker' @('compose','up','--build','-d') }
   Wait-Migration 'auth-migrate'
   Wait-Migration 'doctor-migrate'
+  Wait-Migration 'receptionist-migrate'
   Wait-Migration 'patient-migrate'
   Run-Command 'docker' @('compose','ps','-a')
   exit 0
 }
 
 if ($Mode -eq 'Local') {
-  Run-Command 'docker' @('compose','up','-d','auth-database','doctor-database','patient-database')
+  Run-Command 'docker' @('compose','up','-d','auth-database','doctor-database','receptionist-database','patient-database')
   Wait-Healthy 'auth-database'
   Wait-Healthy 'doctor-database'
+  Wait-Healthy 'receptionist-database'
   Wait-Healthy 'patient-database'
   Push-Location $ServicesPath
   try {
@@ -232,6 +236,7 @@ if ($Mode -eq 'Local') {
     npm.cmd run prisma:generate:patient
     npm.cmd run prisma:migrate:deploy
     npm.cmd run prisma:migrate:doctor
+    npm.cmd run prisma:migrate:receptionist
     npm.cmd run prisma:migrate:patient
     npm.cmd run prisma:seed
     npm.cmd run prisma:seed:doctor

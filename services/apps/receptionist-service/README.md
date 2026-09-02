@@ -19,7 +19,7 @@ avatar; profile administration remains restricted to `ADMIN`.
 - `POST /receptionists/:receptionistId/deactivate`
 
 All protected routes verify the Auth Service RS256 access token locally. The
-gateway path is `/api/receptionists`; the service listens on port `5005`.
+gateway path is `/api/receptionists`; the service listens on port `5006`.
 
 ## Deliberately not exposed
 
