@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/receptionist-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("RECEPTIONIST_DATABASE_URL")
+}
+
+enum ReceptionistStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum ReceptionistGender {
+  FEMALE
+  MALE
+  OTHER
+}
+
+enum ReceptionCaseType {
+  SCHEDULED
+  WALK_IN
+}
+
+enum ReceptionCaseStatus {
+  OPEN
+  IDENTITY_VERIFIED
+  ADMISSION_IN_PROGRESS
+  ADMITTED
+  CANCELLED
+  MANUAL_REVIEW
+}
+
+enum IdentityVerificationMethod {
+  APPOINTMENT_CODE
+  PHONE_AND_DOB
+  NATIONAL_ID_DOCUMENT
+  OTHER_DOCUMENT
+}
+
+enum IdentityVerificationResult {
+  VERIFIED
+  MISMATCH
+  INCONCLUSIVE
+}
+
+enum AdmissionStatus {
+  IN_PROGRESS
+  AWAITING_PAYMENT
+  FAILED_RETRYABLE
+  COMPLETED
+  CANCELLED
+  MANUAL_REVIEW
+}
+
+enum AdmissionStep {
+  VALIDATE_APPOINTMENT
+  CREATE_INVOICE
+  VERIFY_PAYMENT
+  OPEN_MEDICAL_RECORD
+  CHECK_IN_APPOINTMENT
+  CREATE_QUEUE_TICKET
+  DONE
+}
+
+model Receptionist {
+  id                 String             @id @default(uuid()) @db.Uuid
+  accountId          String             @unique @map("account_id") @db.Uuid
+  employeeCode       String             @unique @map("employee_code") @db.VarChar(30)
+  status             ReceptionistStatus @default(DRAFT)
+  version            Int                @default(1)
+  createdByAccountId String             @map("created_by_account_id") @db.Uuid
+  updatedByAccountId String             @map("updated_by_account_id") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile ReceptionistProfile?
+
+  @@map("receptionists")
+}
+
+model ReceptionistProfile {
+  receptionistId String              @id @map("receptionist_id") @db.Uuid
+  fullName       String              @map("full_name") @db.VarChar(150)
+  loginEmail     String?             @unique @map("login_email") @db.VarChar(255)
+  workPhone      String?             @map("work_phone") @db.VarChar(20)
+  address        String?             @db.VarChar(500)
+  department     String?             @db.VarChar(100)
+  gender         ReceptionistGender?
+  avatarUrl      String?             @map("avatar_url") @db.VarChar(2048)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Restrict)
+
+  @@map("receptionist_profiles")
+}
+
+// The Admission tables are reserved by the approved data model. No Admission
+// HTTP routes are registered until all downstream contracts pass the release gate.
+model ReceptionCase {
+  id                       String                @id @default(uuid()) @db.Uuid
+  type                     ReceptionCaseType     @default(SCHEDULED)
+  appointmentId            String?               @map("appointment_id") @db.Uuid
+  patientId                String                @map("patient_id") @db.Uuid
+  status                   ReceptionCaseStatus   @default(OPEN)
+  arrivalAt                DateTime              @map("arrival_at") @db.Timestamptz(6)
+  scheduledStartAtSnapshot DateTime?             @map("scheduled_start_at_snapshot") @db.Timestamptz(6)
+  appointmentTypeSnapshot  String?               @map("appointment_type_snapshot") @db.VarChar(50)
+  openedByAccountId        String                @map("opened_by_account_id") @db.Uuid
+  lastHandledByAccountId   String                @map("last_handled_by_account_id") @db.Uuid
+  version                  Int                   @default(1)
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  identityVerifications IdentityVerification[]
+  admission             Admission?
+
+  @@index([status, arrivalAt])
+  @@map("reception_cases")
+}
+
+model IdentityVerification {
+  id                   String                     @id @default(uuid()) @db.Uuid
+  receptionCaseId      String                     @map("reception_case_id") @db.Uuid
+  method               IdentityVerificationMethod
+  result               IdentityVerificationResult
+  reasonCode           String?                    @map("reason_code") @db.VarChar(50)
+  note                 String?                    @db.VarChar(500)
+  verifiedFields       String[]                   @default([]) @map("verified_fields")
+  performedByAccountId String                     @map("performed_by_account_id") @db.Uuid
+  performedAt          DateTime                   @default(now()) @map("performed_at") @db.Timestamptz(6)
+
+  receptionCase ReceptionCase @relation(fields: [receptionCaseId], references: [id], onDelete: Restrict)
+
+  @@index([receptionCaseId, performedAt])
+  @@map("identity_verifications")
+}
+
+model Admission {
+  id                     String          @id @default(uuid()) @db.Uuid
+  receptionCaseId        String          @unique @map("reception_case_id") @db.Uuid
+  status                 AdmissionStatus @default(IN_PROGRESS)
+  currentStep            AdmissionStep   @default(VALIDATE_APPOINTMENT) @map("current_step")
+  invoiceId              String?         @map("invoice_id") @db.Uuid
+  paymentId              String?         @map("payment_id") @db.Uuid
+  medicalRecordId        String?         @map("medical_record_id") @db.Uuid
+  queueTicketId          String?         @map("queue_ticket_id") @db.Uuid
+  appointmentCheckedInAt DateTime?       @map("appointment_checked_in_at") @db.Timestamptz(6)
+  lastErrorCode          String?         @map("last_error_code") @db.VarChar(100)
+  retryCount             Int             @default(0) @map("retry_count")
+  version                Int             @default(1)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt            DateTime?       @map("completed_at") @db.Timestamptz(6)
+
+  receptionCase ReceptionCase           @relation(fields: [receptionCaseId], references: [id], onDelete: Restrict)
+  history      AdmissionStatusHistory[]
+
+  @@index([status, currentStep, updatedAt])
+  @@map("admissions")
+}
+
+model AdmissionStatusHistory {
+  id          String          @id @default(uuid()) @db.Uuid
+  admissionId String          @map("admission_id") @db.Uuid
+  fromStatus  AdmissionStatus @map("from_status")
+  toStatus    AdmissionStatus @map("to_status")
+  step        AdmissionStep
+  actorId     String?         @map("actor_id") @db.Uuid
+  reasonCode  String?         @map("reason_code") @db.VarChar(100)
+  occurredAt  DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  admission Admission @relation(fields: [admissionId], references: [id], onDelete: Restrict)
+
+  @@index([admissionId, occurredAt])
+  @@map("admission_status_history")
+}
+
+model ReceptionIdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorId        String   @map("actor_id") @db.Uuid
+  operation      String   @db.VarChar(100)
+  idempotencyKey String   @map("idempotency_key") @db.Uuid
+  requestHash    String   @map("request_hash") @db.Char(64)
+  resourceId     String?  @map("resource_id") @db.Uuid
+  responseStatus Int      @map("response_status")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([actorId, operation, idempotencyKey])
+  @@index([expiresAt])
+  @@map("reception_idempotency_records")
+}
+
+model ReceptionAuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  eventType      String   @map("event_type") @db.VarChar(100)
+  actorId        String   @map("actor_id") @db.Uuid
+  receptionistId String?  @map("receptionist_id") @db.Uuid
+  caseId         String?  @map("case_id") @db.Uuid
+  admissionId    String?  @map("admission_id") @db.Uuid
+  changedFields  String[] @default([]) @map("changed_fields")
+  reasonCode     String?  @map("reason_code") @db.VarChar(100)
+  requestId      String   @map("request_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([receptionistId, createdAt])
+  @@index([caseId, createdAt])
+  @@map("reception_audit_logs")
+}

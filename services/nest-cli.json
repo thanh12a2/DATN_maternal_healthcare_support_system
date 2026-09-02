@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/patient-service/tsconfig.app.json"
       }
     },
+    "receptionist-service": {
+      "type": "application",
+      "root": "apps/receptionist-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/receptionist-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/receptionist-service/tsconfig.app.json"
+      }
+    },
     "sample-service": {
       "type": "application",
       "root": "apps/sample-service",
