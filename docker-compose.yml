@@ -22,6 +22,8 @@ services:
         condition: service_started
       sample-service:
         condition: service_started
+      receptionist-service:
+        condition: service_started
       patient-service: { condition: service_started }
     environment:
       KONG_DATABASE: postgres
@@ -168,6 +170,48 @@ services:
     networks:
       - app-network
 
+  # Receptionist Service owns workforce/admission-orchestration state.
+  # Admission HTTP routes remain disabled until downstream API contracts exist.
+  receptionist-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: receptionist-service
+    ports:
+      - "${RECEPTIONIST_SERVICE_PORT:-5005}:5005"
+    environment:
+      PORT: 5005
+      RECEPTIONIST_DATABASE_URL: postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
+      RECEPTION_IDEMPOTENCY_TTL_HOURS: ${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
+    depends_on:
+      receptionist-database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  receptionist-database:
+    image: postgres:16-alpine
+    ports:
+      - "${RECEPTIONIST_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: ${RECEPTIONIST_DB_NAME:-receptionist}
+      POSTGRES_USER: ${RECEPTIONIST_DB_USER:-receptionist}
+      POSTGRES_PASSWORD: ${RECEPTIONIST_DB_PASSWORD:-receptionistpass}
+    volumes:
+      - receptionist-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
   # ─── Sample Service ──────────────────────────────
   patient-migrate:
     build:
@@ -238,5 +282,6 @@ networks:
 volumes:
   kong-data:
   auth-data:
+  receptionist-data:
   doctor-data:
   patient-data: {}
