@@ -19,6 +19,14 @@ services:
           - /.well-known
         strip_path: false
 
+  - name: doctor-service
+    url: http://doctor-service:5005
+    routes:
+      - name: doctor-service-route
+        paths:
+          - /api/doctors
+        strip_path: true
+
   - name: sample-service
     url: http://sample-service:5000
     routes:

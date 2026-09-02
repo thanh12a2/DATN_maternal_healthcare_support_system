@@ -15,7 +15,7 @@ Mục tiêu là chốt boundary và contract đủ rõ để review, viết Open
 | **Bounded context** | Doctor Directory & Working Availability; không phải hệ thống HR và không sở hữu lịch hẹn khám |
 | **Actors/Consumers** | `PATIENT`, `DOCTOR`, `ADMIN`, Appointment Service, Service Catalog Service, Medical Record Service |
 | **Source path** | `services/apps/doctor-service/` |
-| **Port / Tech stack** | `5004` (đề xuất, cần chốt) / NestJS 11, TypeScript, Prisma 6, PostgreSQL 16; dùng monorepo hiện có |
+| **Port / Tech stack** | `5005` / NestJS 11, TypeScript, Prisma 6, PostgreSQL 16; dùng monorepo hiện có |
 
 ### Chịu trách nhiệm
 
@@ -1039,19 +1039,19 @@ Audit là append-only. Không cho API business sửa/xóa audit record.
 
 | Variable | Required | Example | Secret? | Mô tả |
 |---|---:|---|---:|---|
-| `PORT` | No | `5004` | No | Internal application port |
+| `PORT` | No | `5005` | No | Internal application port |
 | `DOCTOR_DATABASE_URL` | Yes | `postgresql://<user>:<password>@doctor-database:5432/doctor?schema=public` | Yes | DB riêng của Doctor Service |
 | `DOCTOR_TIMEZONE` | No | `Asia/Bangkok` | No | MVP chỉ chấp nhận timezone này |
 | `DOCTOR_MAX_AVAILABILITY_RANGE_DAYS` | No | `31` | No | Giới hạn query/override |
 | `AUTH_SERVICE_BASE_URL` | Yes | `http://auth-service:5003` | No | Docker DNS, không dùng localhost |
-| `CATALOG_SERVICE_BASE_URL` | Khi bật Catalog validation | `http://service-catalog-service:5005` | No | Internal base URL |
+| `CATALOG_SERVICE_BASE_URL` | Khi bật Catalog validation | `http://service-catalog-service:<internal-port>` | No | Internal base URL; dùng port do Catalog Service sở hữu |
 | `INTERNAL_SERVICE_AUTH_SECRET` | Tùy cơ chế được approve | `<secret>` | Yes | Không commit; thay bằng service JWT/mTLS nếu chốt |
 | `OUTBOX_POLL_INTERVAL_MS` | No | `1000` | No | Chỉ dùng khi dispatcher được bật |
 | `LOG_LEVEL` | No | `info` | No | Không bật body logging ở production |
 
 - Docker application service: `doctor-service`.
 - Docker database owner: `doctor-database`, PostgreSQL 16, volume riêng `doctor-data`.
-- Public host port: dev-only `${DOCTOR_SERVICE_PORT:-5004}:5004`; production chỉ expose qua Gateway.
+- Public host port: dev-only `${DOCTOR_SERVICE_PORT:-5005}:5005`; production chỉ expose qua Gateway.
 - Migration: Prisma migration chạy riêng trước app startup; không dùng `db push` production.
 - Health: `GET /health` luôn đúng contract `{"status":"ok"}` khi ready.
 - Công nghệ mới: Không cần framework/ORM mới. Event broker chưa có trong repo và là decision gate, không tự ý thêm.
@@ -1181,18 +1181,17 @@ And update sau trả VERSION_CONFLICT mà không ghi đè
 
 ### Open questions
 
-1. **Port `5004`:** cần xác nhận để tránh xung đột với Patient/Appointment/Catalog Service đang phát triển song song.
-2. **Auth internal contract:** Auth Service hiện chưa có endpoint/service event để Admin xác minh account có role `DOCTOR`; cần chốt endpoint hoặc event projection trước API-002/API-006.
-3. **Service-to-service authentication:** cần chọn service JWT, mTLS hay cơ chế khác; không dùng một header tên service không được ký.
-4. **Event transport:** repo chưa bật broker. Cần approve RabbitMQ hoặc transport khác trước khi triển khai dispatcher; local outbox vẫn nên giữ.
-5. **Appointment reconciliation:** cần chốt SLA và hành vi với lịch đã đặt khi doctor nghỉ/deactivate (đổi bác sĩ, đổi giờ hay hủy); nghiệp vụ này thuộc Appointment Service.
-6. **Catalog references:** MVP có cần `departmentId`/`roomId` trong DoctorSchedule ngay hay để `null` đến khi Catalog Service sẵn sàng?
-7. **Privacy của lịch nghỉ:** patient không thấy reason/note; cần xác nhận doctor khác có được xem hay chỉ owner/Admin.
-8. **Primary specialty:** bản này yêu cầu đúng một primary khi ACTIVE; cần nhóm nghiệp vụ xác nhận bác sĩ đa chuyên khoa có bắt buộc chọn primary không.
-9. **Tên/error envelope chung:** Auth Service hiện có response shape riêng; cần thống nhất toàn hệ thống trước khi viết OpenAPI cuối cùng.
-10. **Retention/audit:** cần chốt thời gian lưu audit, idempotency records và dữ liệu doctor inactive.
+1. **Auth internal contract:** Auth Service hiện chưa có endpoint/service event để Admin xác minh account có role `DOCTOR`; cần chốt endpoint hoặc event projection trước API-002/API-006.
+2. **Service-to-service authentication:** cần chọn service JWT, mTLS hay cơ chế khác; không dùng một header tên service không được ký.
+3. **Event transport:** repo chưa bật broker. Cần approve RabbitMQ hoặc transport khác trước khi triển khai dispatcher; local outbox vẫn nên giữ.
+4. **Appointment reconciliation:** cần chốt SLA và hành vi với lịch đã đặt khi doctor nghỉ/deactivate (đổi bác sĩ, đổi giờ hay hủy); nghiệp vụ này thuộc Appointment Service.
+5. **Catalog references:** MVP có cần `departmentId`/`roomId` trong DoctorSchedule ngay hay để `null` đến khi Catalog Service sẵn sàng?
+6. **Privacy của lịch nghỉ:** patient không thấy reason/note; cần xác nhận doctor khác có được xem hay chỉ owner/Admin.
+7. **Primary specialty:** bản này yêu cầu đúng một primary khi ACTIVE; cần nhóm nghiệp vụ xác nhận bác sĩ đa chuyên khoa có bắt buộc chọn primary không.
+8. **Tên/error envelope chung:** Auth Service hiện có response shape riêng; cần thống nhất toàn hệ thống trước khi viết OpenAPI cuối cùng.
+9. **Retention/audit:** cần chốt thời gian lưu audit, idempotency records và dữ liệu doctor inactive.
 
-Các phần phụ thuộc câu 2–5 không nên được coi là production-ready trước khi có quyết định. Có thể implement domain/API local trước bằng interface/adapter và test double.
+Các phần phụ thuộc câu 1–4 không nên được coi là production-ready trước khi có quyết định. Có thể implement domain/API local trước bằng interface/adapter và test double.
 
 ### Out of scope
 

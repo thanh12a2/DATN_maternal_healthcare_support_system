@@ -31,6 +31,8 @@ services:
         condition: service_completed_successfully
       auth-service:
         condition: service_started
+      doctor-service:
+        condition: service_started
       sample-service:
         condition: service_started
     environment:
@@ -98,6 +100,7 @@ services:
       AUTH_ACCESS_TOKEN_TTL_SECONDS: ${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}
       AUTH_REFRESH_TOKEN_PEPPER: ${AUTH_REFRESH_TOKEN_PEPPER:-}
       AUTH_REFRESH_TOKEN_TTL_DAYS: ${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
+      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
     depends_on:
       auth-database:
         condition: service_healthy
@@ -116,6 +119,47 @@ services:
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-authpass}
     volumes:
       - auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  # ─── Doctor Service ─────────────────────────────
+  doctor-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: doctor-service
+    ports:
+      - "${DOCTOR_SERVICE_PORT:-5005}:${DOCTOR_SERVICE_INTERNAL_PORT:-5005}"
+    environment:
+      PORT: ${DOCTOR_SERVICE_INTERNAL_PORT:-5005}
+      DOCTOR_DATABASE_URL: postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_ACCOUNT_LOOKUP_URL: ${DOCTOR_AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
+      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+    depends_on:
+      doctor-database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  doctor-database:
+    image: postgres:16-alpine
+    ports:
+      - "${DOCTOR_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: ${DOCTOR_DB_NAME:-doctor}
+      POSTGRES_USER: ${DOCTOR_DB_USER:-doctor}
+      POSTGRES_PASSWORD: ${DOCTOR_DB_PASSWORD:-doctorpass}
+    volumes:
+      - doctor-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -161,3 +205,4 @@ networks:
 volumes:
   kong-data:
   auth-data:
+  doctor-data:
