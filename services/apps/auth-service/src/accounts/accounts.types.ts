@@ -27,3 +27,9 @@ export interface AccountAuthProfile {
   status: AccountStatus;
   role: AuthRole;
 }
+
+export interface InternalAccountLookup {
+  accountId: string;
+  status: AccountStatus;
+  role: AuthRole;
+}
