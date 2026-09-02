@@ -27,6 +27,14 @@ services:
           - /api/sample-service
         strip_path: true
 
+  - name: receptionist-service
+    url: http://receptionist-service:5005/receptionists
+    routes:
+      - name: receptionist-operations-route
+        paths:
+          - /api/receptionists
+        strip_path: true
+
 plugins:
   - name: cors
     config:
@@ -43,6 +51,8 @@ plugins:
         - Accept
         - Authorization
         - Content-Type
+        - Idempotency-Key
+        - X-Request-Id
       exposed_headers:
         - "*"
       credentials: true

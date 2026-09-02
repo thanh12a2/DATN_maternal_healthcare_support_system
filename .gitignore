@@ -25,6 +25,7 @@ Thumbs.db
 # ==============================
 # Node.js
 node_modules/
+services/generated/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

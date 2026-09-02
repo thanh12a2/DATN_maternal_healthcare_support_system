@@ -13,15 +13,19 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/apps/auth-service/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate && prisma generate --schema=prisma/receptionist/schema.prisma",
+    "prisma:generate:receptionist": "prisma generate --schema=prisma/receptionist/schema.prisma",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:receptionist:dev": "prisma migrate dev --schema=prisma/receptionist/schema.prisma",
+    "prisma:migrate:receptionist:deploy": "prisma migrate deploy --schema=prisma/receptionist/schema.prisma",
     "prisma:seed": "prisma db seed",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/auth-service/test/jest-e2e.json"
+    "test:e2e": "jest --config ./apps/auth-service/test/jest-e2e.json",
+    "test:e2e:receptionist": "jest --config ./apps/receptionist-service/test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
