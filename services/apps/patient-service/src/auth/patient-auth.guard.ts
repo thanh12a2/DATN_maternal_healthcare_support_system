@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { extractBearerToken } from './bearer-token.util';
 import type { PatientAuthenticatedRequest } from './auth-context';
 import { JwtVerifierService } from './jwt-verifier.service';
@@ -7,13 +12,15 @@ import { JwtVerifierService } from './jwt-verifier.service';
 export class PatientAuthGuard implements CanActivate {
   constructor(private readonly jwtVerifierService: JwtVerifierService) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<PatientAuthenticatedRequest>();
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context
+      .switchToHttp()
+      .getRequest<PatientAuthenticatedRequest>();
     const accessToken = extractBearerToken(request.headers.authorization);
-    const authContext = this.jwtVerifierService.verifyAccessToken(accessToken);
+    const authContext = await this.jwtVerifierService.verifyAccessToken(accessToken);
 
-    if (authContext.role !== 'PATIENT') {
-      throw new ForbiddenException('Patient role is required');
+    if (!['PATIENT', 'RECEPTIONIST'].includes(authContext.role)) {
+      throw new ForbiddenException('Patient or receptionist role is required');
     }
 
     request.patientAuth = authContext;

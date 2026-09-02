@@ -21,7 +21,13 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/auth-service/test/jest-e2e.json"
+    "test:e2e": "jest --config ./apps/auth-service/test/jest-e2e.json",
+    "prisma:generate:patient": "prisma generate --schema prisma/patient/schema.prisma",
+    "prisma:migrate:patient": "prisma migrate deploy --schema prisma/patient/schema.prisma",
+    "test:patient": "jest --runInBand --testPathPatterns=apps/patient-service/src",
+    "test:patient:api": "jest --runInBand --testPathPatterns=apps/patient-service/test/api",
+    "test:patient:integration": "node scripts/run-patient-integration.cjs",
+    "test:patient:e2e": "node scripts/run-patient-e2e.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -47,6 +53,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "embedded-postgres": "^16.14.0-beta.17",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

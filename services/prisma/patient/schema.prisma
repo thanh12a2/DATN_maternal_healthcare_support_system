@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/patient-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PATIENT_DATABASE_URL")
+}
+
+model Patient {
+  id                   String             @id @default(uuid()) @db.Uuid
+  authAccountId        String?            @unique(map: "patients_auth_account_id_key") @map("auth_account_id") @db.Uuid
+  fullName             String             @map("full_name") @db.VarChar(150)
+  normalizedFullName   String             @map("normalized_full_name") @db.VarChar(150)
+  dateOfBirth          DateTime           @map("date_of_birth") @db.Date
+  phoneNumber          String             @map("phone_number") @db.VarChar(16)
+  nationalIdCiphertext String?            @map("national_id_ciphertext") @db.Text
+  nationalIdLookupHash String?            @unique(map: "patients_national_id_lookup_hash_key") @map("national_id_lookup_hash") @db.Char(64)
+  address              String?            @db.VarChar(500)
+  version              Int                @default(1)
+  createdByAccountId   String             @map("created_by_account_id") @db.Uuid
+  updatedByAccountId   String             @map("updated_by_account_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  emergencyContacts    EmergencyContact[]
+  auditLogs            PatientAuditLog[]
+
+  @@index([phoneNumber], map: "patients_phone_number_idx")
+  @@index([normalizedFullName], map: "patients_normalized_full_name_idx")
+  @@map("patients")
+}
+
+model EmergencyContact {
+  id           String   @id @default(uuid()) @db.Uuid
+  patientId    String   @map("patient_id") @db.Uuid
+  fullName     String   @map("full_name") @db.VarChar(150)
+  relationship String   @db.VarChar(50)
+  phoneNumber  String   @map("phone_number") @db.VarChar(16)
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId], map: "emergency_contacts_patient_id_idx")
+  @@map("emergency_contacts")
+}
+
+model PatientAuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(50)
+  actorId       String   @map("actor_id") @db.Uuid
+  actorRole     String   @map("actor_role") @db.VarChar(30)
+  patientId     String?  @map("patient_id") @db.Uuid
+  changedFields String[] @default([]) @map("changed_fields")
+  requestId     String   @map("request_id") @db.Uuid
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  patient       Patient? @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([patientId, createdAt], map: "patient_audit_logs_patient_created_idx")
+  @@index([actorId, createdAt], map: "patient_audit_logs_actor_created_idx")
+  @@map("patient_audit_logs")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorId        String   @map("actor_id") @db.Uuid
+  operation      String   @db.VarChar(80)
+  idempotencyKey String   @map("idempotency_key") @db.Uuid
+  requestHash    String   @map("request_hash") @db.Char(64)
+  patientId      String?  @map("patient_id") @db.Uuid
+  status         String   @db.VarChar(20)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([actorId, operation, idempotencyKey], map: "idempotency_records_actor_operation_key")
+  @@index([expiresAt], map: "idempotency_records_expires_at_idx")
+  @@map("idempotency_records")
+}

@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: Patient Service API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/patients
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Patient API operation 1
+      operationId: patientOperation1
+      security: []
+      responses: { '200': { description: Process alive } }
+  /ready:
+    get:
+      summary: Patient API operation 2
+      operationId: patientOperation2
+      security: []
+      responses:
+        '200': { description: Database ready }
+        '503': { $ref: '#/components/responses/Error' }
+  /me:
+    get:
+      summary: Patient API operation 3
+      operationId: patientOperation3
+      responses:
+        '200': { description: Own Patient profile, content: { application/json: { schema: { $ref: '#/components/schemas/PatientEnvelope' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Patient API operation 4
+      operationId: patientOperation4
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpsertPatient' } } } }
+      responses:
+        '200': { description: Updated or no-op retry }
+        '201': { description: Created }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /search:
+    post:
+      summary: Patient API operation 5
+      operationId: patientOperation5
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SearchPatients' } } } }
+      responses:
+        '200': { description: Paginated minimized search results }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /:
+    post:
+      summary: Patient API operation 6
+      operationId: patientOperation6
+      parameters:
+        - { in: header, name: Idempotency-Key, required: true, schema: { type: string, format: uuid } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreatePatient' } } } }
+      responses:
+        '200': { description: Idempotent retry }
+        '201': { description: Created at reception }
+        '409': { $ref: '#/components/responses/Error' }
+  /{patientId}:
+    parameters:
+      - { in: path, name: patientId, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Patient API operation 7
+      operationId: patientOperation7
+      responses:
+        '200': { description: Receptionist Patient detail }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    patch:
+      summary: Patient API operation 8
+      operationId: patientOperation8
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PatchPatient' } } } }
+      responses:
+        '200': { description: Updated }
+        '409': { $ref: '#/components/responses/Error' }
+  /{patientId}/emergency-contacts:
+    post:
+      summary: Patient API operation 9
+      operationId: patientOperation9
+      parameters: [{ in: path, name: patientId, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContactInput' } } } }
+      responses:
+        '201': { description: Created }
+        '422': { $ref: '#/components/responses/Error' }
+  /{patientId}/emergency-contacts/{contactId}:
+    parameters:
+      - { in: path, name: patientId, required: true, schema: { type: string, format: uuid } }
+      - { in: path, name: contactId, required: true, schema: { type: string, format: uuid } }
+    patch:
+      summary: Patient API operation 10
+      operationId: patientOperation10
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContactInput' } } } }
+      responses: { '200': { description: Updated }, '404': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: Patient API operation 11
+      operationId: patientOperation11
+      responses: { '204': { description: Deleted or already absent } }
+  /internal/patients/{patientId}/eligibility:
+    get:
+      servers:
+        - url: http://patient-service:5004
+      summary: Patient API operation 12
+      operationId: patientOperation12
+      description: Service-to-service route; not exposed by the public Kong Patient route.
+      parameters: [{ in: path, name: patientId, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: Minimal eligibility contract }
+        '401': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    Error:
+      description: Error envelope
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+  schemas:
+    UpsertPatient:
+      type: object
+      additionalProperties: false
+      required: [fullName, dateOfBirth, phoneNumber]
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 150 }
+        dateOfBirth: { type: string, format: date }
+        phoneNumber: { type: string }
+        nationalId: { type: string, nullable: true }
+        address: { type: string, nullable: true, maxLength: 500 }
+        version: { type: integer, minimum: 1 }
+    CreatePatient:
+      allOf:
+        - { $ref: '#/components/schemas/UpsertPatient' }
+        - type: object
+          required: [reason]
+          properties: { reason: { type: string, minLength: 1, maxLength: 250 } }
+    PatchPatient:
+      type: object
+      additionalProperties: false
+      required: [version, reason]
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 150 }
+        dateOfBirth: { type: string, format: date }
+        phoneNumber: { type: string }
+        nationalId: { type: string, nullable: true }
+        address: { type: string, nullable: true, maxLength: 500 }
+        version: { type: integer, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 250 }
+    SearchPatients:
+      type: object
+      additionalProperties: false
+      properties:
+        phoneNumber: { type: string }
+        nationalId: { type: string }
+        fullName: { type: string, minLength: 2 }
+        page: { type: integer, minimum: 1, default: 1 }
+        limit: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    ContactInput:
+      type: object
+      additionalProperties: false
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 150 }
+        relationship: { type: string, minLength: 1, maxLength: 50 }
+        phoneNumber: { type: string }
+        isPrimary: { type: boolean }
+    PatientEnvelope:
+      type: object
+      required: [data]
+      properties: { data: { type: object } }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            requestId: { type: string, format: uuid }

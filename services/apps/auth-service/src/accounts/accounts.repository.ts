@@ -15,102 +15,52 @@ export class AccountsRepository {
 
   async createAccountWithCredential(input: RegisterAccountInput): Promise<RegisteredAccount> {
     const roleCode = this.toPrismaRoleCode(input.role);
-
     return this.prisma.$transaction(async (transaction) => {
-      const role = await transaction.role.findUnique({
-        where: { code: roleCode },
-      });
-
-      if (!role) {
-        throw new AuthRoleNotSeededError(input.role);
-      }
-
+      const role = await transaction.role.findUnique({ where: { code: roleCode } });
+      if (!role) throw new AuthRoleNotSeededError(input.role);
       const account = await transaction.account.create({
         data: {
           email: input.email,
-          credential: {
-            create: {
-              passwordHash: input.passwordHash,
-            },
-          },
-          roles: {
-            create: {
-              roleId: role.id,
-            },
-          },
+          credential: { create: { passwordHash: input.passwordHash } },
+          roles: { create: { roleId: role.id } },
         },
       });
-
-      return {
-        userId: account.id,
-        email: account.email,
-        role: input.role,
-      };
+      return { userId: account.id, email: account.email, role: input.role };
     });
   }
 
   async findAccountForLoginByEmail(email: string): Promise<AccountForLogin | null> {
     const account = await this.prisma.account.findUnique({
       where: { email },
-      include: {
-        credential: true,
-        roles: {
-          include: {
-            role: true,
-          },
-          take: 1,
-        },
-      },
+      include: { credential: true, roles: { include: { role: true } } },
     });
-
     const credential = account?.credential;
-    const accountRole = account?.roles[0];
-
-    if (!account || !credential || !accountRole) {
-      return null;
-    }
-
+    if (!account || !credential || account.roles.length !== 1) return null;
     return {
       userId: account.id,
       email: account.email,
       status: account.status,
       passwordHash: credential.passwordHash,
-      role: accountRole.role.code as unknown as AuthRole,
+      role: account.roles[0].role.code as unknown as AuthRole,
     };
   }
 
   async findAuthProfileById(accountId: string): Promise<AccountAuthProfile | null> {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
-      include: {
-        roles: {
-          include: {
-            role: true,
-          },
-          take: 1,
-        },
-      },
+      include: { roles: { include: { role: true } } },
     });
-
-    const accountRole = account?.roles[0];
-
-    if (!account || !accountRole) {
-      return null;
-    }
-
+    if (!account || account.roles.length !== 1) return null;
     return {
       userId: account.id,
       email: account.email,
       status: account.status,
-      role: accountRole.role.code as unknown as AuthRole,
+      role: account.roles[0].role.code as unknown as AuthRole,
     };
   }
 
   async markLastLoginAt(accountId: string, lastLoginAt: Date): Promise<void> {
-    await this.prisma.account.update({
-      where: { id: accountId },
-      data: { lastLoginAt },
-    });
+    await this.prisma.account.update({ where: { id: accountId }, data: { lastLoginAt } });
   }
 
   isUniqueConstraintError(error: unknown): boolean {
@@ -118,7 +68,7 @@ export class AccountsRepository {
   }
 
   private toPrismaRoleCode(role: AuthRole): AuthRoleCode {
-    return role as unknown as AuthRoleCode;
+    return role;
   }
 }
 
