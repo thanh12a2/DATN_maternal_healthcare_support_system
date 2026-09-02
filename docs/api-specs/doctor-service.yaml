@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: Doctor Service API
+  version: 1.0.0
+  description: Doctor Directory and Working Availability API.
+servers:
+  - url: http://localhost:5005
+    description: Direct local service
+  - url: http://localhost:8080/api/doctors
+    description: Kong public prefix
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Health check
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+        '503': { description: Database is not ready }
+  /doctors:
+    post:
+      summary: Create doctor draft
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateDoctorRequest' } } } }
+      responses: { '201': { $ref: '#/components/responses/DataResponse' }, '400': { $ref: '#/components/responses/ErrorResponse' }, '403': { $ref: '#/components/responses/ErrorResponse' }, '409': { $ref: '#/components/responses/ErrorResponse' }, '503': { $ref: '#/components/responses/ErrorResponse' } }
+    get:
+      summary: List active/public doctors
+      parameters:
+        - { $ref: '#/components/parameters/SpecialtyId' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}:
+    parameters: [{ $ref: '#/components/parameters/DoctorId' }]
+    get:
+      summary: Get doctor view
+      responses: { '200': { $ref: '#/components/responses/DataResponse' }, '404': { $ref: '#/components/responses/ErrorResponse' } }
+    patch:
+      summary: Update doctor profile
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpdateDoctorRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' }, '409': { $ref: '#/components/responses/ErrorResponse' } }
+  /doctors/{doctorId}/activate:
+    post:
+      summary: Activate doctor
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/IfMatch' }]
+      responses: { '200': { $ref: '#/components/responses/DataResponse' }, '422': { $ref: '#/components/responses/ErrorResponse' } }
+  /doctors/{doctorId}/deactivate:
+    post:
+      summary: Deactivate doctor
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /specialties:
+    post:
+      summary: Create specialty
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateSpecialtyRequest' } } } }
+      responses: { '201': { $ref: '#/components/responses/DataResponse' } }
+    get:
+      summary: List specialties
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/specialties/{specialtyId}:
+    put:
+      summary: Assign or update specialty
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/SpecialtyPathId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SpecialtyLinkRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' }, '201': { $ref: '#/components/responses/DataResponse' } }
+    delete:
+      summary: Remove specialty
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/SpecialtyPathId' }]
+      responses: { '204': { description: Removed } }
+  /doctors/{doctorId}/schedules:
+    post:
+      summary: Create recurring schedule
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateScheduleRequest' } } } }
+      responses: { '201': { $ref: '#/components/responses/DataResponse' } }
+    get:
+      summary: List recurring schedules
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }]
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/schedules/{scheduleId}:
+    patch:
+      summary: Update future schedule
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/ScheduleId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpdateScheduleRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/schedules/{scheduleId}/cancel:
+    post:
+      summary: Cancel recurring schedule
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/ScheduleId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/availability-overrides:
+    post:
+      summary: Create availability override
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateAvailabilityRequest' } } } }
+      responses: { '201': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/availability:
+    get:
+      summary: Calculate effective working availability
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { name: from, in: query, required: true, schema: { type: string, format: date-time } }, { name: to, in: query, required: true, schema: { type: string, format: date-time } }]
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/{doctorId}/availability-overrides/{overrideId}/cancel:
+    post:
+      summary: Cancel availability override
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { name: overrideId, in: path, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /internal/doctors/{doctorId}/eligibility:
+    get:
+      summary: Internal eligibility check
+      parameters: [{ $ref: '#/components/parameters/DoctorId' }, { name: specialtyId, in: query, required: true, schema: { type: string, format: uuid } }, { name: startAt, in: query, required: true, schema: { type: string, format: date-time } }, { name: endAt, in: query, required: true, schema: { type: string, format: date-time } }]
+      responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+components:
+  securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    DoctorId: { name: doctorId, in: path, required: true, schema: { type: string, format: uuid } }
+    SpecialtyPathId: { name: specialtyId, in: path, required: true, schema: { type: string, format: uuid } }
+    ScheduleId: { name: scheduleId, in: path, required: true, schema: { type: string, format: uuid } }
+    SpecialtyId: { name: specialtyId, in: query, schema: { type: string, format: uuid } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Cursor: { name: cursor, in: query, schema: { type: string } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 128 } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: integer, minimum: 1 } }
+  responses:
+    DataResponse: { description: Data response, content: { application/json: { schema: { type: object, properties: { data: {} } } } } }
+    ErrorResponse: { description: Error response, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  schemas:
+    HealthResponse: { type: object, required: [status], properties: { status: { type: string, enum: [ok] } } }
+    CreateDoctorRequest: { type: object, required: [accountId, licenseNumber, profile], properties: { accountId: { type: string, format: uuid }, licenseNumber: { type: string, minLength: 3, maxLength: 50 }, profile: { $ref: '#/components/schemas/Profile' } } }
+    Profile: { type: object, required: [fullName], properties: { fullName: { type: string, minLength: 2, maxLength: 150 }, professionalTitle: { type: string, maxLength: 100 }, biography: { type: string, maxLength: 2000 }, practiceStartYear: { type: integer, minimum: 1950 }, languages: { type: array, maxItems: 10, items: { type: string } }, photoUrl: { type: string, format: uri } } }
+    UpdateDoctorRequest: { allOf: [{ $ref: '#/components/schemas/Profile' }, { type: object, properties: { licenseNumber: { type: string } } }] }
+    CreateSpecialtyRequest: { type: object, required: [code, name], properties: { code: { type: string }, name: { type: string }, description: { type: string } } }
+    SpecialtyLinkRequest: { type: object, required: [isPrimary], properties: { isPrimary: { type: boolean } } }
+    CreateScheduleRequest: { type: object, required: [dayOfWeek, startTime, endTime, effectiveFrom], properties: { dayOfWeek: { type: integer, minimum: 1, maximum: 7 }, startTime: { type: string }, endTime: { type: string }, slotDurationMinutes: { type: integer, enum: [15,20,30,45,60] }, effectiveFrom: { type: string, format: date }, effectiveTo: { type: string, format: date }, timezone: { type: string, example: Asia/Bangkok }, departmentId: { type: string, format: uuid }, roomId: { type: string, format: uuid } } }
+    UpdateScheduleRequest: { $ref: '#/components/schemas/CreateScheduleRequest' }
+    CreateAvailabilityRequest: { type: object, required: [type, startAt, endAt, reasonCode], properties: { type: { type: string, enum: [UNAVAILABLE, EXTRA_AVAILABLE] }, startAt: { type: string, format: date-time }, endAt: { type: string, format: date-time }, reasonCode: { type: string }, note: { type: string, maxLength: 500 } } }
+    ReasonRequest: { type: object, required: [reason], properties: { reason: { type: string, minLength: 3, maxLength: 500 } } }
+    ErrorResponse: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string }, details: { type: array }, requestId: { type: string, format: uuid } } } } }

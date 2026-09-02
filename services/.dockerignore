@@ -5,3 +5,7 @@ coverage
 .env
 .env.*
 npm-debug.log*
+coverage
+*.log
+.env
+.git

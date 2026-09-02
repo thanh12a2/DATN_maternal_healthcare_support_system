@@ -16,8 +16,12 @@ describe('extractBearerToken', () => {
   });
 
   it('should reject malformed token', () => {
-    expect(() => extractBearerToken('Basic abc')).toThrow(UnauthorizedException);
+    expect(() => extractBearerToken('Basic abc')).toThrow(
+      UnauthorizedException,
+    );
     expect(() => extractBearerToken('Bearer')).toThrow(UnauthorizedException);
-    expect(() => extractBearerToken('Bearer abc extra')).toThrow(UnauthorizedException);
+    expect(() => extractBearerToken('Bearer abc extra')).toThrow(
+      UnauthorizedException,
+    );
   });
 });

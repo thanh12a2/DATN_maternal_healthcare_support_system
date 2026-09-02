@@ -4,10 +4,15 @@ import type { PatientServiceHealthResponse } from './patient-service.service';
 
 @Controller()
 export class PatientServiceController {
-  constructor(private readonly patientServiceService: PatientServiceService) {}
+  constructor(private readonly patientService: PatientServiceService) {}
 
   @Get('health')
   getHealth(): PatientServiceHealthResponse {
-    return this.patientServiceService.getHealth();
+    return this.patientService.getHealth();
+  }
+
+  @Get('ready')
+  getReadiness(): Promise<PatientServiceHealthResponse> {
+    return this.patientService.getReadiness();
   }
 }

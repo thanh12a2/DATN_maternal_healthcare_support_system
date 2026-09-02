@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
+    "doctor-service": {
+      "type": "application",
+      "root": "apps/doctor-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/doctor-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/doctor-service/tsconfig.app.json"
+      }
+    },
     "patient-service": {
       "type": "application",
       "root": "apps/patient-service",

@@ -1,6 +1,8 @@
 import { UnauthorizedException } from '@nestjs/common';
 
-export function extractBearerToken(authorizationHeader: string | string[] | undefined): string {
+export function extractBearerToken(
+  authorizationHeader: string | string[] | undefined,
+): string {
   const authorization = Array.isArray(authorizationHeader)
     ? authorizationHeader[0]
     : authorizationHeader;
