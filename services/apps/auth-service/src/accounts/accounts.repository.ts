@@ -26,7 +26,6 @@ export class AccountsRepository {
     input: RegisterAccountInput,
   ): Promise<RegisteredAccount> {
     const roleCode = this.toPrismaRoleCode(input.role);
-
     return this.prisma.$transaction(async (transaction) => {
       const role = await transaction.role.findUnique({
         where: { code: roleCode },
@@ -40,7 +39,6 @@ export class AccountsRepository {
           roles: { create: { roleId: role.id } },
         },
       });
-
       return { userId: account.id, email: account.email, role: input.role };
     });
   }
@@ -58,6 +56,7 @@ export class AccountsRepository {
     );
     if (!account || !credential || !accountRole) return null;
 
+    if (!account || !credential || account.roles.length !== 1) return null;
     return {
       userId: account.id,
       email: account.email,
@@ -102,10 +101,7 @@ export class AccountsRepository {
   }
 
   async markLastLoginAt(accountId: string, lastLoginAt: Date): Promise<void> {
-    await this.prisma.account.update({
-      where: { id: accountId },
-      data: { lastLoginAt },
-    });
+    await this.prisma.account.update({ where: { id: accountId }, data: { lastLoginAt } });
   }
 
   isUniqueConstraintError(error: unknown): boolean {
@@ -126,7 +122,7 @@ export class AccountsRepository {
   }
 
   private toPrismaRoleCode(role: AuthRole): AuthRoleCode {
-    return role as unknown as AuthRoleCode;
+    return role;
   }
 }
 

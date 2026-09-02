@@ -9,5 +9,32 @@
     "auth-service": { "type": "application", "root": "apps/auth-service", "entryFile": "main", "sourceRoot": "apps/auth-service/src", "compilerOptions": { "tsConfigPath": "apps/auth-service/tsconfig.app.json" } },
     "doctor-service": { "type": "application", "root": "apps/doctor-service", "entryFile": "main", "sourceRoot": "apps/doctor-service/src", "compilerOptions": { "tsConfigPath": "apps/doctor-service/tsconfig.app.json" } },
     "sample-service": { "type": "application", "root": "apps/sample-service", "entryFile": "main", "sourceRoot": "apps/sample-service/src", "compilerOptions": { "tsConfigPath": "apps/sample-service/tsconfig.app.json" } }
+    "auth-service": {
+      "type": "application",
+      "root": "apps/auth-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/auth-service/tsconfig.app.json"
+      }
+    },
+    "patient-service": {
+      "type": "application",
+      "root": "apps/patient-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/patient-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/patient-service/tsconfig.app.json"
+      }
+    },
+    "sample-service": {
+      "type": "application",
+      "root": "apps/sample-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/sample-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/sample-service/tsconfig.app.json"
+      }
+    }
   }
 }

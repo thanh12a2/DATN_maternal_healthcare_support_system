@@ -110,3 +110,11 @@ coverage/
 .pytest_cache/
 htmlcov/
 test-results/
+
+# Generated local Postman environment (contains temporary tokens)
+postman/
+postman/local.postman_environment.json
+
+# Others
+PROGRESS.md
+NOTES-FOR-REVIEW.md

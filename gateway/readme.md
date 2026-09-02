@@ -67,17 +67,10 @@ http://localhost:8002
 - Kong proxy exposes host port `8080` by default.
 - Kong Admin API and Manager are bound to `127.0.0.1` only.
 - Kong database is separate from Auth Database.
-- Auth JWT verification is not configured yet; it belongs to a later phase after access token signing is implemented.
+- Kong verifies Patient access tokens with the RS256 JWT plugin; Patient Service verifies them again for defense in depth.
 
 ## Kong database import behavior
 
-`gateway/init-kong.sh` imports `docs/api-specs/kong.yml` only when Kong database is bootstrapped for the first time.
+`gateway/init-kong.sh` runs migrations and imports `docs/api-specs/kong.yml` on every initialization, so route and plugin changes are applied to an existing `kong-data` volume without destructive reset. The stable JWT credential is provisioned only when its configured key does not already exist, making repeated Compose startup idempotent.
 
-If `kong-data` already exists, changes to `kong.yml` will not automatically replace existing Kong entities. For local reset only:
-
-```bash
-docker compose down --volumes
-docker compose up --build
-```
-
-Do not run destructive volume reset against any non-local environment.
+Provide `AUTH_JWT_PUBLIC_KEY` and `AUTH_JWT_KEY_ID` before startup. Never delete a non-local Kong volume merely to apply configuration changes.
