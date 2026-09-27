@@ -7,7 +7,7 @@ info:
   title: Auth Service API
   description: |
     API specification for the Authentication Service.
-    Provides registration, login, token refresh, logout, and session lookup.
+    Provides registration, login, token refresh, logout, password management, and session lookup.
   version: 1.0.0
 
 servers:
@@ -113,6 +113,68 @@ paths:
         '401':
           description: Invalid session
 
+  /auth/forgot-password:
+    post:
+      summary: Request password reset instructions
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '202':
+          description: Request accepted without revealing account existence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordResponse'
+        '400':
+          description: Invalid request
+        '429':
+          description: Too many requests
+
+  /auth/reset-password:
+    post:
+      summary: Reset a password using a one-time token
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '204':
+          description: Password reset and refresh sessions revoked
+        '400':
+          description: Invalid request or invalid/expired reset token
+        '429':
+          description: Too many requests
+
+  /auth/change-password:
+    post:
+      summary: Change the current authenticated account password
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed and refresh sessions revoked
+        '400':
+          description: Invalid request or new password matches current password
+        '401':
+          description: Invalid access token, account, or current password
+        '429':
+          description: Too many requests
+
   /auth/me:
     get:
       summary: Get current session information
@@ -156,6 +218,11 @@ paths:
           description: Account not found
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     InternalAccountLookupResponse:
       type: object
@@ -199,6 +266,43 @@ components:
         password:
           type: string
           format: password
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    ForgotPasswordResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: If an eligible account exists, password reset instructions will be sent.
+    ResetPasswordRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          minLength: 8
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
     RefreshTokenRequest:
       type: object
       required:

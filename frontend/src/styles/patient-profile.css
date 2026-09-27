@@ -1,0 +1,353 @@
+.profile-page-shell {
+  min-height: 100vh;
+  padding: 36px 20px 72px;
+  background: linear-gradient(180deg, #edf7ff 0, #f7fbfe 320px);
+}
+.profile-page {
+  width: min(1080px, 100%);
+  margin: auto;
+}
+.profile-back-link {
+  display: inline-flex;
+  margin-bottom: 24px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  color: var(--deep);
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+.profile-back-link:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  transform: translateX(-4px);
+}
+.profile-back-link:active {
+  transform: translateX(-2px);
+}
+.profile-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+.profile-page-heading > div {
+  max-width: 760px;
+}
+.profile-page-heading span,
+.contact-manager-heading span {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.profile-page-heading h1 {
+  margin: 6px 0 10px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+.profile-page-heading p,
+.contact-manager-heading p {
+  color: var(--muted);
+}
+.profile-content-layout {
+  display: grid;
+  grid-template-areas: "main progress";
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: start;
+  gap: 22px;
+}
+.profile-main-content {
+  grid-area: main;
+  min-width: 0;
+}
+.profile-progress-sticky {
+  position: sticky;
+  top: 20px;
+  z-index: 10;
+  grid-area: progress;
+}
+.profile-progress {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--surface) 96%, transparent);
+  box-shadow: 0 12px 30px color-mix(in oklch, var(--deep) 10%, transparent);
+  backdrop-filter: blur(14px);
+}
+.profile-progress > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.profile-progress span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.profile-progress strong {
+  color: var(--deep);
+}
+.profile-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+.profile-progress-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  transition: width 0.25s ease;
+}
+.profile-form-shell,
+.contact-manager {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.profile-form-section {
+  display: grid;
+  grid-template-columns: minmax(190px, 260px) 1fr;
+  gap: 32px;
+  padding: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-section-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.profile-section-number {
+  display: grid;
+  flex: 0 0 36px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+}
+.profile-section-meta h2 {
+  font-size: 1.1rem;
+}
+.profile-section-meta p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+.profile-field.is-full {
+  grid-column: 1/-1;
+}
+.profile-field label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.profile-input,
+.profile-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #fff;
+}
+.profile-field-message {
+  min-height: 19px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.profile-field.has-error .profile-field-message {
+  color: var(--danger);
+}
+.profile-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 32px;
+}
+.profile-form-footer p {
+  color: var(--muted);
+}
+.profile-primary-action,
+.contact-add-button {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+.profile-alert {
+  margin: 18px 32px 0;
+  padding: 12px 15px;
+  border-radius: 10px;
+}
+.profile-alert.success {
+  background: var(--success-soft);
+  color: #087655;
+}
+.profile-alert.error {
+  background: var(--danger-soft);
+  color: #b42318;
+}
+.contact-manager {
+  margin-top: 28px;
+  padding: 28px 32px;
+  overflow: visible;
+}
+.contact-manager-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.contact-manager-heading h2 {
+  margin: 4px 0 7px;
+}
+.contact-empty {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.contact-list {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.contact-card {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.contact-priority {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+}
+.contact-card-copy > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.contact-card-copy p {
+  color: var(--muted);
+}
+.primary-badge {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--success-soft);
+  color: #087655;
+  font-size: 0.72rem;
+}
+.contact-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.contact-actions button,
+.contact-form-actions > button:first-child {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+.contact-actions .danger {
+  color: var(--danger);
+}
+.contact-form {
+  margin-top: 22px;
+  padding: 22px;
+  border-radius: 16px;
+  background: #f7fbfe;
+}
+.contact-form h3 {
+  margin-bottom: 18px;
+}
+.contact-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+@media (max-width: 760px) {
+  .profile-page-shell {
+    padding: 22px 12px 48px;
+  }
+  .profile-page-heading,
+  .contact-manager-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .profile-content-layout {
+    grid-template-areas:
+      "progress"
+      "main";
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .profile-progress-sticky {
+    top: 8px;
+  }
+  .profile-progress {
+    padding: 12px 14px;
+  }
+  .profile-form-section {
+    grid-template-columns: 1fr;
+    padding: 24px 18px;
+  }
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 20px 18px;
+  }
+  .contact-manager {
+    padding: 24px 18px;
+  }
+  .contact-card {
+    grid-template-columns: 38px 1fr;
+  }
+  .contact-actions {
+    grid-column: 1/-1;
+  }
+  .profile-alert {
+    margin: 16px 18px 0;
+  }
+}

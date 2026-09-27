@@ -123,7 +123,8 @@ Quy tắc gateway/service:
 | `fullName` | string | Yes | — | Trimmed, 2–150 ký tự | Họ tên người liên hệ |
 | `relationship` | string | Yes | — | Trimmed, 1–50 ký tự | Quan hệ với thai phụ |
 | `phoneNumber` | string | Yes | — | Chuẩn hóa như Patient phone | Số liên hệ |
-| `isPrimary` | boolean | Yes | `false` | Tối đa một primary contact/Patient | Liên hệ chính |
+| `isPrimary` | boolean | Yes | `false` | Đúng khi `priority = 1`; giữ để tương thích contract cũ | Liên hệ chính |
+| `priority` | integer | Yes | `1` | Liên tục từ `1..n`, tối đa `3` | Thứ tự bệnh viện nên liên hệ |
 | `createdAt` | timestamptz | Yes | DB now | Immutable | Thời điểm tạo |
 | `updatedAt` | timestamptz | Yes | DB now | Auto update | Thời điểm cập nhật |
 
@@ -149,8 +150,11 @@ Patient Service còn sở hữu hai bảng kỹ thuật, không expose như doma
 | `patients` | INDEX | normalized `fullName` | Hỗ trợ search theo tên; không dùng exact name làm identity |
 | Patient domain validation | Application rule | `dateOfBirth <= business date` | Dùng timezone `Asia/Ho_Chi_Minh`; không dùng time-dependent DB CHECK |
 | `emergency_contacts` | UNIQUE partial | `patientId` với `isPrimary=true` | Tối đa một primary contact |
+| `emergency_contacts` | INDEX | `patientId, priority` | Đọc danh sách theo thứ tự ưu tiên ổn định |
 
 Ghi chú database:
+
+- Migration thêm `priority` backfill dữ liệu cũ theo `isPrimary DESC, createdAt ASC, id ASC`; không xóa Emergency Contact hiện có.
 
 - Prisma schema hiện tại dùng `AUTH_DATABASE_URL` và chỉ mô hình Auth. Patient Service phải có Prisma schema, generated client và migration history riêng dùng `PATIENT_DATABASE_URL`.
 - Không thêm Patient models vào Auth Prisma schema/client. Cấu trúc file cụ thể có thể theo `services/prisma/patient/`, nhưng ownership và generated client riêng là bắt buộc.
@@ -192,6 +196,7 @@ Phase đầu chỉ tạo Patient khi có đủ `fullName`, `dateOfBirth`, `phone
 | API-009 | POST | `/patients/{patientId}/emergency-contacts` | Thêm emergency contact | Own PATIENT hoặc RECEPTIONIST |
 | API-010 | PATCH | `/patients/{patientId}/emergency-contacts/{contactId}` | Cập nhật emergency contact | Own PATIENT hoặc RECEPTIONIST |
 | API-011 | DELETE | `/patients/{patientId}/emergency-contacts/{contactId}` | Xóa emergency contact | Own PATIENT hoặc RECEPTIONIST |
+| API-012 | PUT | `/patients/{patientId}/emergency-contacts/order` | Sắp xếp toàn bộ emergency contacts theo ưu tiên | Own PATIENT hoặc RECEPTIONIST |
 
 ### API-001 — `GET /health`
 
@@ -337,10 +342,18 @@ Contract dự kiến sau khi có service auth:
 
 - Contact phải thuộc đúng Patient. Successful delete hoặc retry sau delete trả `204` nếu caller đã được authorize cho Patient.
 - Không được xóa contact có cùng ID nhưng thuộc Patient khác; trả `404 CONTACT_NOT_FOUND` để tránh leak.
+- Sau khi xóa, service nén lại priority thành `1..n`; contact còn lại đầu tiên trở thành primary. Danh sách rỗng vẫn hợp lệ.
+
+### API-012 — `PUT /patients/{patientId}/emergency-contacts/order`
+
+- **Request:** `{ "contactIds": ["uuid-1", "uuid-2"] }`, theo thứ tự ưu tiên cao đến thấp.
+- Danh sách phải chứa đúng toàn bộ contact hiện tại, mỗi ID đúng một lần; sai trả `400 CONTACT_ORDER_INVALID`.
+- Service lock parent Patient và cập nhật toàn bộ priority atomically. Contact đầu tiên có `priority=1` và `isPrimary=true`.
 
 Quy tắc chung:
 
-- Tối đa 3 contacts/Patient và tối đa một primary.
+- Emergency Contact là tùy chọn; Patient Profile vẫn được lưu và được coi là COMPLETE khi danh sách contact rỗng.
+- Tối đa 3 contacts/Patient; priority liên tục `1..n` và đúng một primary khi danh sách không rỗng.
 - PATIENT chỉ thao tác Patient của mình; RECEPTIONIST operations phải audit.
 - Third-party PII được bảo vệ và không log raw.
 
@@ -370,7 +383,7 @@ Quy tắc chung:
 | BR-006 | Phone number không unique tuyệt đối vì có thể dùng chung trong gia đình; phone trùng không block create và không được dùng để tự merge. | Application | N/A |
 | BR-007 | RECEPTIONIST search phải có filter và chỉ nhận kết quả tối thiểu/PII masked. | Application | `SEARCH_FILTER_REQUIRED` |
 | BR-008 | Mọi actual update qua API-002/API-005 phải conditional theo expected `version`; stale version không ghi đè dữ liệu mới hơn. | Application + conditional DB update | `CONCURRENT_UPDATE` |
-| BR-009 | Patient có tối đa 3 emergency contacts và tối đa một primary contact; operation thay đổi contacts phải lock parent Patient. | Transaction + DB unique safety net | `EMERGENCY_CONTACT_LIMIT_REACHED` |
+| BR-009 | Emergency Contact là tùy chọn. Patient có tối đa 3 contacts; priority liên tục từ 1, contact priority 1 là primary; mọi operation thay đổi/reorder contacts phải lock parent Patient. | Transaction + DB unique safety net | `EMERGENCY_CONTACT_LIMIT_REACHED` / `CONTACT_ORDER_INVALID` |
 | BR-010 | Không hard-delete Patient trong phase đầu. | API surface | N/A |
 | BR-011 | Patient Service không lưu clinical pregnancy/medical data. | Boundary/code review | N/A |
 | BR-012 | Mọi read/search/update bởi RECEPTIONIST và mọi thay đổi `nationalId`, `fullName`, `dateOfBirth` phải audit. | Application/local audit | `INTERNAL_ERROR` nếu audit bắt buộc thất bại |

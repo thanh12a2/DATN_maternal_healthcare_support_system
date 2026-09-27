@@ -8,6 +8,7 @@ export const presentContact = (contact: EmergencyContact) => ({
   relationship: contact.relationship,
   phoneNumber: contact.phoneNumber,
   isPrimary: contact.isPrimary,
+  priority: contact.priority,
 });
 
 export const presentPatient = (
@@ -22,16 +23,28 @@ export const presentPatient = (
   address: patient.address,
   profileStatus: 'COMPLETE' as const,
   version: patient.version,
-  emergencyContacts: patient.emergencyContacts.map(presentContact),
+  emergencyContacts: [...patient.emergencyContacts]
+    .sort(
+      (left, right) =>
+        left.priority - right.priority ||
+        left.createdAt.getTime() - right.createdAt.getTime() ||
+        left.id.localeCompare(right.id),
+    )
+    .map(presentContact),
 });
 
 export const presentSearchPatient = (
-  patient: Pick<Patient, 'id' | 'fullName' | 'dateOfBirth' | 'phoneNumber' | 'nationalIdCiphertext'>,
+  patient: Pick<
+    Patient,
+    'id' | 'fullName' | 'dateOfBirth' | 'phoneNumber' | 'nationalIdCiphertext'
+  >,
   crypto: NationalIdCryptoService,
 ) => ({
   id: patient.id,
   fullName: patient.fullName,
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
-  phoneNumberMasked: '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) + patient.phoneNumber.slice(-4),
+  phoneNumberMasked:
+    '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) +
+    patient.phoneNumber.slice(-4),
   nationalIdMasked: crypto.maskCiphertext(patient.nationalIdCiphertext),
 });

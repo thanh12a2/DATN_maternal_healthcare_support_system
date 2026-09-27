@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export function ProfileSection({number,title,description,children}:{number:string;title:string;description:string;children:ReactNode}){return <section className="profile-form-section"><div className="profile-section-meta"><span className="profile-section-number">{number}</span><div><h2>{title}</h2><p>{description}</p></div></div><div className="profile-form-grid">{children}</div></section>;}

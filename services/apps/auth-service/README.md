@@ -1,6 +1,6 @@
 # Auth Service
 
-Authentication Service là dịch vụ xác thực tập trung của hệ thống, chịu trách nhiệm đăng nhập, phát hành token và làm mới token. Các microservice khác không gọi trực tiếp Authentication Service cho mỗi request; thay vào đó, API Gateway sẽ xác thực JWT cục bộ bằng public key để giảm độ trễ và tránh tạo điểm nghẽn hiệu năng.
+Authentication Service là dịch vụ xác thực tập trung của hệ thống, chịu trách nhiệm account credential, đăng nhập, phát hành/làm mới token và quản lý mật khẩu. Các microservice khác không gọi trực tiếp Authentication Service cho mỗi request; thay vào đó, API Gateway sẽ xác thực JWT cục bộ bằng public key để giảm độ trễ và tránh tạo điểm nghẽn hiệu năng.
 
 ## Kiến trúc
 
@@ -20,12 +20,12 @@ Service         Service      Service
 		▲
 		│
      Authentication Service
-     (Login / Refresh / Logout)
+     (Login / Token / Password Management)
 ```
 
 ## Vai trò của Authentication Service
 
-- Chỉ xử lý đăng nhập, phát hành token và làm mới token.
+- Xử lý đăng ký, đăng nhập, token/session và password management; sở hữu credential trong Auth Database.
 - Không tham gia xác thực từng request nghiệp vụ của hệ thống.
 - Có thể được triển khai nhiều instance phía sau load balancer để loại bỏ điểm lỗi đơn.
 
@@ -37,7 +37,7 @@ Service         Service      Service
 
 ## Security foundation hiện tại
 
-Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho các phase auth tiếp theo, chưa implement register/login/JWT/refresh token.
+Auth Service hiện đã implement register/login/JWT/refresh token và forgot/reset/change password.
 
 ### Dependencies đã thêm
 
@@ -47,6 +47,7 @@ Bước foundation hiện tại mới chuẩn bị nền tảng bảo mật cho 
 - `argon2`: hash password bằng Argon2id theo target architecture.
 - `@prisma/client`: Prisma runtime client để Auth Service truy cập Auth Database.
 - `prisma`: Prisma CLI dùng cho generate client, migration và seed.
+- `nodemailer`: gửi password-reset email qua SMTP.
 
 ### Password hashing
 

@@ -38,11 +38,13 @@ model EmergencyContact {
   relationship String   @db.VarChar(50)
   phoneNumber  String   @map("phone_number") @db.VarChar(16)
   isPrimary    Boolean  @default(false) @map("is_primary")
+  priority     Int      @default(1)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([patientId], map: "emergency_contacts_patient_id_idx")
+  @@index([patientId, priority], map: "emergency_contacts_patient_priority_idx")
   @@map("emergency_contacts")
 }
 

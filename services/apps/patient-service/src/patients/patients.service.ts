@@ -15,7 +15,11 @@ import {
 } from '../common/normalization';
 import { PatientDatabaseService } from '../database/patient-database.service';
 import { NationalIdCryptoService } from '../security/national-id-crypto.service';
-import { CreateContactDto, UpdateContactDto } from './dto/contact.dto';
+import {
+  CreateContactDto,
+  ReorderContactsDto,
+  UpdateContactDto,
+} from './dto/contact.dto';
 import {
   CreatePatientDto,
   PatchPatientDto,
@@ -138,7 +142,7 @@ export class PatientsService {
         where: { id: patientId },
         include: {
           emergencyContacts: {
-            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
           },
         },
       });
@@ -451,31 +455,32 @@ export class PatientsService {
     return this.db.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM patients WHERE id = ${patientId}::uuid FOR UPDATE`;
       await this.authorizePatient(transaction, patientId, auth);
-      if (
-        (await transaction.emergencyContact.count({ where: { patientId } })) >=
-        3
-      ) {
+      const existing = await transaction.emergencyContact.findMany({
+        where: { patientId },
+        orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      });
+      if (existing.length >= 3) {
         throw new DomainException(
           'EMERGENCY_CONTACT_LIMIT_REACHED',
           'A patient can have at most three emergency contacts',
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
-      if (dto.isPrimary) {
-        await transaction.emergencyContact.updateMany({
-          where: { patientId, isPrimary: true },
-          data: { isPrimary: false },
-        });
-      }
+      const shouldBeFirst = existing.length === 0 || dto.isPrimary === true;
       const contact = await transaction.emergencyContact.create({
         data: {
           patientId,
           fullName: normalizeFullName(dto.fullName),
           relationship: normalizeRelationship(dto.relationship),
           phoneNumber: normalizePhone(dto.phoneNumber),
-          isPrimary: dto.isPrimary ?? false,
+          isPrimary: false,
+          priority: shouldBeFirst ? 1 : existing.length + 1,
         },
       });
+      const orderedIds = shouldBeFirst
+        ? [contact.id, ...existing.map((item) => item.id)]
+        : [...existing.map((item) => item.id), contact.id];
+      await this.applyContactOrder(transaction, patientId, orderedIds);
       await this.auditContact(
         transaction,
         auth,
@@ -484,7 +489,57 @@ export class PatientsService {
         'CREATE',
         requestId,
       );
-      return presentContact(contact);
+      return presentContact(
+        await transaction.emergencyContact.findUniqueOrThrow({
+          where: { id: contact.id },
+        }),
+      );
+    });
+  }
+
+  async reorderContacts(
+    patientId: string,
+    dto: ReorderContactsDto,
+    auth: PatientAuthContext,
+    requestId: string,
+  ) {
+    this.uuid(patientId, 'INVALID_PATIENT_ID');
+    return this.db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT id FROM patients WHERE id = ${patientId}::uuid FOR UPDATE`;
+      await this.authorizePatient(transaction, patientId, auth);
+      const existing = await transaction.emergencyContact.findMany({
+        where: { patientId },
+        orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      });
+      const expectedIds = new Set(existing.map((contact) => contact.id));
+      const submittedIds = new Set(dto.contactIds);
+      if (
+        dto.contactIds.length === 0 ||
+        submittedIds.size !== dto.contactIds.length ||
+        submittedIds.size !== expectedIds.size ||
+        dto.contactIds.some((id) => !expectedIds.has(id))
+      ) {
+        throw new DomainException(
+          'CONTACT_ORDER_INVALID',
+          'contactIds must contain every emergency contact exactly once',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.applyContactOrder(transaction, patientId, dto.contactIds);
+      await this.auditContact(
+        transaction,
+        auth,
+        patientId,
+        dto.contactIds[0],
+        'REORDER',
+        requestId,
+      );
+      return (
+        await transaction.emergencyContact.findMany({
+          where: { patientId },
+          orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        })
+      ).map(presentContact);
     });
   }
 
@@ -511,13 +566,7 @@ export class PatientsService {
         where: { id: contactId, patientId },
       });
       if (!old) this.contactNotFound();
-      if (dto.isPrimary === true) {
-        await transaction.emergencyContact.updateMany({
-          where: { patientId, isPrimary: true, id: { not: contactId } },
-          data: { isPrimary: false },
-        });
-      }
-      const contact = await transaction.emergencyContact.update({
+      await transaction.emergencyContact.update({
         where: { id: contactId },
         data: {
           ...(dto.fullName !== undefined && {
@@ -529,14 +578,29 @@ export class PatientsService {
           ...(dto.phoneNumber !== undefined && {
             phoneNumber: normalizePhone(dto.phoneNumber),
           }),
-          ...(dto.isPrimary !== undefined && { isPrimary: dto.isPrimary }),
         },
+      });
+      if (dto.isPrimary === true && !old.isPrimary) {
+        const contacts = await transaction.emergencyContact.findMany({
+          where: { patientId },
+          orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        });
+        await this.applyContactOrder(transaction, patientId, [
+          contactId,
+          ...contacts
+            .filter((item) => item.id !== contactId)
+            .map((item) => item.id),
+        ]);
+      }
+      const contact = await transaction.emergencyContact.findUniqueOrThrow({
+        where: { id: contactId },
       });
       const changed =
         old.fullName !== contact.fullName ||
         old.relationship !== contact.relationship ||
         old.phoneNumber !== contact.phoneNumber ||
-        old.isPrimary !== contact.isPrimary;
+        old.isPrimary !== contact.isPrimary ||
+        old.priority !== contact.priority;
       if (changed)
         await this.auditContact(
           transaction,
@@ -569,7 +633,16 @@ export class PatientsService {
       const deleted = await transaction.emergencyContact.deleteMany({
         where: { id: contactId, patientId },
       });
-      if (deleted.count)
+      if (deleted.count) {
+        const remaining = await transaction.emergencyContact.findMany({
+          where: { patientId },
+          orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        });
+        await this.applyContactOrder(
+          transaction,
+          patientId,
+          remaining.map((item) => item.id),
+        );
         await this.auditContact(
           transaction,
           auth,
@@ -578,6 +651,7 @@ export class PatientsService {
           'DELETE',
           requestId,
         );
+      }
     });
   }
 
@@ -738,6 +812,23 @@ export class PatientsService {
         }),
       )
       .digest('hex');
+  }
+
+  private async applyContactOrder(
+    transaction: Prisma.TransactionClient,
+    patientId: string,
+    contactIds: string[],
+  ): Promise<void> {
+    await transaction.emergencyContact.updateMany({
+      where: { patientId, isPrimary: true },
+      data: { isPrimary: false },
+    });
+    for (const [index, id] of contactIds.entries()) {
+      await transaction.emergencyContact.update({
+        where: { id },
+        data: { priority: index + 1, isPrimary: index === 0 },
+      });
+    }
   }
 
   private async authorizePatient(

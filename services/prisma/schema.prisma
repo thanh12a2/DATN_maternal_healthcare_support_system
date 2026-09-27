@@ -30,9 +30,10 @@ model Account {
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   lastLoginAt DateTime?     @map("last_login_at") @db.Timestamptz(6)
 
-  credential Credential?
-  roles      AccountRole[]
-  sessions   AuthSession[]
+  credential         Credential?
+  roles              AccountRole[]
+  sessions           AuthSession[]
+  passwordResetToken PasswordResetToken?
 
   @@map("accounts")
 }
@@ -68,6 +69,18 @@ model AccountRole {
 
   @@id([accountId, roleId])
   @@map("account_roles")
+}
+
+model PasswordResetToken {
+  accountId String   @id @map("account_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model AuthSession {

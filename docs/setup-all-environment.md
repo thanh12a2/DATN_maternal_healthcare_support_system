@@ -46,9 +46,32 @@ cd D:\DATN_maternal_healthcare_support_system
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode PrepareOnly
 ```
 
-Script tạo hoặc bổ sung .env, Auth RSA key pair, Patient internal RSA key pair, database secrets, Auth refresh pepper, Patient AES key và Patient lookup pepper. Script không tạo account Receptionist, không xóa volume và không chạy `docker compose down -v`.
+Script tạo hoặc bổ sung .env, Auth RSA key pair, Patient internal RSA key pair, database secrets, Auth refresh pepper, Auth password-reset pepper, Patient AES key và Patient lookup pepper. Script không tự tạo SMTP credential, không tạo account Receptionist, không xóa volume và không chạy `docker compose down -v`.
 
-### 3.2. Chạy toàn bộ bằng Docker
+### 3.2. Cấu hình password reset và SMTP
+
+Sau `PrepareOnly`, kiểm tra `.env`:
+
+```env
+AUTH_PASSWORD_RESET_PEPPER=<script-tu-sinh-secret>
+AUTH_PASSWORD_RESET_TTL_MINUTES=15
+AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS=60
+AUTH_PASSWORD_RESET_URL=http://localhost:3000/reset-password
+AUTH_SMTP_HOST=smtp.example.com
+AUTH_SMTP_PORT=587
+AUTH_SMTP_SECURE=false
+AUTH_SMTP_USER=<smtp-user>
+AUTH_SMTP_PASSWORD=<smtp-password>
+AUTH_EMAIL_FROM=no-reply@example.com
+```
+
+- Không dùng lại `AUTH_REFRESH_TOKEN_PEPPER` cho reset token.
+- Trong Docker, SMTP host phải reachable từ container; SMTP trên Windows host có thể dùng `host.docker.internal`.
+- Port 465 thường dùng secure `true`; port 587 thường dùng `false`/STARTTLS.
+- SMTP user/password phải cùng có hoặc cùng trống cho anonymous relay.
+- `AUTH_PASSWORD_RESET_URL` là URL browser mở từ email. Frontend hiện chưa có page này nên cần bổ sung hoặc đổi URL sang page thực tế.
+
+### 3.3. Chạy toàn bộ bằng Docker
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker
@@ -78,13 +101,13 @@ docker compose ps -a
 
 Migration job hợp lệ có trạng thái `Exited (0)`. App/database chính phải `Up`, database phải `healthy` nếu có healthcheck.
 
-### 3.3. Chạy app local, database bằng Docker
+### 3.4. Chạy app local, database bằng Docker
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Local
 ```
 
-Lệnh này start bốn database, generate Prisma clients, migrate Auth/Doctor/Receptionist/Patient và seed Auth roles/Doctor seed.
+Lệnh này start bốn database, generate Prisma clients, migrate Auth/Doctor/Receptionist/Patient (gồm bảng Auth `password_reset_tokens`) và seed Auth roles/Doctor seed.
 
 Trong mỗi terminal chạy app, nạp env trước:
 
@@ -243,7 +266,7 @@ Lệnh này xóa volume Kong, Auth, Doctor, Receptionist và Patient.
 
 - Không commit .env hoặc private key.
 - Không dùng local secrets cho production.
-- Không log password, JWT, national ID hoặc raw PII.
+- Không log password, JWT, password-reset token, SMTP password, national ID hoặc raw PII.
 - Không dùng User JWT thay internal service JWT.
 - Compose local publish database ports để debug; production nên bỏ publish ports.
 

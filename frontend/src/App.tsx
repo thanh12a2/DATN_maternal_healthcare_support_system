@@ -1,6 +1,5 @@
-import { AuthShell } from './components/auth/AuthShell';
+import { AppRouter } from './app/AppRouter';
+import './styles/tokens.css';
+import './styles/globals.css';
 import './styles/auth.css';
-
-export default function App() {
-  return <AuthShell />;
-}
+export default function App(){return <AppRouter/>;}

@@ -1,8 +1,16 @@
-# Doctor Service — Service Specification
+﻿# Doctor Service — Service Specification
 
 Đặc tả này được xây dựng từ `docs/quy-hoach-microservices-use-case-thai-phu-kham-thai.md`, `docs/use-case-flow-thai-phu-kham-thai.md` và `docs/service-specification-template.md`.
 
 Mục tiêu là chốt boundary và contract đủ rõ để review, viết OpenAPI, migration và giao cho coding agent. Đây là bản thiết kế, chưa phải mô tả implementation hiện có.
+
+---
+
+## Version / Change Log
+
+| Version | Date | Change | Impact |
+|---|---|---|---|
+| Draft-2026-09-22-rank-pricing | 2026-09-22 | Bổ sung quyết định Doctor Service phải sở hữu rank/phân loại bác sĩ chuẩn hóa, ví dụ `consultationRank`, để Service Catalog map giá/phụ phí theo rank. `professionalTitle` chỉ dùng hiển thị và không được dùng để tính giá. | Cần cập nhật Doctor schema/API/OpenAPI trước khi implement pricing theo rank ở Catalog/Appointment. Doctor Service vẫn không sở hữu giá tiền. |
 
 ---
 
@@ -59,6 +67,8 @@ flowchart LR
 
 Service là source of truth cho: `Doctor`, `DoctorProfile`, `Specialty`, `DoctorSpecialty`, `DoctorSchedule`, `DoctorAvailability`.
 
+**Pricing-related note:** Doctor Service cũng là owner của **rank/phân loại bác sĩ chuẩn hóa** dùng cho pricing downstream, ví dụ `consultationRank`. Service này chỉ lưu rank, **không lưu tiền khám/phụ phí**. Bảng tiền map theo rank thuộc Service Catalog/Billing. `professionalTitle` chỉ là text hiển thị, không được dùng để tính giá.
+
 | Dữ liệu chỉ tham chiếu | Owner service | Cách tham chiếu |
 |---|---|---|
 | `accountId` | Auth Service | UUID immutable từ JWT `sub`/internal account contract |
@@ -108,6 +118,7 @@ Quy tắc xác thực:
 | `AvailabilityType` | `UNAVAILABLE`, `EXTRA_AVAILABLE` |
 | `AvailabilityStatus` | `ACTIVE`, `CANCELLED` |
 | `AvailabilityReasonCode` | `SICK_LEAVE`, `PERSONAL_LEAVE`, `TRAINING`, `EMERGENCY`, `EXTRA_SHIFT`, `OTHER` |
+| `DoctorConsultationRank` | `BASIC`, `SPECIALIST_I`, `SPECIALIST_II`, `MASTER`, `ASSOC_PROFESSOR`, `PROFESSOR`, `EXPERT` — đề xuất, cần chốt code chính thức |
 
 ### Entities
 
@@ -118,6 +129,7 @@ Quy tắc xác thực:
 | `id` | UUID | Yes | Generated | PK, immutable | Định danh nghiệp vụ dùng giữa các service |
 | `accountId` | UUID | Yes | — | UNIQUE, immutable | Tài khoản do Auth Service sở hữu |
 | `licenseNumber` | string | Yes | — | UNIQUE, trim, uppercase, 3–50 ký tự | Mã/chứng chỉ hành nghề; không public mặc định |
+| `consultationRank` | `DoctorConsultationRank` | Yes | `BASIC` | Valid enum hoặc FK master rank nếu chọn table | Rank chuẩn hóa dùng để Catalog/Billing map giá; không phải giá tiền |
 | `status` | `DoctorStatus` | Yes | `DRAFT` | Valid enum | Vòng đời hồ sơ bác sĩ |
 | `version` | integer | Yes | `1` | `>= 1` | Optimistic concurrency |
 | `createdAt` | timestamptz | Yes | DB now | Immutable | Thời điểm tạo UTC |
@@ -129,7 +141,7 @@ Quy tắc xác thực:
 |---|---|---:|---|---|---|
 | `doctorId` | UUID | Yes | — | PK, FK Doctor | Quan hệ 1–1 |
 | `fullName` | string | Yes | — | Trim, 2–150 ký tự | Tên hiển thị bác sĩ |
-| `professionalTitle` | string | No | `null` | Tối đa 100 ký tự | Ví dụ `BS.CKI` |
+| `professionalTitle` | string | No | `null` | Tối đa 100 ký tự | Ví dụ `BS.CKI`; chỉ hiển thị, không dùng để tính giá |
 | `biography` | string | No | `null` | Tối đa 2.000 ký tự | Giới thiệu công khai |
 | `practiceStartYear` | integer | No | `null` | `1950..currentYear` | Không lưu `yearsExperience` dễ lỗi thời |
 | `languages` | string[] | Yes | `[]` | Mỗi mã 2–10 ký tự, tối đa 10 phần tử | Ngôn ngữ tư vấn, ví dụ `vi`, `en` |
@@ -1177,6 +1189,7 @@ And update sau trả VERSION_CONFLICT mà không ghi đè
 - `Specialty` thuộc Doctor Service theo tài liệu quy hoạch; Service Catalog chỉ tham chiếu `specialtyId`.
 - Appointment Service sở hữu booking occupancy và slot hold; Doctor Service chỉ sở hữu working availability.
 - Doctor profile không phải hồ sơ HR; chỉ lưu dữ liệu cần cho chọn bác sĩ và khám.
+- Doctor Service lưu rank/phân loại bác sĩ chuẩn hóa (`consultationRank`) để các service khác tính giá theo contract; Doctor Service không lưu bảng giá.
 - Không hard delete doctor/schedule/availability trong MVP để bảo toàn reference và audit.
 
 ### Open questions
@@ -1190,6 +1203,7 @@ And update sau trả VERSION_CONFLICT mà không ghi đè
 7. **Primary specialty:** bản này yêu cầu đúng một primary khi ACTIVE; cần nhóm nghiệp vụ xác nhận bác sĩ đa chuyên khoa có bắt buộc chọn primary không.
 8. **Tên/error envelope chung:** Auth Service hiện có response shape riêng; cần thống nhất toàn hệ thống trước khi viết OpenAPI cuối cùng.
 9. **Retention/audit:** cần chốt thời gian lưu audit, idempotency records và dữ liệu doctor inactive.
+10. **Consultation rank contract:** cần chốt danh sách rank chính thức, default rank, enum hay bảng master, và cách expose rank trong public/internal Doctor API. Giá theo rank không thuộc Doctor Service.
 
 Các phần phụ thuộc câu 1–4 không nên được coi là production-ready trước khi có quyết định. Có thể implement domain/API local trước bằng interface/adapter và test double.
 
@@ -1209,3 +1223,5 @@ Các phần phụ thuộc câu 1–4 không nên được coi là production-rea
 - **Notes:** Cần review các Open Questions, đặc biệt boundary availability–appointment và inter-service authentication, trước khi implement integration.
 
 > Mọi thay đổi boundary, public/internal API, database schema, event contract hoặc security model phải cập nhật spec và OpenAPI trước khi implement.
+
+

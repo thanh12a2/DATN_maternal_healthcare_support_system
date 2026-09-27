@@ -747,6 +747,8 @@ Kiểm tra:
 - `credentials.password_hash` bắt đầu bằng `$argon2id$`
 - `auth_sessions.refresh_token_hash` không phải plaintext refresh token
 - Sau logout, session có `revoked_at` và `revoked_reason = logout`
+- `password_reset_tokens.token_hash` không chứa raw token
+- Reset/change password revoke session với `password_reset` hoặc `password_change`
 
 ---
 

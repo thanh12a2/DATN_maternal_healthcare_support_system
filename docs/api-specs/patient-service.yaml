@@ -83,6 +83,16 @@ paths:
       responses:
         '201': { description: Created }
         '422': { $ref: '#/components/responses/Error' }
+  /{patientId}/emergency-contacts/order:
+    put:
+      summary: Reorder all emergency contacts by priority
+      operationId: reorderEmergencyContacts
+      parameters: [{ in: path, name: patientId, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContactOrderInput' } } } }
+      responses:
+        '200': { description: Ordered contacts, content: { application/json: { schema: { $ref: '#/components/schemas/ContactListEnvelope' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
   /{patientId}/emergency-contacts/{contactId}:
     parameters:
       - { in: path, name: patientId, required: true, schema: { type: string, format: uuid } }
@@ -160,7 +170,38 @@ components:
         fullName: { type: string, minLength: 2, maxLength: 150 }
         relationship: { type: string, minLength: 1, maxLength: 50 }
         phoneNumber: { type: string }
-        isPrimary: { type: boolean }
+        isPrimary:
+          type: boolean
+          description: Backward-compatible alias; true moves this contact to priority 1.
+    ContactOrderInput:
+      type: object
+      additionalProperties: false
+      required: [contactIds]
+      properties:
+        contactIds:
+          type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          items: { type: string, format: uuid }
+          description: Every current contact ID exactly once, from highest to lowest priority.
+    EmergencyContact:
+      type: object
+      required: [id, fullName, relationship, phoneNumber, isPrimary, priority]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        relationship: { type: string }
+        phoneNumber: { type: string }
+        isPrimary: { type: boolean, description: True exactly when priority is 1. }
+        priority: { type: integer, minimum: 1, maximum: 3 }
+    ContactListEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/EmergencyContact' }
     PatientEnvelope:
       type: object
       required: [data]

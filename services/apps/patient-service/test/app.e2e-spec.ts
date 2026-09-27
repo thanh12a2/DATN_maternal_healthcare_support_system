@@ -95,7 +95,37 @@ describe('Patient Service E2E', () => {
         isPrimary: true,
       });
     expect(contact.status).toBe(201);
-    expect(contact.body.data.isPrimary).toBe(true);
+    expect(contact.body.data).toMatchObject({ isPrimary: true, priority: 1 });
+    const secondContact = await request(app.getHttpServer())
+      .post('/patients/' + created.body.data.id + '/emergency-contacts')
+      .set('Authorization', auth)
+      .send({
+        fullName: 'Nguyễn Văn C',
+        relationship: 'Mẹ',
+        phoneNumber: '0923456789',
+      });
+    expect(secondContact.status).toBe(201);
+    expect(secondContact.body.data).toMatchObject({
+      isPrimary: false,
+      priority: 2,
+    });
+    const reordered = await request(app.getHttpServer())
+      .put('/patients/' + created.body.data.id + '/emergency-contacts/order')
+      .set('Authorization', auth)
+      .send({ contactIds: [secondContact.body.data.id, contact.body.data.id] });
+    expect(reordered.status).toBe(200);
+    expect(
+      reordered.body.data.map(
+        (item: { id: string; priority: number; isPrimary: boolean }) => ({
+          id: item.id,
+          priority: item.priority,
+          isPrimary: item.isPrimary,
+        }),
+      ),
+    ).toEqual([
+      { id: secondContact.body.data.id, priority: 1, isPrimary: true },
+      { id: contact.body.data.id, priority: 2, isPrimary: false },
+    ]);
     expect((await db.patient.count()).valueOf()).toBe(1);
   });
   it('rejects future DOB and arbitrary patient access', async () => {

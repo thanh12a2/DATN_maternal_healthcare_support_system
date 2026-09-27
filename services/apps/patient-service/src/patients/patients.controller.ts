@@ -18,7 +18,11 @@ import {
 import type { Response } from 'express';
 import { PatientAuthGuard } from '../auth/patient-auth.guard';
 import type { PatientRequest } from '../common/request-context';
-import { CreateContactDto, UpdateContactDto } from './dto/contact.dto';
+import {
+  CreateContactDto,
+  ReorderContactsDto,
+  UpdateContactDto,
+} from './dto/contact.dto';
 import {
   CreatePatientDto,
   PatchPatientDto,
@@ -120,6 +124,22 @@ export class PatientsController {
   ) {
     return {
       data: await this.patients.addContact(
+        patientId,
+        dto,
+        request.patientAuth!,
+        request.requestId,
+      ),
+    };
+  }
+
+  @Put(':patientId/emergency-contacts/order')
+  async reorderContacts(
+    @Param('patientId') patientId: string,
+    @Body() dto: ReorderContactsDto,
+    @Req() request: PatientRequest,
+  ) {
+    return {
+      data: await this.patients.reorderContacts(
         patientId,
         dto,
         request.patientAuth!,

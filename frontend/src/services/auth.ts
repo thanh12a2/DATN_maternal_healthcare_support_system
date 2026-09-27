@@ -1,6 +1,5 @@
 import type { LoginFormValues, RegisterFormValues } from '../schemas/auth';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+import { apiRequest, ApiError } from './api';
 
 export interface AuthUser {
   userId: string;
@@ -16,63 +15,39 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-export interface RegisterResponse {
-  user: AuthUser;
-}
+export interface RegisterResponse { user: AuthUser; }
+export interface MeResponse { user: AuthUser; }
 
-interface ApiErrorPayload {
-  message?: string | string[];
-  error?: string;
-  statusCode?: number;
-}
+export { ApiError as AuthApiError };
 
-export class AuthApiError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode?: number,
-  ) {
-    super(message);
-    this.name = 'AuthApiError';
-  }
-}
-
-async function requestJson<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
-  });
-
-  const payload = (await response.json().catch(() => null)) as ApiErrorPayload | T | null;
-
-  if (!response.ok) {
-    const rawMessage = (payload as ApiErrorPayload | null)?.message;
-    const message = Array.isArray(rawMessage) ? rawMessage.join(' ') : rawMessage;
-
-    throw new AuthApiError(message || 'Không thể xử lý yêu cầu. Vui lòng thử lại.', response.status);
-  }
-
-  return payload as T;
-}
-
-export async function login(values: LoginFormValues): Promise<LoginResponse> {
-  return requestJson<LoginResponse>('/auth/login', {
+export function login(values: LoginFormValues): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({
-      email: values.email.trim().toLowerCase(),
-      password: values.password,
-    }),
+    body: JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password }),
   });
 }
 
-export async function register(values: RegisterFormValues): Promise<RegisterResponse> {
-  return requestJson<RegisterResponse>('/auth/register', {
+export function register(values: RegisterFormValues): Promise<RegisterResponse> {
+  return apiRequest<RegisterResponse>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({
-      email: values.email.trim().toLowerCase(),
-      password: values.password,
-    }),
+    body: JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password }),
+  });
+}
+
+export function getCurrentUser(accessToken: string): Promise<MeResponse> {
+  return apiRequest<MeResponse>('/auth/me', {}, accessToken);
+}
+
+export function refresh(refreshToken: string): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
+  });
+}
+
+export function logout(refreshToken: string): Promise<void> {
+  return apiRequest<void>('/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
   });
 }

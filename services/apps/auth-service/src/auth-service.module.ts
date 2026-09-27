@@ -5,6 +5,7 @@ import { AuthServiceController } from './auth-service.controller';
 import { AuthServiceService } from './auth-service.service';
 import { DatabaseModule } from './database/database.module';
 import { JwksModule } from './jwks/jwks.module';
+import { PasswordManagementModule } from './password-management/password-management.module';
 import { SecurityModule } from './security/security.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { SecurityModule } from './security/security.module';
     AuthModule,
     DatabaseModule,
     JwksModule,
+    PasswordManagementModule,
     SecurityModule,
   ],
   controllers: [AuthServiceController],

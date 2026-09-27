@@ -163,6 +163,42 @@ describe('Patient PostgreSQL integration', () => {
         where: { patientId: p.id, isPrimary: true },
       }),
     ).toBe(1);
+    expect(
+      await db.emergencyContact.findMany({
+        where: { patientId: p.id },
+        orderBy: { priority: 'asc' },
+        select: { id: true, priority: true, isPrimary: true },
+      }),
+    ).toEqual([
+      { id: ids[1], priority: 1, isPrimary: true },
+      { id: ids[0], priority: 2, isPrimary: false },
+      { id: ids[2], priority: 3, isPrimary: false },
+    ]);
+    const reordered = await service.reorderContacts(
+      p.id,
+      { contactIds: [ids[2], ids[0], ids[1]] },
+      a,
+      randomUUID(),
+    );
+    expect(
+      reordered.map((contact) => [
+        contact.id,
+        contact.priority,
+        contact.isPrimary,
+      ]),
+    ).toEqual([
+      [ids[2], 1, true],
+      [ids[0], 2, false],
+      [ids[1], 3, false],
+    ]);
+    await expect(
+      service.reorderContacts(
+        p.id,
+        { contactIds: [ids[2], ids[1]] },
+        a,
+        randomUUID(),
+      ),
+    ).rejects.toMatchObject({ code: 'CONTACT_ORDER_INVALID' });
     await expect(
       service.deleteContact(p.id, ids[0], other, randomUUID()),
     ).rejects.toBeDefined();
@@ -174,6 +210,16 @@ describe('Patient PostgreSQL integration', () => {
     await service.deleteContact(p.id, ids[0], a, randomUUID());
     await service.deleteContact(p.id, ids[0], a, randomUUID());
     expect(await db.emergencyContact.count()).toBe(2);
+    expect(
+      await db.emergencyContact.findMany({
+        where: { patientId: p.id },
+        orderBy: { priority: 'asc' },
+        select: { id: true, priority: true, isPrimary: true },
+      }),
+    ).toEqual([
+      { id: ids[2], priority: 1, isPrimary: true },
+      { id: ids[1], priority: 2, isPrimary: false },
+    ]);
   });
 
   it('serializes concurrent contact additions at the three-contact limit', async () => {

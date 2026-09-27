@@ -9,7 +9,7 @@ The API Gateway serves as the single entry point for client requests. It routes 
 - Request routing.
 - CORS handling.
 - Future authentication enforcement/JWT verification for protected business routes.
-- Future rate limiting for public auth endpoints.
+- Rate limiting for password-management endpoints and protected business routes.
 
 Gateway must not contain business logic.
 
@@ -24,11 +24,21 @@ Gateway must not contain business logic.
 
 | External Path | Target Service | Internal URL | Notes |
 |---|---|---|---|
-| `/auth/*` | Auth Service | `http://auth-service:5003/auth/*` | Public auth endpoints, register/login/refresh/logout future implementation |
+| `/auth/*` | Auth Service | `http://auth-service:5003/auth/*` | Register/login/refresh/logout and password management |
 | `/health` | Auth Service | `http://auth-service:5003/health` | Auth Service health check |
 | `/.well-known/jwks.json` | Auth Service | `http://auth-service:5003/.well-known/jwks.json` | Public JWKS for future JWT validation |
 | `/api/sample-service/*` | Sample Service | `http://sample-service:5000/*` | Template/sample route |
 | `/api/doctors/*` | Doctor Service | `http://doctor-service:5005/*` | Doctor directory and availability; internal routes are not public |
+
+Password-management limits configured with Kong `policy: local`:
+
+| Route | Limit per IP |
+|---|---:|
+| `POST /auth/forgot-password` | 5/minute |
+| `POST /auth/reset-password` | 10/minute |
+| `POST /auth/change-password` | 10/minute |
+
+Auth Service additionally applies a 60-second forgot-password cooldown per eligible account. Gateway contains no password business logic.
 
 Current Kong config is in:
 
