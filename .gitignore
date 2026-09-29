@@ -119,3 +119,4 @@ postman/local.postman_environment.json
 # Others
 PROGRESS.md
 NOTES-FOR-REVIEW.md
+docs/receptionist-service-grpc-design.md
