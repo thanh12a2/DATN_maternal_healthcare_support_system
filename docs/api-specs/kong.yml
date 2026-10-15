@@ -107,6 +107,50 @@ services:
       - name: jwt
         config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
 
+  - name: document-service
+    url: http://document-service:5013
+    routes:
+      - name: document-content-route
+        paths: ["~/api/documents/[0-9a-fA-F-]+/content", /api/documents/content]
+        regex_priority: 100
+        strip_path: false
+      - name: document-service-route
+        paths: [/api/documents]
+        strip_path: true
+        plugins:
+          - name: jwt
+            config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
+  - name: prescription-service
+    url: http://prescription-service:5014
+    routes:
+      - name: prescription-service-route
+        paths: [/api/prescriptions]
+        strip_path: true
+        plugins:
+          - name: jwt
+            config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
+  - name: treatment-plan-service
+    url: http://treatment-plan-service:5015
+    routes:
+      - name: treatment-plan-service-route
+        paths: [/api/treatment-plans]
+        strip_path: true
+        plugins:
+          - name: jwt
+            config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
+  - name: reporting-service
+    url: http://reporting-service:5018
+    routes:
+      - name: reporting-service-route
+        paths: [/api/reports]
+        strip_path: true
+    plugins:
+      - name: jwt
+        config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
   - name: sample-service
     url: http://sample-service:5000
     routes: [{ name: sample-service-route, paths: [/api/sample-service], strip_path: true }]

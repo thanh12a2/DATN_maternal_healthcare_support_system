@@ -32,7 +32,7 @@ import {
 } from '../common/dto';
 import { DoctorDomainService } from './doctor.service';
 
-@Controller()
+@Controller('doctors')
 export class DoctorController {
   constructor(private readonly service: DoctorDomainService) {}
   private identity(req: AuthenticatedRequest) {
@@ -43,7 +43,7 @@ export class DoctorController {
     return value === undefined ? NaN : Number(value);
   }
 
-  @Post('doctors')
+  @Post()
   @Roles('ADMIN')
   create(
     @Body() dto: CreateDoctorDto,
@@ -57,64 +57,9 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Get('doctors')
+  @Get()
   list(@Query() query: ListQueryDto, @Req() req: AuthenticatedRequest) {
     return this.service.listDoctors(query, req.identity);
-  }
-  @Get('doctors/:doctorId')
-  get(
-    @Param('doctorId', ParseUUIDPipe) id: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.service.getDoctor(id, req.identity);
-  }
-  @Patch('doctors/:doctorId')
-  update(
-    @Param('doctorId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateDoctorDto,
-    @Headers('if-match') match: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.service.updateDoctor(
-      id,
-      dto,
-      this.identity(req),
-      this.version(match),
-      req.requestId,
-    );
-  }
-  @Post('doctors/:doctorId/activate')
-  @Roles('ADMIN')
-  activate(
-    @Param('doctorId', ParseUUIDPipe) id: string,
-    @Headers('if-match') match: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.service.changeStatus(
-      id,
-      true,
-      this.identity(req),
-      this.version(match),
-      undefined,
-      req.requestId,
-    );
-  }
-  @Post('doctors/:doctorId/deactivate')
-  @Roles('ADMIN')
-  deactivate(
-    @Param('doctorId', ParseUUIDPipe) id: string,
-    @Headers('if-match') match: string,
-    @Body() dto: ReasonDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.service.changeStatus(
-      id,
-      false,
-      this.identity(req),
-      this.version(match),
-      dto.reason,
-      req.requestId,
-    );
   }
   @Post('specialties')
   @Roles('ADMIN')
@@ -137,7 +82,63 @@ export class DoctorController {
   ) {
     return this.service.listSpecialties(query, this.identity(req));
   }
-  @Put('doctors/:doctorId/specialties/:specialtyId')
+  @Get(':doctorId')
+  get(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.getDoctor(id, req.identity);
+  }
+  @Patch(':doctorId')
+  update(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDoctorDto,
+    @Headers('if-match') match: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateDoctor(
+      id,
+      dto,
+      this.identity(req),
+      this.version(match),
+      req.requestId,
+    );
+  }
+  @Post(':doctorId/activate')
+  @Roles('ADMIN')
+  activate(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Headers('if-match') match: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.changeStatus(
+      id,
+      true,
+      this.identity(req),
+      this.version(match),
+      undefined,
+      req.requestId,
+    );
+  }
+  @Post(':doctorId/deactivate')
+  @Roles('ADMIN')
+  deactivate(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Headers('if-match') match: string,
+    @Body() dto: ReasonDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.changeStatus(
+      id,
+      false,
+      this.identity(req),
+      this.version(match),
+      dto.reason,
+      req.requestId,
+    );
+  }
+
+  @Put(':doctorId/specialties/:specialtyId')
   @Roles('ADMIN')
   link(
     @Param('doctorId', ParseUUIDPipe) doctorId: string,
@@ -145,6 +146,8 @@ export class DoctorController {
     @Body() dto: SpecialtyLinkDto,
     @Req() req: AuthenticatedRequest,
   ) {
+    console.log('PUT SPECIALTY BODY:', req.body);
+    console.log('PUT SPECIALTY DTO:', dto);
     return this.service.linkSpecialty(
       doctorId,
       specialtyId,
@@ -153,7 +156,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Delete('doctors/:doctorId/specialties/:specialtyId')
+  @Delete(':doctorId/specialties/:specialtyId')
   @Roles('ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   unlink(
@@ -168,7 +171,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Post('doctors/:doctorId/schedules')
+  @Post(':doctorId/schedules')
   @Roles('ADMIN')
   createSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
@@ -184,7 +187,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Get('doctors/:doctorId/schedules')
+  @Get(':doctorId/schedules')
   schedules(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Query() query: ScheduleListQueryDto,
@@ -192,7 +195,7 @@ export class DoctorController {
   ) {
     return this.service.listSchedules(id, query, this.identity(req));
   }
-  @Patch('doctors/:doctorId/schedules/:scheduleId')
+  @Patch(':doctorId/schedules/:scheduleId')
   @Roles('ADMIN')
   updateSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
@@ -210,7 +213,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Post('doctors/:doctorId/schedules/:scheduleId/cancel')
+  @Post(':doctorId/schedules/:scheduleId/cancel')
   @Roles('ADMIN')
   cancelSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
@@ -228,7 +231,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Post('doctors/:doctorId/availability-overrides')
+  @Post(':doctorId/availability-overrides')
   createAvailability(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Body() dto: CreateAvailabilityDto,
@@ -243,7 +246,7 @@ export class DoctorController {
       req.requestId,
     );
   }
-  @Get('doctors/:doctorId/availability')
+  @Get(':doctorId/availability')
   availability(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Query() query: AvailabilityQueryDto,
@@ -251,7 +254,7 @@ export class DoctorController {
   ) {
     return this.service.listAvailability(id, query, this.identity(req));
   }
-  @Post('doctors/:doctorId/availability-overrides/:overrideId/cancel')
+  @Post(':doctorId/availability-overrides/:overrideId/cancel')
   cancelAvailability(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Param('overrideId', ParseUUIDPipe) overrideId: string,
@@ -280,3 +283,4 @@ export class DoctorController {
     return this.service.eligibility(id, specialtyId, startAt, endAt);
   }
 }
+
