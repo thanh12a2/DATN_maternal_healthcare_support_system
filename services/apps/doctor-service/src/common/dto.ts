@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -75,7 +75,13 @@ export class CreateSpecialtyDto {
   @IsOptional() @IsString() @MaxLength(1000) description?: string;
 }
 export class SpecialtyLinkDto {
-  @IsBoolean() isPrimary!: boolean;
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  isPrimary!: boolean;
 }
 export class CreateScheduleDto {
   @IsInt() @Min(1) @Max(7) dayOfWeek!: number;

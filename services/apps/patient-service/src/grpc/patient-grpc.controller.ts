@@ -9,13 +9,37 @@ export class PatientGrpcController {
   constructor(private readonly patients: PatientsService) {}
 
   @GrpcMethod('PatientInternalService', 'GetPatientEligibility')
-  @ServiceCallers('appointment-service')
+  @ServiceCallers('appointment-service', 'consultation-service')
   @ServiceScopes('patient:eligibility:read')
-  getPatientEligibility(request: { patientId: string; context?: { actorAccountId?: string } }) {
-    return this.patients.getEligibility(
-      request.patientId,
-      request.context?.actorAccountId,
+  async getPatientEligibility(request: any) {
+    let patientId = request?.patientId ?? request?.patient_id;
+    const actorAccountId = request?.context?.actorAccountId ?? request?.context?.actor_account_id;
+    if (!patientId && actorAccountId) {
+      const p = await this.patients.getPatientByAuthAccountId(actorAccountId);
+      if (p) patientId = p.id;
+    }
+    if (!patientId) {
+      return {
+        patientId: '',
+        active: false,
+        profileComplete: false,
+        profileVersion: 0,
+        callerOwnsPatient: false,
+        eligibleForBooking: false,
+      };
+    }
+    const res = await this.patients.getEligibility(
+      patientId,
+      actorAccountId,
     );
+    return {
+      patientId: res.patientId,
+      active: res.active,
+      profileComplete: res.profileComplete,
+      profileVersion: res.profileVersion,
+      callerOwnsPatient: res.callerOwnsPatient,
+      eligibleForBooking: res.eligibleForBooking ?? (res.active && res.profileComplete),
+    };
   }
 
   @GrpcMethod('PatientInternalService', 'GetPatientIdentity')

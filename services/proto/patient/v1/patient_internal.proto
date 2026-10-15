@@ -25,6 +25,7 @@ message GetPatientEligibilityResponse {
   bool profile_complete = 3;
   int64 profile_version = 4;
   bool caller_owns_patient = 5;
+  bool eligible_for_booking = 6;
 }
 
 message GetPatientIdentityRequest {

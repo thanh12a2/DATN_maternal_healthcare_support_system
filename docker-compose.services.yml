@@ -21,6 +21,8 @@ services:
       POSTGRES_DB: "${APPOINTMENT_DB_NAME:-appointment}"
       POSTGRES_USER: "${APPOINTMENT_DB_USER:-appointment}"
       POSTGRES_PASSWORD: "${APPOINTMENT_DB_PASSWORD:-appointmentpass}"
+    ports:
+      - "0.0.0.0:5438:5432"
     volumes: [appointment-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -39,6 +41,8 @@ services:
 
   appointment-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: appointment-service } }
+    ports:
+      - "${APPOINTMENT_SERVICE_PORT:-5008}:5008"
     environment:
       SERVICE_ID: appointment-service
       PORT: 5008
@@ -73,6 +77,8 @@ services:
       POSTGRES_DB: "${BILLING_DB_NAME:-billing}"
       POSTGRES_USER: "${BILLING_DB_USER:-billing}"
       POSTGRES_PASSWORD: "${BILLING_DB_PASSWORD:-billingpass}"
+    ports:
+      - "0.0.0.0:5439:5432"
     volumes: [billing-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -91,6 +97,8 @@ services:
 
   billing-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: billing-service } }
+    ports:
+      - "${BILLING_SERVICE_PORT:-5009}:5009"
     environment:
       SERVICE_ID: billing-service
       PORT: 5009
@@ -125,6 +133,8 @@ services:
       POSTGRES_DB: "${MEDICAL_RECORD_DB_NAME:-medical_record}"
       POSTGRES_USER: "${MEDICAL_RECORD_DB_USER:-medical_record}"
       POSTGRES_PASSWORD: "${MEDICAL_RECORD_DB_PASSWORD:-medical_recordpass}"
+    ports:
+      - "0.0.0.0:5440:5432"
     volumes: [medical-record-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -143,6 +153,8 @@ services:
 
   medical-record-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: medical-record-service } }
+    ports:
+      - "${MEDICAL_RECORD_SERVICE_PORT:-5011}:5011"
     environment:
       SERVICE_ID: medical-record-service
       PORT: 5011
@@ -177,6 +189,8 @@ services:
       POSTGRES_DB: "${QUEUE_DB_NAME:-queue}"
       POSTGRES_USER: "${QUEUE_DB_USER:-queue}"
       POSTGRES_PASSWORD: "${QUEUE_DB_PASSWORD:-queuepass}"
+    ports:
+      - "0.0.0.0:5441:5432"
     volumes: [queue-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -195,6 +209,8 @@ services:
 
   queue-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: queue-service } }
+    ports:
+      - "${QUEUE_SERVICE_PORT:-5012}:5012"
     environment:
       SERVICE_ID: queue-service
       PORT: 5012
@@ -229,6 +245,8 @@ services:
       POSTGRES_DB: "${DOCUMENT_DB_NAME:-document}"
       POSTGRES_USER: "${DOCUMENT_DB_USER:-document}"
       POSTGRES_PASSWORD: "${DOCUMENT_DB_PASSWORD:-documentpass}"
+    ports:
+      - "0.0.0.0:5442:5432"
     volumes: [document-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -247,6 +265,8 @@ services:
 
   document-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: document-service } }
+    ports:
+      - "${DOCUMENT_SERVICE_PORT:-5013}:5013"
     environment:
       SERVICE_ID: document-service
       PORT: 5013
@@ -281,6 +301,8 @@ services:
       POSTGRES_DB: "${PRESCRIPTION_DB_NAME:-prescription}"
       POSTGRES_USER: "${PRESCRIPTION_DB_USER:-prescription}"
       POSTGRES_PASSWORD: "${PRESCRIPTION_DB_PASSWORD:-prescriptionpass}"
+    ports:
+      - "0.0.0.0:5443:5432"
     volumes: [prescription-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -299,6 +321,8 @@ services:
 
   prescription-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: prescription-service } }
+    ports:
+      - "${PRESCRIPTION_SERVICE_PORT:-5014}:5014"
     environment:
       SERVICE_ID: prescription-service
       PORT: 5014
@@ -333,6 +357,8 @@ services:
       POSTGRES_DB: "${TREATMENT_PLAN_DB_NAME:-treatment_plan}"
       POSTGRES_USER: "${TREATMENT_PLAN_DB_USER:-treatment_plan}"
       POSTGRES_PASSWORD: "${TREATMENT_PLAN_DB_PASSWORD:-treatment_planpass}"
+    ports:
+      - "0.0.0.0:5444:5432"
     volumes: [treatment-plan-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -351,6 +377,8 @@ services:
 
   treatment-plan-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: treatment-plan-service } }
+    ports:
+      - "${TREATMENT_PLAN_SERVICE_PORT:-5015}:5015"
     environment:
       SERVICE_ID: treatment-plan-service
       PORT: 5015
@@ -385,6 +413,8 @@ services:
       POSTGRES_DB: "${NOTIFICATION_DB_NAME:-notification}"
       POSTGRES_USER: "${NOTIFICATION_DB_USER:-notification}"
       POSTGRES_PASSWORD: "${NOTIFICATION_DB_PASSWORD:-notificationpass}"
+    ports:
+      - "0.0.0.0:5445:5432"
     volumes: [notification-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -403,6 +433,8 @@ services:
 
   notification-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: notification-service } }
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-5016}:5016"
     environment:
       SERVICE_ID: notification-service
       PORT: 5016
@@ -437,6 +469,8 @@ services:
       POSTGRES_DB: "${AUDIT_LOG_DB_NAME:-audit_log}"
       POSTGRES_USER: "${AUDIT_LOG_DB_USER:-audit_log}"
       POSTGRES_PASSWORD: "${AUDIT_LOG_DB_PASSWORD:-audit_logpass}"
+    ports:
+      - "0.0.0.0:5446:5432"
     volumes: [audit-log-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -455,6 +489,8 @@ services:
 
   audit-log-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: audit-log-service } }
+    ports:
+      - "${AUDIT_LOG_SERVICE_PORT:-5017}:5017"
     environment:
       SERVICE_ID: audit-log-service
       PORT: 5017
@@ -489,6 +525,8 @@ services:
       POSTGRES_DB: "${REPORTING_DB_NAME:-reporting}"
       POSTGRES_USER: "${REPORTING_DB_USER:-reporting}"
       POSTGRES_PASSWORD: "${REPORTING_DB_PASSWORD:-reportingpass}"
+    ports:
+      - "0.0.0.0:5447:5432"
     volumes: [reporting-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -507,6 +545,8 @@ services:
 
   reporting-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: reporting-service } }
+    ports:
+      - "${REPORTING_SERVICE_PORT:-5018}:5018"
     environment:
       SERVICE_ID: reporting-service
       PORT: 5018
@@ -541,6 +581,8 @@ services:
       POSTGRES_DB: "${CONSULTATION_DB_NAME:-consultation}"
       POSTGRES_USER: "${CONSULTATION_DB_USER:-consultation}"
       POSTGRES_PASSWORD: "${CONSULTATION_DB_PASSWORD:-consultationpass}"
+    ports:
+      - "0.0.0.0:5448:5432"
     volumes: [consultation-data:/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -559,6 +601,8 @@ services:
 
   consultation-service:
     build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: consultation-service } }
+    ports:
+      - "${CONSULTATION_SERVICE_PORT:-5019}:5019"
     environment:
       SERVICE_ID: consultation-service
       PORT: 5019

@@ -130,6 +130,12 @@ export class PatientsService {
     return presentPatient(patient, this.crypto);
   }
 
+  async getPatientByAuthAccountId(authAccountId: string) {
+    return this.db.patient.findUnique({
+      where: { authAccountId },
+    });
+  }
+
   async getById(
     patientId: string,
     auth: PatientAuthContext,

@@ -62,6 +62,7 @@ export class DoctorDomainService {
   ) {
     this.requireAdmin(actor);
     this.requireKey(key);
+    try {
     await this.verifyAccount(dto.accountId);
     const normalized = this.normalizeLicense(dto.licenseNumber);
     this.validateProfile(dto.profile);
@@ -95,6 +96,10 @@ export class DoctorDomainService {
       return doctor;
     });
     return { data: this.adminView(result) };
+    } catch (err) {
+      console.error('ERROR IN CREATEDOCTOR:', err);
+      throw err;
+    }
   }
 
   async listDoctors(query: ListQueryDto, actor?: Identity) {
@@ -488,7 +493,14 @@ export class DoctorDomainService {
         ...(actor.role === 'ADMIN' && query.status
           ? { status: query.status }
           : {}),
-        ...(query.from ? { effectiveTo: { gte: new Date(query.from) } } : {}),
+        ...(query.from
+          ? {
+              OR: [
+                { effectiveTo: null },
+                { effectiveTo: { gte: new Date(query.from) } },
+              ],
+            }
+          : {}),
         ...(query.to ? { effectiveFrom: { lte: new Date(query.to) } } : {}),
       },
       orderBy: [{ effectiveFrom: 'asc' }, { dayOfWeek: 'asc' }],
@@ -519,6 +531,8 @@ export class DoctorDomainService {
     if (!old) this.fail(404, 'DOCTOR_NOT_FOUND');
     if (old.status === ScheduleStatus.CANCELLED)
       this.fail(409, 'INVALID_STATE_TRANSITION');
+    if (old.effectiveFrom <= new Date())
+      this.fail(422, 'SCHEDULE_ALREADY_STARTED');
     const input: AnyRecord = {
       startTime: dto.startTime ?? old.startTime,
       endTime: dto.endTime ?? old.endTime,
@@ -531,6 +545,8 @@ export class DoctorDomainService {
         : old.effectiveTo,
       departmentId: dto.departmentId ?? old.departmentId,
       roomId: dto.roomId ?? old.roomId,
+      timezone: old.timezone,
+      dayOfWeek: old.dayOfWeek,
     };
     this.validateSchedule(input);
     const result = await this.prisma.$transaction(async (tx) => {
@@ -717,25 +733,34 @@ export class DoctorDomainService {
         ) {
           const s = this.localToUtc(date, schedule.startTime),
             e = this.localToUtc(date, schedule.endTime);
-          intervals.push({
-            startAt: new Date(Math.max(s.getTime(), from.getTime())),
-            endAt: new Date(Math.min(e.getTime(), to.getTime())),
-            slotDurationMinutes:
-              query.slotDurationMinutes ?? schedule.slotDurationMinutes,
-            source: 'RECURRING_SCHEDULE',
-          });
+          const startAt = new Date(Math.max(s.getTime(), from.getTime())),
+            endAt = new Date(Math.min(e.getTime(), to.getTime()));
+          if (startAt < endAt) {
+            intervals.push({
+              startAt,
+              endAt,
+              slotDurationMinutes:
+                query.slotDurationMinutes ?? schedule.slotDurationMinutes,
+              source: 'RECURRING_SCHEDULE',
+            });
+          }
         }
       }
     }
     for (const x of overrides.filter(
       (v) => v.type === AvailabilityType.EXTRA_AVAILABLE,
-    ))
-      intervals.push({
-        startAt: new Date(Math.max(x.startAt.getTime(), from.getTime())),
-        endAt: new Date(Math.min(x.endAt.getTime(), to.getTime())),
-        slotDurationMinutes: query.slotDurationMinutes ?? 30,
-        source: 'EXTRA_AVAILABLE',
-      });
+    )) {
+      const startAt = new Date(Math.max(x.startAt.getTime(), from.getTime())),
+        endAt = new Date(Math.min(x.endAt.getTime(), to.getTime()));
+      if (startAt < endAt) {
+        intervals.push({
+          startAt,
+          endAt,
+          slotDurationMinutes: query.slotDurationMinutes ?? 30,
+          source: 'EXTRA_AVAILABLE',
+        });
+      }
+    }
     const unavailable = overrides
       .filter((v) => v.type === AvailabilityType.UNAVAILABLE)
       .map((v) => ({ startAt: v.startAt, endAt: v.endAt }));
@@ -1110,7 +1135,7 @@ export class DoctorDomainService {
     d.setUTCHours(0, 0, 0, 0);
     const end = new Date(to.getTime() + 7 * 3600000);
     end.setUTCHours(0, 0, 0, 0);
-    for (; d < end; d.setUTCDate(d.getUTCDate() + 1)) result.push(new Date(d));
+    for (; d <= end; d.setUTCDate(d.getUTCDate() + 1)) result.push(new Date(d));
     return result;
   }
   private weekday(date: Date) {

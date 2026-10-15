@@ -104,6 +104,13 @@ services:
       AUTH_SMTP_PASSWORD: ${AUTH_SMTP_PASSWORD:-}
       AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-}
       INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+      SERVICE_ID: auth-service
+      GRPC_PORT: 6003
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
+      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
+      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
+      INTERNAL_SERVICE_JWT_AUDIENCE: auth-service
     depends_on:
       auth-migrate: { condition: service_completed_successfully }
     networks: [app-network]
@@ -157,6 +164,14 @@ services:
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
       AUTH_ACCOUNT_LOOKUP_URL: ${AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
       INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+      SERVICE_ID: doctor-service
+      GRPC_PORT: 6005
+      AUTH_GRPC_TARGET: "${AUTH_GRPC_TARGET:-auth-service:6003}"
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
+      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
+      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
+      INTERNAL_SERVICE_JWT_AUDIENCE: doctor-service
     depends_on:
       doctor-migrate:
         condition: service_completed_successfully
@@ -217,6 +232,17 @@ services:
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
       AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
       RECEPTION_IDEMPOTENCY_TTL_HOURS: ${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
+      SERVICE_ID: receptionist-service
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
+      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
+      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
+      INTERNAL_SERVICE_JWT_AUDIENCE: receptionist-service
+      APPOINTMENT_GRPC_TARGET: "${APPOINTMENT_GRPC_TARGET:-appointment-service:6008}"
+      PATIENT_GRPC_TARGET: "${PATIENT_GRPC_TARGET:-patient-service:6004}"
+      BILLING_GRPC_TARGET: "${BILLING_GRPC_TARGET:-billing-service:6009}"
+      MEDICAL_RECORD_GRPC_TARGET: "${MEDICAL_RECORD_GRPC_TARGET:-medical-record-service:6011}"
+      QUEUE_GRPC_TARGET: "${QUEUE_GRPC_TARGET:-queue-service:6012}"
     depends_on:
       receptionist-migrate:
         condition: service_completed_successfully
@@ -272,6 +298,13 @@ services:
       AUTH_JWKS_CACHE_TTL_SECONDS: 300
       PATIENT_NATIONAL_ID_ENCRYPTION_KEY: "${PATIENT_NATIONAL_ID_ENCRYPTION_KEY:-}"
       PATIENT_NATIONAL_ID_LOOKUP_PEPPER: "${PATIENT_NATIONAL_ID_LOOKUP_PEPPER:-}"
+      SERVICE_ID: patient-service
+      GRPC_PORT: 6004
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
+      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
+      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
+      INTERNAL_SERVICE_JWT_AUDIENCE: patient-service
       PATIENT_INTERNAL_JWT_PUBLIC_KEY: "${PATIENT_INTERNAL_JWT_PUBLIC_KEY:-}"
       PATIENT_INTERNAL_JWT_KEY_ID: "${PATIENT_INTERNAL_JWT_KEY_ID:-internal-dev-key}"
       PATIENT_INTERNAL_JWT_ISSUER: "${PATIENT_INTERNAL_JWT_ISSUER:-maternal-healthcare-internal}"
@@ -328,6 +361,13 @@ services:
       AUTH_JWT_ISSUER: "${AUTH_JWT_ISSUER:-maternal-healthcare-auth}"
       AUTH_JWT_AUDIENCE: "${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}"
       INTERNAL_SERVICE_AUTH_SECRET: "${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}"
+      SERVICE_ID: service-catalog-service
+      GRPC_PORT: 6007
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
+      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
+      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
+      INTERNAL_SERVICE_JWT_AUDIENCE: service-catalog-service
     depends_on:
       catalog-migrate: { condition: service_completed_successfully }
     healthcheck:
