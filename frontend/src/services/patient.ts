@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import type { Requester } from './catalog';
 
 export interface EmergencyContact {
   id: string;
@@ -39,8 +40,8 @@ export interface SaveContactInput {
   isPrimary?: boolean;
 }
 
-export async function getMyPatient(accessToken: string): Promise<PatientProfile> {
-  return (await apiRequest<DataEnvelope<PatientProfile>>('/api/patients/me', {}, accessToken)).data;
+export async function getMyPatient(request: Requester): Promise<PatientProfile> {
+  return (await request<DataEnvelope<PatientProfile>>('/api/patients/me')).data;
 }
 
 export async function saveMyPatient(input: SavePatientProfileInput, accessToken: string): Promise<PatientProfile> {

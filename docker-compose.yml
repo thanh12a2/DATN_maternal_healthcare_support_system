@@ -1,411 +1,1485 @@
+name: maternal-healthcare-support-system
+networks:
+  app-network:
+    driver: bridge
+    external: false
+    name: maternal-healthcare-support-system_app-network
 services:
-  frontend:
-    build: ./frontend
-    ports: ["${FRONTEND_PORT:-3000}:3000"]
+  appointment-database:
     environment:
-      VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
-    depends_on: [gateway]
-    networks: [app-network]
-
-  gateway:
-    build: { context: ., dockerfile: gateway/Dockerfile }
-    ports:
-      - "${GATEWAY_PORT:-8080}:8000"
-      - "127.0.0.1:${KONG_ADMIN_PORT:-8001}:8001"
-      - "127.0.0.1:${KONG_MANAGER_PORT:-8002}:8002"
-    depends_on:
-      kong-init:
-        condition: service_completed_successfully
-      auth-service:
-        condition: service_started
-      doctor-service:
-        condition: service_started
-      sample-service:
-        condition: service_started
-      receptionist-service:
-        condition: service_started
-      patient-service: { condition: service_started }
-      service-catalog-service: { condition: service_started }
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_DATABASE: "${KONG_PG_DATABASE:-kong}"
-      KONG_PG_USER: "${KONG_PG_USER:-kong}"
-      KONG_PG_PASSWORD: "${KONG_PG_PASSWORD:-kongpass}"
-    networks: [app-network]
-
-  kong-database:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: "${KONG_PG_DATABASE:-kong}"
-      POSTGRES_USER: "${KONG_PG_USER:-kong}"
-      POSTGRES_PASSWORD: "${KONG_PG_PASSWORD:-kongpass}"
-    volumes: [kong-data:/var/lib/postgresql/data]
+      POSTGRES_DB: ${APPOINTMENT_DB_NAME:-appointment}
+      POSTGRES_PASSWORD: ${APPOINTMENT_DB_PASSWORD:-appointmentpass}
+      POSTGRES_USER: ${APPOINTMENT_DB_USER:-appointment}
     healthcheck:
-      test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
-      timeout: 5s
       retries: 10
-    networks: [app-network]
-
-  kong-init:
-    build: { context: ., dockerfile: gateway/Dockerfile }
-    command: [/usr/local/bin/init-kong.sh]
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_DATABASE: "${KONG_PG_DATABASE:-kong}"
-      KONG_PG_USER: "${KONG_PG_USER:-kong}"
-      KONG_PG_PASSWORD: "${KONG_PG_PASSWORD:-kongpass}"
-      AUTH_JWT_PUBLIC_KEY: "${AUTH_JWT_PUBLIC_KEY:-}"
-      AUTH_JWT_KEY_ID: "${AUTH_JWT_KEY_ID:-local-dev-key}"
-      AUTH_JWT_ISSUER: "${AUTH_JWT_ISSUER:-maternal-healthcare-auth}"
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5438"
+        target: 5432
+    volumes:
+      - source: appointment-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  appointment-migrate:
+    build:
+      args:
+        APP_NAME: appointment-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
     depends_on:
-      kong-database: { condition: service_healthy }
-    networks: [app-network]
-
+      appointment-database:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_DATABASE_URL: postgresql://${APPOINTMENT_DB_USER:-appointment}:${APPOINTMENT_DB_PASSWORD:-appointmentpass}@appointment-database:5432/${APPOINTMENT_DB_NAME:-appointment}?schema=public
+      PRISMA_SCHEMA: prisma/appointment/schema.prisma
+    networks:
+      app-network: null
+  appointment-service:
+    build:
+      args:
+        APP_NAME: appointment-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      appointment-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_DATABASE_URL: postgresql://${APPOINTMENT_DB_USER:-appointment}:${APPOINTMENT_DB_PASSWORD:-appointmentpass}@appointment-database:5432/${APPOINTMENT_DB_NAME:-appointment}?schema=public
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6008
+      INTERNAL_SERVICE_JWT_AUDIENCE: appointment-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5008
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: appointment-service
+    networks:
+      app-network: null
+    ports:
+      - ${APPOINTMENT_SERVICE_PORT:-5008}:5008
+  audit-log-database:
+    environment:
+      POSTGRES_DB: ${AUDIT_LOG_DB_NAME:-audit_log}
+      POSTGRES_PASSWORD: ${AUDIT_LOG_DB_PASSWORD:-audit_logpass}
+      POSTGRES_USER: ${AUDIT_LOG_DB_USER:-audit_log}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5446"
+        target: 5432
+    volumes:
+      - source: audit-log-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  audit-log-migrate:
+    build:
+      args:
+        APP_NAME: audit-log-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      audit-log-database:
+        condition: service_healthy
+        required: true
+    environment:
+      AUDIT_LOG_DATABASE_URL: postgresql://${AUDIT_LOG_DB_USER:-audit_log}:${AUDIT_LOG_DB_PASSWORD:-audit_logpass}@audit-log-database:5432/${AUDIT_LOG_DB_NAME:-audit_log}?schema=public
+      PRISMA_SCHEMA: prisma/audit-log/schema.prisma
+    networks:
+      app-network: null
+  audit-log-service:
+    build:
+      args:
+        APP_NAME: audit-log-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      audit-log-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUDIT_LOG_DATABASE_URL: postgresql://${AUDIT_LOG_DB_USER:-audit_log}:${AUDIT_LOG_DB_PASSWORD:-audit_logpass}@audit-log-database:5432/${AUDIT_LOG_DB_NAME:-audit_log}?schema=public
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6017
+      INTERNAL_SERVICE_JWT_AUDIENCE: audit-log-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5017
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: audit-log-service
+    networks:
+      app-network: null
+    ports:
+      - ${AUDIT_LOG_SERVICE_PORT:-5017}:5017
+  auth-database:
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-authpass}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - ${AUTH_DB_PORT:-5433}:5432
+    volumes:
+      - source: auth-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
   auth-migrate:
     build:
-      context: ./services
+      args:
+        APP_NAME: auth-service
+      context: D:\DATN_maternal_healthcare_support_system\services
       dockerfile: Dockerfile
       target: migrator
-      args: { APP_NAME: auth-service }
-    environment:
-      PRISMA_SCHEMA: prisma/schema.prisma
-      AUTH_DATABASE_URL: "postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public"
     depends_on:
-      auth-database: { condition: service_healthy }
-    networks: [app-network]
-
-  auth-service:
-    build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: auth-service } }
-    ports:
-      - "${AUTH_SERVICE_PORT:-5003}:5003"
+      auth-database:
+        condition: service_healthy
+        required: true
     environment:
-      PORT: ${AUTH_SERVICE_INTERNAL_PORT:-5003}
       AUTH_DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public
-      AUTH_JWT_PRIVATE_KEY: ${AUTH_JWT_PRIVATE_KEY:-}
-      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
-      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
-      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
-      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: ${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}
-      AUTH_REFRESH_TOKEN_PEPPER: ${AUTH_REFRESH_TOKEN_PEPPER:-}
-      AUTH_REFRESH_TOKEN_TTL_DAYS: ${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
-      AUTH_PASSWORD_RESET_PEPPER: ${AUTH_PASSWORD_RESET_PEPPER:-}
-      AUTH_PASSWORD_RESET_TTL_MINUTES: ${AUTH_PASSWORD_RESET_TTL_MINUTES:-15}
-      AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS: ${AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS:-60}
-      # Browser-facing reset URL; SMTP host must be reachable from this container.
-      AUTH_PASSWORD_RESET_URL: ${AUTH_PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
-      AUTH_SMTP_HOST: ${AUTH_SMTP_HOST:-}
-      AUTH_SMTP_PORT: ${AUTH_SMTP_PORT:-587}
-      AUTH_SMTP_SECURE: ${AUTH_SMTP_SECURE:-false}
-      AUTH_SMTP_USER: ${AUTH_SMTP_USER:-}
-      AUTH_SMTP_PASSWORD: ${AUTH_SMTP_PASSWORD:-}
-      AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-}
-      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
-      SERVICE_ID: auth-service
-      GRPC_PORT: 6003
-      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
-      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
-      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
-      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
-      INTERNAL_SERVICE_JWT_AUDIENCE: auth-service
+      PRISMA_SCHEMA: prisma/schema.prisma
+    networks:
+      app-network: null
+  auth-service:
+    build:
+      args:
+        APP_NAME: auth-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
     depends_on:
-      auth-migrate: { condition: service_completed_successfully }
-    networks: [app-network]
-
-  auth-database:
-    image: postgres:16-alpine
-    ports:
-      - "${AUTH_DB_PORT:-5433}:5432"
+      auth-migrate:
+        condition: service_completed_successfully
+        required: true
     environment:
-      POSTGRES_DB: "${AUTH_DB_NAME:-auth}"
-      POSTGRES_USER: "${AUTH_DB_USER:-auth}"
-      POSTGRES_PASSWORD: "${AUTH_DB_PASSWORD:-authpass}"
-    volumes: [auth-data:/var/lib/postgresql/data]
+      - AUTH_ACCESS_TOKEN_TTL_SECONDS=${AUTH_ACCESS_TOKEN_TTL_SECONDS:-900}
+      - AUTH_DATABASE_URL=postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD:-authpass}@auth-database:5432/${AUTH_DB_NAME:-auth}?schema=public
+      - AUTH_EMAIL_FROM=${AUTH_EMAIL_FROM:-}
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
+      - AUTH_JWT_PRIVATE_KEY=${AUTH_JWT_PRIVATE_KEY:-}
+      - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
+      - AUTH_PASSWORD_RESET_PEPPER=${AUTH_PASSWORD_RESET_PEPPER:-}
+      - AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS=${AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS:-60}
+      - AUTH_PASSWORD_RESET_TTL_MINUTES=${AUTH_PASSWORD_RESET_TTL_MINUTES:-15}
+      - AUTH_PASSWORD_RESET_URL=${AUTH_PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
+      - AUTH_REFRESH_TOKEN_PEPPER=${AUTH_REFRESH_TOKEN_PEPPER:-}
+      - AUTH_REFRESH_TOKEN_TTL_DAYS=${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
+      - AUTH_SMTP_HOST=${AUTH_SMTP_HOST:-}
+      - AUTH_SMTP_PASSWORD=${AUTH_SMTP_PASSWORD:-}
+      - AUTH_SMTP_PORT=${AUTH_SMTP_PORT:-587}
+      - AUTH_SMTP_SECURE=${AUTH_SMTP_SECURE:-false}
+      - AUTH_SMTP_USER=${AUTH_SMTP_USER:-}
+      - GRPC_PORT=6003
+      - INTERNAL_SERVICE_AUTH_SECRET=${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+      - INTERNAL_SERVICE_JWT_AUDIENCE=auth-service
+      - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      - INTERNAL_SERVICE_JWT_PRIVATE_KEY=${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      - INTERNAL_SERVICE_JWT_PUBLIC_KEY=${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      - PORT=${AUTH_SERVICE_INTERNAL_PORT:-5003}
+      - SERVICE_ID=auth-service
+    networks:
+      app-network: null
+    ports:
+      - ${AUTH_SERVICE_PORT:-5003}:5003
+  billing-database:
+    environment:
+      POSTGRES_DB: ${BILLING_DB_NAME:-billing}
+      POSTGRES_PASSWORD: ${BILLING_DB_PASSWORD:-billingpass}
+      POSTGRES_USER: ${BILLING_DB_USER:-billing}
     healthcheck:
-      test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
-      timeout: 5s
       retries: 10
-    networks: [app-network]
-
-  # ─── Doctor Service ─────────────────────────────
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5439"
+        target: 5432
+    volumes:
+      - source: billing-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  billing-migrate:
+    build:
+      args:
+        APP_NAME: billing-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      billing-database:
+        condition: service_healthy
+        required: true
+    environment:
+      BILLING_DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASSWORD:-billingpass}@billing-database:5432/${BILLING_DB_NAME:-billing}?schema=public
+      PRISMA_SCHEMA: prisma/billing/schema.prisma
+    networks:
+      app-network: null
+  billing-service:
+    build:
+      args:
+        APP_NAME: billing-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      billing-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_DATABASE_URL: postgresql://${BILLING_DB_USER:-billing}:${BILLING_DB_PASSWORD:-billingpass}@billing-database:5432/${BILLING_DB_NAME:-billing}?schema=public
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6009
+      INTERNAL_SERVICE_JWT_AUDIENCE: billing-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5009
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: billing-service
+    networks:
+      app-network: null
+    ports:
+      - ${BILLING_SERVICE_PORT:-5009}:5009
+  catalog-database:
+    environment:
+      POSTGRES_DB: ${CATALOG_DB_NAME:-catalog}
+      POSTGRES_PASSWORD: ${CATALOG_DB_PASSWORD:-catalogpass}
+      POSTGRES_USER: ${CATALOG_DB_USER:-catalog}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - ${CATALOG_DB_PORT:-5437}:5432
+    volumes:
+      - source: catalog-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  catalog-migrate:
+    build:
+      args:
+        APP_NAME: service-catalog-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      catalog-database:
+        condition: service_healthy
+        required: true
+    environment:
+      CATALOG_DATABASE_URL: postgresql://${CATALOG_DB_USER:-catalog}:${CATALOG_DB_PASSWORD:-catalogpass}@catalog-database:5432/${CATALOG_DB_NAME:-catalog}?schema=public
+      PRISMA_SCHEMA: prisma/catalog/schema.prisma
+    networks:
+      app-network: null
+  consultation-database:
+    environment:
+      POSTGRES_DB: ${CONSULTATION_DB_NAME:-consultation}
+      POSTGRES_PASSWORD: ${CONSULTATION_DB_PASSWORD:-consultationpass}
+      POSTGRES_USER: ${CONSULTATION_DB_USER:-consultation}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5448"
+        target: 5432
+    volumes:
+      - source: consultation-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  consultation-migrate:
+    build:
+      args:
+        APP_NAME: consultation-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      consultation-database:
+        condition: service_healthy
+        required: true
+    environment:
+      CONSULTATION_DATABASE_URL: postgresql://${CONSULTATION_DB_USER:-consultation}:${CONSULTATION_DB_PASSWORD:-consultationpass}@consultation-database:5432/${CONSULTATION_DB_NAME:-consultation}?schema=public
+      PRISMA_SCHEMA: prisma/consultation/schema.prisma
+    networks:
+      app-network: null
+  consultation-service:
+    build:
+      args:
+        APP_NAME: consultation-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      consultation-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      CONSULTATION_DATABASE_URL: postgresql://${CONSULTATION_DB_USER:-consultation}:${CONSULTATION_DB_PASSWORD:-consultationpass}@consultation-database:5432/${CONSULTATION_DB_NAME:-consultation}?schema=public
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6019
+      INTERNAL_SERVICE_JWT_AUDIENCE: consultation-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5019
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: consultation-service
+    networks:
+      app-network: null
+    ports:
+      - ${CONSULTATION_SERVICE_PORT:-5019}:5019
+  doctor-database:
+    environment:
+      POSTGRES_DB: ${DOCTOR_DB_NAME:-doctor}
+      POSTGRES_PASSWORD: ${DOCTOR_DB_PASSWORD:-doctorpass}
+      POSTGRES_USER: ${DOCTOR_DB_USER:-doctor}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - ${DOCTOR_DB_PORT:-5435}:5432
+    volumes:
+      - source: doctor-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
   doctor-migrate:
     build:
-      context: ./services
-      dockerfile: Dockerfile
-      target: migrator
       args:
         APP_NAME: doctor-service
-    environment:
-      PRISMA_SCHEMA: prisma/doctor/schema.prisma
-      DOCTOR_DATABASE_URL: "postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public"
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
     depends_on:
       doctor-database:
         condition: service_healthy
+        required: true
+    environment:
+      DOCTOR_DATABASE_URL: postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public
+      PRISMA_SCHEMA: prisma/doctor/schema.prisma
     networks:
-      - app-network
-
+      app-network: null
   doctor-service:
     build:
-      context: ./services
-      dockerfile: Dockerfile
       args:
         APP_NAME: doctor-service
-    ports:
-      - "${DOCTOR_SERVICE_PORT:-5005}:${DOCTOR_SERVICE_INTERNAL_PORT:-5005}"
-    environment:
-      PORT: ${DOCTOR_SERVICE_INTERNAL_PORT:-5005}
-      DOCTOR_DATABASE_URL: postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public
-      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
-      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
-      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
-      AUTH_ACCOUNT_LOOKUP_URL: ${AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
-      INTERNAL_SERVICE_AUTH_SECRET: ${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
-      SERVICE_ID: doctor-service
-      GRPC_PORT: 6005
-      AUTH_GRPC_TARGET: "${AUTH_GRPC_TARGET:-auth-service:6003}"
-      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
-      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
-      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
-      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
-      INTERNAL_SERVICE_JWT_AUDIENCE: doctor-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
     depends_on:
-      doctor-migrate:
-        condition: service_completed_successfully
       auth-service:
         condition: service_started
-    networks:
-      - app-network
-
-  doctor-database:
-    image: postgres:16-alpine
-    ports:
-      - "${DOCTOR_DB_PORT:-5435}:5432"
+        required: true
+      doctor-migrate:
+        condition: service_completed_successfully
+        required: true
     environment:
-      POSTGRES_DB: ${DOCTOR_DB_NAME:-doctor}
-      POSTGRES_USER: ${DOCTOR_DB_USER:-doctor}
-      POSTGRES_PASSWORD: ${DOCTOR_DB_PASSWORD:-doctorpass}
-    volumes:
-      - doctor-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - AUTH_ACCOUNT_LOOKUP_URL=${AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
+      - AUTH_GRPC_TARGET=auth-service:6003
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
+      - DOCTOR_DATABASE_URL=postgresql://${DOCTOR_DB_USER:-doctor}:${DOCTOR_DB_PASSWORD:-doctorpass}@doctor-database:5432/${DOCTOR_DB_NAME:-doctor}?schema=public
+      - GRPC_PORT=6005
+      - INTERNAL_SERVICE_AUTH_SECRET=${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+      - INTERNAL_SERVICE_JWT_AUDIENCE=doctor-service
+      - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      - INTERNAL_SERVICE_JWT_PRIVATE_KEY=${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      - INTERNAL_SERVICE_JWT_PUBLIC_KEY=${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      - PORT=${DOCTOR_SERVICE_INTERNAL_PORT:-5005}
+      - SERVICE_ID=doctor-service
     networks:
-      - app-network
-
-  # Receptionist Service owns workforce/admission-orchestration state.
-  # Admission HTTP routes remain disabled until downstream API contracts exist.
-  receptionist-migrate:
+      app-network: null
+    ports:
+      - ${DOCTOR_SERVICE_PORT:-5005}:${DOCTOR_SERVICE_INTERNAL_PORT:-5005}
+  document-database:
+    environment:
+      POSTGRES_DB: ${DOCUMENT_DB_NAME:-document}
+      POSTGRES_PASSWORD: ${DOCUMENT_DB_PASSWORD:-documentpass}
+      POSTGRES_USER: ${DOCUMENT_DB_USER:-document}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5442"
+        target: 5432
+    volumes:
+      - source: document-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  document-migrate:
     build:
-      context: ./services
+      args:
+        APP_NAME: document-service
+      context: D:\DATN_maternal_healthcare_support_system\services
       dockerfile: Dockerfile
       target: migrator
+    depends_on:
+      document-database:
+        condition: service_healthy
+        required: true
+    environment:
+      DOCUMENT_DATABASE_URL: postgresql://${DOCUMENT_DB_USER:-document}:${DOCUMENT_DB_PASSWORD:-documentpass}@document-database:5432/${DOCUMENT_DB_NAME:-document}?schema=public
+      PRISMA_SCHEMA: prisma/document/schema.prisma
+    networks:
+      app-network: null
+  document-service:
+    build:
+      args:
+        APP_NAME: document-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      document-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      DOCUMENT_DATABASE_URL: postgresql://${DOCUMENT_DB_USER:-document}:${DOCUMENT_DB_PASSWORD:-documentpass}@document-database:5432/${DOCUMENT_DB_NAME:-document}?schema=public
+      GRPC_PORT: 6013
+      INTERNAL_SERVICE_JWT_AUDIENCE: document-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5013
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: document-service
+    networks:
+      app-network: null
+    ports:
+      - ${DOCUMENT_SERVICE_PORT:-5013}:5013
+  frontend:
+    build:
+      context: D:\DATN_maternal_healthcare_support_system\frontend
+      dockerfile: Dockerfile
+    depends_on:
+      gateway:
+        condition: service_started
+        required: true
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    networks:
+      app-network: null
+    ports:
+      - ${FRONTEND_PORT:-3000}:3000
+  gateway:
+    build:
+      context: D:\DATN_maternal_healthcare_support_system
+      dockerfile: gateway/Dockerfile
+    depends_on:
+      appointment-service:
+        condition: service_started
+        required: true
+      auth-service:
+        condition: service_started
+        required: true
+      billing-service:
+        condition: service_started
+        required: true
+      consultation-service:
+        condition: service_started
+        required: true
+      doctor-service:
+        condition: service_started
+        required: true
+      kong-init:
+        condition: service_completed_successfully
+        required: true
+      medical-record-service:
+        condition: service_started
+        required: true
+      patient-service:
+        condition: service_started
+        required: true
+      queue-service:
+        condition: service_started
+        required: true
+      receptionist-service:
+        condition: service_started
+        required: true
+      sample-service:
+        condition: service_started
+        required: true
+      service-catalog-service:
+        condition: service_started
+        required: true
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
+      KONG_PG_HOST: kong-database
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+    networks:
+      app-network: null
+    ports:
+      - ${GATEWAY_PORT:-8080}:8000
+      - 127.0.0.1:${KONG_ADMIN_PORT:-8001}:8001
+      - 127.0.0.1:${KONG_MANAGER_PORT:-8002}:8002
+  kong-database:
+    environment:
+      POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
+      POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+      POSTGRES_USER: ${KONG_PG_USER:-kong}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    volumes:
+      - source: kong-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  kong-init:
+    build:
+      context: D:\DATN_maternal_healthcare_support_system
+      dockerfile: gateway/Dockerfile
+    command:
+      - /usr/local/bin/init-kong.sh
+    depends_on:
+      kong-database:
+        condition: service_healthy
+        required: true
+    environment:
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      KONG_DATABASE: postgres
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
+      KONG_PG_HOST: kong-database
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+    networks:
+      app-network: null
+  medical-record-database:
+    environment:
+      POSTGRES_DB: ${MEDICAL_RECORD_DB_NAME:-medical_record}
+      POSTGRES_PASSWORD: ${MEDICAL_RECORD_DB_PASSWORD:-medical_recordpass}
+      POSTGRES_USER: ${MEDICAL_RECORD_DB_USER:-medical_record}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5440"
+        target: 5432
+    volumes:
+      - source: medical-record-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  medical-record-migrate:
+    build:
+      args:
+        APP_NAME: medical-record-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      medical-record-database:
+        condition: service_healthy
+        required: true
+    environment:
+      MEDICAL_RECORD_DATABASE_URL: postgresql://${MEDICAL_RECORD_DB_USER:-medical_record}:${MEDICAL_RECORD_DB_PASSWORD:-medical_recordpass}@medical-record-database:5432/${MEDICAL_RECORD_DB_NAME:-medical_record}?schema=public
+      PRISMA_SCHEMA: prisma/medical-record/schema.prisma
+    networks:
+      app-network: null
+  medical-record-service:
+    build:
+      args:
+        APP_NAME: medical-record-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      medical-record-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6011
+      INTERNAL_SERVICE_JWT_AUDIENCE: medical-record-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_DATABASE_URL: postgresql://${MEDICAL_RECORD_DB_USER:-medical_record}:${MEDICAL_RECORD_DB_PASSWORD:-medical_recordpass}@medical-record-database:5432/${MEDICAL_RECORD_DB_NAME:-medical_record}?schema=public
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5011
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: medical-record-service
+    networks:
+      app-network: null
+    ports:
+      - ${MEDICAL_RECORD_SERVICE_PORT:-5011}:5011
+  notification-database:
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-notification}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-notificationpass}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER:-notification}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5445"
+        target: 5432
+    volumes:
+      - source: notification-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  notification-migrate:
+    build:
+      args:
+        APP_NAME: notification-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      notification-database:
+        condition: service_healthy
+        required: true
+    environment:
+      NOTIFICATION_DATABASE_URL: postgresql://${NOTIFICATION_DB_USER:-notification}:${NOTIFICATION_DB_PASSWORD:-notificationpass}@notification-database:5432/${NOTIFICATION_DB_NAME:-notification}?schema=public
+      PRISMA_SCHEMA: prisma/notification/schema.prisma
+    networks:
+      app-network: null
+  notification-service:
+    build:
+      args:
+        APP_NAME: notification-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      notification-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6016
+      INTERNAL_SERVICE_JWT_AUDIENCE: notification-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      NOTIFICATION_DATABASE_URL: postgresql://${NOTIFICATION_DB_USER:-notification}:${NOTIFICATION_DB_PASSWORD:-notificationpass}@notification-database:5432/${NOTIFICATION_DB_NAME:-notification}?schema=public
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5016
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: notification-service
+    networks:
+      app-network: null
+    ports:
+      - ${NOTIFICATION_SERVICE_PORT:-5016}:5016
+  patient-database:
+    environment:
+      POSTGRES_DB: ${PATIENT_DB_NAME:-patient}
+      POSTGRES_PASSWORD: ${PATIENT_DB_PASSWORD:-patientpass}
+      POSTGRES_USER: ${PATIENT_DB_USER:-patient}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - ${PATIENT_DB_PORT:-5434}:5432
+    volumes:
+      - source: patient-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  patient-migrate:
+    build:
+      args:
+        APP_NAME: patient-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      patient-database:
+        condition: service_healthy
+        required: true
+    environment:
+      PATIENT_DATABASE_URL: postgresql://${PATIENT_DB_USER:-patient}:${PATIENT_DB_PASSWORD:-patientpass}@patient-database:5432/${PATIENT_DB_NAME:-patient}?schema=public
+      PRISMA_SCHEMA: prisma/patient/schema.prisma
+    networks:
+      app-network: null
+  patient-service:
+    build:
+      args:
+        APP_NAME: patient-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      patient-migrate:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      - AUTH_JWKS_CACHE_TTL_SECONDS=300
+      - AUTH_JWKS_URL=http://auth-service:5003/.well-known/jwks.json
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
+      - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
+      - GRPC_PORT=6004
+      - INTERNAL_SERVICE_JWT_AUDIENCE=patient-service
+      - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      - INTERNAL_SERVICE_JWT_PRIVATE_KEY=${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      - INTERNAL_SERVICE_JWT_PUBLIC_KEY=${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      - PATIENT_DATABASE_URL=postgresql://${PATIENT_DB_USER:-patient}:${PATIENT_DB_PASSWORD:-patientpass}@patient-database:5432/${PATIENT_DB_NAME:-patient}?schema=public
+      - PATIENT_INTERNAL_JWT_AUDIENCE=${PATIENT_INTERNAL_JWT_AUDIENCE:-patient-service}
+      - PATIENT_INTERNAL_JWT_ISSUER=${PATIENT_INTERNAL_JWT_ISSUER:-maternal-healthcare-internal}
+      - PATIENT_INTERNAL_JWT_KEY_ID=${PATIENT_INTERNAL_JWT_KEY_ID:-internal-dev-key}
+      - PATIENT_INTERNAL_JWT_PUBLIC_KEY=${PATIENT_INTERNAL_JWT_PUBLIC_KEY:-}
+      - PATIENT_NATIONAL_ID_ENCRYPTION_KEY=${PATIENT_NATIONAL_ID_ENCRYPTION_KEY:-}
+      - PATIENT_NATIONAL_ID_LOOKUP_PEPPER=${PATIENT_NATIONAL_ID_LOOKUP_PEPPER:-}
+      - PORT=5004
+      - SERVICE_ID=patient-service
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - wget -qO- http://localhost:5004/ready >/dev/null || exit 1
+      timeout: 3s
+    networks:
+      app-network: null
+    ports:
+      - ${PATIENT_SERVICE_PORT:-5004}:5004
+  prescription-database:
+    environment:
+      POSTGRES_DB: ${PRESCRIPTION_DB_NAME:-prescription}
+      POSTGRES_PASSWORD: ${PRESCRIPTION_DB_PASSWORD:-prescriptionpass}
+      POSTGRES_USER: ${PRESCRIPTION_DB_USER:-prescription}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5443"
+        target: 5432
+    volumes:
+      - source: prescription-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  prescription-migrate:
+    build:
+      args:
+        APP_NAME: prescription-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      prescription-database:
+        condition: service_healthy
+        required: true
+    environment:
+      PRESCRIPTION_DATABASE_URL: postgresql://${PRESCRIPTION_DB_USER:-prescription}:${PRESCRIPTION_DB_PASSWORD:-prescriptionpass}@prescription-database:5432/${PRESCRIPTION_DB_NAME:-prescription}?schema=public
+      PRISMA_SCHEMA: prisma/prescription/schema.prisma
+    networks:
+      app-network: null
+  prescription-service:
+    build:
+      args:
+        APP_NAME: prescription-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      prescription-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6014
+      INTERNAL_SERVICE_JWT_AUDIENCE: prescription-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5014
+      PRESCRIPTION_DATABASE_URL: postgresql://${PRESCRIPTION_DB_USER:-prescription}:${PRESCRIPTION_DB_PASSWORD:-prescriptionpass}@prescription-database:5432/${PRESCRIPTION_DB_NAME:-prescription}?schema=public
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: prescription-service
+    networks:
+      app-network: null
+    ports:
+      - ${PRESCRIPTION_SERVICE_PORT:-5014}:5014
+  queue-database:
+    environment:
+      POSTGRES_DB: ${QUEUE_DB_NAME:-queue}
+      POSTGRES_PASSWORD: ${QUEUE_DB_PASSWORD:-queuepass}
+      POSTGRES_USER: ${QUEUE_DB_USER:-queue}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5441"
+        target: 5432
+    volumes:
+      - source: queue-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  queue-migrate:
+    build:
+      args:
+        APP_NAME: queue-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      queue-database:
+        condition: service_healthy
+        required: true
+    environment:
+      PRISMA_SCHEMA: prisma/queue/schema.prisma
+      QUEUE_DATABASE_URL: postgresql://${QUEUE_DB_USER:-queue}:${QUEUE_DB_PASSWORD:-queuepass}@queue-database:5432/${QUEUE_DB_NAME:-queue}?schema=public
+    networks:
+      app-network: null
+  queue-service:
+    build:
+      args:
+        APP_NAME: queue-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      queue-migrate:
+        condition: service_completed_successfully
+        required: true
+      rabbitmq:
+        condition: service_healthy
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6012
+      INTERNAL_SERVICE_JWT_AUDIENCE: queue-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5012
+      QUEUE_DATABASE_URL: postgresql://${QUEUE_DB_USER:-queue}:${QUEUE_DB_PASSWORD:-queuepass}@queue-database:5432/${QUEUE_DB_NAME:-queue}?schema=public
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: queue-service
+    networks:
+      app-network: null
+    ports:
+      - ${QUEUE_SERVICE_PORT:-5012}:5012
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-maternalpass}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-maternal}
+    healthcheck:
+      interval: 10s
+      retries: 12
+      start_period: 10s
+      test:
+        - CMD
+        - su-exec
+        - rabbitmq
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      timeout: 5s
+    image: rabbitmq:4-management-alpine
+    networks:
+      app-network: null
+    ports:
+      - 127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672
+    volumes:
+      - source: rabbitmq-data
+        target: /var/lib/rabbitmq
+        type: volume
+        volume: {}
+  receptionist-database:
+    environment:
+      POSTGRES_DB: ${RECEPTIONIST_DB_NAME:-receptionist}
+      POSTGRES_PASSWORD: ${RECEPTIONIST_DB_PASSWORD:-receptionistpass}
+      POSTGRES_USER: ${RECEPTIONIST_DB_USER:-receptionist}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - ${RECEPTIONIST_DB_PORT:-5436}:5432
+    volumes:
+      - source: receptionist-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  receptionist-migrate:
+    build:
       args:
         APP_NAME: receptionist-service
-    environment:
-      PRISMA_SCHEMA: prisma/receptionist/schema.prisma
-      RECEPTIONIST_DATABASE_URL: "postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public"
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
     depends_on:
       receptionist-database:
         condition: service_healthy
+        required: true
+    environment:
+      PRISMA_SCHEMA: prisma/receptionist/schema.prisma
+      RECEPTIONIST_DATABASE_URL: postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
     networks:
-      - app-network
-
+      app-network: null
   receptionist-service:
     build:
-      context: ./services
-      dockerfile: Dockerfile
       args:
         APP_NAME: receptionist-service
-    ports:
-      - "${RECEPTIONIST_SERVICE_PORT:-5006}:5006"
-    environment:
-      PORT: 5006
-      RECEPTIONIST_DATABASE_URL: postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
-      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
-      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
-      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
-      AUTH_JWT_KEY_ID: ${AUTH_JWT_KEY_ID:-local-dev-key}
-      RECEPTION_IDEMPOTENCY_TTL_HOURS: ${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
-      SERVICE_ID: receptionist-service
-      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
-      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
-      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
-      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
-      INTERNAL_SERVICE_JWT_AUDIENCE: receptionist-service
-      APPOINTMENT_GRPC_TARGET: "${APPOINTMENT_GRPC_TARGET:-appointment-service:6008}"
-      PATIENT_GRPC_TARGET: "${PATIENT_GRPC_TARGET:-patient-service:6004}"
-      BILLING_GRPC_TARGET: "${BILLING_GRPC_TARGET:-billing-service:6009}"
-      MEDICAL_RECORD_GRPC_TARGET: "${MEDICAL_RECORD_GRPC_TARGET:-medical-record-service:6011}"
-      QUEUE_GRPC_TARGET: "${QUEUE_GRPC_TARGET:-queue-service:6012}"
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
     depends_on:
-      receptionist-migrate:
-        condition: service_completed_successfully
+      appointment-service:
+        condition: service_started
+        required: true
       auth-service:
         condition: service_started
-    networks:
-      - app-network
-
-  receptionist-database:
-    image: postgres:16-alpine
-    ports:
-      - "${RECEPTIONIST_DB_PORT:-5436}:5432"
+        required: true
+      billing-service:
+        condition: service_started
+        required: true
+      medical-record-service:
+        condition: service_started
+        required: true
+      queue-service:
+        condition: service_started
+        required: true
+      receptionist-migrate:
+        condition: service_completed_successfully
+        required: true
     environment:
-      POSTGRES_DB: ${RECEPTIONIST_DB_NAME:-receptionist}
-      POSTGRES_USER: ${RECEPTIONIST_DB_USER:-receptionist}
-      POSTGRES_PASSWORD: ${RECEPTIONIST_DB_PASSWORD:-receptionistpass}
+      - APPOINTMENT_GRPC_TARGET=appointment-service:6008
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
+      - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
+      - BILLING_GRPC_TARGET=billing-service:6009
+      - INTERNAL_SERVICE_JWT_AUDIENCE=receptionist-service
+      - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      - INTERNAL_SERVICE_JWT_PRIVATE_KEY=${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      - INTERNAL_SERVICE_JWT_PUBLIC_KEY=${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      - MEDICAL_RECORD_GRPC_TARGET=medical-record-service:6011
+      - PATIENT_GRPC_TARGET=patient-service:6004
+      - PORT=5006
+      - QUEUE_GRPC_TARGET=queue-service:6012
+      - RECEPTIONIST_DATABASE_URL=postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
+      - RECEPTION_IDEMPOTENCY_TTL_HOURS=${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
+      - SERVICE_ID=receptionist-service
+    networks:
+      app-network: null
+    ports:
+      - ${RECEPTIONIST_SERVICE_PORT:-5006}:5006
+  reporting-database:
+    environment:
+      POSTGRES_DB: ${REPORTING_DB_NAME:-reporting}
+      POSTGRES_PASSWORD: ${REPORTING_DB_PASSWORD:-reportingpass}
+      POSTGRES_USER: ${REPORTING_DB_USER:-reporting}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5447"
+        target: 5432
     volumes:
-      - receptionist-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - source: reporting-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  reporting-migrate:
+    build:
+      args:
+        APP_NAME: reporting-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      reporting-database:
+        condition: service_healthy
+        required: true
+    environment:
+      PRISMA_SCHEMA: prisma/reporting/schema.prisma
+      REPORTING_DATABASE_URL: postgresql://${REPORTING_DB_USER:-reporting}:${REPORTING_DB_PASSWORD:-reportingpass}@reporting-database:5432/${REPORTING_DB_NAME:-reporting}?schema=public
     networks:
-      - app-network
-
-  # ─── Sample Service ──────────────────────────────
-  patient-migrate:
+      app-network: null
+  reporting-service:
     build:
-      context: ./services
+      args:
+        APP_NAME: reporting-service
+      context: D:\DATN_maternal_healthcare_support_system\services
       dockerfile: Dockerfile
-      target: migrator
-      args: { APP_NAME: patient-service }
-    environment:
-      PRISMA_SCHEMA: prisma/patient/schema.prisma
-      PATIENT_DATABASE_URL: "postgresql://${PATIENT_DB_USER:-patient}:${PATIENT_DB_PASSWORD:-patientpass}@patient-database:5432/${PATIENT_DB_NAME:-patient}?schema=public"
     depends_on:
-      patient-database: { condition: service_healthy }
-    networks: [app-network]
-
-  patient-service:
-    build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: patient-service } }
+      rabbitmq:
+        condition: service_healthy
+        required: true
+      reporting-migrate:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6018
+      INTERNAL_SERVICE_JWT_AUDIENCE: reporting-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5018
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      REPORTING_DATABASE_URL: postgresql://${REPORTING_DB_USER:-reporting}:${REPORTING_DB_PASSWORD:-reportingpass}@reporting-database:5432/${REPORTING_DB_NAME:-reporting}?schema=public
+      SERVICE_ID: reporting-service
+    networks:
+      app-network: null
     ports:
-      - "${PATIENT_SERVICE_PORT:-5004}:5004"
-    environment:
-      PORT: 5004
-      PATIENT_DATABASE_URL: "postgresql://${PATIENT_DB_USER:-patient}:${PATIENT_DB_PASSWORD:-patientpass}@patient-database:5432/${PATIENT_DB_NAME:-patient}?schema=public"
-      AUTH_JWT_PUBLIC_KEY: "${AUTH_JWT_PUBLIC_KEY:-}"
-      AUTH_JWT_KEY_ID: "${AUTH_JWT_KEY_ID:-local-dev-key}"
-      AUTH_JWT_ISSUER: "${AUTH_JWT_ISSUER:-maternal-healthcare-auth}"
-      AUTH_JWT_AUDIENCE: "${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}"
-      AUTH_JWKS_URL: "http://auth-service:5003/.well-known/jwks.json"
-      AUTH_JWKS_CACHE_TTL_SECONDS: 300
-      PATIENT_NATIONAL_ID_ENCRYPTION_KEY: "${PATIENT_NATIONAL_ID_ENCRYPTION_KEY:-}"
-      PATIENT_NATIONAL_ID_LOOKUP_PEPPER: "${PATIENT_NATIONAL_ID_LOOKUP_PEPPER:-}"
-      SERVICE_ID: patient-service
-      GRPC_PORT: 6004
-      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
-      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
-      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
-      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
-      INTERNAL_SERVICE_JWT_AUDIENCE: patient-service
-      PATIENT_INTERNAL_JWT_PUBLIC_KEY: "${PATIENT_INTERNAL_JWT_PUBLIC_KEY:-}"
-      PATIENT_INTERNAL_JWT_KEY_ID: "${PATIENT_INTERNAL_JWT_KEY_ID:-internal-dev-key}"
-      PATIENT_INTERNAL_JWT_ISSUER: "${PATIENT_INTERNAL_JWT_ISSUER:-maternal-healthcare-internal}"
-      PATIENT_INTERNAL_JWT_AUDIENCE: "${PATIENT_INTERNAL_JWT_AUDIENCE:-patient-service}"
-    depends_on:
-      patient-migrate: { condition: service_completed_successfully }
-    healthcheck:
-      test: [CMD-SHELL, "wget -qO- http://localhost:5004/ready >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
-    networks: [app-network]
-
-  patient-database:
-    image: postgres:16-alpine
-    ports:
-      - "${PATIENT_DB_PORT:-5434}:5432"
-    environment:
-      POSTGRES_DB: "${PATIENT_DB_NAME:-patient}"
-      POSTGRES_USER: "${PATIENT_DB_USER:-patient}"
-      POSTGRES_PASSWORD: "${PATIENT_DB_PASSWORD:-patientpass}"
-    volumes: [patient-data:/var/lib/postgresql/data]
-    healthcheck:
-      test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks: [app-network]
-
-
-  # Service Catalog Service owns medical service catalog and pricing snapshot source.
-  catalog-migrate:
-    build:
-      context: ./services
-      dockerfile: Dockerfile
-      target: migrator
-      args: { APP_NAME: service-catalog-service }
-    environment:
-      PRISMA_SCHEMA: prisma/catalog/schema.prisma
-      CATALOG_DATABASE_URL: "postgresql://${CATALOG_DB_USER:-catalog}:${CATALOG_DB_PASSWORD:-catalogpass}@catalog-database:5432/${CATALOG_DB_NAME:-catalog}?schema=public"
-    depends_on:
-      catalog-database: { condition: service_healthy }
-    networks: [app-network]
-
-  service-catalog-service:
-    build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: service-catalog-service } }
-    ports:
-      - "${CATALOG_SERVICE_PORT:-5007}:5007"
-    environment:
-      PORT: 5007
-      CATALOG_DATABASE_URL: "postgresql://${CATALOG_DB_USER:-catalog}:${CATALOG_DB_PASSWORD:-catalogpass}@catalog-database:5432/${CATALOG_DB_NAME:-catalog}?schema=public"
-      AUTH_JWT_PUBLIC_KEY: "${AUTH_JWT_PUBLIC_KEY:-}"
-      AUTH_JWT_KEY_ID: "${AUTH_JWT_KEY_ID:-local-dev-key}"
-      AUTH_JWT_ISSUER: "${AUTH_JWT_ISSUER:-maternal-healthcare-auth}"
-      AUTH_JWT_AUDIENCE: "${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}"
-      INTERNAL_SERVICE_AUTH_SECRET: "${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}"
-      SERVICE_ID: service-catalog-service
-      GRPC_PORT: 6007
-      INTERNAL_SERVICE_JWT_PRIVATE_KEY: "${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}"
-      INTERNAL_SERVICE_JWT_PUBLIC_KEY: "${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}"
-      INTERNAL_SERVICE_JWT_KEY_ID: "${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}"
-      INTERNAL_SERVICE_JWT_ISSUER: "${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}"
-      INTERNAL_SERVICE_JWT_AUDIENCE: service-catalog-service
-    depends_on:
-      catalog-migrate: { condition: service_completed_successfully }
-    healthcheck:
-      test: [CMD-SHELL, "wget -qO- http://localhost:5007/ready >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
-    networks: [app-network]
-
-  catalog-database:
-    image: postgres:16-alpine
-    ports:
-      - "${CATALOG_DB_PORT:-5437}:5432"
-    environment:
-      POSTGRES_DB: "${CATALOG_DB_NAME:-catalog}"
-      POSTGRES_USER: "${CATALOG_DB_USER:-catalog}"
-      POSTGRES_PASSWORD: "${CATALOG_DB_PASSWORD:-catalogpass}"
-    volumes: [catalog-data:/var/lib/postgresql/data]
-    healthcheck:
-      test: [CMD-SHELL, "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks: [app-network]
-
+      - ${REPORTING_SERVICE_PORT:-5018}:5018
   sample-service:
-    build: { context: ./services, dockerfile: Dockerfile, args: { APP_NAME: sample-service } }
+    build:
+      args:
+        APP_NAME: sample-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    environment:
+      PORT: 5000
+    networks:
+      app-network: null
     ports:
-      - "${SAMPLE_SERVICE_PORT:-5001}:5000"
-    environment: { PORT: 5000 }
-    networks: [app-network]
-
-networks:
-  app-network: { driver: bridge }
+      - ${SAMPLE_SERVICE_PORT:-5001}:5000
+  service-catalog-service:
+    build:
+      args:
+        APP_NAME: service-catalog-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      catalog-migrate:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
+      - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
+      - CATALOG_DATABASE_URL=postgresql://${CATALOG_DB_USER:-catalog}:${CATALOG_DB_PASSWORD:-catalogpass}@catalog-database:5432/${CATALOG_DB_NAME:-catalog}?schema=public
+      - GRPC_PORT=6007
+      - INTERNAL_SERVICE_AUTH_SECRET=${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
+      - INTERNAL_SERVICE_JWT_AUDIENCE=service-catalog-service
+      - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      - INTERNAL_SERVICE_JWT_PRIVATE_KEY=${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      - INTERNAL_SERVICE_JWT_PUBLIC_KEY=${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      - PORT=5007
+      - SERVICE_ID=service-catalog-service
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - wget -qO- http://localhost:5007/ready >/dev/null || exit 1
+      timeout: 3s
+    networks:
+      app-network: null
+    ports:
+      - ${CATALOG_SERVICE_PORT:-5007}:5007
+  treatment-plan-database:
+    environment:
+      POSTGRES_DB: ${TREATMENT_PLAN_DB_NAME:-treatment_plan}
+      POSTGRES_PASSWORD: ${TREATMENT_PLAN_DB_PASSWORD:-treatment_planpass}
+      POSTGRES_USER: ${TREATMENT_PLAN_DB_USER:-treatment_plan}
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      timeout: 5s
+    image: postgres:16-alpine
+    networks:
+      app-network: null
+    ports:
+      - host_ip: 0.0.0.0
+        mode: ingress
+        protocol: tcp
+        published: "5444"
+        target: 5432
+    volumes:
+      - source: treatment-plan-data
+        target: /var/lib/postgresql/data
+        type: volume
+        volume: {}
+  treatment-plan-migrate:
+    build:
+      args:
+        APP_NAME: treatment-plan-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      treatment-plan-database:
+        condition: service_healthy
+        required: true
+    environment:
+      PRISMA_SCHEMA: prisma/treatment-plan/schema.prisma
+      TREATMENT_PLAN_DATABASE_URL: postgresql://${TREATMENT_PLAN_DB_USER:-treatment_plan}:${TREATMENT_PLAN_DB_PASSWORD:-treatment_planpass}@treatment-plan-database:5432/${TREATMENT_PLAN_DB_NAME:-treatment_plan}?schema=public
+    networks:
+      app-network: null
+  treatment-plan-service:
+    build:
+      args:
+        APP_NAME: treatment-plan-service
+      context: D:\DATN_maternal_healthcare_support_system\services
+      dockerfile: Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        required: true
+      treatment-plan-migrate:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      APPOINTMENT_GRPC_TARGET: appointment-service:6008
+      AUTH_GRPC_TARGET: auth-service:6003
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-maternal-healthcare-auth}
+      AUTH_JWT_PUBLIC_KEY: ${AUTH_JWT_PUBLIC_KEY:-}
+      BILLING_GRPC_TARGET: billing-service:6009
+      CATALOG_GRPC_TARGET: service-catalog-service:6007
+      DOCTOR_GRPC_TARGET: doctor-service:6005
+      GRPC_PORT: 6015
+      INTERNAL_SERVICE_JWT_AUDIENCE: treatment-plan-service
+      INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
+      INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
+      INTERNAL_SERVICE_JWT_PRIVATE_KEY: ${INTERNAL_SERVICE_JWT_PRIVATE_KEY:-}
+      INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
+      MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
+      PATIENT_GRPC_TARGET: patient-service:6004
+      PORT: 5015
+      QUEUE_GRPC_TARGET: queue-service:6012
+      RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      SERVICE_ID: treatment-plan-service
+      TREATMENT_PLAN_DATABASE_URL: postgresql://${TREATMENT_PLAN_DB_USER:-treatment_plan}:${TREATMENT_PLAN_DB_PASSWORD:-treatment_planpass}@treatment-plan-database:5432/${TREATMENT_PLAN_DB_NAME:-treatment_plan}?schema=public
+    networks:
+      app-network: null
+    ports:
+      - ${TREATMENT_PLAN_SERVICE_PORT:-5015}:5015
 volumes:
-  kong-data:
+  appointment-data:
+    name: maternal-healthcare-support-system_appointment-data
+  audit-log-data:
+    name: maternal-healthcare-support-system_audit-log-data
   auth-data:
-  receptionist-data:
+    name: maternal-healthcare-support-system_auth-data
+  billing-data:
+    name: maternal-healthcare-support-system_billing-data
+  catalog-data:
+    name: maternal-healthcare-support-system_catalog-data
+  consultation-data:
+    name: maternal-healthcare-support-system_consultation-data
   doctor-data:
-  patient-data: {}
-  catalog-data: {}
+    name: maternal-healthcare-support-system_doctor-data
+  document-data:
+    name: maternal-healthcare-support-system_document-data
+  kong-data:
+    name: maternal-healthcare-support-system_kong-data
+  medical-record-data:
+    name: maternal-healthcare-support-system_medical-record-data
+  notification-data:
+    name: maternal-healthcare-support-system_notification-data
+  patient-data:
+    name: maternal-healthcare-support-system_patient-data
+  prescription-data:
+    name: maternal-healthcare-support-system_prescription-data
+  queue-data:
+    name: maternal-healthcare-support-system_queue-data
+  rabbitmq-data:
+    name: maternal-healthcare-support-system_rabbitmq-data
+  receptionist-data:
+    name: maternal-healthcare-support-system_receptionist-data
+  reporting-data:
+    name: maternal-healthcare-support-system_reporting-data
+  treatment-plan-data:
+    name: maternal-healthcare-support-system_treatment-plan-data

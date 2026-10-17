@@ -1,47 +1,46 @@
-# ============================================
-# Makefile — Common project commands
-# Usage: make <target>
-# ============================================
+# Common project commands. The repository uses one canonical docker-compose.yml.
 
-.PHONY: help up down build logs clean init
+.PHONY: help init up up-d down build logs status validate seed-demo test frontend-test backend-test
 
-help: ## Show this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+help:
+	@echo "make init          Prepare local .env and keys"
+	@echo "make validate      Validate Docker Compose"
+	@echo "make up            Start the full stack"
+	@echo "make up-d          Start the full stack in background"
+	@echo "make down          Stop containers and keep volumes"
+	@echo "make seed-demo     Seed idempotent demo data"
+	@echo "make frontend-test Run frontend tests and build"
+	@echo "make backend-test  Run backend tests"
 
-init: ## Initial setup — copy .env and build
-	@test -f .env || cp .env.example .env
-	@echo "Environment file ready."
-	docker compose build
+init:
+	powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode PrepareOnly
 
-up: ## Start all services
+validate:
+	docker compose config --quiet
+
+up:
 	docker compose up --build
 
-up-d: ## Start all services (detached)
+up-d:
 	docker compose up --build -d
 
-down: ## Stop all services
+down:
 	docker compose down
 
-build: ## Rebuild all containers
-	docker compose build --no-cache
+build:
+	docker compose build
 
-logs: ## Tail logs from all services
+logs:
 	docker compose logs -f
 
-logs-service: ## Tail logs from a specific service (usage: make logs-service s=service-a)
-	docker compose logs -f $(s)
+status:
+	docker compose ps -a
 
-clean: ## Remove all containers, volumes, and images
-	docker compose down -v --rmi all --remove-orphans
+seed-demo:
+	cd services && npm.cmd run prisma:seed:demo
 
-status: ## Show status of all services
-	docker compose ps
+frontend-test:
+	cd frontend && npm.cmd run test && npm.cmd run build
 
-restart: ## Restart all services
-	docker compose restart
-
-test: ## Run tests (customize per your stack)
-	@echo "Add your test commands here"
-	@echo "Example: docker compose exec service-a npm test"
-	@echo "Example: docker compose exec service-a pytest"
+backend-test:
+	cd services && npm.cmd run build && npm.cmd test -- --runInBand

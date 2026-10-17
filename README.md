@@ -1,84 +1,139 @@
-# Project Name
+# Maternal Healthcare Support System
 
-[![Stars](https://img.shields.io/github/stars/hungdn1701/microservices-assignment-starter?style=social)](https://github.com/hungdn1701/microservices-assignment-starter/stargazers)
-[![Forks](https://img.shields.io/github/forks/hungdn1701/microservices-assignment-starter?style=social)](https://github.com/hungdn1701/microservices-assignment-starter/network/members)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Hệ thống hỗ trợ chăm sóc sức khỏe thai phụ theo kiến trúc microservice. Repository gồm frontend React/Vite, API Gateway Kong, các NestJS service, PostgreSQL database riêng theo bounded context, RabbitMQ và Prisma migrations.
 
-> Brief description of the business process being automated and the service-oriented solution.
+> Hướng dẫn chạy lần đầu: [docs/first-run.md](docs/first-run.md)
 
-> **New to this repo?** See [`GETTING_STARTED.md`](GETTING_STARTED.md) for setup instructions and workflow guide.
+## Kiến trúc
 
----
-
-## Team Members
-
-| Name | Student ID | Role | Contribution |
-|------|------------|------|-------------|
-|      |            |      |             |
-
----
-
-## Business Process
-
-*(Summarize the business process being automated — domain, actors, scope)*
-
----
-
-## Architecture
-
-```mermaid
-graph LR
-    U[User] --> FE[Frontend :3000]
-    FE --> GW[API Gateway :8080]
-    GW --> SA[Service A :5001]
-    GW --> SB[Service B :5002]
-    SA --> DB1[(Database A)]
-    SB --> DB2[(Database B)]
+```text
+Browser :3000
+   |
+Kong Gateway :8080
+   |
+Auth / Patient / Doctor / Reception / Catalog / Appointment / Billing
+Medical Record / Queue / Consultation / Document / Prescription
+Treatment Plan / Notification / Audit Log / Reporting
+   |
+PostgreSQL riêng cho từng bounded context + RabbitMQ
 ```
 
-| Component     | Responsibility | Tech Stack | Port |
-|---------------|----------------|------------|------|
-| **Frontend**  |                |            | 3000 |
-| **Gateway**   |                |            | 8080 |
-| **Service A** |                |            | 5001 |
-| **Service B** |                |            | 5002 |
+Mỗi service sở hữu database của mình. Service-to-service communication dùng gRPC và events theo contract hiện có; frontend chỉ đi qua Gateway, không truy cập database trực tiếp.
 
-> Full documentation: [`docs/architecture.md`](docs/architecture.md) · [`docs/analysis-and-design.md`](docs/analysis-and-design.md)
+## Thành phần chính
 
----
+| Thành phần | Port mặc định | Ghi chú |
+|---|---:|---|
+| Frontend | 3000 | React/Vite Patient Portal và role workspace |
+| Kong proxy | 8080 | Entry point cho frontend/API |
+| Kong Admin | 8001 | Chỉ bind local |
+| Kong Manager | 8002 | Chỉ bind local |
+| Auth | 5003 | Authentication, JWT, refresh session |
+| Patient | 5004 | Hồ sơ bệnh nhân |
+| Doctor | 5005 | Bác sĩ, specialty, schedule, availability |
+| Receptionist | 5006 | Tiếp nhận/admission |
+| Catalog | 5007 | Dịch vụ và pricing |
+| Appointment | 5008 | Slot, hold, appointment |
+| Billing | 5009 | Invoice/payment |
+| Medical Record | 5011 | Encounter và dữ liệu lâm sàng |
+| Queue | 5012 | Journey/ticket |
+| Document | 5013 | Document metadata |
+| Prescription | 5014 | Prescription |
+| Treatment Plan | 5015 | Treatment plan |
+| Notification | 5016 | Internal notification operations |
+| Audit Log | 5017 | Audit events |
+| Reporting | 5018 | Reports |
+| Consultation | 5019 | Consultation |
+| RabbitMQ Management | 15672 | Chỉ bind local |
 
-## Getting Started
+## Yêu cầu
 
-```bash
-# Clone and initialize
-git clone <your-repo-url>
-cd <project-folder>
-cp .env.example .env
+- Docker Desktop và Docker Compose v2.
+- Node.js 22+ và npm nếu chạy test/build local.
+- Git.
 
-# Build and run
-docker compose up --build
+## Chạy nhanh
+
+```powershell
+# PowerShell
+Copy-Item .env.example .env
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker
 ```
 
-### Verify
+Hoặc thủ công:
 
-```bash
-curl http://localhost:8080/health   # Gateway
-curl http://localhost:5001/health   # Service A
-curl http://localhost:5002/health   # Service B
+```powershell
+docker compose config --quiet
+docker compose up -d --build
+docker compose ps
 ```
 
----
+Không cần dùng `docker-compose.services.yml`; cấu hình đã được hợp nhất vào `docker-compose.yml`.
 
-## API Documentation
+## Seed dữ liệu demo
 
-- [Service A — OpenAPI Spec](docs/api-specs/service-a.yaml)
-- [Service B — OpenAPI Spec](docs/api-specs/service-b.yaml)
+Sau khi database và migrations đã sẵn sàng:
 
----
+```powershell
+cd services
+npm.cmd run prisma:seed:demo
+```
 
-## License
+Tài khoản demo mặc định:
 
-This project uses the [MIT License](LICENSE).
+| Role | Email | Password |
+|---|---|---|
+| Patient | `demo.patient@antam.local` | `Demo@123456` |
+| Doctor | `demo.doctor@antam.local` | `Demo@123456` |
+| Receptionist | `demo.receptionist@antam.local` | `Demo@123456` |
+| Admin | `demo.admin@antam.local` | `Demo@123456` |
 
-> Template by [Hung Dang](https://github.com/hungdn1701) · [Template guide](GETTING_STARTED.md)
+Có thể đổi password bằng biến `DEMO_SEED_PASSWORD`. Seed dùng `upsert`, không reset hoặc xóa database.
 
+## Commands thường dùng
+
+```powershell
+docker compose up -d --build
+docker compose ps
+docker compose logs -f gateway
+docker compose down
+
+cd frontend
+npm.cmd run build
+npm.cmd run test
+
+cd ..\services
+npm.cmd run build
+npm.cmd test -- --runInBand
+```
+
+## Environment và secrets
+
+- `.env.example` là template an toàn, được phép commit.
+- `.env` là local-only và bị ignore.
+- Private key `*.pem` bị ignore.
+- Không commit password, JWT private key, pepper, SMTP credential hoặc database secret.
+- Nếu secret đã từng commit, cần rotate secret; việc thêm `.gitignore` không xóa secret khỏi Git history.
+
+Các script setup có thể tự sinh local key/pepper khi chạy lần đầu. Xem [docs/first-run.md](docs/first-run.md).
+
+## Tài liệu
+
+- [Hướng dẫn chạy lần đầu](docs/first-run.md)
+- [Setup toàn bộ môi trường](docs/setup-all-environment.md)
+- [API specifications và Kong config](docs/api-specs/)
+- [Gateway notes](gateway/readme.md)
+- [System design](docs/system_design.md)
+- [Service contracts index](docs/service-contracts-index.md)
+
+## Verification
+
+```powershell
+docker compose config --quiet
+cd frontend; npm.cmd run build; npm.cmd run test
+cd ..\services; npm.cmd run build; npm.cmd test -- --runInBand
+```
+
+## Git safety
+
+Không commit/push tự động. Khi thay đổi history hoặc force push, cần thông báo cho toàn bộ thành viên trước.

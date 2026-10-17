@@ -9,8 +9,8 @@ type AuthStatus = 'loading' | 'anonymous' | 'authenticated';
 interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
-  signIn(values: LoginFormValues, remember: boolean): Promise<void>;
-  signUp(values: RegisterFormValues): Promise<void>;
+  signIn(values: LoginFormValues, remember: boolean): Promise<AuthUser>;
+  signUp(values: RegisterFormValues): Promise<AuthUser>;
   signOut(): Promise<void>;
   request<T>(path: string, init?: RequestInit): Promise<T>;
 }
@@ -75,15 +75,17 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [commit, renew]);
 
-  const signIn = useCallback(async (values: LoginFormValues, remember: boolean) => {
+  const signIn = useCallback(async (values: LoginFormValues, remember: boolean): Promise<AuthUser> => {
     const next = await loginRequest(values);
     commit({ ...next, remember });
+    return next.user;
   }, [commit]);
 
-  const signUp = useCallback(async (values: RegisterFormValues) => {
+  const signUp = useCallback(async (values: RegisterFormValues): Promise<AuthUser> => {
     await registerRequest(values);
     const next = await loginRequest(values);
     commit({ ...next, remember: true });
+    return next.user;
   }, [commit]);
 
   const signOut = useCallback(async () => {

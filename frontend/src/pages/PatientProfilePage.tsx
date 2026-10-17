@@ -7,7 +7,8 @@ import {
   type FormEvent,
 } from "react";
 import { useAuthSession } from "../app/AuthSessionProvider";
-import { AppLink } from "../app/navigation";
+import { AppLink, navigate } from "../app/navigation";
+import { PatientSidebar } from "../components/navigation/PatientSidebar";
 import { ProfileField } from "../components/profile/ProfileField";
 import { ProfileProgress } from "../components/profile/ProfileProgress";
 import { ProfileSection } from "../components/profile/ProfileSection";
@@ -120,6 +121,14 @@ export function PatientProfilePage() {
 
   const formRef = useRef<HTMLFormElement>(null);
   const hasStoredNationalId = Boolean(profile?.nationalIdMasked);
+
+  async function logout() {
+    try {
+      await auth.signOut();
+    } finally {
+      navigate("/dang-nhap", { replace: true });
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -438,20 +447,25 @@ export function PatientProfilePage() {
 
   if (loading) {
     return (
-      <main className="profile-page-shell">
-        <section className="profile-page">
+      <div className="patient-home-shell patient-desktop-portal">
+        <PatientSidebar onLogout={() => void logout()} />
+        <main className="patient-main-view" id="main-content">
+          <section className="profile-page">
           <AppLink className="profile-back-link" href="/tong-quan">
             ← Quay lại Tổng quan
           </AppLink>
           <p role="status">Đang tải hồ sơ…</p>
-        </section>
-      </main>
+          </section>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main className="profile-page-shell" id="main-content">
-      <section className="profile-page">
+    <div className="patient-home-shell patient-desktop-portal">
+      <PatientSidebar onLogout={() => void logout()} />
+      <main className="patient-main-view" id="main-content">
+        <section className="profile-page">
         <AppLink className="profile-back-link" href="/tong-quan">
           ← Quay lại Tổng quan
         </AppLink>
@@ -805,7 +819,8 @@ export function PatientProfilePage() {
             </section>
           </div>
         </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }

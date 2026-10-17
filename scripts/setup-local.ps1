@@ -101,7 +101,7 @@ function Ensure-AuthKeys([string]$Path) {
   $public = Read-Pem $publicPath
 
   if (-not $private -or -not $public) {
-    Run-Command 'node' @((Join-Path $Root 'generate-auth-keys.cjs'))
+    Run-Command 'node' @((Join-Path $Root 'scripts/generate-auth-keys.cjs'))
     $private = Read-Pem $privatePath
     $public = Read-Pem $publicPath
   }

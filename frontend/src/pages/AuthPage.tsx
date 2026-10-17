@@ -2,16 +2,35 @@ import { AuthShell } from '../components/auth/AuthShell';
 import { useAuthSession } from '../app/AuthSessionProvider';
 import { navigate } from '../app/navigation';
 import type { AuthMode, LoginFormValues, RegisterFormValues } from '../schemas/auth';
+import type { AuthUser } from '../services/auth';
+
+function homeForRole(role: string): string {
+  switch (role) {
+    case 'PATIENT': return '/tong-quan';
+    case 'DOCTOR': return '/workspace/doctor/overview';
+    case 'NURSE': return '/workspace/nurse/overview';
+    case 'RECEPTIONIST': return '/workspace/receptionist/overview';
+    case 'ADMIN': return '/workspace/admin/overview';
+    default: return '/dang-nhap';
+  }
+}
+
+function redirectAfterAuth(user: AuthUser) {
+  navigate(homeForRole(user.role), { replace: true });
+}
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const auth = useAuthSession();
+
   async function login(values: LoginFormValues, remember: boolean) {
-    await auth.signIn(values, remember);
-    navigate('/tong-quan', { replace: true });
+    const user = await auth.signIn(values, remember);
+    redirectAfterAuth(user);
   }
+
   async function register(values: RegisterFormValues) {
-    await auth.signUp(values);
-    navigate('/tong-quan', { replace: true });
+    const user = await auth.signUp(values);
+    redirectAfterAuth(user);
   }
+
   return <AuthShell initialMode={mode} onModeChange={(next) => navigate(next === 'login' ? '/dang-nhap' : '/dang-ky')} onLogin={login} onRegister={register} />;
 }
