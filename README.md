@@ -1,139 +1,200 @@
 # Maternal Healthcare Support System
 
-Hệ thống hỗ trợ chăm sóc sức khỏe thai phụ theo kiến trúc microservice. Repository gồm frontend React/Vite, API Gateway Kong, các NestJS service, PostgreSQL database riêng theo bounded context, RabbitMQ và Prisma migrations.
+Hệ thống hỗ trợ chăm sóc sức khỏe thai phụ theo kiến trúc microservice: React/Vite, Kong API Gateway, NestJS services, PostgreSQL theo bounded context, RabbitMQ và Prisma.
 
-> Hướng dẫn chạy lần đầu: [docs/first-run.md](docs/first-run.md)
+> **Nguồn lệnh duy nhất:** mọi hướng dẫn config, chuẩn bị môi trường và chạy server nằm trong file này. Các tài liệu khác chỉ mô tả kiến trúc, contract hoặc troubleshooting.
 
-## Kiến trúc
-
-```text
-Browser :3000
-   |
-Kong Gateway :8080
-   |
-Auth / Patient / Doctor / Reception / Catalog / Appointment / Billing
-Medical Record / Queue / Consultation / Document / Prescription
-Treatment Plan / Notification / Audit Log / Reporting
-   |
-PostgreSQL riêng cho từng bounded context + RabbitMQ
-```
-
-Mỗi service sở hữu database của mình. Service-to-service communication dùng gRPC và events theo contract hiện có; frontend chỉ đi qua Gateway, không truy cập database trực tiếp.
-
-## Thành phần chính
-
-| Thành phần | Port mặc định | Ghi chú |
-|---|---:|---|
-| Frontend | 3000 | React/Vite Patient Portal và role workspace |
-| Kong proxy | 8080 | Entry point cho frontend/API |
-| Kong Admin | 8001 | Chỉ bind local |
-| Kong Manager | 8002 | Chỉ bind local |
-| Auth | 5003 | Authentication, JWT, refresh session |
-| Patient | 5004 | Hồ sơ bệnh nhân |
-| Doctor | 5005 | Bác sĩ, specialty, schedule, availability |
-| Receptionist | 5006 | Tiếp nhận/admission |
-| Catalog | 5007 | Dịch vụ và pricing |
-| Appointment | 5008 | Slot, hold, appointment |
-| Billing | 5009 | Invoice/payment |
-| Medical Record | 5011 | Encounter và dữ liệu lâm sàng |
-| Queue | 5012 | Journey/ticket |
-| Document | 5013 | Document metadata |
-| Prescription | 5014 | Prescription |
-| Treatment Plan | 5015 | Treatment plan |
-| Notification | 5016 | Internal notification operations |
-| Audit Log | 5017 | Audit events |
-| Reporting | 5018 | Reports |
-| Consultation | 5019 | Consultation |
-| RabbitMQ Management | 15672 | Chỉ bind local |
-
-## Yêu cầu
+## 1. Yêu cầu
 
 - Docker Desktop và Docker Compose v2.
-- Node.js 22+ và npm nếu chạy test/build local.
+- Node.js 22+ và npm.
+- PowerShell trên Windows.
 - Git.
 
-## Chạy nhanh
+Kiểm tra:
 
 ```powershell
-# PowerShell
-Copy-Item .env.example .env
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode Docker
+docker version
+docker compose version
+node --version
+npm --version
+git --version
 ```
 
-Hoặc thủ công:
+## 2. Chuẩn bị và chạy hệ thống
+
+Đứng tại thư mục gốc repository. Script `scripts/setup.ps1` là entrypoint duy nhất cho setup local; script sẽ tạo `.env`, sinh key/secret local và chạy Docker hoặc chuẩn bị database local.
+
+### Chạy tương tác
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```
+
+Menu có ba lựa chọn:
+
+- `Docker`: build và chạy toàn bộ stack.
+- `Local`: chạy PostgreSQL bằng Docker, app NestJS chạy bằng Node trên máy host.
+- `PrepareOnly`: chỉ tạo/cập nhật `.env`, key và secret.
+
+### Chạy không tương tác
+
+```powershell
+# Toàn bộ stack bằng Docker, kèm dữ liệu demo
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -SeedDemo
+
+# Chỉ chuẩn bị cấu hình và secrets
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode PrepareOnly
+
+# Database bằng Docker, app chạy local
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Local
+
+# Docker không build lại image
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -NoBuild
+```
+
+Không gọi `scripts/setup-local.ps1` trực tiếp trong workflow mới. File này là implementation nội bộ được `setup.ps1` gọi để tương thích.
+
+## 3. Environment và secrets
+
+- `.env.example` là template được commit.
+- `.env` là local-only và bị ignore.
+- Key được sinh trong `scripts/keys/` và bị ignore.
+- Không commit password, JWT private key, pepper, SMTP credential hoặc database secret.
+- Nếu `.env` bị hỏng hoặc lớn bất thường, setup script sẽ lưu bản cũ thành `.env.corrupt.<timestamp>` rồi tạo lại từ `.env.example`.
+- Không sửa trực tiếp private key PEM thành nhiều dòng trong `.env`; script tự encode newline thành `\n`.
+
+Sau `PrepareOnly`, có thể chỉnh SMTP trong `.env` nếu cần password reset:
+
+```env
+AUTH_SMTP_HOST=smtp.example.com
+AUTH_SMTP_PORT=587
+AUTH_SMTP_SECURE=false
+AUTH_SMTP_USER=<smtp-user>
+AUTH_SMTP_PASSWORD=<smtp-password>
+AUTH_EMAIL_FROM=no-reply@example.com
+```
+
+Trong Docker, SMTP host phải truy cập được từ container; không dùng `localhost` cho SMTP chạy ngoài container.
+
+## 4. Port mặc định
+
+| Thành phần | Port |
+|---|---:|
+| Frontend | 3000 |
+| Kong proxy | 8080 |
+| Kong Admin / Manager | 8001 / 8002 |
+| Auth | 5003 |
+| Patient | 5004 |
+| Doctor | 5005 |
+| Receptionist | 5006 |
+| Catalog | 5007 |
+| Appointment | 5008 |
+| Billing | 5009 |
+| Medical Record | 5011 |
+| Queue | 5012 |
+| Document | 5013 |
+| Prescription | 5014 |
+| Treatment Plan | 5015 |
+| Notification | 5016 |
+| Audit Log | 5017 |
+| Reporting | 5018 |
+| Consultation | 5019 |
+| RabbitMQ Management | 15672 |
+
+## 5. Chạy app local sau khi chọn `Local`
+
+Trong **mỗi terminal**:
+
+```powershell
+. .\scripts\load-env.ps1
+cd services
+```
+
+Các lệnh chạy service:
+
+```powershell
+npm.cmd run start:dev -- auth-service
+npm.cmd run start:doctor:dev
+npm.cmd run start:receptionist:dev
+npx nest start patient-service --watch
+npm.cmd run start:dev -- sample-service
+```
+
+Các service còn lại ưu tiên chạy bằng Docker Compose để bảo đảm đúng dependency, network và gRPC target.
+
+## 6. Kiểm tra, seed và dừng
+
+```powershell
+# Validate compose
 docker compose config --quiet
-docker compose up -d --build
-docker compose ps
-```
 
-Không cần dùng `docker-compose.services.yml`; cấu hình đã được hợp nhất vào `docker-compose.yml`.
+# Trạng thái và log
+docker compose ps -a
+docker compose logs -f gateway
 
-## Seed dữ liệu demo
+# Health checks
+curl.exe -i http://localhost:8080/health
+curl.exe -i http://localhost:3000
+curl.exe -i http://localhost:5003/health
+curl.exe -i http://localhost:5004/health
+curl.exe -i http://localhost:5005/health
 
-Sau khi database và migrations đã sẵn sàng:
-
-```powershell
+# Seed demo (idempotent)
 cd services
 npm.cmd run prisma:seed:demo
+cd ..
+
+# Dừng, giữ nguyên volume
+docker compose down
 ```
 
-Tài khoản demo mặc định:
+Không dùng `docker compose down -v` nếu chưa chấp nhận xóa toàn bộ dữ liệu local.
 
-| Role | Email | Password |
-|---|---|---|
-| Patient | `demo.patient@antam.local` | `Demo@123456` |
-| Doctor | `demo.doctor@antam.local` | `Demo@123456` |
-| Receptionist | `demo.receptionist@antam.local` | `Demo@123456` |
-| Admin | `demo.admin@antam.local` | `Demo@123456` |
+Tài khoản demo mặc định dùng password `Demo@123456`:
 
-Có thể đổi password bằng biến `DEMO_SEED_PASSWORD`. Seed dùng `upsert`, không reset hoặc xóa database.
+- Patient: `demo.patient@antam.local`
+- Doctor: `demo.doctor@antam.local`
+- Receptionist: `demo.receptionist@antam.local`
+- Admin: `demo.admin@antam.local`
 
-## Commands thường dùng
+## 7. Build và test
 
 ```powershell
-docker compose up -d --build
-docker compose ps
-docker compose logs -f gateway
-docker compose down
-
 cd frontend
-npm.cmd run build
+npm.cmd ci
 npm.cmd run test
+npm.cmd run build
 
 cd ..\services
+npm.cmd ci
 npm.cmd run build
 npm.cmd test -- --runInBand
+cd ..
 ```
 
-## Environment và secrets
+## 8. Makefile shortcuts
 
-- `.env.example` là template an toàn, được phép commit.
-- `.env` là local-only và bị ignore.
-- Private key `*.pem` bị ignore.
-- Không commit password, JWT private key, pepper, SMTP credential hoặc database secret.
-- Nếu secret đã từng commit, cần rotate secret; việc thêm `.gitignore` không xóa secret khỏi Git history.
-
-Các script setup có thể tự sinh local key/pepper khi chạy lần đầu. Xem [docs/first-run.md](docs/first-run.md).
-
-## Tài liệu
-
-- [Hướng dẫn chạy lần đầu](docs/first-run.md)
-- [Setup toàn bộ môi trường](docs/setup-all-environment.md)
-- [API specifications và Kong config](docs/api-specs/)
-- [Gateway notes](gateway/readme.md)
-- [System design](docs/system_design.md)
-- [Service contracts index](docs/service-contracts-index.md)
-
-## Verification
+Các lệnh Makefile chỉ là shortcut cho flow trong README:
 
 ```powershell
-docker compose config --quiet
-cd frontend; npm.cmd run build; npm.cmd run test
-cd ..\services; npm.cmd run build; npm.cmd test -- --runInBand
+make init
+make validate
+make up-d
+make status
+make logs
+make down
+make seed-demo
 ```
 
-## Git safety
+Trên Windows có thể chạy trực tiếp các lệnh PowerShell/Docker ở trên nếu không cài `make`.
 
-Không commit/push tự động. Khi thay đổi history hoặc force push, cần thông báo cho toàn bộ thành viên trước.
+## 9. Tài liệu tham khảo
+
+- [Kiến trúc hệ thống](docs/system_design.md)
+- [API specifications và Kong config](docs/api-specs/)
+- [Service contracts index](docs/service-contracts-index.md)
+- [Gateway notes](gateway/readme.md)
+- [Tài liệu tích hợp](docs/integration/)
+
+Các file `docs/first-run.md` và `docs/setup-all-environment.md` không còn chứa command setup riêng; hãy quay lại README này để tránh chạy theo hướng dẫn đã lỗi thời.

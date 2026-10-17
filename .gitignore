@@ -95,3 +95,5 @@ postman/globals/workspace.globals.yaml
 PROGRESS.md
 NOTES-FOR-REVIEW.md
 tests
+scripts/keys/ 
+.env

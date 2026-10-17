@@ -10,6 +10,16 @@ $EnvPath = Join-Path $Root '.env'
 $ExamplePath = Join-Path $Root '.env.example'
 $ServicesPath = Join-Path $Root 'services'
 
+function Test-EnvFile([string]$Path) {
+  if (-not (Test-Path $Path)) { return $false }
+  $file = Get-Item $Path
+  if ($file.Length -gt 1MB) { return $false }
+  foreach ($line in (Get-Content -LiteralPath $Path)) {
+    if ($line.Length -gt 8192) { return $false }
+  }
+  return $true
+}
+
 function New-RandomBase64Url([int]$Bytes = 32) {
   $data = New-Object byte[] $Bytes
   $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
@@ -56,7 +66,7 @@ function Encode-EnvValue([string]$Name, [string]$Value) {
 }
 
 function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
-  $lines = [Collections.Generic.List[string]](Get-Content $Path)
+  $lines = [Collections.Generic.List[string]]::new([string[]][IO.File]::ReadAllLines($Path, [Text.UTF8Encoding]::new($false)))
   $prefix = $Name + '='
   $encoded = Encode-EnvValue $Name $Value
   $found = $false
@@ -95,13 +105,15 @@ function Run-Command([string]$File, [string[]]$Arguments, [string]$WorkingDirect
 
 function Ensure-AuthKeys([string]$Path) {
   $values = Read-EnvMap $Path
-  $privatePath = Join-Path $Root 'auth-private.pem'
-  $publicPath = Join-Path $Root 'auth-public.pem'
+  $keysPath = Join-Path $Root 'scripts\keys'
+  New-Item -ItemType Directory -Force -Path $keysPath | Out-Null
+  $privatePath = Join-Path $keysPath 'auth-private.pem'
+  $publicPath = Join-Path $keysPath 'auth-public.pem'
   $private = Read-Pem $privatePath
   $public = Read-Pem $publicPath
 
   if (-not $private -or -not $public) {
-    Run-Command 'node' @((Join-Path $Root 'scripts/generate-auth-keys.cjs'))
+    Run-Command 'node' @((Join-Path $Root 'scripts/generate-auth-keys.cjs'), $keysPath)
     $private = Read-Pem $privatePath
     $public = Read-Pem $publicPath
   }
@@ -112,19 +124,46 @@ function Ensure-AuthKeys([string]$Path) {
 }
 
 function Ensure-InternalKeys([string]$Path) {
-  $privatePath = Join-Path $Root 'patient-internal-private.pem'
-  $publicPath = Join-Path $Root 'patient-internal-public.pem'
+  $keysPath = Join-Path $Root 'scripts\keys'
+  New-Item -ItemType Directory -Force -Path $keysPath | Out-Null
+  $privatePath = Join-Path $keysPath 'patient-internal-private.pem'
+  $publicPath = Join-Path $keysPath 'patient-internal-public.pem'
   if (-not (Test-Path $privatePath) -or -not (Test-Path $publicPath)) {
-    Run-Command 'node' @((Join-Path $Root 'scripts/generate-internal-keys.cjs'), $Root)
+    Run-Command 'node' @((Join-Path $Root 'scripts/generate-internal-keys.cjs'), $keysPath)
   }
   $public = Read-Pem $publicPath
   if (-not $public) { throw 'Patient internal public key could not be created' }
   Set-EnvValue $Path 'PATIENT_INTERNAL_JWT_PUBLIC_KEY' $public
 }
 
+function Ensure-ServiceKeys([string]$Path) {
+  $keysPath = Join-Path $Root 'scripts\keys'
+  New-Item -ItemType Directory -Force -Path $keysPath | Out-Null
+  $privatePath = Join-Path $keysPath 'internal-service-private.pem'
+  $publicPath = Join-Path $keysPath 'internal-service-public.pem'
+  if (-not (Test-Path $privatePath) -or -not (Test-Path $publicPath)) {
+    Run-Command 'node' @((Join-Path $Root 'scripts/generate-service-keys.cjs'), $keysPath)
+  }
+  Set-EnvValue $Path 'INTERNAL_SERVICE_JWT_PRIVATE_KEY' (Read-Pem $privatePath)
+  Set-EnvValue $Path 'INTERNAL_SERVICE_JWT_PUBLIC_KEY' (Read-Pem $publicPath)
+}
+
 if (-not (Test-Path $ExamplePath)) { throw "Missing environment template: $ExamplePath" }
-$fresh = -not (Test-Path $EnvPath)
-if ($fresh) { Copy-Item $ExamplePath $EnvPath }
+
+$recreated = $false
+if (-not (Test-EnvFile $EnvPath)) {
+  if (Test-Path $EnvPath) {
+    $backup = "$EnvPath.corrupt.$((Get-Date).ToString('yyyyMMddHHmmss'))"
+    Move-Item -LiteralPath $EnvPath -Destination $backup
+    Write-Warning "File .env khong hop le; da luu ban cu tai $backup"
+  }
+  Copy-Item -LiteralPath $ExamplePath -Destination $EnvPath
+  $recreated = $true
+  Write-Host 'Da tao lai .env tu .env.example' -ForegroundColor Yellow
+}
+
+$fresh = $recreated -or -not (Test-Path $EnvPath)
+if ($fresh) { Copy-Item -LiteralPath $ExamplePath -Destination $EnvPath }
 
 $values = Read-EnvMap $EnvPath
 $dbs = @(
@@ -160,6 +199,7 @@ foreach ($url in $urls) {
 $values = Read-EnvMap $EnvPath
 Ensure-AuthKeys $EnvPath
 Ensure-InternalKeys $EnvPath
+Ensure-ServiceKeys $EnvPath
 $values = Read-EnvMap $EnvPath
 
 if (-not $values.AUTH_JWT_ISSUER) { Set-EnvValue $EnvPath 'AUTH_JWT_ISSUER' 'maternal-healthcare-auth' }
@@ -214,10 +254,13 @@ if ($Mode -eq 'Docker') {
   Run-Command 'docker' @('compose','config','--quiet')
   if ($NoBuild) { Run-Command 'docker' @('compose','up','-d') }
   else { Run-Command 'docker' @('compose','up','--build','-d') }
-  Wait-Migration 'auth-migrate'
-  Wait-Migration 'doctor-migrate'
-  Wait-Migration 'receptionist-migrate'
-  Wait-Migration 'patient-migrate'
+  $migrationServices = @(
+    'auth-migrate','doctor-migrate','receptionist-migrate','patient-migrate',
+    'catalog-migrate','appointment-migrate','billing-migrate','medical-record-migrate',
+    'queue-migrate','document-migrate','prescription-migrate','treatment-plan-migrate',
+    'notification-migrate','audit-log-migrate','reporting-migrate','consultation-migrate'
+  )
+  foreach ($migration in $migrationServices) { Wait-Migration $migration }
   Run-Command 'docker' @('compose','ps','-a')
   exit 0
 }

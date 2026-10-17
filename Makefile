@@ -1,6 +1,6 @@
 # Common project commands. The repository uses one canonical docker-compose.yml.
 
-.PHONY: help init up up-d down build logs status validate seed-demo test frontend-test backend-test
+.PHONY: help init up up-d down build logs status validate seed-demo frontend-test backend-test
 
 help:
 	@echo "make init          Prepare local .env and keys"
@@ -13,7 +13,7 @@ help:
 	@echo "make backend-test  Run backend tests"
 
 init:
-	powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1 -Mode PrepareOnly
+	powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode PrepareOnly
 
 validate:
 	docker compose config --quiet
