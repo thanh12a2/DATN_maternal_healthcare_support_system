@@ -1,3 +1,11 @@
+
+## Version / Change Log
+
+| Version | Date | Change | Impact |
+|---|---|---|---|
+| Draft-2026-10-17-changelog | 2026-10-17 | Bổ sung version và change log chuẩn hóa theo format của Doctor Service Specification. Không thay đổi business contract trong tài liệu. | Chỉ thay đổi metadata/documentation; dùng section này để theo dõi các lần cập nhật tiếp theo. |
+
+---
 # Billing Service — Service Specification
 
 > **Status:** DESIGN — implementation-ready, chưa có source/config trong repository tại ngày 2026-10-03.  

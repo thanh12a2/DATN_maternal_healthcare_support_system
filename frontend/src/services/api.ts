@@ -33,7 +33,10 @@ export async function apiRequest<T>(
   });
 
   if (response.status === 204) return undefined as T;
-  const payload = (await response.json().catch(() => null)) as ErrorPayload | T | null;
+  const contentType = response.headers.get('content-type') ?? '';
+  const payload = (contentType.includes('text/') || contentType.includes('csv'))
+    ? await response.text()
+    : await response.json().catch(() => null) as ErrorPayload | T | null;
   if (!response.ok) {
     const body = payload as ErrorPayload | null;
     const nested = typeof body?.error === 'object' ? body.error : undefined;
