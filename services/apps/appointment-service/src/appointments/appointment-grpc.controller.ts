@@ -13,6 +13,74 @@ export class AppointmentGrpcController {
   @ServiceScopes('appointment:internal:read')
   async getAppointment(request: any) { return { appointment: this.view(await this.service.get(request.appointmentId) as any) }; }
 
+  @GrpcMethod('AppointmentInternalService','SearchBookableSlotsForReception')
+  @ServiceCallers('receptionist-service')
+  @ServiceScopes('appointment:booking:read')
+  async searchBookableSlotsForReception(request: any) {
+    const result: any = await this.service.searchBookableSlotsForReception({
+      serviceId: request.serviceId,
+      selectionMode: request.selectionMode,
+      requestedDoctorId: request.requestedDoctorId || undefined,
+      requestedRankCode: request.requestedRankCode || undefined,
+      from: timestampToDate(request.from),
+      to: timestampToDate(request.to),
+      limit: Number(request.page?.pageSize ?? 20),
+    }, request.context?.actorAccountId || 'receptionist-service');
+    return {
+      slots: (result.items ?? []).map((slot: any) => ({
+        serviceId: slot.serviceId,
+        selectionMode: 'SELECTION_MODE_' + slot.selectionMode,
+        doctorId: slot.doctorId ?? '',
+        rankCode: slot.rankCode ?? '',
+        startAt: this.time(slot.startAt),
+        endAt: this.time(slot.endAt),
+        availableCapacity: Number(slot.availableCapacity ?? 1),
+      })),
+      page: {
+        nextPageToken: result.nextPageToken ?? '',
+        totalSize: String(result.total ?? result.items?.length ?? 0),
+      },
+    };
+  }
+
+  @GrpcMethod('AppointmentInternalService','BookForReception')
+  @ServiceCallers('receptionist-service')
+  @ServiceScopes('appointment:booking:write')
+  async bookForReception(request: any) {
+    const appointment: any = await this.service.bookForReception({
+      patientId: request.patientId,
+      serviceId: request.serviceId,
+      selectionMode: request.selectionMode,
+      requestedDoctorId: request.requestedDoctorId || undefined,
+      requestedRankCode: request.requestedRankCode || undefined,
+      startAt: timestampToDate(request.startAt),
+      endAt: timestampToDate(request.endAt),
+      channel: request.channel,
+    }, request.context?.actorAccountId || 'receptionist-service', request.context?.idempotencyKey);
+    return { appointment: this.view(appointment), idempotentReplay: false };
+  }
+
+  @GrpcMethod('AppointmentInternalService','SearchForReception')
+  @ServiceCallers('receptionist-service')
+  @ServiceScopes('appointment:admission:read')
+  async searchForReception(request: any) {
+    const result: any = await this.service.searchForReception({
+      patientId: request.patientId,
+      appointmentCode: request.appointmentCode || undefined,
+      from: timestampToDate(request.from),
+      to: timestampToDate(request.to),
+      limit: Number(request.page?.pageSize ?? 20),
+      cursor: request.page?.pageToken || undefined,
+    });
+    return {
+      appointments: result.items.map((item: any) => this.view(item)),
+      page: {
+        nextPageToken: result.nextPageToken ?? '',
+        totalSize: String(result.total ?? 0),
+      },
+    };
+  }
+
   @GrpcMethod('AppointmentInternalService','ValidateForAdmission')
   @ServiceCallers('receptionist-service')
   @ServiceScopes('appointment:admission:read')

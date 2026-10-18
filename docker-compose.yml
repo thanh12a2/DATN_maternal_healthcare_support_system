@@ -199,7 +199,7 @@ services:
       - app-network
 
   # Receptionist Service owns workforce/admission-orchestration state.
-  # Admission HTTP routes remain disabled until downstream API contracts exist.
+  # Appointment admission routes use internal gRPC calls to downstream services.
   receptionist-migrate:
     build:
       context: ./services

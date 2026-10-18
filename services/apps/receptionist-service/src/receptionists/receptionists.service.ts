@@ -357,6 +357,17 @@ export class ReceptionistsService {
     this.assertOwnOrAdmin(record.accountId, auth);
   }
 
+  async assertOperational(auth: AuthContext): Promise<void> {
+    const record = await this.findByAccountId(auth.userId);
+    if (record.status !== ReceptionistStatus.ACTIVE) {
+      throw new DomainException(
+        'RECEPTIONIST_INACTIVE',
+        'Receptionist profile is not active for admission operations',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+  }
+
   async findAccountId(id: string): Promise<string> {
     return (await this.findById(id)).accountId;
   }
