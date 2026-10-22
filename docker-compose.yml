@@ -35,7 +35,7 @@ services:
     build:
       args:
         APP_NAME: appointment-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -51,7 +51,7 @@ services:
     build:
       args:
         APP_NAME: appointment-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       appointment-migrate:
@@ -117,7 +117,7 @@ services:
     build:
       args:
         APP_NAME: audit-log-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -133,7 +133,7 @@ services:
     build:
       args:
         APP_NAME: audit-log-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       audit-log-migrate:
@@ -195,7 +195,7 @@ services:
     build:
       args:
         APP_NAME: auth-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -211,7 +211,7 @@ services:
     build:
       args:
         APP_NAME: auth-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       auth-migrate:
@@ -280,7 +280,7 @@ services:
     build:
       args:
         APP_NAME: billing-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -296,7 +296,7 @@ services:
     build:
       args:
         APP_NAME: billing-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       billing-migrate:
@@ -358,7 +358,7 @@ services:
     build:
       args:
         APP_NAME: service-catalog-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -400,7 +400,7 @@ services:
     build:
       args:
         APP_NAME: consultation-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -416,7 +416,7 @@ services:
     build:
       args:
         APP_NAME: consultation-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       consultation-migrate:
@@ -478,7 +478,7 @@ services:
     build:
       args:
         APP_NAME: doctor-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -494,7 +494,7 @@ services:
     build:
       args:
         APP_NAME: doctor-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       auth-service:
@@ -549,16 +549,13 @@ services:
         target: /var/lib/postgresql/data
         type: volume
         volume: {}
-  document-migrate:
-      - app-network
-
   # Receptionist Service owns workforce/admission-orchestration state.
   # Appointment admission routes use internal gRPC calls to downstream services.
-  receptionist-migrate:
+  document-migrate:
     build:
       args:
         APP_NAME: document-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -574,7 +571,7 @@ services:
     build:
       args:
         APP_NAME: document-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       document-migrate:
@@ -612,7 +609,7 @@ services:
       - ${DOCUMENT_SERVICE_PORT:-5013}:5013
   frontend:
     build:
-      context: D:\DATN_maternal_healthcare_support_system\frontend
+      context: ./frontend
       dockerfile: Dockerfile
     depends_on:
       gateway:
@@ -626,7 +623,7 @@ services:
       - ${FRONTEND_PORT:-3000}:3000
   gateway:
     build:
-      context: D:\DATN_maternal_healthcare_support_system
+      context: .
       dockerfile: gateway/Dockerfile
     depends_on:
       appointment-service:
@@ -699,7 +696,7 @@ services:
         volume: {}
   kong-init:
     build:
-      context: D:\DATN_maternal_healthcare_support_system
+      context: .
       dockerfile: gateway/Dockerfile
     command:
       - /usr/local/bin/init-kong.sh
@@ -748,7 +745,7 @@ services:
     build:
       args:
         APP_NAME: medical-record-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -764,7 +761,7 @@ services:
     build:
       args:
         APP_NAME: medical-record-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       medical-record-migrate:
@@ -830,7 +827,7 @@ services:
     build:
       args:
         APP_NAME: notification-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -846,7 +843,7 @@ services:
     build:
       args:
         APP_NAME: notification-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       notification-migrate:
@@ -908,7 +905,7 @@ services:
     build:
       args:
         APP_NAME: patient-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -924,7 +921,7 @@ services:
     build:
       args:
         APP_NAME: patient-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       patient-migrate:
@@ -993,7 +990,7 @@ services:
     build:
       args:
         APP_NAME: prescription-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1009,7 +1006,7 @@ services:
     build:
       args:
         APP_NAME: prescription-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       prescription-migrate:
@@ -1075,7 +1072,7 @@ services:
     build:
       args:
         APP_NAME: queue-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1091,7 +1088,7 @@ services:
     build:
       args:
         APP_NAME: queue-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       queue-migrate:
@@ -1179,7 +1176,7 @@ services:
     build:
       args:
         APP_NAME: receptionist-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1195,7 +1192,7 @@ services:
     build:
       args:
         APP_NAME: receptionist-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       appointment-service:
@@ -1269,7 +1266,7 @@ services:
     build:
       args:
         APP_NAME: reporting-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1285,7 +1282,7 @@ services:
     build:
       args:
         APP_NAME: reporting-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       rabbitmq:
@@ -1325,7 +1322,7 @@ services:
     build:
       args:
         APP_NAME: sample-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     environment:
       PORT: 5000
@@ -1337,7 +1334,7 @@ services:
     build:
       args:
         APP_NAME: service-catalog-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       catalog-migrate:
@@ -1399,7 +1396,7 @@ services:
     build:
       args:
         APP_NAME: treatment-plan-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1415,7 +1412,7 @@ services:
     build:
       args:
         APP_NAME: treatment-plan-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       rabbitmq:

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { status as GrpcStatus } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
 import { GrpcClientFactory, dateToTimestamp } from '@platform';
 
@@ -79,13 +80,17 @@ export class AdmissionGrpcGateway {
         idempotencyKey: write ? request.context.idempotencyKey : undefined,
       },
     );
-    return this.grpc.unary(
-      client,
-      method,
-      request,
-      metadata,
-      write ? 3_000 : 2_000,
-    );
+    try {
+      return await this.grpc.unary(
+        client,
+        method,
+        request,
+        metadata,
+        write ? 10_000 : 2_000,
+      );
+    } catch (error) {
+      this.rethrowGrpcError(error);
+    }
   }
 
   searchPatients(phoneNumber: string, actor: string, key: string) {
@@ -104,6 +109,35 @@ export class AdmissionGrpcGateway {
       'patient-service',
       ['patient:search'],
       false,
+    );
+  }
+
+  createWalkInPatient(input: {
+    fullName: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+    nationalId?: string;
+    address?: string;
+    reason: string;
+  }, actor: string, key: string) {
+    return this.call(
+      'patient-create-for-reception',
+      'PATIENT_GRPC_TARGET',
+      'patient/v1/patient_internal.proto',
+      'maternal.patient.v1',
+      'PatientInternalService',
+      'createPatientForReception',
+      {
+        context: this.context(actor, key),
+        fullName: input.fullName,
+        dateOfBirth: input.dateOfBirth,
+        phoneNumber: input.phoneNumber,
+        nationalId: input.nationalId ?? '',
+        address: input.address ?? '',
+        reason: input.reason,
+      },
+      'patient-service',
+      ['patient:write'],
     );
   }
 
@@ -460,6 +494,35 @@ export class AdmissionGrpcGateway {
     );
   }
 
+  getQueue(journeyId: string, actor: string, key: string) {
+    return this.call(
+      'queue-read',
+      'QUEUE_GRPC_TARGET',
+      'queue/v1/queue_internal.proto',
+      'maternal.queue.v1',
+      'QueueInternalService',
+      'getJourney',
+      { context: this.context(actor, key), journeyId, appointmentId: '' },
+      'queue-service',
+      ['queue:journey:read'],
+      false,
+    );
+  }
+
+  cancelQueue(journeyId: string, appointmentId: string, reason: string, actor: string, key: string) {
+    return this.call(
+      'queue-cancel',
+      'QUEUE_GRPC_TARGET',
+      'queue/v1/queue_internal.proto',
+      'maternal.queue.v1',
+      'QueueInternalService',
+      'cancelWaitingTickets',
+      { context: this.context(actor, key), journeyId, appointmentId, reason },
+      'queue-service',
+      ['queue:cancel'],
+    );
+  }
+
   private fallbackTarget(key: string): string {
     return (
       {
@@ -470,5 +533,30 @@ export class AdmissionGrpcGateway {
         QUEUE_GRPC_TARGET: 'queue-service:6012',
       } as Record<string, string>
     )[key];
+  }
+
+  private rethrowGrpcError(error: unknown): never {
+    const remote = error as { code?: unknown; details?: unknown };
+    const details = String(remote.details ?? 'Remote service request failed');
+    const [candidate, ...messageParts] = details.split(':');
+    const code = /^[A-Z][A-Z0-9_]+$/.test(candidate)
+      ? candidate
+      : 'DOWNSTREAM_ERROR';
+    const body = { code, message: messageParts.join(':').trim() || details };
+    switch (Number(remote.code)) {
+      case GrpcStatus.INVALID_ARGUMENT:
+        throw new BadRequestException(body);
+      case GrpcStatus.UNAUTHENTICATED:
+        throw new UnauthorizedException(body);
+      case GrpcStatus.PERMISSION_DENIED:
+        throw new ForbiddenException(body);
+      case GrpcStatus.NOT_FOUND:
+        throw new NotFoundException(body);
+      case GrpcStatus.ALREADY_EXISTS:
+      case GrpcStatus.FAILED_PRECONDITION:
+        throw new ConflictException(body);
+      default:
+        throw new ServiceUnavailableException(body);
+    }
   }
 }

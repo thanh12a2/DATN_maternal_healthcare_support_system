@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '../../../../generated/receptionist-client';
 import {
   AdmissionStatus,
   AdmissionStep,
@@ -19,6 +20,12 @@ import type { SearchAppointmentsDto } from './dto/search-appointments.dto';
 import type { BookAppointmentDto } from './dto/book-appointment.dto';
 import type { SearchBookableSlotsDto } from './dto/search-bookable-slots.dto';
 import type { RecordAdmissionPaymentDto } from './dto/record-admission-payment.dto';
+import type { OpenReceptionCaseDto } from './dto/open-reception-case.dto';
+import type { VerifyIdentityDto } from './dto/verify-identity.dto';
+import type { ListReceptionCasesDto } from './dto/list-reception-cases.dto';
+import type { CaseTransitionDto } from './dto/case-transition.dto';
+import type { SearchReceptionPatientsDto } from './dto/search-reception-patients.dto';
+import type { CreateWalkInPatientDto } from './dto/create-walk-in-patient.dto';
 import { AdmissionGrpcGateway } from './admission-grpc.gateway';
 
 @Injectable()
@@ -28,6 +35,27 @@ export class AdmissionService {
     private readonly remote: AdmissionGrpcGateway,
     private readonly receptionists: ReceptionistsService,
   ) {}
+
+  async searchPatientsForReception(input: SearchReceptionPatientsDto, auth: AuthContext) {
+    await this.assertOperational(auth);
+    const response: any = await this.remote.searchPatients(
+      input.phoneNumber,
+      auth.userId,
+      `${randomUUID()}:patient-search`,
+    );
+    return { items: (response.patients ?? []).map((patient: any) => this.presentPatient(patient)) };
+  }
+
+  async createWalkInPatient(
+    input: CreateWalkInPatientDto,
+    idempotencyKey: string | undefined,
+    auth: AuthContext,
+  ) {
+    await this.assertOperational(auth);
+    const key = this.requiredIdempotencyKey(idempotencyKey);
+    const response: any = await this.remote.createWalkInPatient(input, auth.userId, key);
+    return { patient: this.presentPatient(response.patient), created: Boolean(response.created) };
+  }
 
   async searchAppointments(input: SearchAppointmentsDto, auth: AuthContext) {
     await this.assertOperational(auth);
@@ -99,10 +127,22 @@ export class AdmissionService {
   }
 
   async openCase(
-    input: { appointmentId: string; patientId: string; arrivalAt?: string },
+    input: OpenReceptionCaseDto,
+    idempotencyKey: string | undefined,
     auth: AuthContext,
+    requestId: string,
   ) {
     await this.assertOperational(auth);
+    const key = this.requiredIdempotencyKey(idempotencyKey);
+    const operation = `reception.case.open:${input.appointmentId}`;
+    const requestHash = this.hash({ input });
+    const replay = await this.db.receptionIdempotencyRecord.findUnique({
+      where: { actorId_operation_idempotencyKey: { actorId: auth.userId, operation, idempotencyKey: key } },
+    });
+    if (replay) {
+      if (replay.requestHash !== requestHash) throw new ConflictException('IDEMPOTENCY_KEY_REUSED');
+      if (replay.resourceId) return this.get(replay.resourceId);
+    }
 
     const existing = await this.db.receptionCase.findFirst({
       where: {
@@ -140,19 +180,46 @@ export class AdmissionService {
       )
     ).appointment;
     if (!appointment) throw new ConflictException('APPOINTMENT_NOT_FOUND');
-    const caseRecord = await this.db.receptionCase.create({
-      data: {
-        appointmentId: input.appointmentId,
-        patientId: input.patientId,
-        type: this.caseType(appointment.channel),
-        status: ReceptionCaseStatus.OPEN,
-        arrivalAt: input.arrivalAt ? new Date(input.arrivalAt) : new Date(),
-        scheduledStartAtSnapshot: this.timestampToDate(validation.startAt),
-        appointmentTypeSnapshot: String(appointment.channel ?? 'BOOKING_CHANNEL_RECEPTION'),
-        openedByAccountId: auth.userId,
-        lastHandledByAccountId: auth.userId,
-      },
-    });
+    let caseRecord: any;
+    try {
+      caseRecord = await this.db.$transaction(async (tx) => {
+        const created = await tx.receptionCase.create({
+          data: {
+            appointmentId: input.appointmentId,
+            patientId: input.patientId,
+            type: this.caseType(appointment.channel),
+            status: ReceptionCaseStatus.OPEN,
+            arrivalAt: input.arrivalAt ? new Date(input.arrivalAt) : new Date(),
+            scheduledStartAtSnapshot: this.timestampToDate(validation.startAt),
+            appointmentTypeSnapshot: String(appointment.channel ?? 'BOOKING_CHANNEL_RECEPTION'),
+            openedByAccountId: auth.userId,
+            lastHandledByAccountId: auth.userId,
+          },
+        });
+        await tx.receptionIdempotencyRecord.create({
+          data: {
+            actorId: auth.userId,
+            operation,
+            idempotencyKey: key,
+            requestHash,
+            resourceId: created.id,
+            responseStatus: 201,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+        await this.audit(tx, 'RECEPTION_CASE_OPENED', auth.userId, requestId, created.id, null, ['status']);
+        return created;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const active = await this.db.receptionCase.findFirst({
+          where: { appointmentId: input.appointmentId, status: { not: ReceptionCaseStatus.CANCELLED } },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (active) return this.get(active.id);
+      }
+      throw error;
+    }
 
     return {
       ...caseRecord,
@@ -171,14 +238,9 @@ export class AdmissionService {
 
   async verify(
     caseId: string,
-    input: {
-      method: any;
-      result: any;
-      verifiedFields?: string[];
-      reasonCode?: string;
-      note?: string;
-    },
+    input: VerifyIdentityDto,
     auth: AuthContext,
+    requestId: string,
   ) {
     await this.assertOperational(auth);
     const receptionCase = await this.getCase(caseId);
@@ -190,29 +252,71 @@ export class AdmissionService {
       throw new ConflictException('RECEPTION_CASE_NOT_VERIFIABLE');
     }
 
-    const verification = await this.db.identityVerification.create({
-      data: {
-        receptionCaseId: caseId,
-        method: input.method,
-        result: input.result,
-        verifiedFields: input.verifiedFields ?? [],
-        reasonCode: input.reasonCode,
-        note: input.note,
-        performedByAccountId: auth.userId,
-      },
-    });
-
-    if (input.result === IdentityVerificationResult.VERIFIED) {
-      await this.db.receptionCase.update({
-        where: { id: caseId },
+    if (receptionCase.version !== input.expectedVersion) throw new ConflictException('VERSION_CONFLICT');
+    const nextStatus = input.result === IdentityVerificationResult.VERIFIED
+      ? ReceptionCaseStatus.IDENTITY_VERIFIED
+      : ReceptionCaseStatus.MANUAL_REVIEW;
+    return this.db.$transaction(async (tx) => {
+      const update = await tx.receptionCase.updateMany({
+        where: { id: caseId, version: input.expectedVersion, status: { in: [ReceptionCaseStatus.OPEN, ReceptionCaseStatus.IDENTITY_VERIFIED] } },
+        data: { status: nextStatus, lastHandledByAccountId: auth.userId, version: { increment: 1 } },
+      });
+      if (update.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+      const verification = await tx.identityVerification.create({
         data: {
-          status: ReceptionCaseStatus.IDENTITY_VERIFIED,
-          lastHandledByAccountId: auth.userId,
-          version: { increment: 1 },
+          receptionCaseId: caseId,
+          method: input.method,
+          result: input.result,
+          verifiedFields: input.verifiedFields ?? [],
+          reasonCode: input.reasonCode,
+          note: input.note,
+          performedByAccountId: auth.userId,
         },
       });
-    }
-    return verification;
+      await this.audit(tx, 'RECEPTION_CASE_IDENTITY_VERIFIED', auth.userId, requestId, caseId, null, ['status'], input.reasonCode);
+      return verification;
+    });
+  }
+
+  async listCases(input: ListReceptionCasesDto, auth: AuthContext) {
+    await this.assertOperational(auth);
+    const limit = input.limit ?? 20;
+    const rows = await this.db.receptionCase.findMany({
+      where: {
+        ...(input.status ? { status: input.status as ReceptionCaseStatus } : {}),
+        ...(input.admissionStatus ? { admission: { is: { status: input.admissionStatus as AdmissionStatus } } } : {}),
+        ...(input.patientId ? { patientId: input.patientId } : {}),
+        ...(input.from || input.to
+          ? { arrivalAt: { ...(input.from ? { gte: new Date(input.from) } : {}), ...(input.to ? { lte: new Date(input.to) } : {}) } }
+          : {}),
+      },
+      include: { admission: true },
+      orderBy: [{ arrivalAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+    });
+    const items = rows.slice(0, limit).map((item) => this.presentCase(item));
+    return { items, nextCursor: rows.length > limit ? items.at(-1)?.id ?? null : null };
+  }
+
+  async getCaseDetail(caseId: string, auth: AuthContext) {
+    await this.assertOperational(auth);
+    const record = await this.get(caseId);
+    if (!record) throw new NotFoundException('RECEPTION_CASE_NOT_FOUND');
+    return record;
+  }
+
+  async queueStatus(caseId: string, auth: AuthContext) {
+    await this.assertOperational(auth);
+    const receptionCase: any = await this.getCase(caseId);
+    const journeyId = receptionCase.admission?.queueJourneyId;
+    if (!journeyId) throw new ConflictException('QUEUE_NOT_CREATED');
+    const journey: any = await this.remote.getQueue(
+      journeyId,
+      auth.userId,
+      `${receptionCase.admission.id}:queue-read`,
+    );
+    return journey;
   }
 
   async recordPayment(
@@ -220,6 +324,7 @@ export class AdmissionService {
     input: RecordAdmissionPaymentDto,
     idempotencyKey: string | undefined,
     auth: AuthContext,
+    requestId: string,
   ) {
     await this.assertOperational(auth);
     if (!idempotencyKey?.trim()) {
@@ -230,6 +335,9 @@ export class AdmissionService {
     }
 
     const receptionCase: any = await this.getCase(caseId);
+    if (receptionCase.version !== input.expectedCaseVersion) {
+      throw new ConflictException('VERSION_CONFLICT');
+    }
     if (receptionCase.status === ReceptionCaseStatus.ADMITTED) {
       throw new ConflictException('CASE_ALREADY_ADMITTED');
     }
@@ -280,17 +388,25 @@ export class AdmissionService {
     );
     const condition = this.paymentCondition(conditionResponse.condition);
 
-    admission = await this.db.admission.update({
-      where: { id: admission.id },
-      data: {
-        paymentId: paymentId || undefined,
-        status: condition ? AdmissionStatus.IN_PROGRESS : AdmissionStatus.AWAITING_PAYMENT,
-        currentStep: condition
-          ? AdmissionStep.OPEN_CLINICAL_ENCOUNTER_DRAFT
-          : AdmissionStep.VERIFY_PAYMENT_OR_APPROVED_CREDIT,
-        lastErrorCode: condition ? null : 'PAYMENT_NOT_CLEARED',
-        version: { increment: 1 },
-      },
+    admission = await this.db.$transaction(async (tx) => {
+      const nextStatus = condition ? AdmissionStatus.IN_PROGRESS : AdmissionStatus.AWAITING_PAYMENT;
+      const updated = await tx.admission.update({
+        where: { id: admission.id },
+        data: {
+          paymentId: paymentId || undefined,
+          status: nextStatus,
+          currentStep: condition
+            ? AdmissionStep.OPEN_CLINICAL_ENCOUNTER_DRAFT
+            : AdmissionStep.VERIFY_PAYMENT_OR_APPROVED_CREDIT,
+          lastErrorCode: condition ? null : 'PAYMENT_NOT_CLEARED',
+          version: { increment: 1 },
+        },
+      });
+      if (admission.status !== nextStatus) {
+        await this.history(tx, admission.id, admission.status, nextStatus, updated.currentStep, auth.userId, condition ? 'PAYMENT_CLEARED' : 'PAYMENT_NOT_CLEARED');
+      }
+      await this.audit(tx, 'RECEPTION_CASE_PAYMENT_RECORDED', auth.userId, requestId, caseId, admission.id, ['admission.status'], condition ? 'PAYMENT_CLEARED' : 'PAYMENT_NOT_CLEARED');
+      return updated;
     });
     return {
       invoice: paymentResponse.invoice,
@@ -302,6 +418,7 @@ export class AdmissionService {
         status: admission.status,
         currentStep: admission.currentStep,
       },
+      case: this.presentCase(await this.getCase(caseId)),
     };
   }
 
@@ -344,9 +461,10 @@ export class AdmissionService {
     });
   }
 
-  async admit(caseId: string, auth: AuthContext) {
+  async admit(caseId: string, expectedVersion: number, auth: AuthContext, requestId: string) {
     await this.assertOperational(auth);
     const receptionCase: any = await this.getCase(caseId);
+    if (receptionCase.version !== expectedVersion) throw new ConflictException('VERSION_CONFLICT');
     if (!receptionCase.appointmentId) {
       throw new ConflictException('APPOINTMENT_REQUIRED_FOR_ADMISSION');
     }
@@ -365,13 +483,19 @@ export class AdmissionService {
       create: { receptionCaseId: caseId },
       update: {},
     });
-    await this.db.receptionCase.update({
-      where: { id: caseId },
+    const claimed = await this.db.receptionCase.updateMany({
+      where: {
+        id: caseId,
+        version: expectedVersion,
+        status: { in: [ReceptionCaseStatus.IDENTITY_VERIFIED, ReceptionCaseStatus.ADMISSION_IN_PROGRESS] },
+      },
       data: {
         status: ReceptionCaseStatus.ADMISSION_IN_PROGRESS,
         lastHandledByAccountId: auth.userId,
+        version: { increment: 1 },
       },
     });
+    if (claimed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
 
     const key = (step: string) => `${admission.id}:${step}`;
     try {
@@ -427,14 +551,20 @@ export class AdmissionService {
       );
       const condition = this.paymentCondition(payment.condition);
       if (!condition) {
-        await this.db.admission.update({
-          where: { id: admission.id },
-          data: {
-            status: AdmissionStatus.AWAITING_PAYMENT,
-            currentStep: AdmissionStep.VERIFY_PAYMENT_OR_APPROVED_CREDIT,
-            lastErrorCode: 'PAYMENT_NOT_CLEARED',
-            version: { increment: 1 },
-          },
+        await this.db.$transaction(async (tx) => {
+          const updated = await tx.admission.update({
+            where: { id: admission.id },
+            data: {
+              status: AdmissionStatus.AWAITING_PAYMENT,
+              currentStep: AdmissionStep.VERIFY_PAYMENT_OR_APPROVED_CREDIT,
+              lastErrorCode: 'PAYMENT_NOT_CLEARED',
+              version: { increment: 1 },
+            },
+          });
+          if (admission.status !== AdmissionStatus.AWAITING_PAYMENT) {
+            await this.history(tx, admission.id, admission.status, AdmissionStatus.AWAITING_PAYMENT, updated.currentStep, auth.userId, 'PAYMENT_NOT_CLEARED');
+          }
+          await this.audit(tx, 'RECEPTION_CASE_AWAITING_PAYMENT', auth.userId, requestId, caseId, admission.id, ['admission.status'], 'PAYMENT_NOT_CLEARED');
         });
         return this.get(caseId);
       }
@@ -515,40 +645,130 @@ export class AdmissionService {
         }
       }
 
-      await this.db.admission.update({
-        where: { id: admission.id },
-        data: {
-          status: AdmissionStatus.COMPLETED,
-          currentStep: AdmissionStep.DONE,
-          queueJourneyId,
-          queueTicketId,
-          completedAt: new Date(),
-          lastErrorCode: null,
-          version: { increment: 1 },
-        },
+      await this.db.$transaction(async (tx) => {
+        const updated = await tx.admission.update({
+          where: { id: admission.id },
+          data: {
+            status: AdmissionStatus.COMPLETED,
+            currentStep: AdmissionStep.DONE,
+            queueJourneyId,
+            queueTicketId,
+            completedAt: new Date(),
+            lastErrorCode: null,
+            version: { increment: 1 },
+          },
+        });
+        if (admission.status !== AdmissionStatus.COMPLETED) {
+          await this.history(tx, admission.id, admission.status, AdmissionStatus.COMPLETED, updated.currentStep, auth.userId, 'ADMISSION_COMPLETED');
+        }
+        await tx.receptionCase.update({
+          where: { id: caseId },
+          data: {
+            status: ReceptionCaseStatus.ADMITTED,
+            lastHandledByAccountId: auth.userId,
+            version: { increment: 1 },
+          },
+        });
+        await this.audit(tx, 'RECEPTION_CASE_ADMITTED', auth.userId, requestId, caseId, admission.id, ['status', 'admission.status'], 'ADMISSION_COMPLETED');
       });
-      await this.db.receptionCase.update({
-        where: { id: caseId },
+      return this.get(caseId);
+    } catch (error) {
+      await this.db.$transaction(async (tx) => {
+        const updated = await tx.admission.update({
+          where: { id: admission.id },
+          data: {
+            status: AdmissionStatus.FAILED_RETRYABLE,
+            lastErrorCode:
+              error instanceof Error ? error.message.slice(0, 100) : 'UNKNOWN',
+            retryCount: { increment: 1 },
+            version: { increment: 1 },
+          },
+        });
+        if (admission.status !== AdmissionStatus.FAILED_RETRYABLE) {
+          await this.history(tx, admission.id, admission.status, AdmissionStatus.FAILED_RETRYABLE, updated.currentStep, auth.userId, 'DOWNSTREAM_FAILURE');
+        }
+        await this.audit(tx, 'RECEPTION_CASE_ADMISSION_FAILED', auth.userId, requestId, caseId, admission.id, ['admission.status'], 'DOWNSTREAM_FAILURE');
+      });
+      throw error;
+    }
+  }
+
+  async retry(caseId: string, expectedVersion: number, auth: AuthContext, requestId: string) {
+    await this.assertOperational(auth);
+    const receptionCase: any = await this.getCase(caseId);
+    if (receptionCase.admission?.status !== AdmissionStatus.FAILED_RETRYABLE) {
+      throw new ConflictException('ADMISSION_NOT_RETRYABLE');
+    }
+    return this.admit(caseId, expectedVersion, auth, requestId);
+  }
+
+  async cancel(caseId: string, input: CaseTransitionDto, auth: AuthContext, requestId: string) {
+    return this.resolveCase(caseId, ReceptionCaseStatus.CANCELLED, AdmissionStatus.CANCELLED, input, auth, requestId);
+  }
+
+  async manualReview(caseId: string, input: CaseTransitionDto, auth: AuthContext, requestId: string) {
+    return this.resolveCase(caseId, ReceptionCaseStatus.MANUAL_REVIEW, AdmissionStatus.MANUAL_REVIEW, input, auth, requestId);
+  }
+
+  private async resolveCase(
+    caseId: string,
+    nextCaseStatus: ReceptionCaseStatus,
+    nextAdmissionStatus: AdmissionStatus,
+    input: CaseTransitionDto,
+    auth: AuthContext,
+    requestId: string,
+  ) {
+    await this.assertOperational(auth);
+    const receptionCase: any = await this.getCase(caseId);
+    if (receptionCase.version !== input.expectedVersion) throw new ConflictException('VERSION_CONFLICT');
+    if ([ReceptionCaseStatus.ADMITTED, ReceptionCaseStatus.CANCELLED].includes(receptionCase.status)) {
+      throw new ConflictException('RECEPTION_CASE_NOT_RESOLVABLE');
+    }
+    const admission = receptionCase.admission;
+    if (admission?.queueJourneyId && receptionCase.appointmentId) {
+      await this.remote.cancelQueue(
+        admission.queueJourneyId,
+        receptionCase.appointmentId,
+        input.reasonCode,
+        auth.userId,
+        `${admission.id}:queue-cancel:${input.expectedVersion}`,
+      );
+    }
+    await this.db.$transaction(async (tx) => {
+      const updatedCase = await tx.receptionCase.updateMany({
+        where: {
+          id: caseId,
+          version: input.expectedVersion,
+          status: { in: [ReceptionCaseStatus.OPEN, ReceptionCaseStatus.IDENTITY_VERIFIED, ReceptionCaseStatus.ADMISSION_IN_PROGRESS, ReceptionCaseStatus.MANUAL_REVIEW] },
+        },
         data: {
-          status: ReceptionCaseStatus.ADMITTED,
+          status: nextCaseStatus,
           lastHandledByAccountId: auth.userId,
           version: { increment: 1 },
         },
       });
-      return this.get(caseId);
-    } catch (error) {
-      await this.db.admission.update({
-        where: { id: admission.id },
-        data: {
-          status: AdmissionStatus.FAILED_RETRYABLE,
-          lastErrorCode:
-            error instanceof Error ? error.message.slice(0, 100) : 'UNKNOWN',
-          retryCount: { increment: 1 },
-          version: { increment: 1 },
-        },
-      });
-      throw error;
-    }
+      if (updatedCase.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+      if (admission) {
+        const updatedAdmission = await tx.admission.update({
+          where: { id: admission.id },
+          data: { status: nextAdmissionStatus, lastErrorCode: input.reasonCode, version: { increment: 1 } },
+        });
+        if (admission.status !== nextAdmissionStatus) {
+          await this.history(tx, admission.id, admission.status, nextAdmissionStatus, updatedAdmission.currentStep, auth.userId, input.reasonCode);
+        }
+      }
+      await this.audit(
+        tx,
+        nextCaseStatus === ReceptionCaseStatus.CANCELLED ? 'RECEPTION_CASE_CANCELLED' : 'RECEPTION_CASE_MANUAL_REVIEW',
+        auth.userId,
+        requestId,
+        caseId,
+        admission?.id ?? null,
+        ['status', ...(admission ? ['admission.status'] : [])],
+        input.reasonCode,
+      );
+    });
+    return this.get(caseId);
   }
 
   private async assertOperational(auth: AuthContext): Promise<void> {
@@ -558,7 +778,7 @@ export class AdmissionService {
   }
 
   private async getCase(caseId: string): Promise<any> {
-    const record = await this.db.receptionCase.findUnique({ where: { id: caseId } });
+    const record = await this.db.receptionCase.findUnique({ where: { id: caseId }, include: { admission: true } });
     if (!record) throw new NotFoundException('RECEPTION_CASE_NOT_FOUND');
     return record;
   }
@@ -568,14 +788,6 @@ export class AdmissionService {
       where: { receptionCaseId: receptionCase.id },
       create: { receptionCaseId: receptionCase.id },
       update: {},
-    });
-    await this.db.receptionCase.update({
-      where: { id: receptionCase.id },
-      data: {
-        status: ReceptionCaseStatus.ADMISSION_IN_PROGRESS,
-        lastHandledByAccountId: auth.userId,
-        version: { increment: 1 },
-      },
     });
     let invoiceId = admission.invoiceId as string | null;
     if (!invoiceId) {
@@ -673,6 +885,70 @@ export class AdmissionService {
       status: appointment.status,
       version: appointment.version,
     };
+  }
+
+  private presentCase(item: any) {
+    return {
+      id: item.id,
+      patientId: item.patientId,
+      appointmentId: item.appointmentId,
+      type: item.type,
+      status: item.status,
+      arrivalAt: item.arrivalAt?.toISOString?.() ?? item.arrivalAt,
+      scheduledStartAt: item.scheduledStartAtSnapshot?.toISOString?.() ?? null,
+      version: item.version,
+      admission: item.admission
+        ? {
+            id: item.admission.id,
+            status: item.admission.status,
+            currentStep: item.admission.currentStep,
+            queueJourneyId: item.admission.queueJourneyId,
+            queueTicketId: item.admission.queueTicketId,
+            retryCount: item.admission.retryCount,
+          }
+        : null,
+    };
+  }
+
+  private async history(
+    tx: any,
+    admissionId: string,
+    fromStatus: AdmissionStatus,
+    toStatus: AdmissionStatus,
+    step: AdmissionStep,
+    actorId: string,
+    reasonCode: string,
+  ) {
+    await tx.admissionStatusHistory.create({
+      data: { admissionId, fromStatus, toStatus, step, actorId, reasonCode },
+    });
+  }
+
+  private async audit(
+    tx: any,
+    eventType: string,
+    actorId: string,
+    requestId: string,
+    caseId: string | null,
+    admissionId: string | null,
+    changedFields: string[],
+    reasonCode?: string,
+  ) {
+    await tx.receptionAuditLog.create({
+      data: { eventType, actorId, caseId, admissionId, changedFields, reasonCode: reasonCode ?? null, requestId },
+    });
+  }
+
+  private requiredIdempotencyKey(value: string | undefined): string {
+    const key = value?.trim() ?? '';
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) {
+      throw new BadRequestException({ code: 'IDEMPOTENCY_KEY_REQUIRED', message: 'A UUID Idempotency-Key header is required' });
+    }
+    return key;
+  }
+
+  private hash(value: unknown): string {
+    return createHash('sha256').update(JSON.stringify(value)).digest('hex');
   }
 
   private timestampToDate(value: any): Date {
