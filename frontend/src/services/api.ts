@@ -41,7 +41,11 @@ export async function apiRequest<T>(
     const body = payload as ErrorPayload | null;
     const nested = typeof body?.error === 'object' ? body.error : undefined;
     const rawMessage = nested?.message ?? body?.message;
-    const message = Array.isArray(rawMessage) ? rawMessage.join(' ') : rawMessage;
+    const details = (nested as any)?.details;
+    let message = Array.isArray(rawMessage) ? rawMessage.join('; ') : rawMessage;
+    if (Array.isArray(details) && details.length > 0) {
+      message = details.join('; ');
+    }
     throw new ApiError(
       message || 'Không thể xử lý yêu cầu. Vui lòng thử lại.',
       response.status,

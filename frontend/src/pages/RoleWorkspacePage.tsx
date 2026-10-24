@@ -6,8 +6,18 @@ import { ApiError } from '../services/api';
 import { listDoctors } from '../services/doctor';
 import { listEncounters, listPrescriptions, listTreatmentPlans } from '../services/clinical';
 import { getReportOverview, getMyReceptionist, listConsultations } from '../services/operations';
+import { ReceptionistAdmissionWorkspace } from '../components/receptionist/ReceptionistAdmissionWorkspace';
+import { ReceptionistQueueWorkspace } from '../components/receptionist/ReceptionistQueueWorkspace';
+import { ReceptionistBillingWorkspace } from '../components/receptionist/ReceptionistBillingWorkspace';
+import { ReceptionistWorkspaceFrame } from '../components/receptionist/ReceptionistWorkspaceFrame';
+import { ReceptionistAppointmentsWorkspace } from '../components/receptionist/ReceptionistAppointmentsWorkspace';
+import { DoctorWorkspaceFrame } from '../components/doctor/DoctorWorkspaceFrame';
+import { DoctorWorkspace } from '../components/doctor/DoctorWorkspace';
 import '../styles/patient-home.css';
 import '../styles/patient-portal.css';
+import '../styles/receptionist-content.css';
+import '../styles/receptionist-fixes.css';
+import '../styles/doctor-content.css';
 
 type WorkspaceState = 'loading' | 'ready' | 'error' | 'unavailable';
 type Summary = { label: string; value: string; detail: string };
@@ -24,6 +34,13 @@ const sectionNames: Record<string, string> = {
   reception: 'Tiếp nhận', 'check-in': 'Check-in', queue: 'Hàng đợi', billing: 'Hóa đơn', today: 'Bệnh nhân hôm nay', vitals: 'Sinh hiệu', notes: 'Ghi chú điều dưỡng',
   users: 'Người dùng', doctors: 'Bác sĩ', services: 'Dịch vụ & giá', 'audit-log': 'Audit log', reports: 'Báo cáo',
 };
+
+function ReceptionistOverview({ summaries, state, error }: { summaries: Summary[]; state: WorkspaceState; error: string }) {
+  if (state === 'loading') return <div className="receptionist-loading-lines"><i /><i /><i /></div>;
+  if (state === 'error') return <section className="receptionist-empty" role="alert"><strong>Không thể tải tổng quan</strong><p>{error}</p></section>;
+  if (!summaries.length) return <section className="receptionist-empty"><strong>Chưa có dữ liệu vận hành</strong><p>Hãy bắt đầu từ Tiếp nhận để tìm bệnh nhân và lịch hẹn.</p></section>;
+  return <><section className="receptionist-overview-grid">{summaries.map((item) => <article key={item.label}><span>{item.label}</span><strong>{item.value}</strong><p>{item.detail}</p></article>)}</section><section className="receptionist-next-actions"><span className="receptionist-kicker">Việc cần làm</span><h2>Bắt đầu tiếp nhận bệnh nhân</h2><p>Tìm bệnh nhân theo họ tên, số điện thoại hoặc CCCD; sau đó chọn lịch hẹn để mở case.</p><div><button type="button" onClick={() => navigate('/workspace/receptionist/patients')}>Tra cứu bệnh nhân</button><button type="button" onClick={() => navigate('/workspace/receptionist/reception')}>Mở tiếp nhận</button></div></section></>;
+}
 
 function apiMessage(error: unknown) {
   if (error instanceof ApiError && error.statusCode === 403) return 'Tài khoản không có quyền xem dữ liệu này.';
@@ -98,6 +115,15 @@ export function RoleWorkspacePage({ role }: { role: Exclude<Role, 'PATIENT'> }) 
     void load();
     return () => { active = false; };
   }, [auth.request, role, section]);
+
+  if (role === 'DOCTOR') {
+    return <div className="patient-home-shell patient-desktop-portal doctor-portal"><PatientSidebar onLogout={() => void auth.signOut().then(() => navigate('/dang-nhap', { replace: true }))} /><main className="patient-main-view doctor-main"><DoctorWorkspaceFrame section={section}><DoctorWorkspace section={section} request={auth.request} email={auth.user?.email} /></DoctorWorkspaceFrame></main></div>;
+  }
+
+  if (role === 'RECEPTIONIST') {
+    const receptionistContent = section === 'appointments' ? <ReceptionistAppointmentsWorkspace request={auth.request} /> : section === 'queue' ? <ReceptionistQueueWorkspace request={auth.request} /> : section === 'billing' ? <ReceptionistBillingWorkspace request={auth.request} /> : ['patients', 'reception', 'check-in'].includes(section) ? <ReceptionistAdmissionWorkspace section={section} request={auth.request} /> : <ReceptionistOverview summaries={summaries} state={state} error={error} />;
+    return <div className="patient-home-shell patient-desktop-portal receptionist-portal"><PatientSidebar onLogout={() => void auth.signOut().then(() => navigate('/dang-nhap', { replace: true }))} /><main className="patient-main-view receptionist-main"><ReceptionistWorkspaceFrame section={section}>{receptionistContent}</ReceptionistWorkspaceFrame></main></div>;
+  }
 
   async function logout() { await auth.signOut(); navigate('/dang-nhap', { replace: true }); }
   return <div className="patient-home-shell patient-desktop-portal">

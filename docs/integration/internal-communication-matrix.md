@@ -23,8 +23,6 @@
 | Caller | Owner | RPC/event | Mode | Kết quả/ghi chú |
 |---|---|---|---|---|
 | Public client qua Kong | Appointment | REST booking/hold API | Sync edge | Không phải internal call |
-| Receptionist | Appointment | AppointmentInternalService.SearchBookableSlotsForReception | Sync gRPC | Proxy danh sách slot cho màn hình Receptionist; chỉ đọc |
-| Receptionist | Appointment | AppointmentInternalService.BookForReception | Sync gRPC | Đặt lịch hộ bệnh nhân; `channel=RECEPTION` hoặc `WALK_IN`; idempotency bắt buộc |
 | Appointment | Patient/Doctor/Catalog | Các RPC mục 1 | Sync gRPC | Resolve eligibility, candidate/availability, pricing trước local commit |
 | Appointment | Queue | QueueInternalService.EstimateWait | Optional sync gRPC | Chỉ trả estimate có calculatedAt/range; không tạo ticket/số thứ tự |
 | Appointment | Appointment | SlotHold command | Local | TTL 5 phút; owner booking occupancy |
@@ -38,17 +36,15 @@
 
 | Step | Caller | Owner | RPC (DESIGN nếu chưa có owner proto) | Idempotency / failure |
 |---:|---|---|---|---|
-| 1 | Receptionist | Appointment | AppointmentInternalService.SearchForReception | Read; tra cứu appointment theo patient/date/code tại quầy |
-| 2 | Receptionist | Appointment | AppointmentInternalService.ValidateForAdmission | Read; trả appointment/patient/service/pricing/check-in eligibility, không tạo ticket |
-| 3 | Receptionist | Patient | PatientInternalService.GetPatientIdentity | purpose=ADMISSION_IDENTITY_VERIFICATION; receptionist ghi assertion local |
-| 4 | Receptionist | Receptionist | OpenReceptionCase | Local transaction, unique appointment active case |
-| 5 | Receptionist | Billing | BillingInternalService.CreateOrGetBaseInvoice | Write idempotent theo case/appointment |
-| 6 | Receptionist | Billing | BillingInternalService.RecordAdmissionPayment | Ghi nhận CASH/MANUAL_BANK_TRANSFER từ quầy; idempotency bắt buộc |
-| 7 | Receptionist | Billing | BillingInternalService.GetAdmissionPaymentCondition | Chỉ CLEAR nếu paid đủ hoặc approved credit |
-| 8 | Receptionist | Medical Record | MedicalRecordInternalService.OpenOrGetEncounter | Tạo/lấy Encounter DRAFT, idempotent theo appointment |
-| 9 | Receptionist | Appointment | AppointmentInternalService.CheckInAppointment | Write idempotent; đánh dấu late nếu >30 phút |
-| 10 | Receptionist | Queue | QueueInternalService.CreateOrGetJourney | Chỉ sau clearance + check-in; tạo QueueTicket stage đầu authoritative |
-| 11 | Receptionist | Receptionist | CompleteReceptionCase | Local checkpoint/refs; không sở hữu downstream state |
+| 1 | Receptionist | Appointment | AppointmentInternalService.ValidateForAdmission | Read; trả appointment/patient/service/pricing/check-in eligibility, không tạo ticket |
+| 2 | Receptionist | Patient | PatientInternalService.GetPatientIdentity | purpose=ADMISSION_IDENTITY_VERIFICATION; receptionist ghi assertion local |
+| 3 | Receptionist | Receptionist | OpenReceptionCase | Local transaction, unique appointment active case |
+| 4 | Receptionist | Billing | BillingInternalService.CreateOrGetBaseInvoice | Write idempotent theo case/appointment |
+| 5 | Receptionist | Billing | BillingInternalService.GetAdmissionPaymentCondition | Chỉ CLEAR nếu paid đủ hoặc approved credit |
+| 6 | Receptionist | Medical Record | MedicalRecordInternalService.OpenOrGetEncounter | Tạo/lấy Encounter DRAFT, idempotent theo appointment |
+| 7 | Receptionist | Appointment | AppointmentInternalService.CheckInAppointment | Write idempotent; đánh dấu late nếu >30 phút |
+| 8 | Receptionist | Queue | QueueInternalService.CreateOrGetJourney | Chỉ sau clearance + check-in; tạo QueueTicket stage đầu authoritative |
+| 9 | Receptionist | Receptionist | CompleteReceptionCase | Local checkpoint/refs; không sở hữu downstream state |
 
 Nếu timeout sau write, Receptionist retry cùng idempotency key hoặc GetOperation/GetByBusinessKey. Không compensation bằng sửa DB owner. Invoice unpaid chuyển PAYMENT_PENDING; approved credit là quyết định Billing, không phải flag Receptionist tự đặt.
 

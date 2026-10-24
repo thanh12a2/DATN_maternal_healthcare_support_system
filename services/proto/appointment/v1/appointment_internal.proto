@@ -12,9 +12,6 @@ import "google/protobuf/timestamp.proto";
 // x-correlation-id. Commands additionally require x-idempotency-key.
 service AppointmentInternalService {
   rpc GetAppointment(GetAppointmentRequest) returns (GetAppointmentResponse);
-  rpc SearchBookableSlotsForReception(SearchBookableSlotsForReceptionRequest) returns (SearchBookableSlotsForReceptionResponse);
-  rpc BookForReception(BookForReceptionRequest) returns (AppointmentCommandResponse);
-  rpc SearchForReception(SearchForReceptionRequest) returns (SearchForReceptionResponse);
   rpc ValidateForAdmission(ValidateForAdmissionRequest) returns (ValidateForAdmissionResponse);
   rpc CheckInAppointment(CheckInAppointmentRequest) returns (AppointmentCommandResponse);
   rpc MarkClinicalStarted(MarkClinicalStartedRequest) returns (AppointmentCommandResponse);
@@ -96,58 +93,6 @@ message GetAppointmentRequest {
 
 message GetAppointmentResponse {
   AppointmentView appointment = 1;
-}
-
-message SearchBookableSlotsForReceptionRequest {
-  maternal.common.v1.RequestContext context = 1;
-  string service_id = 2;
-  SelectionMode selection_mode = 3;
-  string requested_doctor_id = 4;
-  string requested_rank_code = 5;
-  google.protobuf.Timestamp from = 6;
-  google.protobuf.Timestamp to = 7;
-  maternal.common.v1.PageRequest page = 8;
-}
-
-message BookableSlotView {
-  string service_id = 1;
-  SelectionMode selection_mode = 2;
-  string doctor_id = 3;
-  string rank_code = 4;
-  google.protobuf.Timestamp start_at = 5;
-  google.protobuf.Timestamp end_at = 6;
-  int32 available_capacity = 7;
-}
-
-message SearchBookableSlotsForReceptionResponse {
-  repeated BookableSlotView slots = 1;
-  maternal.common.v1.PageInfo page = 2;
-}
-
-message BookForReceptionRequest {
-  maternal.common.v1.RequestContext context = 1;
-  string patient_id = 2;
-  string service_id = 3;
-  SelectionMode selection_mode = 4;
-  string requested_doctor_id = 5;
-  string requested_rank_code = 6;
-  google.protobuf.Timestamp start_at = 7;
-  google.protobuf.Timestamp end_at = 8;
-  BookingChannel channel = 9;
-}
-
-message SearchForReceptionRequest {
-  maternal.common.v1.RequestContext context = 1;
-  string patient_id = 2;
-  string appointment_code = 3;
-  google.protobuf.Timestamp from = 4;
-  google.protobuf.Timestamp to = 5;
-  maternal.common.v1.PageRequest page = 6;
-}
-
-message SearchForReceptionResponse {
-  repeated AppointmentView appointments = 1;
-  maternal.common.v1.PageInfo page = 2;
 }
 
 message ValidateForAdmissionRequest {
