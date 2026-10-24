@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { ApiError, apiRequest } from '../services/api';
 import { getCurrentUser, login as loginRequest, logout as logoutRequest, refresh, register as registerRequest, type AuthUser, type LoginResponse } from '../services/auth';
 import type { LoginFormValues, RegisterFormValues } from '../schemas/auth';
+import { autoRecordAudit } from '../services/auditInterceptor';
 
 const SESSION_KEY = 'an-tam-auth-session';
 interface StoredSession extends LoginResponse { remember: boolean; }
@@ -97,11 +98,49 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const request = useCallback(async <T,>(path: string, init: RequestInit = {}) => {
     let current = sessionRef.current;
     if (!current) throw new ApiError('Bạn cần đăng nhập để tiếp tục.', 401);
-    try { return await apiRequest<T>(path, init, current.accessToken); }
-    catch (error) {
-      if (!(error instanceof ApiError) || error.statusCode !== 401) throw error;
-      current = await renew();
-      return apiRequest<T>(path, init, current.accessToken);
+
+    const method = (init.method || 'GET').toUpperCase();
+    let bodyData: any = null;
+    if (init.body && typeof init.body === 'string') {
+      try { bodyData = JSON.parse(init.body); }
+      catch { bodyData = { raw: init.body }; }
+    }
+
+    let result: T;
+    let thrownError: any = null;
+    try {
+      result = await apiRequest<T>(path, init, current.accessToken);
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) {
+        current = await renew();
+        try {
+          result = await apiRequest<T>(path, init, current.accessToken);
+          return result;
+        } catch (retryError) {
+          thrownError = retryError;
+          throw retryError;
+        }
+      } else {
+        thrownError = error;
+        throw error;
+      }
+    } finally {
+      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+        const token = sessionRef.current?.accessToken || current?.accessToken;
+        const currentUser = sessionRef.current?.user ?? null;
+        if (token) {
+          autoRecordAudit(
+            (p: string, i?: RequestInit) => apiRequest(p, i, token),
+            method,
+            path,
+            bodyData,
+            thrownError ? null : result!,
+            thrownError,
+            currentUser ? { userId: currentUser.userId, email: currentUser.email, role: currentUser.role } : null,
+          );
+        }
+      }
     }
   }, [renew]);
 

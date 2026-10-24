@@ -137,7 +137,6 @@ exports.Prisma.DoctorProfileScalarFieldEnum = {
   professionalTitle: 'professionalTitle',
   biography: 'biography',
   practiceStartYear: 'practiceStartYear',
-  languages: 'languages',
   photoUrl: 'photoUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -148,6 +147,17 @@ exports.Prisma.SpecialtyScalarFieldEnum = {
   code: 'code',
   name: 'name',
   description: 'description',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ConsultationRankScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  experienceYearsMin: 'experienceYearsMin',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -258,17 +268,6 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
-exports.DoctorConsultationRank = exports.$Enums.DoctorConsultationRank = {
-  BASIC: 'BASIC',
-  SPECIALIST_I: 'SPECIALIST_I',
-  SPECIALIST_II: 'SPECIALIST_II',
-  MASTER: 'MASTER',
-  ASSOC_PROFESSOR: 'ASSOC_PROFESSOR',
-  PROFESSOR: 'PROFESSOR',
-  EXPERT: 'EXPERT',
-  HEAD_DOCTOR: 'HEAD_DOCTOR'
-};
-
 exports.DoctorStatus = exports.$Enums.DoctorStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
@@ -308,6 +307,7 @@ exports.Prisma.ModelName = {
   Doctor: 'Doctor',
   DoctorProfile: 'DoctorProfile',
   Specialty: 'Specialty',
+  ConsultationRank: 'ConsultationRank',
   DoctorSpecialty: 'DoctorSpecialty',
   DoctorSchedule: 'DoctorSchedule',
   DoctorAvailability: 'DoctorAvailability',

@@ -6,7 +6,11 @@ import "../styles/not-found.css";
 export function NotFoundPage() {
   const auth = useAuthSession();
   const homePath =
-    auth.status === "authenticated" ? "/tong-quan" : "/dang-nhap";
+    auth.status === "authenticated"
+      ? auth.user?.role === "PATIENT"
+        ? "/tong-quan"
+        : `/workspace/${(auth.user?.role ?? "admin").toLowerCase()}/overview`
+      : "/dang-nhap";
 
   useEffect(() => {
     const previousTitle = document.title;

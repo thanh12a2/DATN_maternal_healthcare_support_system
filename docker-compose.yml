@@ -620,7 +620,7 @@ services:
     networks:
       app-network: null
     ports:
-      - ${FRONTEND_PORT:-3000}:3000
+      - ${FRONTEND_PORT:-3008}:3000
   gateway:
     build:
       context: .
@@ -928,6 +928,7 @@ services:
         condition: service_completed_successfully
         required: true
     environment:
+      - AUTH_ACCOUNT_LOOKUP_URL=${AUTH_ACCOUNT_LOOKUP_URL:-http://auth-service:5003/internal/accounts}
       - AUTH_JWKS_CACHE_TTL_SECONDS=300
       - AUTH_JWKS_URL=http://auth-service:5003/.well-known/jwks.json
       - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE:-maternal-healthcare-api}
@@ -935,6 +936,7 @@ services:
       - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
       - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
       - GRPC_PORT=6004
+      - INTERNAL_SERVICE_AUTH_SECRET=${INTERNAL_SERVICE_AUTH_SECRET:-local-dev-internal-secret}
       - INTERNAL_SERVICE_JWT_AUDIENCE=patient-service
       - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
       - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}

@@ -52,7 +52,7 @@ model Doctor {
   id String @id @default(uuid()) @db.Uuid
   accountId String @unique @map("account_id") @db.Uuid
   licenseNumber String @unique @map("license_number") @db.VarChar(50)
-  consultationRank DoctorConsultationRank @default(BASIC) @map("consultation_rank")
+  consultationRank String @default("BASIC") @map("consultation_rank") @db.VarChar(50)
   status DoctorStatus @default(DRAFT)
   version Int @default(1)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -73,8 +73,7 @@ model DoctorProfile {
   professionalTitle String? @map("professional_title") @db.VarChar(100)
   biography String? @db.VarChar(2000)
   practiceStartYear Int? @map("practice_start_year")
-  languages String[] @default([])
-  photoUrl String? @map("photo_url") @db.VarChar(2048)
+  photoUrl String? @map("photo_url") @db.Text
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
@@ -90,6 +89,19 @@ model Specialty {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctors DoctorSpecialty[]
   @@map("specialties")
+}
+
+model ConsultationRank {
+  id String @id @default(uuid()) @db.Uuid
+  code String @unique @db.VarChar(50)
+  name String @db.VarChar(150)
+  description String? @db.Text
+  experienceYearsMin Int @default(0) @map("experience_years_min")
+  status String @default("ACTIVE") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("consultation_ranks")
 }
 model DoctorSpecialty {
   doctorId String @map("doctor_id") @db.Uuid

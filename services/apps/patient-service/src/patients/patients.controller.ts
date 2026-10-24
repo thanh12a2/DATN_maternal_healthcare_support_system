@@ -116,6 +116,19 @@ export class PatientsController {
     };
   }
 
+  @Delete(':patientId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deletePatient(
+    @Param('patientId') patientId: string,
+    @Req() request: PatientRequest,
+  ) {
+    await this.patients.deletePatient(
+      patientId,
+      request.patientAuth!,
+      request.requestId,
+    );
+  }
+
   @Post(':patientId/emergency-contacts')
   async add(
     @Param('patientId') patientId: string,

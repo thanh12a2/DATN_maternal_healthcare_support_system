@@ -12,6 +12,9 @@ export class DoctorExceptionFilter implements ExceptionFilter {
     const response = host.switchToHttp().getResponse();
     const request = host.switchToHttp().getRequest<{ requestId?: string }>();
     const requestId = request.requestId ?? randomUUID();
+    if (!(exception instanceof HttpException)) {
+      console.error('[DoctorExceptionFilter] Unhandled exception:', exception);
+    }
     const status =
       exception instanceof HttpException ? exception.getStatus() : 500;
     const raw =
