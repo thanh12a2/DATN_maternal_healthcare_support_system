@@ -4,19 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 3000",
-    "dev:patient": "vite --host 0.0.0.0 --port 3000",
-    "dev:admin": "vite --host 0.0.0.0 --port 3001",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ant-design/icons": "^6.3.4",
     "@vitejs/plugin-react": "latest",
-    "antd": "^6.6.6",
-    "dayjs": "^1.11.23",
     "page-mascot": "^0.1.0",
     "react": "latest",
     "react-dom": "latest",

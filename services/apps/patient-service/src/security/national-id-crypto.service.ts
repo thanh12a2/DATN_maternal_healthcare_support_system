@@ -55,12 +55,4 @@ export class NationalIdCryptoService {
     const p = this.decrypt(v);
     return '*'.repeat(Math.max(0, p.length - 4)) + p.slice(-4);
   }
-  decryptIfPresent(v: string | null): string | null {
-    if (!v) return null;
-    try {
-      return this.decrypt(v);
-    } catch {
-      return null;
-    }
-  }
 }

@@ -7,7 +7,6 @@ import {
   IsInt,
   IsISO8601,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -21,7 +20,6 @@ import {
 import {
   AvailabilityReasonCode,
   AvailabilityType,
-  DoctorConsultationRank,
   DoctorStatus,
   ScheduleStatus,
   SpecialtyStatus,
@@ -37,33 +35,21 @@ export class ProfileDto {
   @Max(new Date().getFullYear())
   practiceStartYear?: number;
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
+  @Length(2, 10, { each: true })
+  languages?: string[];
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   photoUrl?: string;
 }
 export class CreateDoctorDto {
-  @IsOptional() @IsUUID() accountId?: string;
-  @IsOptional() @IsString() email?: string;
-  @IsOptional() @IsString() phoneNumber?: string;
+  @IsUUID() accountId!: string;
   @IsString() @Length(3, 50) licenseNumber!: string;
-  @IsOptional() @IsString() @Length(2, 50) consultationRank?: string;
   @ValidateNested() @Type(() => ProfileDto) profile!: ProfileDto;
 }
-export class UpdateDoctorProfileDto {
-  @IsOptional() @IsString() @Length(2, 150) fullName?: string;
-  @IsOptional() @IsString() @MaxLength(100) professionalTitle?: string;
-  @IsOptional() @IsString() @MaxLength(2000) biography?: string;
-  @IsOptional()
-  @IsInt()
-  @Min(1950)
-  @Max(new Date().getFullYear())
-  practiceStartYear?: number;
-  @IsOptional()
-  @IsString()
-  photoUrl?: string;
-}
 export class UpdateDoctorDto {
-  @IsOptional() @IsString() @Length(2, 50) consultationRank?: string;
-  @IsOptional() @ValidateNested() @Type(() => UpdateDoctorProfileDto) profile?: UpdateDoctorProfileDto;
   @IsOptional() @IsString() @Length(2, 150) fullName?: string;
   @IsOptional() @IsString() @MaxLength(100) professionalTitle?: string;
   @IsOptional() @IsString() @MaxLength(2000) biography?: string;
@@ -73,7 +59,13 @@ export class UpdateDoctorDto {
   @Max(new Date().getFullYear())
   practiceStartYear?: number;
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
+  @Length(2, 10, { each: true })
+  languages?: string[];
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   photoUrl?: string;
   @IsOptional() @IsString() @Length(3, 50) licenseNumber?: string;
 }
@@ -81,24 +73,6 @@ export class CreateSpecialtyDto {
   @IsString() @Length(2, 50) code!: string;
   @IsString() @Length(2, 120) name!: string;
   @IsOptional() @IsString() @MaxLength(1000) description?: string;
-}
-export class UpdateSpecialtyDto {
-  @IsOptional() @IsString() @Length(2, 120) name?: string;
-  @IsOptional() @IsString() @MaxLength(1000) description?: string;
-  @IsOptional() @IsEnum(SpecialtyStatus) status?: SpecialtyStatus;
-}
-export class CreateConsultationRankDto {
-  @IsString() @Length(2, 50) code!: string;
-  @IsString() @Length(2, 150) name!: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsInt() @Min(0) experienceYearsMin?: number;
-  @IsOptional() @IsString() status?: string;
-}
-export class UpdateConsultationRankDto {
-  @IsOptional() @IsString() @Length(2, 150) name?: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsInt() @Min(0) experienceYearsMin?: number;
-  @IsOptional() @IsString() status?: string;
 }
 export class SpecialtyLinkDto {
   @Transform(({ value }) => {
@@ -150,10 +124,9 @@ export class AvailabilityQueryDto {
 export class ListQueryDto {
   @IsOptional() @IsUUID() specialtyId?: string;
   @IsOptional() @IsEnum(DoctorStatus) status?: DoctorStatus;
-  @IsOptional() @IsString() @MaxLength(100) q?: string;
+  @IsOptional() @IsString() @Length(2, 100) q?: string;
   @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
   @IsOptional() cursor?: string;
-  @IsOptional() @IsUUID() accountId?: string;
 }
 export class SpecialtyListQueryDto {
   @IsOptional() @IsEnum(SpecialtyStatus) status?: SpecialtyStatus;

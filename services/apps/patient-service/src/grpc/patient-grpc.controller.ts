@@ -1,6 +1,6 @@
 import { Controller, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { ServiceCallers, ServiceJwtGuard, ServiceScopes, dateToTimestamp } from '@platform';
+import { ServiceCallers, ServiceJwtGuard, ServiceScopes } from '@platform';
 import { PatientsService } from '../patients/patients.service';
 
 @Controller()
@@ -54,41 +54,5 @@ export class PatientGrpcController {
   @ServiceScopes('patient:search')
   searchPatients(request: { normalizedPhone?: string; page?: { pageSize?: number; pageToken?: string } }) {
     return this.patients.searchInternal(request.normalizedPhone, request.page?.pageSize, request.page?.pageToken);
-  }
-
-  @GrpcMethod('PatientInternalService', 'CreatePatientForReception')
-  @ServiceCallers('receptionist-service')
-  @ServiceScopes('patient:write')
-  async createPatientForReception(request: any) {
-    const result = await this.patients.createByReceptionist(
-      {
-        fullName: request.fullName,
-        dateOfBirth: request.dateOfBirth,
-        phoneNumber: request.phoneNumber,
-        nationalId: request.nationalId || undefined,
-        address: request.address || undefined,
-        reason: request.reason,
-      },
-      request.context?.idempotencyKey,
-      {
-        userId: request.context?.actorAccountId ?? '',
-        role: 'RECEPTIONIST',
-        tokenId: request.context?.requestId ?? '',
-      },
-      request.context?.requestId ?? '',
-    );
-    const patient = result.data;
-    return {
-      patient: {
-        patientId: patient.id,
-        fullName: patient.fullName,
-        dateOfBirth: dateToTimestamp(new Date(`${patient.dateOfBirth}T00:00:00.000Z`)),
-        maskedPhone: patient.phoneNumber.replace(/.(?=.{4})/g, '*'),
-        nationalIdLast4: (patient.nationalIdMasked ?? '').slice(-4),
-        active: true,
-        profileVersion: patient.version,
-      },
-      created: result.created,
-    };
   }
 }

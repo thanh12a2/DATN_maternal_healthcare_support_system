@@ -12,7 +12,6 @@ import "google/protobuf/timestamp.proto";
 // x-correlation-id. Commands additionally require x-idempotency-key.
 service BillingInternalService {
   rpc CreateOrGetBaseInvoice(CreateOrGetBaseInvoiceRequest) returns (CreateOrGetBaseInvoiceResponse);
-  rpc RecordAdmissionPayment(RecordAdmissionPaymentRequest) returns (RecordAdmissionPaymentResponse);
   rpc GetInvoice(GetInvoiceRequest) returns (GetInvoiceResponse);
   rpc GetInvoiceByAppointment(GetInvoiceByAppointmentRequest) returns (GetInvoiceResponse);
   rpc GetAdmissionPaymentCondition(GetAdmissionPaymentConditionRequest) returns (GetAdmissionPaymentConditionResponse);
@@ -146,23 +145,6 @@ message CreateOrGetBaseInvoiceRequest {
 message CreateOrGetBaseInvoiceResponse {
   InvoiceView invoice = 1;
   bool created = 2;
-  bool idempotent_replay = 3;
-}
-
-message RecordAdmissionPaymentRequest {
-  maternal.common.v1.RequestContext context = 1;
-  string invoice_id = 2;
-  PaymentMethod method = 3;
-  maternal.common.v1.Money amount = 4;
-  google.protobuf.Timestamp received_at = 5;
-  string reference = 6;
-  string manual_transfer_reference = 7;
-  int64 expected_invoice_version = 8;
-}
-
-message RecordAdmissionPaymentResponse {
-  InvoiceView invoice = 1;
-  PaymentView payment = 2;
   bool idempotent_replay = 3;
 }
 

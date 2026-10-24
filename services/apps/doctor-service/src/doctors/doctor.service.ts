@@ -7,7 +7,6 @@ import {
   AvailabilityReasonCode,
   AvailabilityStatus,
   AvailabilityType,
-  DoctorConsultationRank,
   DoctorStatus,
   Prisma,
   ScheduleStatus,
@@ -20,9 +19,6 @@ import {
   CreateDoctorDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
-  UpdateSpecialtyDto,
-  CreateConsultationRankDto,
-  UpdateConsultationRankDto,
   ListQueryDto,
   ReasonDto,
   ScheduleListQueryDto,
@@ -67,67 +63,27 @@ export class DoctorDomainService {
     this.requireAdmin(actor);
     this.requireKey(key);
     try {
-      if (!dto.accountId) {
-        if (!dto.email?.trim() || !dto.phoneNumber?.trim()) {
-          throw new HttpException(
-            'Email và số điện thoại là bắt buộc để tạo tài khoản bác sĩ',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-        const account = await this.createAuthAccount(
-          dto.email.trim(),
-          dto.phoneNumber.trim(),
-          'DOCTOR',
-        );
-        dto.accountId = account.userId;
-      } else {
-        await this.verifyAccount(dto.accountId);
-      }
-      const normalized = this.normalizeLicense(dto.licenseNumber);
-      this.validateProfile(dto.profile);
-
-      // Validation 2 chiều giữa Hạng tư vấn và Năm bắt đầu hành nghề khi tạo mới
-      const createRankCode = dto.consultationRank;
-      const createStartYear = dto.profile?.practiceStartYear;
-      if (createRankCode && createStartYear) {
-        const rankConfig = await (this.prisma as any).consultationRank.findUnique({
-          where: { code: createRankCode },
-        });
-        if (rankConfig && rankConfig.experienceYearsMin > 0) {
-          const currentYear = new Date().getFullYear();
-          const actualExperienceYears = Math.max(0, currentYear - createStartYear);
-          const minYears = rankConfig.experienceYearsMin;
-          if (actualExperienceYears < minYears) {
-            throw new HttpException(
-              `Hạng được chọn yêu cầu tối thiểu ${minYears} năm kinh nghiệm, nhưng bác sĩ hiện chỉ có ${actualExperienceYears} năm (hành nghề từ năm ${createStartYear}).`,
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-        }
-      }
-      const result = await this.prisma.$transaction(async (tx) => {
-        const existing = await tx.doctor.findFirst({
-          where: {
-            OR: [{ accountId: dto.accountId }, { licenseNumber: normalized }],
-          },
-        });
-        if (existing?.accountId === dto.accountId)
-          this.fail(409, 'DOCTOR_ACCOUNT_EXISTS');
-        if (existing?.licenseNumber === normalized)
-          this.fail(409, 'LICENSE_NUMBER_EXISTS');
-
-        const prof = this.profileData(dto.profile);
-        prof.photoUrl = null; // Khi tạo mới, không tạo ảnh đại diện (người dùng tự cập nhật sau)
-
-        const doctor = await tx.doctor.create({
-          data: {
-            accountId: dto.accountId!,
-            licenseNumber: normalized,
-            ...(dto.consultationRank ? { consultationRank: dto.consultationRank } : {}),
-            profile: { create: prof },
-          },
-          include: FULL_INCLUDE,
-        });
+    await this.verifyAccount(dto.accountId);
+    const normalized = this.normalizeLicense(dto.licenseNumber);
+    this.validateProfile(dto.profile);
+    const result = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.doctor.findFirst({
+        where: {
+          OR: [{ accountId: dto.accountId }, { licenseNumber: normalized }],
+        },
+      });
+      if (existing?.accountId === dto.accountId)
+        this.fail(409, 'DOCTOR_ACCOUNT_EXISTS');
+      if (existing?.licenseNumber === normalized)
+        this.fail(409, 'LICENSE_NUMBER_EXISTS');
+      const doctor = await tx.doctor.create({
+        data: {
+          accountId: dto.accountId,
+          licenseNumber: normalized,
+          profile: { create: this.profileData(dto.profile) },
+        },
+        include: FULL_INCLUDE,
+      });
       await this.auditOutbox(
         tx,
         'doctor.created',
@@ -148,15 +104,10 @@ export class DoctorDomainService {
 
   async listDoctors(query: ListQueryDto, actor?: Identity) {
     const admin = actor?.role === 'ADMIN';
-    const where: AnyRecord = {};
-    if (query.status) {
-      where.status = query.status;
-    } else if (!admin) {
-      where.status = DoctorStatus.ACTIVE;
-    }
-    if (query.accountId) {
-      where.accountId = query.accountId;
-    }
+    const where: AnyRecord =
+      admin && query.status
+        ? { status: query.status }
+        : { status: DoctorStatus.ACTIVE };
     if (query.specialtyId)
       where.specialties = {
         some: {
@@ -177,7 +128,7 @@ export class DoctorDomainService {
     const hasNext = rows.length > (query.limit ?? 20);
     const data = rows
       .slice(0, query.limit ?? 20)
-      .map((x) => (admin ? this.adminView(x) : this.publicView(x)));
+      .map((x) => this.publicView(x));
     return {
       data,
       meta: {
@@ -216,22 +167,12 @@ export class DoctorDomainService {
     version: number,
     requestId?: string,
   ) {
-    console.log('[updateDoctor] Invoked. id:', id, 'version:', version, 'actor:', actor, 'dto keys:', Object.keys(dto));
     if (!Number.isInteger(version)) this.fail(400, 'VALIDATION_FAILED');
     const doctor = await this.prisma.doctor.findUnique({
       where: { id },
       include: { profile: true },
     });
     if (!doctor) this.notFound();
-    if (dto.profile) {
-      if (dto.profile.fullName !== undefined) dto.fullName = dto.profile.fullName;
-      if (dto.profile.professionalTitle !== undefined) dto.professionalTitle = dto.profile.professionalTitle;
-      if (dto.profile.biography !== undefined) dto.biography = dto.profile.biography;
-      if (dto.profile.practiceStartYear !== undefined) dto.practiceStartYear = dto.profile.practiceStartYear;
-      if (dto.profile.photoUrl !== undefined) dto.photoUrl = dto.profile.photoUrl;
-      delete (dto as any).profile;
-    }
-    console.log('[updateDoctor] After profile merge. sent keys:', Object.keys(dto), 'photoUrl len:', dto.photoUrl ? dto.photoUrl.length : null);
     const admin = actor.role === 'ADMIN';
     if (!admin && actor.userId !== doctor.accountId)
       this.fail(403, 'FORBIDDEN');
@@ -241,11 +182,11 @@ export class DoctorDomainService {
           'professionalTitle',
           'biography',
           'practiceStartYear',
+          'languages',
           'photoUrl',
           'licenseNumber',
-          'consultationRank',
         ]
-      : ['biography', 'photoUrl'];
+      : ['biography', 'languages', 'photoUrl'];
     const sent = Object.keys(dto).filter(
       (x) => (dto as AnyRecord)[x] !== undefined,
     );
@@ -256,6 +197,7 @@ export class DoctorDomainService {
     if (
       dto.fullName ||
       dto.biography ||
+      dto.languages ||
       dto.photoUrl ||
       dto.practiceStartYear ||
       dto.professionalTitle
@@ -265,51 +207,11 @@ export class DoctorDomainService {
         ...dto,
         fullName: dto.fullName ?? doctor.profile?.fullName,
       });
-
-    // Validation 2 chiều giữa Hạng tư vấn và Năm bắt đầu hành nghề
-    const targetRankCode = dto.consultationRank ?? doctor.consultationRank;
-    const targetPracticeStartYear =
-      dto.practiceStartYear !== undefined
-        ? dto.practiceStartYear
-        : doctor.profile?.practiceStartYear;
-
-    if (targetRankCode && targetPracticeStartYear) {
-      const rankConfig = await (this.prisma as any).consultationRank.findUnique({
-        where: { code: targetRankCode },
-      });
-
-      if (rankConfig && rankConfig.experienceYearsMin > 0) {
-        const currentYear = new Date().getFullYear();
-        const actualExperienceYears = Math.max(0, currentYear - targetPracticeStartYear);
-        const minYears = rankConfig.experienceYearsMin;
-
-        if (actualExperienceYears < minYears) {
-          const isRankChanged =
-            dto.consultationRank !== undefined &&
-            dto.consultationRank !== doctor.consultationRank;
-          const isYearChanged =
-            dto.practiceStartYear !== undefined &&
-            dto.practiceStartYear !== doctor.profile?.practiceStartYear;
-
-          let errorMessage: string;
-          if (isRankChanged && !isYearChanged) {
-            errorMessage = `Hạng được chọn yêu cầu tối thiểu ${minYears} năm kinh nghiệm, nhưng bác sĩ hiện chỉ có ${actualExperienceYears} năm (hành nghề từ năm ${targetPracticeStartYear}).`;
-          } else if (isYearChanged && !isRankChanged) {
-            errorMessage = `Năm bắt đầu hành nghề (${targetPracticeStartYear}) không thỏa mãn điều kiện kinh nghiệm tối thiểu (${minYears} năm) của hạng hiện tại (${rankConfig.name}).`;
-          } else {
-            errorMessage = `Hạng được chọn yêu cầu tối thiểu ${minYears} năm kinh nghiệm, nhưng bác sĩ hiện chỉ có ${actualExperienceYears} năm (hành nghề từ năm ${targetPracticeStartYear}).`;
-          }
-
-          throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
-        }
-      }
-    }
     const updated = await this.prisma.$transaction(async (tx) => {
       const changed = await tx.doctor.updateMany({
         where: { id, version },
         data: {
           ...(dto.licenseNumber ? { licenseNumber: dto.licenseNumber } : {}),
-          ...(dto.consultationRank ? { consultationRank: dto.consultationRank } : {}),
           version: { increment: 1 },
         },
       });
@@ -334,28 +236,6 @@ export class DoctorDomainService {
       return current!;
     });
     return { data: this.adminView(updated) };
-  }
-
-  async deleteDoctor(id: string, actor: Identity, requestId?: string) {
-    this.requireAdmin(actor);
-    const doctor = await this.prisma.doctor.findUnique({ where: { id } });
-    if (!doctor) this.notFound();
-    const accountId = doctor.accountId;
-    await this.prisma.$transaction(async (tx) => {
-      await tx.doctorSpecialty.deleteMany({ where: { doctorId: id } });
-      await tx.doctorSchedule.deleteMany({ where: { doctorId: id } });
-      await tx.doctorAvailability.deleteMany({ where: { doctorId: id } });
-      await tx.doctorProfile.deleteMany({ where: { doctorId: id } });
-      await tx.outboxEvent.deleteMany({ where: { aggregateId: id } });
-      await tx.doctor.delete({ where: { id } });
-    });
-    if (accountId) {
-      try {
-        await this.deleteAuthAccount(accountId);
-      } catch (err) {
-        console.warn(`Failed to delete auth account ${accountId}:`, err);
-      }
-    }
   }
 
   async changeStatus(
@@ -412,10 +292,7 @@ export class DoctorDomainService {
         data: { status: target, version: { increment: 1 } },
       });
       if (result.count !== 1) this.fail(409, 'VERSION_CONFLICT');
-      const current = await tx.doctor.findUnique({
-        where: { id },
-        include: FULL_INCLUDE,
-      });
+      const current = await tx.doctor.findUnique({ where: { id } });
       await this.auditOutbox(
         tx,
         'doctor.status_changed',
@@ -428,7 +305,11 @@ export class DoctorDomainService {
       return current!;
     });
     return {
-      data: this.adminView(updated),
+      data: {
+        id: updated.id,
+        status: updated.status,
+        version: updated.version,
+      },
     };
   }
 
@@ -457,125 +338,22 @@ export class DoctorDomainService {
 
   async listSpecialties(query: SpecialtyListQueryDto, actor: Identity) {
     const where =
-      actor.role === 'ADMIN'
-        ? query.status
-          ? { status: query.status }
-          : {}
+      actor.role === 'ADMIN' && query.status
+        ? { status: query.status }
         : { status: SpecialtyStatus.ACTIVE };
     const rows = await this.prisma.specialty.findMany({
       where,
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
-      take: query.limit ?? 100,
+      take: query.limit ?? 20,
     });
     return {
       data: rows,
       meta: {
         nextCursor: null,
-        limit: query.limit ?? 100,
+        limit: query.limit ?? 20,
         requestId: randomUUID(),
       },
     };
-  }
-
-  async updateSpecialty(
-    id: string,
-    dto: UpdateSpecialtyDto,
-    actor: Identity,
-  ) {
-    this.requireAdmin(actor);
-    const existing = await this.prisma.specialty.findUnique({ where: { id } });
-    if (!existing) this.fail(404, 'SPECIALTY_NOT_FOUND');
-    const updated = await this.prisma.specialty.update({
-      where: { id },
-      data: {
-        ...(dto.name ? { name: dto.name.trim() } : {}),
-        ...(dto.description !== undefined ? { description: dto.description?.trim() } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
-      },
-    });
-    return { data: updated };
-  }
-
-  async deleteSpecialty(id: string, actor: Identity) {
-    this.requireAdmin(actor);
-    const existing = await this.prisma.specialty.findUnique({ where: { id } });
-    if (!existing) this.fail(404, 'SPECIALTY_NOT_FOUND');
-    const activeDoctorCount = await this.prisma.doctorSpecialty.count({
-      where: {
-        specialtyId: id,
-        doctor: { status: DoctorStatus.ACTIVE },
-      },
-    });
-    if (activeDoctorCount > 0) {
-      this.fail(409, 'Vẫn có bác sĩ đang hoạt động thuộc chuyên khoa này.');
-    }
-    await this.prisma.$transaction(async (tx) => {
-      await tx.doctorSpecialty.deleteMany({ where: { specialtyId: id } });
-      await tx.specialty.delete({ where: { id } });
-    });
-    return { data: { success: true } };
-  }
-
-  async listConsultationRanks(actor: Identity) {
-    const ranks = await (this.prisma as any).consultationRank.findMany({
-      orderBy: [{ experienceYearsMin: 'asc' }, { code: 'asc' }],
-    });
-    return { data: ranks };
-  }
-
-  async createConsultationRank(dto: CreateConsultationRankDto, actor: Identity) {
-    this.requireAdmin(actor);
-    const code = dto.code.trim().toUpperCase();
-    const existing = await (this.prisma as any).consultationRank.findUnique({
-      where: { code },
-    });
-    if (existing) this.fail(409, 'RANK_CODE_EXISTS');
-    const created = await (this.prisma as any).consultationRank.create({
-      data: {
-        code,
-        name: dto.name.trim(),
-        description: dto.description?.trim(),
-        experienceYearsMin: dto.experienceYearsMin ?? 0,
-        status: dto.status ?? 'DRAFT',
-      },
-    });
-    return { data: created };
-  }
-
-  async updateConsultationRank(id: string, dto: UpdateConsultationRankDto, actor: Identity) {
-    this.requireAdmin(actor);
-    const existing = await (this.prisma as any).consultationRank.findUnique({ where: { id } });
-    if (!existing) this.fail(404, 'RANK_NOT_FOUND');
-    const updated = await (this.prisma as any).consultationRank.update({
-      where: { id },
-      data: {
-        ...(dto.name ? { name: dto.name.trim() } : {}),
-        ...(dto.description !== undefined ? { description: dto.description?.trim() } : {}),
-        ...(dto.experienceYearsMin !== undefined ? { experienceYearsMin: dto.experienceYearsMin } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
-      },
-    });
-    return { data: updated };
-  }
-
-  async deleteConsultationRank(id: string, actor: Identity) {
-    this.requireAdmin(actor);
-    const existing = await (this.prisma as any).consultationRank.findUnique({ where: { id } });
-    if (!existing) this.fail(404, 'RANK_NOT_FOUND');
-    const isValidEnum = Object.values(DoctorConsultationRank).includes(existing.code as any);
-    if (isValidEnum) {
-      const activeDoctorCount = await this.prisma.doctor.count({
-        where: {
-          consultationRank: existing.code as any,
-          status: DoctorStatus.ACTIVE,
-        },
-      });
-      if (activeDoctorCount > 0) {
-        this.fail(409, 'CANNOT_DELETE_RANK_IN_USE: Vẫn có bác sĩ đang hoạt động thuộc hạng này.');
-      }
-    }
-    await (this.prisma as any).consultationRank.delete({ where: { id } });
-    return { data: { success: true } };
   }
 
   async linkSpecialty(
@@ -1185,49 +963,6 @@ export class DoctorDomainService {
   }
 
   private async verifyAccount(accountId: string) {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl.replace('localhost:5003', 'auth-service:5003').replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(`${baseUrl}/${accountId}`, {
-          headers: { 'x-internal-service-secret': secret },
-          signal: AbortSignal.timeout(2000),
-        });
-
-        if (res.ok) {
-          const account = (await res.json()) as {
-            status: string;
-            role?: string;
-            roles?: string[];
-          };
-          const roles = account.roles ?? (account.role ? [account.role] : []);
-          const isActive =
-            account.status === 'ACTIVE' || account.status === 'ACCOUNT_STATUS_ACTIVE';
-          if (!isActive || !roles.includes('DOCTOR')) {
-            this.fail(422, 'ACCOUNT_NOT_DOCTOR');
-          }
-          return;
-        }
-        if (res.status === 404) {
-          this.fail(404, 'ACCOUNT_NOT_FOUND');
-        }
-      } catch (err) {
-        if (err instanceof HttpException) throw err;
-        // Continue to next candidate URL
-      }
-    }
-
     try {
       const client = this.grpc.client({
         key: 'auth',
@@ -1248,90 +983,6 @@ export class DoctorDomainService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.fail(503, 'DEPENDENCY_UNAVAILABLE');
-    }
-  }
-
-  private async createAuthAccount(
-    email: string,
-    password: string,
-    role: string,
-  ): Promise<{ userId: string; email: string; role: string }> {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl
-        .replace('localhost:5003', 'auth-service:5003')
-        .replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    let lastError: Error | null = null;
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(baseUrl, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-internal-service-secret': secret,
-          },
-          body: JSON.stringify({ email, password, role }),
-          signal: AbortSignal.timeout(5000),
-        });
-        if (res.status === 409) {
-          throw new HttpException(
-            'Email này đã được đăng ký tài khoản trong hệ thống',
-            HttpStatus.CONFLICT,
-          );
-        }
-        if (res.ok) {
-          return (await res.json()) as { userId: string; email: string; role: string };
-        }
-        const errorText = await res.text();
-        lastError = new Error(`Auth service returned status ${res.status}: ${errorText}`);
-      } catch (err) {
-        if (err instanceof HttpException) throw err;
-        lastError = err as Error;
-      }
-    }
-    throw new HttpException(
-      lastError?.message || 'Không thể kết nối đến Auth Service để tạo tài khoản bác sĩ',
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
-  }
-
-  private async deleteAuthAccount(accountId: string): Promise<void> {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl.replace('localhost:5003', 'auth-service:5003').replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(`${baseUrl}/${accountId}`, {
-          method: 'DELETE',
-          headers: { 'x-internal-service-secret': secret },
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-          return;
-        }
-      } catch {
-        // Try next candidate
-      }
     }
   }
 
@@ -1432,6 +1083,12 @@ export class DoctorDomainService {
       p.fullName.trim().length > 150
     )
       this.fail(400, 'VALIDATION_FAILED');
+    if (
+      p.languages &&
+      new Set(p.languages.map((x: string) => x.trim().toLowerCase())).size !==
+        p.languages.length
+    )
+      this.fail(400, 'VALIDATION_FAILED');
   }
   private profileData(p: AnyRecord) {
     return {
@@ -1439,6 +1096,7 @@ export class DoctorDomainService {
       professionalTitle: p.professionalTitle?.trim(),
       biography: p.biography?.trim(),
       practiceStartYear: p.practiceStartYear,
+      languages: (p.languages ?? []).map((x: string) => x.trim().toLowerCase()),
       photoUrl: p.photoUrl,
     };
   }
@@ -1453,6 +1111,8 @@ export class DoctorDomainService {
     ])
       if (p[k] !== undefined)
         x[k] = typeof p[k] === 'string' ? p[k].trim() : p[k];
+    if (p.languages !== undefined)
+      x.languages = p.languages.map((v: string) => v.trim().toLowerCase());
     return x;
   }
   private normalizeLicense(value: string) {
@@ -1499,7 +1159,6 @@ export class DoctorDomainService {
     return {
       id: x.id,
       status: x.status,
-      licenseNumber: x.licenseNumber,
       consultationRank: x.consultationRank,
       profile: x.profile,
       specialties:

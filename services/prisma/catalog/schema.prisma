@@ -116,6 +116,7 @@ model CatalogTag {
 model MedicalServiceCategory {
   medicalServiceId String          @map("medical_service_id") @db.Uuid
   categoryId       String          @map("category_id") @db.Uuid
+  isPrimary        Boolean         @default(false) @map("is_primary")
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
 
   medicalService   MedicalService  @relation(fields: [medicalServiceId], references: [id], onDelete: Cascade)

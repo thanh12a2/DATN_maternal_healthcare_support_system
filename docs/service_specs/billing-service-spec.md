@@ -146,7 +146,6 @@ Errors: `400 VALIDATION_FAILED`, `401`, `403`, `404 INVOICE_NOT_FOUND`, `409 PAY
 ## 6. gRPC
 ### Inbound — `BillingInternalService`
 - `CreateOrGetBaseInvoice`: Reception; appointment/pricing snapshot, same appointment returns same invoice; request mismatch -> conflict.
-- `RecordAdmissionPayment`: Reception; chỉ nhận `CASH` hoặc `MANUAL_BANK_TRANSFER`, full amount và expected invoice version; idempotency bắt buộc.
 - `GetInvoice`, `GetInvoiceByAppointment`: authorized internal reads.
 - `GetAdmissionPaymentCondition`: Reception/Appointment; BASE only; returns PAID, APPROVED_CREDIT, NOT_SATISFIED.
 - `AddPerformedServiceCharge`: Medical Record; exact performed evidence and snapshot; idempotent by performedServiceId.

@@ -7,8 +7,9 @@ import {
   type FormEvent,
 } from "react";
 import { useAuthSession } from "../app/AuthSessionProvider";
-import { AppLink, navigate } from "../app/navigation";
-import { PatientSidebar } from "../components/navigation/PatientSidebar";
+import { AppLink } from "../app/navigation";
+import { PatientPortalLayout } from "../components/layout/PatientPortalLayout";
+import { LoadingPlaceholder } from "../components/ui/LoadingPlaceholder";
 import { ProfileField } from "../components/profile/ProfileField";
 import { ProfileProgress } from "../components/profile/ProfileProgress";
 import { ProfileSection } from "../components/profile/ProfileSection";
@@ -121,14 +122,6 @@ export function PatientProfilePage() {
 
   const formRef = useRef<HTMLFormElement>(null);
   const hasStoredNationalId = Boolean(profile?.nationalIdMasked);
-
-  async function logout() {
-    try {
-      await auth.signOut();
-    } finally {
-      navigate("/dang-nhap", { replace: true });
-    }
-  }
 
   useEffect(() => {
     let active = true;
@@ -445,27 +438,17 @@ export function PatientProfilePage() {
     "aria-describedby": name + "-message",
   });
 
-  if (loading) {
-    return (
-      <div className="patient-home-shell patient-desktop-portal">
-        <PatientSidebar onLogout={() => void logout()} />
-        <main className="patient-main-view" id="main-content">
-          <section className="profile-page">
-          <AppLink className="profile-back-link" href="/tong-quan">
-            ← Quay lại Tổng quan
-          </AppLink>
-          <p role="status">Đang tải hồ sơ…</p>
-          </section>
-        </main>
-      </div>
-    );
-  }
+  const displayName = values.fullName || auth.user?.email.split("@")[0] || "Bệnh nhân";
 
   return (
-    <div className="patient-home-shell patient-desktop-portal">
-      <PatientSidebar onLogout={() => void logout()} />
-      <main className="patient-main-view" id="main-content">
-        <section className="profile-page">
+    <PatientPortalLayout
+      eyebrow="Thông tin hành chính"
+      title="Hồ sơ bệnh nhân"
+      displayName={displayName}
+      contentClassName="patient-profile-content-page"
+    >
+      <LoadingPlaceholder visible={loading} label="Đang tải hồ sơ bệnh nhân" />
+      <section className="profile-page">
         <AppLink className="profile-back-link" href="/tong-quan">
           ← Quay lại Tổng quan
         </AppLink>
@@ -524,7 +507,6 @@ export function PatientProfilePage() {
                 <ProfileField
                   id="gender"
                   label="Giới tính"
-                  hint="Patient Service chưa hỗ trợ lưu trường này."
                 >
                   <select id="gender" className="profile-select" disabled>
                     <option>Chưa khả dụng</option>
@@ -819,8 +801,7 @@ export function PatientProfilePage() {
             </section>
           </div>
         </div>
-        </section>
-      </main>
-    </div>
+      </section>
+    </PatientPortalLayout>
   );
 }
