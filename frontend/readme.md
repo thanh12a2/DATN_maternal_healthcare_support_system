@@ -78,6 +78,21 @@ npm.cmd run test
 npm.cmd run build
 ```
 
+## Admin Portal (Ant Design)
+
+Role `ADMIN` được chuyển vào `/workspace/admin/<section>` và render `src/admin/AdminWorkspacePage.tsx` (lazy-load, dùng lại sidebar/topbar hiện có). Ant Design chỉ được bọc trong `AdminThemeProvider`, không ảnh hưởng portal bệnh nhân.
+
+| Section | Nguồn dữ liệu (qua Kong) |
+|---|---|
+| `overview` | `/api/reports/overview` + số lượng doctors/services/appointments |
+| `reports` | `/api/reports/appointments`, `/api/reports/revenue` (`fromDate`, `toDate`) |
+| `appointments`, `billing`, `doctors`, `services`, `queue` | `/api/appointment/appointments`, `/api/billing/invoices`, `/api/doctors`, `/api/catalog/services`, `/api/queue/stages` |
+| `encounters`, `prescriptions`, `treatment-plans`, `consultations` | `/api/medical-records/encounters`, `/api/prescriptions`, `/api/treatment-plans`, `/api/consultations` |
+| `patients` | `POST /api/patients/search` (backend không có GET list) |
+| `users`, `audit-log` | **Chưa có HTTP API ở backend** nên hiển thị trạng thái "Backend chưa hỗ trợ" |
+
+Thêm một mục dữ liệu mới: khai báo trong `src/admin/resources.tsx` (endpoint + cột), rồi thêm mục vào `workspaceNav.ADMIN` trong `PatientSidebar.tsx`.
+
 ## Project Structure
 
 ```text

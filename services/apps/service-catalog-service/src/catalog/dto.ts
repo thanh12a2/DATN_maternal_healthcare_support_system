@@ -14,6 +14,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import {
   CatalogStatus,
@@ -34,6 +35,18 @@ export class ListServicesQueryDto {
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) page?: number;
 }
 
+export class ListAdminServicesQueryDto {
+  @IsOptional() @IsString() @Length(1, 100) q?: string;
+  @IsOptional() @IsEnum(MedicalServiceKind) kind?: MedicalServiceKind;
+  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
+  @IsOptional() @IsUUID() specialtyId?: string;
+  @IsOptional() @IsString() @Length(1, 160) category?: string;
+  @IsOptional() @IsString() @Length(1, 160) tag?: string;
+  @IsOptional() @IsBoolean() @Type(() => Boolean) bookingEnabled?: boolean;
+  @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
+  @IsOptional() @IsInt() @Min(1) @Type(() => Number) page?: number;
+}
+
 export class CreateServiceDto {
   @IsString() @Length(2, 50) code!: string;
   @IsOptional() @IsString() @Length(2, 160) slug?: string;
@@ -42,13 +55,15 @@ export class CreateServiceDto {
   @IsOptional() @IsString() @MaxLength(10000) description?: string;
   @IsEnum(MedicalServiceKind) kind!: MedicalServiceKind;
   @IsOptional() @IsUUID() specialtyId?: string;
-  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
+  @IsOptional() @ValidateIf((o) => !!o.thumbnailUrl) @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
   @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
   @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
   @IsOptional() @IsUUID() primaryCategoryId?: string;
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsUUID('4', { each: true }) categoryIds?: string[];
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
+  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
+  @IsOptional() @IsInt() @Min(0) @Type(() => Number) initialPriceMinor?: number;
 }
 
 export class UpdateServiceDto {
@@ -59,13 +74,14 @@ export class UpdateServiceDto {
   @IsOptional() @IsString() @MaxLength(10000) description?: string;
   @IsOptional() @IsEnum(MedicalServiceKind) kind?: MedicalServiceKind;
   @IsOptional() @IsUUID() specialtyId?: string;
-  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
+  @IsOptional() @ValidateIf((o) => !!o.thumbnailUrl) @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
   @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
   @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
   @IsOptional() @IsUUID() primaryCategoryId?: string;
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsUUID('4', { each: true }) categoryIds?: string[];
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
+  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
 }
 
 export class CreateCategoryDto {

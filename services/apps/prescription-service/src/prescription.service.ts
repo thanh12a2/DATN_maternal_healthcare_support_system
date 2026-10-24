@@ -5,17 +5,22 @@ import {
 } from '@nestjs/common';
 import { PrescriptionStatus } from '../../../generated/prescription-client';
 import { PrescriptionPrismaService } from './database/prisma.service';
+import { MedicationCatalogService } from './medications/medication-catalog.service';
 import { randomUUID } from 'node:crypto';
 import type { PublicAuthContext } from '@platform';
 
 @Injectable()
 export class PrescriptionService {
-  constructor(private readonly db: PrescriptionPrismaService) {}
+  constructor(
+    private readonly db: PrescriptionPrismaService,
+    private readonly medications: MedicationCatalogService,
+  ) {}
 
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
   async createRest(b: any, auth?: PublicAuthContext) {
     const prescribingDoctorId = auth?.userId || b.prescribingDoctorId || b.doctorId || randomUUID();
+    const items = await this.medications.resolveActiveMedicationSnapshots(b.items ?? []);
     const p = await this.db.prescription.create({
       data: {
         encounterId: b.encounterId,
@@ -23,7 +28,7 @@ export class PrescriptionService {
         pregnancyEpisodeId: b.pregnancyEpisodeId || null,
         prescribingDoctorId,
         items: {
-          create: (b.items ?? []).map((x: any, i: number) => ({
+          create: items.map((x: any, i: number) => ({
             medicationCode: x.medicationCode || null,
             medicationName: x.medicationName,
             strength: x.strength || null,
@@ -83,11 +88,12 @@ export class PrescriptionService {
     }
 
     if (b.items && Array.isArray(b.items)) {
+      const items = await this.medications.resolveActiveMedicationSnapshots(b.items);
       await this.db.prescriptionItem.deleteMany({
         where: { prescriptionId: id },
       });
       await this.db.prescriptionItem.createMany({
-        data: b.items.map((x: any, i: number) => ({
+        data: items.map((x: any, i: number) => ({
           prescriptionId: id,
           medicationCode: x.medicationCode || null,
           medicationName: x.medicationName,
@@ -168,6 +174,7 @@ export class PrescriptionService {
   // ─── gRPC Handlers ────────────────────────────────────────────────────────
 
   async create(r: any) {
+    const items = await this.medications.resolveActiveMedicationSnapshots(r.items ?? []);
     const p = await this.db.prescription.create({
       data: {
         encounterId: r.encounterId,
@@ -175,7 +182,7 @@ export class PrescriptionService {
         pregnancyEpisodeId: r.pregnancyEpisodeId || null,
         prescribingDoctorId: r.doctorId || randomUUID(),
         items: {
-          create: (r.items ?? []).map((x: any, i: number) => ({
+          create: items.map((x: any, i: number) => ({
             ...x,
             sortOrder: i,
           })),

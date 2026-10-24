@@ -1,5 +1,5 @@
 import type { Requester } from './catalog';
-export interface Doctor { id?: string; doctorId?: string; fullName?: string; name?: string; displayName?: string; professionalTitle?: string; consultationRank?: string; profile?: { fullName?: string; professionalTitle?: string }; [key: string]: unknown; }
+export interface Doctor { id?: string; doctorId?: string; fullName?: string; name?: string; profile?: { fullName?: string }; [key: string]: unknown; }
 export interface Specialty { id?: string; code?: string; name?: string; [key: string]: unknown; }
 function items<T>(raw: unknown): T[] { if (Array.isArray(raw)) return raw as T[]; const value = raw as {data?: unknown; items?: unknown}; if (Array.isArray(value?.data)) return value.data as T[]; if (Array.isArray(value?.items)) return value.items as T[]; return []; }
 export async function listDoctors(request: Requester): Promise<Doctor[]> { return items<Doctor>(await request('/api/doctors?limit=100')); }

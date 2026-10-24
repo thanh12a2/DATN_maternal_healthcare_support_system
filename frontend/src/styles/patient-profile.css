@@ -6,7 +6,6 @@
 .profile-page {
   width: min(1080px, 100%);
   margin: auto;
-  padding: clamp(30px, 4vw, 56px) 0 72px;
 }
 .profile-back-link {
   display: inline-flex;

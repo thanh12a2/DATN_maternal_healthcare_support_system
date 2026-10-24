@@ -21,114 +21,41 @@ npm --version
 git --version
 ```
 
-## 2. Cấu hình và chạy lần đầu
+## 2. Chuẩn bị và chạy hệ thống
 
-Đứng tại thư mục gốc repository. Chỉ thực hiện phần này khi clone project lần đầu, khi chưa có `.env`, hoặc khi muốn tạo lại local configuration.
+Đứng tại thư mục gốc repository. Script `scripts/setup.ps1` là entrypoint duy nhất cho setup local; script sẽ tạo `.env`, sinh key/secret local và chạy Docker hoặc chuẩn bị database local.
 
-### 2.1. Cấu hình lần đầu và chạy toàn bộ bằng Docker
-
-Lệnh khuyến nghị cho máy development mới:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -SeedDemo
-```
-
-Script sẽ:
-
-1. Tạo `.env` từ `.env.example`.
-2. Sinh RSA keys và local secrets trong `scripts/keys/`.
-3. Validate Docker Compose.
-4. Build image và khởi động toàn bộ stack.
-5. Chạy các migration service.
-6. Seed dữ liệu demo nếu có `-SeedDemo`.
-
-Nếu muốn cấu hình nhưng chưa chạy Docker:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode PrepareOnly
-```
-
-Sau đó có thể khởi động stack bằng lệnh ở [mục 3](#3-chạy-các-lần-sau).
-
-### 2.2. Cấu hình lần đầu theo menu
-
-Nếu muốn chọn Docker, Local hoặc chỉ chuẩn bị config:
+### Chạy tương tác
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
 ```
 
-Các lựa chọn:
+Menu có ba lựa chọn:
 
 - `Docker`: build và chạy toàn bộ stack.
 - `Local`: chạy PostgreSQL bằng Docker, app NestJS chạy bằng Node trên máy host.
 - `PrepareOnly`: chỉ tạo/cập nhật `.env`, key và secret.
 
-### 2.3. Cấu hình lần đầu với Local mode
+### Chạy không tương tác
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Local
-```
+# Toàn bộ stack bằng Docker, kèm dữ liệu demo
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -SeedDemo
 
-Lệnh này khởi động các database cần thiết, generate Prisma client, chạy migration và seed dữ liệu nền. Sau khi hoàn tất, chạy app local theo [mục 6](#6-chạy-app-local-sau-khi-chọn-local).
+# Chỉ chuẩn bị cấu hình và secrets
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode PrepareOnly
+
+# Database bằng Docker, app chạy local
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Local
+
+# Docker không build lại image
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -NoBuild
+```
 
 Không gọi `scripts/setup-local.ps1` trực tiếp trong workflow mới. File này là implementation nội bộ được `setup.ps1` gọi để tương thích.
 
-## 3. Chạy các lần sau
-
-### 3.1. Stack Docker đã được tạo trước đó
-
-Nếu các container đã tồn tại và chỉ đang dừng, dùng:
-
-```powershell
-docker compose start
-```
-
-Nếu cần bảo đảm các service được tạo/khởi động nhưng **không build lại image**, dùng:
-
-```powershell
-docker compose up -d
-```
-
-Kiểm tra trạng thái:
-
-```powershell
-docker compose ps -a
-```
-
-Xem log gateway:
-
-```powershell
-docker compose logs -f gateway
-```
-
-### 3.2. Khi source code, Dockerfile hoặc dependency thay đổi
-
-Build lại image rồi khởi động:
-
-```powershell
-docker compose up -d --build
-```
-
-Không cần chạy lại `setup.ps1` chỉ vì muốn start server lần nữa. Không chạy lại migration thủ công nếu Docker Compose đã quản lý migration service.
-
-### 3.3. Dừng và chạy lại hệ thống
-
-Dừng container nhưng giữ volume/database:
-
-```powershell
-docker compose down
-```
-
-Sau đó chạy lại:
-
-```powershell
-docker compose up -d
-```
-
-Không dùng `docker compose down -v` trừ khi chủ động xóa toàn bộ dữ liệu local.
-
-## 4. Environment và secrets
+## 3. Environment và secrets
 
 - `.env.example` là template được commit.
 - `.env` là local-only và bị ignore.
@@ -150,7 +77,7 @@ AUTH_EMAIL_FROM=no-reply@example.com
 
 Trong Docker, SMTP host phải truy cập được từ container; không dùng `localhost` cho SMTP chạy ngoài container.
 
-## 5. Port mặc định
+## 4. Port mặc định
 
 | Thành phần | Port |
 |---|---:|
@@ -175,34 +102,9 @@ Trong Docker, SMTP host phải truy cập được từ container; không dùng 
 | Consultation | 5019 |
 | RabbitMQ Management | 15672 |
 
-## 6. Chạy app local sau khi chọn `Local`
+## 5. Chạy app local sau khi chọn `Local`
 
-### Lần đầu sau khi cấu hình Local
-
-Lệnh `setup.ps1 -Mode Local` đã tạo database, generate Prisma client và chạy migration. Mở terminal mới tại thư mục gốc rồi load environment:
-
-```powershell
-. .\scripts\load-env.ps1
-cd services
-```
-
-### Các lần sau
-
-Nếu database container đang dừng, bật lại:
-
-```powershell
-docker compose start auth-database doctor-database receptionist-database patient-database
-```
-
-Nếu container chưa tồn tại, dùng:
-
-```powershell
-docker compose up -d auth-database doctor-database receptionist-database patient-database
-```
-
-Không cần chạy lại migration mỗi lần khởi động app. Chỉ chạy lại `setup.ps1 -Mode Local` khi thay đổi cấu hình database, migration hoặc muốn tái tạo local setup.
-
-Trong **mỗi terminal chạy app**, load environment rồi chuyển vào `services`:
+Trong **mỗi terminal**:
 
 ```powershell
 . .\scripts\load-env.ps1
@@ -221,7 +123,7 @@ npm.cmd run start:dev -- sample-service
 
 Các service còn lại ưu tiên chạy bằng Docker Compose để bảo đảm đúng dependency, network và gRPC target.
 
-## 7. Kiểm tra, seed và dừng
+## 6. Kiểm tra, seed và dừng
 
 ```powershell
 # Validate compose
@@ -256,7 +158,7 @@ Tài khoản demo mặc định dùng password `Demo@123456`:
 - Receptionist: `demo.receptionist@antam.local`
 - Admin: `demo.admin@antam.local`
 
-## 8. Build và test
+## 7. Build và test
 
 ```powershell
 cd frontend
@@ -271,7 +173,7 @@ npm.cmd test -- --runInBand
 cd ..
 ```
 
-## 9. Makefile shortcuts
+## 8. Makefile shortcuts
 
 Các lệnh Makefile chỉ là shortcut cho flow trong README:
 
@@ -287,7 +189,7 @@ make seed-demo
 
 Trên Windows có thể chạy trực tiếp các lệnh PowerShell/Docker ở trên nếu không cài `make`.
 
-## 10. Tài liệu tham khảo
+## 9. Tài liệu tham khảo
 
 - [Kiến trúc hệ thống](docs/system_design.md)
 - [API specifications và Kong config](docs/api-specs/)

@@ -97,11 +97,32 @@ export class AccountsRepository {
       account?.roles.map((item) => item.role.code),
     );
     if (!account || !accountRole) return null;
-    return { accountId: account.id, status: account.status, role: accountRole };
+    return { accountId: account.id, email: account.email, status: account.status, role: accountRole };
+  }
+
+  async findAccountsByIds(ids: string[]): Promise<Array<{ id: string; email: string; role: string; status: string }>> {
+    if (!ids || ids.length === 0) return [];
+    const accounts = await this.prisma.account.findMany({
+      where: { id: { in: ids } },
+      include: { roles: { include: { role: true } } },
+    });
+    return accounts.map((acc) => ({
+      id: acc.id,
+      email: acc.email,
+      status: acc.status,
+      role: this.selectRole(acc.roles.map((r) => r.role.code)) ?? 'PATIENT',
+    }));
   }
 
   async markLastLoginAt(accountId: string, lastLoginAt: Date): Promise<void> {
     await this.prisma.account.update({ where: { id: accountId }, data: { lastLoginAt } });
+  }
+
+  async deleteAccountById(accountId: string): Promise<boolean> {
+    const res = await this.prisma.account.deleteMany({
+      where: { id: accountId },
+    });
+    return res.count > 0;
   }
 
   isUniqueConstraintError(error: unknown): boolean {

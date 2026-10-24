@@ -151,6 +151,10 @@ services:
       - name: jwt
         config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
 
+  - name: audit-log-service
+    url: http://audit-log-service:5017
+    routes: [{ name: audit-log-service-route, paths: [/api/audit-logs], strip_path: true }]
+
   - name: sample-service
     url: http://sample-service:5000
     routes: [{ name: sample-service-route, paths: [/api/sample-service], strip_path: true }]
@@ -158,7 +162,7 @@ services:
 plugins:
   - name: cors
     config:
-      origins: [http://localhost:3000]
+      origins: [http://localhost:3000, http://localhost:3001]
       methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
       headers: [Accept, Authorization, Content-Type, Idempotency-Key, X-Request-Id, If-Match]
       exposed_headers: [X-Request-Id]
