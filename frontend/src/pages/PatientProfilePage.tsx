@@ -446,6 +446,7 @@ export function PatientProfilePage() {
       title="Hồ sơ bệnh nhân"
       displayName={displayName}
       contentClassName="patient-profile-content-page"
+      profileComplete={loading ? null : Boolean(profile)}
     >
       <LoadingPlaceholder visible={loading} label="Đang tải hồ sơ bệnh nhân" />
       <section className="profile-page">

@@ -42,7 +42,7 @@ export function PatientHomePage() {
   const progressValue = profile ? 100 : 0;
 
   return <>
-    <PatientPortalLayout eyebrow="Chào mừng, quay trở lại" title="Tổng quan" displayName={displayName} contentClassName="patient-overview-content">
+    <PatientPortalLayout eyebrow="Chào mừng, quay trở lại" title="Tổng quan" displayName={displayName} contentClassName="patient-overview-content" profileComplete={state === 'loading' ? null : Boolean(profile)}>
       <LoadingPlaceholder visible={state === 'loading'} label="Đang chuẩn bị không gian của bạn" />
       {state === 'error' && <div className="patient-overview-error" role="alert"><strong>Không thể tải hồ sơ</strong><p>{error}</p><button type="button" onClick={() => window.location.reload()}>Thử lại</button></div>}
       {state === 'ready' && <div className="patient-screen-grid">
