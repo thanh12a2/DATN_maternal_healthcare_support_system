@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -14,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccountsRepository } from '../accounts/accounts.repository';
+import { AuthRole } from './dto/auth-role.enum';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import type { LoginResponseDto } from './dto/login-response.dto';
@@ -78,6 +81,68 @@ export class AuthController {
       await this.accountsRepository.findInternalAccountById(accountId);
     if (!account) throw new NotFoundException('ACCOUNT_NOT_FOUND');
     return account;
+  }
+
+  @Delete('internal/accounts/:accountId')
+  @HttpCode(HttpStatus.OK)
+  async deleteInternalAccount(
+    @Param('accountId', new ParseUUIDPipe()) accountId: string,
+    @Headers('x-internal-service-secret') secret?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const expected = this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET');
+    if (!expected || !secret || secret !== expected) {
+      throw new ForbiddenException('INTERNAL_SERVICE_UNAUTHORIZED');
+    }
+    const deleted = await this.accountsRepository.deleteAccountById(accountId);
+    return { success: deleted, message: deleted ? 'ACCOUNT_DELETED' : 'ACCOUNT_NOT_FOUND' };
+  }
+
+  @Post('internal/accounts')
+  @HttpCode(HttpStatus.CREATED)
+  async createInternalAccount(
+    @Body() body: { email: string; password: string; role: 'DOCTOR' | 'PATIENT' | 'ADMIN' | 'RECEPTIONIST' | 'NURSE' },
+    @Headers('x-internal-service-secret') secret?: string,
+  ): Promise<{ userId: string; email: string; role: string }> {
+    const expected = this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET');
+    if (!expected || !secret || secret !== expected) {
+      throw new ForbiddenException('INTERNAL_SERVICE_UNAUTHORIZED');
+    }
+    if (!body?.email || !body?.password || !body?.role) {
+      throw new BadRequestException('email, password and role are required');
+    }
+    const roleMapping: Record<string, AuthRole> = {
+      DOCTOR: AuthRole.Doctor,
+      PATIENT: AuthRole.Patient,
+      ADMIN: AuthRole.Admin,
+      RECEPTIONIST: AuthRole.Receptionist,
+      NURSE: AuthRole.Nurse,
+    };
+    const role = roleMapping[body.role] ?? AuthRole.Patient;
+    const registered = await this.authService.createAccountForRole(body.email, body.password, role);
+    return {
+      userId: registered.userId,
+      email: registered.email,
+      role: registered.role,
+    };
+  }
+
+  @Post('internal/accounts/batch-lookup')
+  @HttpCode(HttpStatus.OK)
+  async batchLookupAccounts(
+    @Body() body: { accountIds: string[] },
+    @Headers('x-internal-service-secret') secret?: string,
+  ): Promise<Record<string, { email: string; role: string; status: string }>> {
+    const expected = this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET');
+    if (!expected || !secret || secret !== expected) {
+      throw new ForbiddenException('INTERNAL_SERVICE_UNAUTHORIZED');
+    }
+    const ids = Array.isArray(body?.accountIds) ? body.accountIds : [];
+    const accounts = await this.accountsRepository.findAccountsByIds(ids);
+    const map: Record<string, { email: string; role: string; status: string }> = {};
+    for (const acc of accounts) {
+      map[acc.id] = { email: acc.email, role: acc.role, status: acc.status };
+    }
+    return map;
   }
 
   private extractBearerToken(authorizationHeader?: string): string {

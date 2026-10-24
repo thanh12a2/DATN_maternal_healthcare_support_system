@@ -14,15 +14,23 @@ export const presentContact = (contact: EmergencyContact) => ({
 export const presentPatient = (
   patient: PatientWithContacts,
   crypto: NationalIdCryptoService,
+  email?: string | null,
+  status?: string | null,
 ) => ({
   id: patient.id,
   fullName: patient.fullName,
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
   phoneNumber: patient.phoneNumber,
   nationalIdMasked: crypto.maskCiphertext(patient.nationalIdCiphertext),
+  nationalId: crypto.decryptIfPresent(patient.nationalIdCiphertext),
   address: patient.address,
   profileStatus: 'COMPLETE' as const,
+  status: status ?? (patient.authAccountId ? 'ACTIVE' : 'DRAFT'),
   version: patient.version,
+  authAccountId: patient.authAccountId,
+  email: email ?? null,
+  createdAt: patient.createdAt,
+  updatedAt: patient.updatedAt,
   emergencyContacts: [...patient.emergencyContacts]
     .sort(
       (left, right) =>
@@ -34,17 +42,25 @@ export const presentPatient = (
 });
 
 export const presentSearchPatient = (
-  patient: Pick<
-    Patient,
-    'id' | 'fullName' | 'dateOfBirth' | 'phoneNumber' | 'nationalIdCiphertext'
-  >,
+  patient: Patient,
   crypto: NationalIdCryptoService,
+  email?: string | null,
+  status?: string | null,
 ) => ({
   id: patient.id,
   fullName: patient.fullName,
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
+  phoneNumber: patient.phoneNumber,
   phoneNumberMasked:
     '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) +
     patient.phoneNumber.slice(-4),
   nationalIdMasked: crypto.maskCiphertext(patient.nationalIdCiphertext),
+  nationalId: crypto.decryptIfPresent(patient.nationalIdCiphertext),
+  address: patient.address,
+  authAccountId: patient.authAccountId,
+  status: status ?? (patient.authAccountId ? 'ACTIVE' : 'DRAFT'),
+  version: patient.version,
+  createdAt: patient.createdAt,
+  updatedAt: patient.updatedAt,
+  email: email ?? null,
 });

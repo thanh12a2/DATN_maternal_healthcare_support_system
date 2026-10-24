@@ -22,6 +22,9 @@ import {
   CreateDoctorDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
+  UpdateSpecialtyDto,
+  CreateConsultationRankDto,
+  UpdateConsultationRankDto,
   ListQueryDto,
   ReasonDto,
   ScheduleListQueryDto,
@@ -82,6 +85,52 @@ export class DoctorController {
   ) {
     return this.service.listSpecialties(query, this.identity(req));
   }
+  @Patch('specialties/:specialtyId')
+  @Roles('ADMIN')
+  updateSpecialty(
+    @Param('specialtyId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSpecialtyDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateSpecialty(id, dto, this.identity(req));
+  }
+  @Delete('specialties/:specialtyId')
+  @Roles('ADMIN')
+  deleteSpecialty(
+    @Param('specialtyId', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.deleteSpecialty(id, this.identity(req));
+  }
+  @Get('consultation-ranks')
+  listRanks(@Req() req: AuthenticatedRequest) {
+    return this.service.listConsultationRanks(this.identity(req));
+  }
+  @Post('consultation-ranks')
+  @Roles('ADMIN')
+  createRank(
+    @Body() dto: CreateConsultationRankDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.createConsultationRank(dto, this.identity(req));
+  }
+  @Patch('consultation-ranks/:id')
+  @Roles('ADMIN')
+  updateRank(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateConsultationRankDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateConsultationRank(id, dto, this.identity(req));
+  }
+  @Delete('consultation-ranks/:id')
+  @Roles('ADMIN')
+  deleteRank(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.deleteConsultationRank(id, this.identity(req));
+  }
   @Get(':doctorId')
   get(
     @Param('doctorId', ParseUUIDPipe) id: string,
@@ -136,6 +185,16 @@ export class DoctorController {
       dto.reason,
       req.requestId,
     );
+  }
+
+  @Delete(':doctorId')
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.deleteDoctor(id, this.identity(req), req.requestId);
   }
 
   @Put(':doctorId/specialties/:specialtyId')
