@@ -57,7 +57,7 @@ Không cross-DB FK/query, không distributed transaction.
 | PATIENT | Search slots; create hold/booking; xem lịch mình | `appointment:book:own`, `appointment:read:own` | JWT subject phải map patientId; server bỏ/reject actorId client gửi |
 | RECEPTIONIST | Book tại quầy/walk-in; search; cancel/reschedule/check-in/reassign | `appointment:manage`, `appointment:checkin`, `appointment:reassign` | reason bắt buộc với cancel/reschedule/manual reassignment |
 | ADMIN | Như Receptionist, xử lý exception | `appointment:admin` | reason + audit; không sửa snapshot trực tiếp |
-| Reception Service | search slot, book hộ patient, validate/get/check-in | service JWT scopes `appointment:booking:read`, `appointment:booking:write`, `appointment:admission:read`, `appointment:checkin` | Không giả JWT Patient; idempotency bắt buộc cho command |
+| Reception Service | validate/get/check-in | service JWT scope `appointment.internal.admission` | Chỉ minimum necessary; idempotency bắt buộc cho command |
 | Medical Record | mark clinical completion | service JWT scope `appointment.internal.clinical` | encounter phải thuộc appointment và caller assignment hợp lệ |
 | Queue/Notification/Reporting | read event/projection | service JWT hoặc RabbitMQ ACL | Không có quyền mutate appointment |
 
@@ -184,8 +184,6 @@ Write transaction luôn gồm aggregate + local audit evidence + outbox. Notific
 
 ### Inbound (service JWT only)
 Contract `AppointmentInternalService`:
-- `SearchBookableSlotsForReception`: Reception proxy đọc slot; không ghi dữ liệu.
-- `BookForReception`: Reception đặt lịch hộ patient với `channel=RECEPTION` hoặc `WALK_IN`; Appointment tự kiểm tra patient/doctor/catalog, tạo-consume hold và ghi outbox atomically.
 - `GetAppointment`, `ValidateForAdmission`: Reception/Billing/Medical/Queue lấy minimum necessary.
 - `CheckInAppointment`: Reception command; yêu cầu receptionCaseId, invoiceId, paymentCondition, idempotency key.
 - `MarkClinicalStarted`, `MarkClinicalCompleted`: Medical Record; completion không phụ thuộc supplementary balance.

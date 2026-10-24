@@ -12,7 +12,6 @@ service PatientInternalService {
   rpc GetPatientEligibility(GetPatientEligibilityRequest) returns (GetPatientEligibilityResponse);
   rpc GetPatientIdentity(GetPatientIdentityRequest) returns (GetPatientIdentityResponse);
   rpc SearchPatients(SearchPatientsRequest) returns (SearchPatientsResponse);
-  rpc CreatePatientForReception(CreatePatientForReceptionRequest) returns (CreatePatientForReceptionResponse);
 }
 
 message GetPatientEligibilityRequest {
@@ -50,21 +49,6 @@ message SearchPatientsRequest {
 message SearchPatientsResponse {
   repeated PatientIdentityView patients = 1;
   maternal.common.v1.PageInfo page = 2;
-}
-
-message CreatePatientForReceptionRequest {
-  maternal.common.v1.RequestContext context = 1;
-  string full_name = 2;
-  string date_of_birth = 3;
-  string phone_number = 4;
-  string national_id = 5;
-  string address = 6;
-  string reason = 7;
-}
-
-message CreatePatientForReceptionResponse {
-  PatientIdentityView patient = 1;
-  bool created = 2;
 }
 
 // View giảm thiểu PII dành cho admission; owner quyết định masking theo caller/purpose.

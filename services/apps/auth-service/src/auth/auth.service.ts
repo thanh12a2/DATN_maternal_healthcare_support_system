@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { AccountStatus } from '@prisma/client';
 import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
-import type { RegisteredAccount } from '../accounts/accounts.types';
 import { PasswordHasherService } from '../security/password-hasher.service';
 import { InvalidRefreshSessionError, SessionsService } from '../sessions/sessions.service';
 import { AccessTokenService } from '../tokens/access-token.service';
@@ -51,30 +50,6 @@ export class AuthService {
         throw new InternalServerErrorException('Auth role configuration is incomplete');
       }
 
-      throw error;
-    }
-  }
-
-  async createAccountForRole(
-    email: string,
-    password: string,
-    role: AuthRole,
-  ): Promise<RegisteredAccount> {
-    const normalizedEmail = this.normalizeEmail(email);
-    const passwordHash = await this.passwordHasherService.hashPassword(password);
-    try {
-      return await this.accountsRepository.createAccountWithCredential({
-        email: normalizedEmail,
-        passwordHash,
-        role,
-      });
-    } catch (error) {
-      if (this.accountsRepository.isUniqueConstraintError(error)) {
-        throw new ConflictException('Email này đã được đăng ký trong hệ thống');
-      }
-      if (error instanceof AuthRoleNotSeededError) {
-        throw new InternalServerErrorException('Auth role configuration is incomplete');
-      }
       throw error;
     }
   }

@@ -12,10 +12,9 @@ export class CreatePatientDto {
   @IsString() @MinLength(2) @MaxLength(150) fullName!: string;
   @IsString() dateOfBirth!: string;
   @IsString() phoneNumber!: string;
-  @IsOptional() @IsString() email?: string;
   @IsOptional() @IsString() nationalId?: string | null;
   @IsOptional() @IsString() @MaxLength(500) address?: string | null;
-  @IsOptional() @IsString() @MaxLength(250) reason?: string;
+  @IsString() @MinLength(1) @MaxLength(250) reason!: string;
 }
 
 export class PatchPatientDto {
@@ -24,12 +23,11 @@ export class PatchPatientDto {
   @IsOptional() @IsString() phoneNumber?: string;
   @IsOptional() @IsString() nationalId?: string | null;
   @IsOptional() @IsString() @MaxLength(500) address?: string | null;
-  @IsOptional() @IsInt() @Min(1) version?: number;
-  @IsOptional() @IsString() @MaxLength(250) reason?: string;
+  @IsInt() @Min(1) version!: number;
+  @IsString() @MinLength(1) @MaxLength(250) reason!: string;
 }
 
 export class SearchPatientsDto {
-  @IsOptional() @IsString() query?: string;
   @IsOptional() @IsString() phoneNumber?: string;
   @IsOptional() @IsString() nationalId?: string;
   @IsOptional() @IsString() @MinLength(2) @MaxLength(150) fullName?: string;

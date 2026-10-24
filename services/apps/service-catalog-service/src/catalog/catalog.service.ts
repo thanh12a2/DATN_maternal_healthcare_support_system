@@ -13,7 +13,6 @@ import {
   CreateServiceDto,
   CreateTagDto,
   EligibilityQueryDto,
-  ListAdminServicesQueryDto,
   ListServicesQueryDto,
   ResolveServicesDto,
   ScheduleBasePriceDto,
@@ -65,7 +64,7 @@ export class CatalogService {
     const [items, total] = await this.db.$transaction([
       this.db.medicalService.findMany({
         where,
-        include: this.serviceIncludes(true),
+        include: this.serviceIncludes(),
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
@@ -75,77 +74,8 @@ export class CatalogService {
     return { data: items.map((item) => this.presentService(item)), meta: { page, limit, total } };
   }
 
-  async listAdminServices(query: ListAdminServicesQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const where: Prisma.MedicalServiceWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.bookingEnabled === undefined ? {} : { bookingEnabled: query.bookingEnabled }),
-      ...(query.kind ? { kind: query.kind } : {}),
-      ...(query.specialtyId ? { specialtyId: query.specialtyId } : {}),
-      ...(query.q
-        ? {
-            OR: [
-              { name: { contains: query.q, mode: 'insensitive' } },
-              { code: { contains: query.q, mode: 'insensitive' } },
-              { slug: { contains: query.q, mode: 'insensitive' } },
-              { summary: { contains: query.q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-      ...(query.category
-        ? { categories: { some: { category: { OR: this.categoryIdentifierWhere(query.category) } } } }
-        : {}),
-      ...(query.tag
-        ? { tags: { some: { tag: { OR: this.tagIdentifierWhere(query.tag) } } } }
-        : {}),
-    };
-    const [items, total] = await this.db.$transaction([
-      this.db.medicalService.findMany({
-        where,
-        include: {
-          categories: { include: { category: true }, orderBy: [{ category: { sortOrder: 'asc' } }] },
-          tags: { include: { tag: true }, orderBy: [{ tag: { group: 'asc' } }, { tag: { sortOrder: 'asc' } }] },
-          basePrices: { orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }] },
-        },
-        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.db.medicalService.count({ where }),
-    ]);
-    return { data: items.map((item) => this.presentService(item)), meta: { page, limit, total } };
-  }
-
-  async getAdminService(serviceId: string) {
-    const service = await this.db.medicalService.findUnique({
-      where: { id: serviceId },
-      include: {
-        categories: { include: { category: true }, orderBy: [{ category: { sortOrder: 'asc' } }] },
-        tags: { include: { tag: true }, orderBy: [{ tag: { group: 'asc' } }, { tag: { sortOrder: 'asc' } }] },
-        basePrices: { orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }] },
-      },
-    });
-    if (!service) this.notFound('SERVICE_NOT_FOUND', 'Medical service was not found');
-    return { data: this.presentService(service) };
-  }
-
-  async deleteService(serviceId: string) {
-    await this.ensureServiceExists(serviceId);
-    try {
-      await this.db.medicalService.delete({ where: { id: serviceId } });
-      return { success: true, message: 'Đã xóa dịch vụ thành công' };
-    } catch {
-      await this.db.medicalService.update({
-        where: { id: serviceId },
-        data: { status: 'ARCHIVED', version: { increment: 1 } },
-      });
-      return { success: true, message: 'Dịch vụ đã có dữ liệu liên kết, đã chuyển sang trạng thái Lưu trữ (ARCHIVED)' };
-    }
-  }
-
   async getPublicService(idOrSlug: string) {
-    const service = await this.findServiceByIdOrSlug(idOrSlug, { status: 'ACTIVE' }, true);
+    const service = await this.findServiceByIdOrSlug(idOrSlug, { status: 'ACTIVE' });
     return { data: this.presentService(service) };
   }
 
@@ -186,21 +116,9 @@ export class CatalogService {
             durationMinutes: dto.durationMinutes,
             bookingEnabled: dto.bookingEnabled ?? true,
             doctorRankSelectionPolicy: dto.doctorRankSelectionPolicy ?? 'NOT_REQUIRED',
-            status: dto.status ?? 'DRAFT',
           },
         });
         await this.replaceServiceLinks(tx, created.id, dto.primaryCategoryId, dto.categoryIds, dto.tagIds);
-        if (dto.initialPriceMinor !== undefined && dto.initialPriceMinor >= 0) {
-          await tx.basePrice.create({
-            data: {
-              medicalServiceId: created.id,
-              amountMinor: BigInt(dto.initialPriceMinor),
-              currency: 'VND',
-              effectiveFrom: new Date(),
-              status: 'ACTIVE',
-            },
-          });
-        }
         return tx.medicalService.findUniqueOrThrow({ where: { id: created.id }, include: this.serviceIncludes() });
       });
       return { data: this.presentService(service) };
@@ -227,7 +145,6 @@ export class CatalogService {
             ...(dto.durationMinutes !== undefined ? { durationMinutes: dto.durationMinutes } : {}),
             ...(dto.bookingEnabled !== undefined ? { bookingEnabled: dto.bookingEnabled } : {}),
             ...(dto.doctorRankSelectionPolicy ? { doctorRankSelectionPolicy: dto.doctorRankSelectionPolicy } : {}),
-            ...(dto.status ? { status: dto.status } : {}),
             version: { increment: 1 },
           },
         });
@@ -297,47 +214,6 @@ export class CatalogService {
     }
   }
 
-  async listAdminCategories() {
-    const categories = await this.db.serviceCategory.findMany({
-      include: {
-        parent: { select: { id: true, name: true, code: true } },
-        _count: { select: { services: true, children: true } },
-      },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-    return {
-      data: categories.map((cat) => ({
-        ...this.presentCategory(cat),
-        parent: cat.parent,
-        servicesCount: cat._count.services,
-        childrenCount: cat._count.children,
-      })),
-    };
-  }
-
-  async deleteCategory(categoryId: string) {
-    const cat = await this.db.serviceCategory.findUnique({
-      where: { id: categoryId },
-      include: { _count: { select: { children: true } } },
-    });
-    if (!cat) this.notFound('CATEGORY_NOT_FOUND', 'Category was not found');
-    if (cat._count.children > 0) {
-      throw new DomainException('CATEGORY_HAS_CHILDREN', 'Không thể xóa nhóm dịch vụ đang chứa nhóm dịch vụ con', HttpStatus.CONFLICT);
-    }
-    // Gỡ bỏ toàn bộ liên kết của các dịch vụ với nhóm dịch vụ này trước khi xóa
-    await this.db.medicalServiceCategory.deleteMany({ where: { categoryId } });
-    await this.db.serviceCategory.delete({ where: { id: categoryId } });
-    return { success: true, message: 'Đã xóa nhóm dịch vụ thành công' };
-  }
-
-  async changeCategoryStatus(categoryId: string, status: CatalogStatus) {
-    const category = await this.db.serviceCategory.update({
-      where: { id: categoryId },
-      data: { status },
-    });
-    return { data: this.presentCategory(category) };
-  }
-
   async createTag(dto: CreateTagDto) {
     try {
       const tag = await this.db.catalogTag.create({
@@ -377,61 +253,12 @@ export class CatalogService {
     }
   }
 
-  async listAdminTags() {
-    const tags = await this.db.catalogTag.findMany({
-      include: {
-        _count: { select: { services: true } },
-      },
-      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
-    });
-    return {
-      data: tags.map((t) => ({
-        ...this.presentTag(t),
-        servicesCount: t._count.services,
-      })),
-    };
-  }
-
-  async deleteTag(tagId: string) {
-    const tag = await this.db.catalogTag.findUnique({ where: { id: tagId } });
-    if (!tag) this.notFound('TAG_NOT_FOUND', 'Tag was not found');
-    await this.db.medicalServiceTag.deleteMany({ where: { tagId } });
-    await this.db.catalogTag.delete({ where: { id: tagId } });
-    return { success: true, message: 'Đã xóa thẻ tag thành công' };
-  }
-
-  async changeTagStatus(tagId: string, status: CatalogStatus) {
-    const tag = await this.db.catalogTag.update({
-      where: { id: tagId },
-      data: { status },
-    });
-    return { data: this.presentTag(tag) };
-  }
-
   async scheduleBasePrice(serviceId: string, dto: ScheduleBasePriceDto) {
     await this.ensureServiceExists(serviceId);
     const currency = this.normalizeCurrency(dto.currency);
     const effectiveFrom = new Date(dto.effectiveFrom);
     const effectiveTo = dto.effectiveTo ? new Date(dto.effectiveTo) : null;
     this.validateInterval(effectiveFrom, effectiveTo);
-
-    const now = new Date();
-    // Tự động đóng khoảng hiệu lực và chuyển trạng thái EXPIRED cho giá cũ nếu giá mới có hiệu lực ngay
-    const isEffectiveNow = effectiveFrom <= now;
-    await this.db.basePrice.updateMany({
-      where: {
-        medicalServiceId: serviceId,
-        currency,
-        status: { in: ACTIVE_PRICE_STATUSES },
-        effectiveFrom: { lt: effectiveFrom },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gt: effectiveFrom } }],
-      },
-      data: {
-        effectiveTo: effectiveFrom,
-        ...(isEffectiveNow ? { status: 'EXPIRED' } : {}),
-      },
-    });
-
     await this.ensureNoBasePriceOverlap(serviceId, currency, effectiveFrom, effectiveTo);
     const price = await this.db.basePrice.create({
       data: {
@@ -440,7 +267,7 @@ export class CatalogService {
         currency,
         effectiveFrom,
         effectiveTo,
-        status: dto.status ?? (isEffectiveNow ? 'ACTIVE' : 'SCHEDULED'),
+        status: dto.status ?? 'SCHEDULED',
       },
     });
     return { data: this.presentPrice(price) };
@@ -452,24 +279,6 @@ export class CatalogService {
     const effectiveFrom = new Date(dto.effectiveFrom);
     const effectiveTo = dto.effectiveTo ? new Date(dto.effectiveTo) : null;
     this.validateInterval(effectiveFrom, effectiveTo);
-
-    const now = new Date();
-    const isEffectiveNow = effectiveFrom <= now;
-    // Tự động đóng khoảng hiệu lực và chuyển trạng thái EXPIRED cho phụ thu cũ nếu phụ thu mới có hiệu lực ngay
-    await this.db.doctorRankSurcharge.updateMany({
-      where: {
-        rankCode,
-        currency,
-        status: { in: ACTIVE_PRICE_STATUSES },
-        effectiveFrom: { lt: effectiveFrom },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gt: effectiveFrom } }],
-      },
-      data: {
-        effectiveTo: effectiveFrom,
-        ...(isEffectiveNow ? { status: 'EXPIRED' } : {}),
-      },
-    });
-
     await this.ensureNoSurchargeOverlap(rankCode, currency, effectiveFrom, effectiveTo);
     const surcharge = await this.db.doctorRankSurcharge.create({
       data: {
@@ -478,7 +287,7 @@ export class CatalogService {
         currency,
         effectiveFrom,
         effectiveTo,
-        status: dto.status ?? (isEffectiveNow ? 'ACTIVE' : 'SCHEDULED'),
+        status: dto.status ?? 'SCHEDULED',
       },
     });
     return { data: this.presentSurcharge(surcharge) };
@@ -500,22 +309,6 @@ export class CatalogService {
     } catch (error) {
       this.mapPrismaError(error);
     }
-  }
-
-  async listServicePrices(serviceId: string) {
-    await this.ensureServiceExists(serviceId);
-    const prices = await this.db.basePrice.findMany({
-      where: { medicalServiceId: serviceId },
-      orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
-    });
-    return { data: prices.map((p) => this.presentPrice(p)) };
-  }
-
-  async listRankSurcharges() {
-    const surcharges = await this.db.doctorRankSurcharge.findMany({
-      orderBy: [{ rankCode: 'asc' }, { effectiveFrom: 'desc' }],
-    });
-    return { data: surcharges.map((s) => this.presentSurcharge(s)) };
   }
 
   async resolveEligibility(serviceId: string, query: EligibilityQueryDto) {
@@ -567,13 +360,10 @@ export class CatalogService {
   }
 
   private async validateActivation(service: ServiceWithRelations) {
-    if (service.categories.length === 0) {
-      throw new DomainException('CATEGORY_REQUIRED', 'Active service must have at least one category', HttpStatus.CONFLICT);
-    }
-    const hasActiveCategory = service.categories.some((item) => item.category.status === 'ACTIVE');
-    if (!hasActiveCategory) {
-      throw new DomainException('ACTIVE_CATEGORY_REQUIRED', 'At least one category of the service must be active', HttpStatus.CONFLICT);
-    }
+    const primaryCount = service.categories.filter((item) => item.isPrimary).length;
+    if (primaryCount !== 1) throw new DomainException('PRIMARY_CATEGORY_REQUIRED', 'Active service must have exactly one primary category', HttpStatus.CONFLICT);
+    const activePrimary = service.categories.find((item) => item.isPrimary)?.category.status === 'ACTIVE';
+    if (!activePrimary) throw new DomainException('PRIMARY_CATEGORY_INACTIVE', 'Primary category must be active', HttpStatus.CONFLICT);
     if (service.doctorRankSelectionPolicy === 'RANK_UPGRADE_ALLOWED') {
       const basic = await this.findEffectiveSurcharge(DEFAULT_RANK_CODE, 'VND', new Date());
       if (!basic || Number(basic.amountMinor) !== 0) {
@@ -593,7 +383,7 @@ export class CatalogService {
       const categorySet = new Set([...(categoryIds ?? []), ...(primaryCategoryId ? [primaryCategoryId] : [])]);
       await tx.medicalServiceCategory.deleteMany({ where: { medicalServiceId: serviceId } });
       for (const categoryId of categorySet) {
-        await tx.medicalServiceCategory.create({ data: { medicalServiceId: serviceId, categoryId } });
+        await tx.medicalServiceCategory.create({ data: { medicalServiceId: serviceId, categoryId, isPrimary: categoryId === primaryCategoryId } });
       }
     }
     if (tagIds !== undefined) {
@@ -604,26 +394,18 @@ export class CatalogService {
     }
   }
 
-  private serviceIncludes(onlyActive = false) {
+  private serviceIncludes() {
     return {
-      categories: {
-        ...(onlyActive ? { where: { category: { status: 'ACTIVE' as const } } } : {}),
-        include: { category: true },
-        orderBy: [{ category: { sortOrder: 'asc' as const } }],
-      },
-      tags: {
-        ...(onlyActive ? { where: { tag: { status: 'ACTIVE' as const } } } : {}),
-        include: { tag: true },
-        orderBy: [{ tag: { group: 'asc' as const } }, { tag: { sortOrder: 'asc' as const } }],
-      },
+      categories: { include: { category: true }, orderBy: [{ isPrimary: 'desc' as const }, { category: { sortOrder: 'asc' as const } }] },
+      tags: { include: { tag: true }, orderBy: [{ tag: { group: 'asc' as const } }, { tag: { sortOrder: 'asc' as const } }] },
       basePrices: { where: { status: { in: ACTIVE_PRICE_STATUSES } }, orderBy: [{ effectiveFrom: 'desc' as const }] },
     };
   }
 
-  private async findServiceByIdOrSlug(idOrSlug: string, extra?: Prisma.MedicalServiceWhereInput, onlyActive = false): Promise<ServiceWithRelations> {
+  private async findServiceByIdOrSlug(idOrSlug: string, extra?: Prisma.MedicalServiceWhereInput): Promise<ServiceWithRelations> {
     const service = await this.db.medicalService.findFirst({
       where: { AND: [{ OR: this.serviceIdentifierWhere(idOrSlug) }, extra ?? {}] },
-      include: this.serviceIncludes(onlyActive),
+      include: this.serviceIncludes(),
     });
     if (!service) this.notFound('SERVICE_NOT_FOUND', 'Medical service was not found');
     return service;
@@ -736,7 +518,7 @@ export class CatalogService {
       status: service.status,
       version: service.version,
       publishedAt: service.publishedAt,
-      categories: service.categories.map((link) => ({ ...this.presentCategory(link.category) })),
+      categories: service.categories.map((link) => ({ ...this.presentCategory(link.category), isPrimary: link.isPrimary })),
       tags: service.tags.map((link) => this.presentTag(link.tag)),
       prices: service.basePrices.map((price) => this.presentPrice(price)),
       createdAt: service.createdAt,
@@ -756,8 +538,8 @@ export class CatalogService {
     return { id: price.id, amountMinor: Number(price.amountMinor), currency: price.currency, effectiveFrom: price.effectiveFrom, effectiveTo: price.effectiveTo, status: price.status, version: price.version };
   }
 
-  private presentSurcharge(surcharge: { id: string; rankCode: string; amountMinor: bigint; currency: string; effectiveFrom: Date; effectiveTo: Date | null; status: PriceStatus; version: number; createdAt?: Date; updatedAt?: Date }) {
-    return { id: surcharge.id, rankCode: surcharge.rankCode, amountMinor: Number(surcharge.amountMinor), currency: surcharge.currency, effectiveFrom: surcharge.effectiveFrom, effectiveTo: surcharge.effectiveTo, status: surcharge.status, version: surcharge.version, createdAt: surcharge.createdAt, updatedAt: surcharge.updatedAt };
+  private presentSurcharge(surcharge: { id: string; rankCode: string; amountMinor: bigint; currency: string; effectiveFrom: Date; effectiveTo: Date | null; status: PriceStatus; version: number }) {
+    return { id: surcharge.id, rankCode: surcharge.rankCode, amountMinor: Number(surcharge.amountMinor), currency: surcharge.currency, effectiveFrom: surcharge.effectiveFrom, effectiveTo: surcharge.effectiveTo, status: surcharge.status, version: surcharge.version };
   }
 
   private presentSnapshotService(service: MedicalService) {

@@ -30,7 +30,6 @@ export interface AccountAuthProfile {
 
 export interface InternalAccountLookup {
   accountId: string;
-  email?: string;
   status: AccountStatus;
   role: AuthRole;
 }

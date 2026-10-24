@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Prisma, type Patient } from '@prisma/patient-client';
 import type { PatientAuthContext } from '../auth/auth-context';
 import { DomainException } from '../common/domain.exception';
@@ -48,7 +47,6 @@ export class PatientsService {
   constructor(
     private readonly db: PatientDatabaseService,
     private readonly crypto: NationalIdCryptoService,
-    private readonly config: ConfigService,
   ) {}
 
   async upsertMe(
@@ -167,8 +165,7 @@ export class PatientsService {
       });
       return found;
     });
-    const accountInfo = patient.authAccountId ? await this.getAccountInfo(patient.authAccountId) : null;
-    return presentPatient(patient, this.crypto, accountInfo?.email, accountInfo?.status);
+    return presentPatient(patient, this.crypto);
   }
 
   async search(
@@ -177,52 +174,16 @@ export class PatientsService {
     requestId: string,
   ) {
     this.receptionistOnly(auth);
-    if (!dto.phoneNumber && !dto.nationalId && !dto.fullName && !dto.query?.trim()) {
-      if (auth.role !== 'ADMIN' && auth.role !== 'RECEPTIONIST') {
-        throw new DomainException(
-          'SEARCH_FILTER_REQUIRED',
-          'At least one search filter is required',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+    if (!dto.phoneNumber && !dto.nationalId && !dto.fullName) {
+      throw new DomainException(
+        'SEARCH_FILTER_REQUIRED',
+        'At least one search filter is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const page = dto.page ?? 1;
     const limit = dto.limit ?? 20;
     const filters: Prisma.PatientWhereInput[] = [];
-    if (dto.query?.trim()) {
-      const q = dto.query.trim();
-      const orConditions: Prisma.PatientWhereInput[] = [];
-      const normName = normalizeSearchName(q);
-      if (normName) {
-        orConditions.push({
-          normalizedFullName: {
-            contains: normName,
-            mode: 'insensitive',
-          },
-        });
-      }
-      const digits = q.replace(/\D/g, '');
-      if (digits.length >= 3) {
-        orConditions.push({
-          phoneNumber: {
-            contains: digits,
-          },
-        });
-      }
-      if (digits.length >= 8) {
-        try {
-          const normNid = normalizeNationalId(digits);
-          orConditions.push({
-            nationalIdLookupHash: this.crypto.lookupHash(normNid),
-          });
-        } catch {
-          // ignore invalid nid formatting
-        }
-      }
-      if (orConditions.length > 0) {
-        filters.push({ OR: orConditions });
-      }
-    }
     if (dto.phoneNumber)
       filters.push({ phoneNumber: normalizePhone(dto.phoneNumber) });
     if (dto.nationalId) {
@@ -239,7 +200,7 @@ export class PatientsService {
         },
       });
     }
-    const where: Prisma.PatientWhereInput = filters.length > 0 ? { AND: filters } : {};
+    const where: Prisma.PatientWhereInput = { AND: filters };
     const result = await this.db.$transaction(async (transaction) => {
       const [patients, total] = await Promise.all([
         transaction.patient.findMany({
@@ -269,21 +230,10 @@ export class PatientsService {
       });
       return { patients, total };
     });
-    const accountIds = result.patients
-      .map((p) => p.authAccountId)
-      .filter((id): id is string => Boolean(id));
-    const accountMap = await this.batchLookupAccounts(accountIds);
-
     return {
-      items: result.patients.map((patient) => {
-        const acc = patient.authAccountId ? accountMap[patient.authAccountId] : undefined;
-        return presentSearchPatient(
-          patient,
-          this.crypto,
-          acc?.email ?? null,
-          acc?.status ?? (patient.authAccountId ? 'ACTIVE' : 'DRAFT'),
-        );
-      }),
+      items: result.patients.map((patient) =>
+        presentSearchPatient(patient, this.crypto),
+      ),
       page,
       limit,
       total: result.total,
@@ -306,17 +256,8 @@ export class PatientsService {
     }
     this.uuid(idempotencyKey, 'INVALID_IDEMPOTENCY_KEY');
     const data = this.normalize(dto);
-    const reason = normalizeReason(dto.reason || 'Tạo hồ sơ bệnh nhân');
+    const reason = normalizeReason(dto.reason);
     const requestHash = this.requestHash(data, reason);
-
-    let authAccountId: string | null = null;
-    if (dto.email?.trim()) {
-      const email = dto.email.trim();
-      const password = dto.phoneNumber.trim();
-      const account = await this.createAuthAccount(email, password, 'PATIENT');
-      authAccountId = account.userId;
-    }
-
     try {
       const result = await this.db.$transaction(
         async (transaction) => {
@@ -354,7 +295,7 @@ export class PatientsService {
           const created = await transaction.patient.create({
             data: {
               ...data,
-              authAccountId,
+              authAccountId: null,
               createdByAccountId: auth.userId,
               updatedByAccountId: auth.userId,
             },
@@ -440,7 +381,7 @@ export class PatientsService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    const reason = normalizeReason(dto.reason || 'Cập nhật hồ sơ bệnh nhân');
+    const reason = normalizeReason(dto.reason);
     const current = await this.db.patient.findUnique({
       where: { id: patientId },
     });
@@ -456,7 +397,7 @@ export class PatientsService {
     try {
       const patient = await this.db.$transaction(async (transaction) => {
         const result = await transaction.patient.updateMany({
-          where: { id: patientId, version: dto.version ?? current.version },
+          where: { id: patientId, version: dto.version },
           data: {
             ...data,
             version: { increment: 1 },
@@ -957,7 +898,7 @@ export class PatientsService {
       select: { authAccountId: true },
     });
     if (!patient) this.notFound();
-    if (auth.role === 'RECEPTIONIST' || auth.role === 'ADMIN') return;
+    if (auth.role === 'RECEPTIONIST') return;
     if (auth.role !== 'PATIENT' || patient.authAccountId !== auth.userId) {
       throw new ForbiddenException();
     }
@@ -989,8 +930,8 @@ export class PatientsService {
   }
 
   private receptionistOnly(auth: PatientAuthContext): void {
-    if (auth.role !== 'RECEPTIONIST' && auth.role !== 'ADMIN')
-      throw new ForbiddenException('Receptionist or admin role is required');
+    if (auth.role !== 'RECEPTIONIST')
+      throw new ForbiddenException('Receptionist role is required');
   }
 
   private notFound(): never {
@@ -1058,214 +999,5 @@ export class PatientsService {
         HttpStatus.CONFLICT,
       );
     }
-  }
-
-  async deletePatient(
-    patientId: string,
-    auth: PatientAuthContext,
-    requestId: string,
-  ): Promise<void> {
-    this.receptionistOnly(auth);
-    this.uuid(patientId, 'INVALID_PATIENT_ID');
-    const patient = await this.db.patient.findUnique({
-      where: { id: patientId },
-    });
-    if (!patient) this.notFound();
-
-    await this.db.$transaction(async (transaction) => {
-      await transaction.idempotencyRecord.deleteMany({
-        where: { patientId },
-      });
-      await transaction.patientAuditLog.deleteMany({
-        where: { patientId },
-      });
-      await transaction.emergencyContact.deleteMany({
-        where: { patientId },
-      });
-      await transaction.patient.delete({
-        where: { id: patientId },
-      });
-      await transaction.patientAuditLog.create({
-        data: {
-          eventType: 'patient.deleted',
-          actorId: auth.userId,
-          actorRole: auth.role,
-          patientId: null,
-          requestId,
-          metadata: {
-            deletedPatientId: patient.id,
-            fullName: patient.fullName,
-            authAccountId: patient.authAccountId,
-          },
-        },
-      });
-    });
-
-    if (patient.authAccountId) {
-      try {
-        await this.deleteAuthAccount(patient.authAccountId);
-      } catch (err) {
-        console.warn(`Failed to delete auth account ${patient.authAccountId}:`, err);
-      }
-    }
-  }
-
-  private async getAccountInfo(
-    accountId: string,
-  ): Promise<{ email: string | null; status: string | null } | null> {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl.replace('localhost:5003', 'auth-service:5003').replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(`${baseUrl}/${accountId}`, {
-          method: 'GET',
-          headers: { 'x-internal-service-secret': secret },
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { email?: string; status?: string };
-          return {
-            email: data.email ?? null,
-            status: data.status ?? null,
-          };
-        }
-      } catch {
-        // try next
-      }
-    }
-    return null;
-  }
-
-  private async batchLookupAccounts(
-    accountIds: string[],
-  ): Promise<Record<string, { email: string; role: string; status: string }>> {
-    if (accountIds.length === 0) return {};
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl.replace('localhost:5003', 'auth-service:5003').replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(`${baseUrl}/batch-lookup`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-internal-service-secret': secret,
-          },
-          body: JSON.stringify({ accountIds }),
-          signal: AbortSignal.timeout(4000),
-        });
-        if (res.ok) {
-          return (await res.json()) as Record<string, { email: string; role: string; status: string }>;
-        }
-      } catch {
-        // try next
-      }
-    }
-    return {};
-  }
-
-  private async deleteAuthAccount(accountId: string): Promise<void> {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl.replace('localhost:5003', 'auth-service:5003').replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(`${baseUrl}/${accountId}`, {
-          method: 'DELETE',
-          headers: { 'x-internal-service-secret': secret },
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) return;
-      } catch {
-        // try next
-      }
-    }
-  }
-
-  private async createAuthAccount(
-    email: string,
-    password: string,
-    role: string,
-  ): Promise<{ userId: string; email: string; role: string }> {
-    const configuredUrl =
-      this.config.get<string>('AUTH_ACCOUNT_LOOKUP_URL') ??
-      'http://auth-service:5003/internal/accounts';
-    const secret =
-      this.config.get<string>('INTERNAL_SERVICE_AUTH_SECRET') ??
-      'local-dev-internal-secret';
-
-    const urlsToTry = [
-      configuredUrl
-        .replace('localhost:5003', 'auth-service:5003')
-        .replace('127.0.0.1:5003', 'auth-service:5003'),
-      'http://auth-service:5003/internal/accounts',
-      configuredUrl,
-    ];
-
-    let lastError: Error | null = null;
-    for (const baseUrl of urlsToTry) {
-      try {
-        const res = await fetch(baseUrl, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-internal-service-secret': secret,
-          },
-          body: JSON.stringify({ email, password, role }),
-          signal: AbortSignal.timeout(5000),
-        });
-        if (res.status === 409) {
-          throw new DomainException(
-            'EMAIL_ALREADY_EXISTS',
-            'Email này đã được đăng ký tài khoản trong hệ thống',
-            HttpStatus.CONFLICT,
-          );
-        }
-        if (res.ok) {
-          return (await res.json()) as { userId: string; email: string; role: string };
-        }
-        const errorText = await res.text();
-        lastError = new Error(`Auth service returned status ${res.status}: ${errorText}`);
-      } catch (err) {
-        if (err instanceof DomainException) throw err;
-        lastError = err as Error;
-      }
-    }
-    throw new DomainException(
-      'AUTH_SERVICE_UNAVAILABLE',
-      lastError?.message || 'Không thể kết nối đến Auth Service để tạo tài khoản bệnh nhân',
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
   }
 }

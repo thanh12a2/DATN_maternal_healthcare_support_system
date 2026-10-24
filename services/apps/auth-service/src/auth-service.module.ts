@@ -8,13 +8,11 @@ import { JwksModule } from './jwks/jwks.module';
 import { PasswordManagementModule } from './password-management/password-management.module';
 import { SecurityModule } from './security/security.module';
 import { AuthGrpcModule } from './grpc/auth-grpc.module';
-import { AdminUsersModule } from './admin-users/admin-users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
-    AdminUsersModule,
     DatabaseModule,
     JwksModule,
     PasswordManagementModule,
