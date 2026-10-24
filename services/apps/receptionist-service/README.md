@@ -17,16 +17,26 @@ avatar; profile administration remains restricted to `ADMIN`.
 - `PATCH /receptionists/me`
 - `PATCH /receptionists/:receptionistId`
 - `POST /receptionists/:receptionistId/deactivate`
+- `POST /reception/appointments/search`
+- `GET /reception/appointments/slots`
+- `POST /reception/appointments` (đặt lịch hộ bệnh nhân; `channel=RECEPTION|WALK_IN`)
+- `POST /reception/cases`
+- `GET /reception/cases/:caseId`
+- `POST /reception/cases/:caseId/identity-verifications`
+- `GET /reception/cases/:caseId/invoice` (tạo/lấy base invoice qua Billing gRPC)
+- `POST /reception/cases/:caseId/payments` (ghi nhận thanh toán qua Billing gRPC)
+- `POST /reception/cases/:caseId/admit`
 
 All protected routes verify the Auth Service RS256 access token locally. The
-gateway path is `/api/receptionists`; the service listens on port `5006`.
+gateway paths are `/api/receptionists` for profile operations and
+`/api/reception` for admission operations; the service listens on port `5006`.
 
 ## Deliberately not exposed
 
 - `POST /receptionists` and `POST /receptionists/:id/activate` remain blocked
   until Auth Service provides a real internal active-account/role contract.
-- `/reception/*` Admission routes remain blocked until Patient, Appointment,
-  Billing, Medical Record, and Queue services publish real contracts.
+- Walk-in không có route riêng. Dùng `POST /reception/appointments` với
+  `channel=WALK_IN`; Receptionist gọi Appointment Service qua internal gRPC.
 - There are no mocks, hard-coded downstream results, or cross-service database
   queries.
 - There are no shift, schedule, attendance, leave, or availability APIs.

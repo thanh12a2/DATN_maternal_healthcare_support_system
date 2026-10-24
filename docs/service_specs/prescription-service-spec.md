@@ -14,11 +14,12 @@
 
 ## 1. Tổng quan và boundary
 
-Prescription Service là source of truth cho đơn thuốc lâm sàng, item, dosage instruction, version và issue/cancel lifecycle. Service không phải Pharmacy và không tạo charge.
+Prescription Service là source of truth cho đơn thuốc lâm sàng, danh mục thuốc lâm sàng, item, dosage instruction, version và issue/cancel lifecycle. Service không phải Pharmacy và không tạo charge.
 
 ### Chịu trách nhiệm
 
 - Draft prescription trong một ClinicalEncounter.
+- Quản lý Medication Catalog dùng chung: mã thuốc, hoạt chất, hàm lượng, dạng bào chế, đường dùng, hướng dẫn mặc định và cảnh báo an toàn thai kỳ.
 - Quản lý item, hoạt chất/tên thuốc, dạng dùng, liều, tần suất, đường dùng, thời gian và hướng dẫn.
 - Assigned Doctor issue/cancel; lưu snapshot doctor/patient cần cho lịch sử.
 - Patient đọc prescription đã ISSUED.
@@ -55,6 +56,12 @@ Constraints:
 - Không cross-DB FK cho encounter/patient/doctor/documentId.
 - Text length/allowlist; không dùng float cho dose có đơn vị, lưu decimal string + unit.
 
+### MedicationCatalog
+
+id, code (unique, immutable), name, activeIngredient, strength, dosageForm, route, defaultDose/Frequency/Instruction nullable, pregnancyCategory (A/B/C/D/X), pregnancyWarning nullable, isActive, version, timestamps.
+
+Catalog entry là dữ liệu hỗ trợ kê đơn, không phải tồn kho. Khi `medicationCode` được gửi vào draft/update, service xác thực thuốc đang active và lưu snapshot chuẩn vào PrescriptionItem; đơn đã lưu không thay đổi khi danh mục bị sửa hoặc vô hiệu hóa.
+
 ## 4. State machine
 
 DRAFT → ISSUED → CANCELLED.
@@ -74,6 +81,11 @@ Base path: /api/prescriptions.
 | POST | /prescriptions/{id}/issue | Assigned DOCTOR |
 | POST | /prescriptions/{id}/cancel | Prescribing/assigned doctor + reason |
 | GET | /prescriptions?encounterId=... | Clinical caller/own patient filtered |
+| GET | /medications | `DOCTOR`, `RECEPTIONIST`, `ADMIN`; staff ngoài ADMIN chỉ thấy active |
+| GET | /medications/{id} | `DOCTOR`, `PATIENT`, `ADMIN`; inactive chỉ ADMIN |
+| POST | /medications | `ADMIN`, `DOCTOR` |
+| PATCH | /medications/{id} | `ADMIN`, `DOCTOR`, optimistic version |
+| POST | /medications/{id}/activate, /deactivate | `ADMIN`, optimistic version |
 
 Commands có Idempotency-Key; updates dùng version.
 
@@ -102,6 +114,9 @@ Mỗi RPC dùng RequestContext, service JWT scope, deadline; command idempotent.
 | RX-BR-006 | Prescription không tạo invoice line hoặc tồn kho. |
 | RX-BR-007 | Medication code optional; medication name và dosage bắt buộc. |
 | RX-BR-008 | Mọi read/write PHI phải audit theo purpose. |
+| RX-BR-009 | Medication code là định danh bất biến và unique; không xóa cứng danh mục. |
+| RX-BR-010 | Thuốc inactive không xuất hiện trong autocomplete và không được dùng trong draft mới; snapshot trong đơn lịch sử vẫn hợp lệ. |
+| RX-BR-011 | Danh mục thuốc là bounded context của Prescription Service; không gọi Service Catalog hay Pharmacy để lookup. |
 
 ## 8. Scenarios và edge cases
 
