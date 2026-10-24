@@ -3,6 +3,47 @@ info: { title: Prescription Service API, version: 1.0.0 }
 servers: [ { url: 'http://localhost:8080/api/prescriptions' } ]
 security: [ { bearerAuth: [] } ]
 paths:
+  /medications:
+    get:
+      operationId: listMedications
+      description: DOCTOR and RECEPTIONIST only see active medications; ADMIN may filter inactive records.
+      parameters:
+        - { name: q, in: query, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: pregnancyCategory, in: query, schema: { $ref: '#/components/schemas/PregnancySafetyCategory' } }
+        - { name: isActive, in: query, schema: { type: boolean } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses: { '200': { description: Medication search result, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationListEnvelope' } } } }, '403': { $ref: '#/components/responses/Error' } }
+    post:
+      operationId: createMedication
+      description: ADMIN or DOCTOR creates an active clinical medication catalog entry.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateMedication' } } } }
+      responses: { '201': { description: Medication created, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /medications/{medicationId}:
+    parameters: [ { $ref: '#/components/parameters/MedicationId' } ]
+    get:
+      operationId: getMedication
+      description: ADMIN, DOCTOR or PATIENT. Inactive records are visible only to ADMIN.
+      responses: { '200': { description: Medication, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationEnvelope' } } } }, '404': { $ref: '#/components/responses/Error' } }
+    patch:
+      operationId: updateMedication
+      description: ADMIN or DOCTOR. Medication code is immutable; version prevents a lost update.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpdateMedication' } } } }
+      responses: { '200': { description: Medication updated, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /medications/{medicationId}/deactivate:
+    parameters: [ { $ref: '#/components/parameters/MedicationId' } ]
+    post:
+      operationId: deactivateMedication
+      description: ADMIN only. Keeps historical prescription snapshots unchanged.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Medication deactivated, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /medications/{medicationId}/activate:
+    parameters: [ { $ref: '#/components/parameters/MedicationId' } ]
+    post:
+      operationId: activateMedication
+      description: ADMIN only.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Medication activated, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
   /:
     post:
       operationId: createPrescription
@@ -40,6 +81,7 @@ components:
   securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
   parameters:
     PrescriptionId: { name: prescriptionId, in: path, required: true, schema: { type: string, format: uuid } }
+    MedicationId: { name: medicationId, in: path, required: true, schema: { type: string, format: uuid } }
     IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 128 } }
   schemas:
     PrescriptionItem:
@@ -78,6 +120,65 @@ components:
       additionalProperties: false
       required: [version, reason]
       properties: { version: { type: integer, minimum: 1 }, reason: { type: string, minLength: 3, maxLength: 500 } }
+    PregnancySafetyCategory: { type: string, enum: [CATEGORY_A, CATEGORY_B, CATEGORY_C, CATEGORY_D, CATEGORY_X] }
+    CreateMedication:
+      type: object
+      additionalProperties: false
+      required: [code, name, activeIngredient, strength, dosageForm, route, pregnancyCategory]
+      properties:
+        code: { type: string, minLength: 2, maxLength: 100 }
+        name: { type: string, minLength: 2, maxLength: 200 }
+        activeIngredient: { type: string, minLength: 2, maxLength: 500 }
+        strength: { type: string, minLength: 1, maxLength: 100 }
+        dosageForm: { type: string, minLength: 1, maxLength: 100 }
+        route: { type: string, minLength: 1, maxLength: 80 }
+        defaultDose: { type: string, maxLength: 80, nullable: true }
+        defaultFrequency: { type: string, maxLength: 120, nullable: true }
+        defaultInstruction: { type: string, maxLength: 1000, nullable: true }
+        pregnancyCategory: { $ref: '#/components/schemas/PregnancySafetyCategory' }
+        pregnancyWarning: { type: string, maxLength: 2000, nullable: true }
+    UpdateMedication:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 1 }
+        name: { type: string, minLength: 2, maxLength: 200 }
+        activeIngredient: { type: string, minLength: 2, maxLength: 500 }
+        strength: { type: string, minLength: 1, maxLength: 100 }
+        dosageForm: { type: string, minLength: 1, maxLength: 100 }
+        route: { type: string, minLength: 1, maxLength: 80 }
+        defaultDose: { type: string, maxLength: 80, nullable: true }
+        defaultFrequency: { type: string, maxLength: 120, nullable: true }
+        defaultInstruction: { type: string, maxLength: 1000, nullable: true }
+        pregnancyCategory: { $ref: '#/components/schemas/PregnancySafetyCategory' }
+        pregnancyWarning: { type: string, maxLength: 2000, nullable: true }
+    Medication:
+      type: object
+      required: [id, code, name, activeIngredient, strength, dosageForm, route, pregnancyCategory, isActive, version]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        activeIngredient: { type: string }
+        strength: { type: string }
+        dosageForm: { type: string }
+        route: { type: string }
+        defaultDose: { type: string, nullable: true }
+        defaultFrequency: { type: string, nullable: true }
+        defaultInstruction: { type: string, nullable: true }
+        pregnancyCategory: { $ref: '#/components/schemas/PregnancySafetyCategory' }
+        pregnancyWarning: { type: string, nullable: true }
+        isActive: { type: boolean }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    MedicationEnvelope: { type: object, properties: { data: { $ref: '#/components/schemas/Medication' } } }
+    MedicationListEnvelope:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Medication' } }
+        meta: { type: object, properties: { page: { type: integer }, limit: { type: integer }, total: { type: integer } } }
     Prescription:
       type: object
       required: [id, encounterId, patientId, prescribingDoctorId, status, version, items]

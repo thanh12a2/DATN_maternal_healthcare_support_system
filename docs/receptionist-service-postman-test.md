@@ -3,7 +3,7 @@
 > **Service trực tiếp:** `http://localhost:5006`  
 > **Auth Service:** `http://localhost:5003`  
 > **Gateway:** `http://localhost:8080`  
-> **Phạm vi hiện tại:** hồ sơ nghiệp vụ cơ bản của lễ tân; không có API ca làm hoặc Admission.
+> **Phạm vi hiện tại:** hồ sơ nghiệp vụ cơ bản, booking orchestration và Admission orchestration; không có API ca làm.
 
 ---
 
@@ -20,9 +20,72 @@
 | `POST` | `/receptionists/{id}/deactivate` | `ADMIN` | Implemented |
 | `POST` | `/receptionists` | `ADMIN` | Chưa expose — blocked bởi Auth contract |
 | `POST` | `/receptionists/{id}/activate` | `ADMIN` | Chưa expose — blocked bởi Auth contract |
-| Bất kỳ | `/reception/*` | — | Chưa expose — blocked bởi downstream contracts |
+| `POST` | `/reception/appointments/search` | `RECEPTIONIST`, `ADMIN` | Implemented; cần Patient/Appointment gRPC |
+| `GET` | `/reception/appointments/slots` | `RECEPTIONIST`, `ADMIN` | Implemented; proxy Appointment gRPC |
+| `POST` | `/reception/appointments` | `RECEPTIONIST`, `ADMIN` | Implemented; `channel=RECEPTION` hoặc `WALK_IN` |
+| `POST` | `/reception/cases` | `RECEPTIONIST`, `ADMIN` | Implemented; appointment đã tồn tại |
+| `GET` | `/reception/cases/{id}` | `RECEPTIONIST`, `ADMIN` | Implemented |
+| `POST` | `/reception/cases/{id}/identity-verifications` | `RECEPTIONIST`, `ADMIN` | Implemented |
+| `GET` | `/reception/cases/{id}/invoice` | `RECEPTIONIST`, `ADMIN` | Implemented; cần Appointment/Billing gRPC |
+| `POST` | `/reception/cases/{id}/payments` | `RECEPTIONIST`, `ADMIN` | Implemented; cần Billing gRPC |
+| `POST` | `/reception/cases/{id}/admit` | `RECEPTIONIST`, `ADMIN` | Implemented; cần Billing/Medical/Queue |
 
 Do API create/activate chưa được mở, hướng dẫn này dùng fixture trong database local để test. Không sử dụng cách sửa database trực tiếp trong production.
+
+### Booking qua Receptionist (cách 2)
+
+Frontend chỉ gọi Receptionist; Receptionist gọi Appointment bằng gRPC nội bộ.
+
+```http
+GET {{receptionBaseUrl}}/reception/appointments/slots?serviceId={{serviceId}}&selectionMode=DOCTOR&requestedDoctorId={{doctorId}}&from=2026-10-20T08:00:00.000Z&to=2026-10-20T12:00:00.000Z
+Authorization: Bearer {{receptionistToken}}
+```
+
+```http
+POST {{receptionBaseUrl}}/reception/appointments
+Authorization: Bearer {{receptionistToken}}
+Idempotency-Key: reception-book-{{$guid}}
+Content-Type: application/json
+
+{
+  "patientId": "{{patientId}}",
+  "serviceId": "{{serviceId}}",
+  "selectionMode": "DOCTOR",
+  "requestedDoctorId": "{{doctorId}}",
+  "startAt": "2026-10-20T08:00:00.000Z",
+  "endAt": "2026-10-20T08:30:00.000Z",
+  "channel": "RECEPTION"
+}
+```
+
+Walk-in dùng cùng request nhưng đổi `channel` thành `WALK_IN`; không gọi endpoint riêng.
+
+### Ghi nhận thanh toán tại quầy
+
+Sau khi case đã `IDENTITY_VERIFIED`, UI gọi invoice trước để lấy chính xác số tiền từ Billing:
+
+```http
+GET {{receptionBaseUrl}}/reception/cases/{{caseId}}/invoice
+Authorization: Bearer {{receptionistToken}}
+```
+
+Sau đó ghi nhận payment. Với tiền mặt, response có `readyForAdmission=true`; sau đó gọi API admit.
+
+```http
+POST {{receptionBaseUrl}}/reception/cases/{{caseId}}/payments
+Authorization: Bearer {{receptionistToken}}
+Idempotency-Key: reception-payment-{{$guid}}
+Content-Type: application/json
+
+{
+  "method": "CASH",
+  "amountMinor": 300000,
+  "receivedAt": "2026-10-20T08:15:00.000Z",
+  "reference": "CASH-COUNTER-01"
+}
+```
+
+`MANUAL_BANK_TRANSFER` được ghi nhận ở trạng thái chờ xác minh, nên chưa được admit cho đến khi Billing xác minh thanh toán.
 
 ---
 
@@ -774,7 +837,7 @@ Khi chạy lại toàn bộ kịch bản từ đầu, clear biến `deactivateKe
 
 ---
 
-## 18. Xác nhận các route blocked chưa được expose
+## 18. Xác nhận các route còn blocked
 
 Các request sau phải trả `404 Not Found`:
 
@@ -788,12 +851,9 @@ POST {{receptionBaseUrl}}/receptionists/{{receptionistId}}/activate
 Authorization: Bearer {{adminToken}}
 ```
 
-```http
-POST {{receptionBaseUrl}}/reception/cases
-Authorization: Bearer {{receptionistToken}}
-```
-
-Đây là kết quả đúng ở phase hiện tại.
+`/reception/cases` không còn thuộc nhóm blocked. Request này chỉ chạy thành công khi
+appointment tồn tại và downstream gRPC đang hoạt động. Walk-in không có route riêng;
+frontend gọi `/reception/appointments` với `channel=WALK_IN` trước khi mở case.
 
 ---
 
@@ -883,5 +943,6 @@ Chạy lại Auth và Receptionist migration ở bước 3, sau đó restart ser
 - [ ] Version cũ trả `409 VERSION_CONFLICT`.
 - [ ] Deactivate retry cùng key/payload trả `200`.
 - [ ] Cùng key/payload khác trả `409 IDEMPOTENCY_KEY_REUSED`.
-- [ ] API create/activate và Admission trả `404` đúng release gate.
+- [ ] API create/activate trả `404` đúng Auth release gate.
+- [ ] Search/open-case/identity-verification/admit chạy được khi các downstream gRPC đã sẵn sàng.
 - [ ] Gateway `/api/receptionists` hoạt động sau khi direct service đã pass.

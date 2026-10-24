@@ -10,8 +10,8 @@
 
 > **Service:** `receptionist-service`  
 > **Port:** `5006`  
-> **Public gateway path:** `/api/receptionists`  
-> **Status:** Receptionist profile operations implemented; Admission orchestration là **APPROVED target / NOT_IMPLEMENTED** trong source hiện tại
+> **Public gateway paths:** `/api/receptionists` (profile), `/api/reception` (admission)
+> **Status:** Receptionist profile, booking orchestration và Admission orchestration cho appointment đã có implementation.
 > **Scope decision:** Chỉ quản lý hồ sơ nghiệp vụ cơ bản của lễ tân. Không quản lý ca làm.
 
 ---
@@ -21,7 +21,7 @@
 Receptionist Service có hai trách nhiệm kiến trúc:
 
 1. Quản lý hồ sơ nghiệp vụ tối thiểu của lễ tân để xác định ai được thực hiện tiếp nhận.
-2. Theo target architecture đã duyệt, làm process manager/Saga orchestrator cho quy trình bệnh nhân đến quầy, đối chiếu hồ sơ, thanh toán và vào khám. Phần này chưa được implement.
+2. Làm process manager/Saga orchestrator cho quy trình bệnh nhân đến quầy, đối chiếu hồ sơ, thanh toán và vào khám. Luồng appointment đã được triển khai bằng gRPC nội bộ.
 
 ### Chịu trách nhiệm hiện tại
 
@@ -386,29 +386,31 @@ Idempotency-Key: <uuid>
 
 ---
 
-## 6. Admission Orchestration — APPROVED TARGET / NOT_IMPLEMENTED
+## 6. Admission Orchestration — Appointment flow implemented
 
 ### Release gate
 
-API-101..107 chỉ là contract định hướng. Trong phase hiện tại:
+API-106 vẫn là contract định hướng. Các API booking/tra cứu/mở case/xác minh/admit đã được mở cho luồng appointment:
 
-- Không đăng ký route.
 - Không tạo mock/fake/hard-coded downstream response.
-- Không tự đoán path, DTO hoặc error code của downstream.
 - Không query database downstream.
-- Chỉ triển khai sau khi generated gRPC stubs, proto contract tests, service JWT scopes và downstream outcome lookup đã sẵn sàng.
+- Các lệnh downstream dùng gRPC service JWT, deadline và idempotency key.
 
 ### Endpoint định hướng
 
 | ID | Method | Path | Dependency chính |
 |---|---|---|---|
-| API-101 | POST | `/reception/appointments/search` | Patient, Appointment |
-| API-102 | POST | `/reception/cases` | Patient, Appointment |
-| API-103 | GET | `/reception/cases/{caseId}` | Local Reception DB |
-| API-104 | POST | `/reception/cases/{caseId}/identity-verifications` | Local assertion + Patient snapshot/reference |
-| API-105 | POST | `/reception/cases/{caseId}/admit` | Appointment, Billing, Medical, Queue |
-| API-106 | POST | `/reception/cases/{caseId}/cancel` | Appointment/Billing policy |
-| API-107 | POST | `/reception/walk-ins` | Future Patient/Appointment walk-in contracts |
+| API-101 | POST | `/reception/appointments/search` | Patient, Appointment | Implemented |
+| API-100 | GET | `/reception/appointments/slots` | Appointment | Implemented; proxy gRPC `SearchBookableSlotsForReception` |
+| API-099 | POST | `/reception/appointments` | Patient, Appointment | Implemented; proxy gRPC `BookForReception` |
+| API-102 | POST | `/reception/cases` | Patient, Appointment | Implemented |
+| API-103 | GET | `/reception/cases/{caseId}` | Local Reception DB | Implemented |
+| API-104 | POST | `/reception/cases/{caseId}/identity-verifications` | Local assertion + Patient snapshot/reference | Implemented |
+| API-104a | GET | `/reception/cases/{caseId}/invoice` | Appointment, Billing | Implemented; tạo/lấy base invoice và trả số tiền cần thu |
+| API-104b | POST | `/reception/cases/{caseId}/payments` | Billing | Implemented; ghi nhận payment idempotently |
+| API-105 | POST | `/reception/cases/{caseId}/admit` | Appointment, Billing, Medical, Queue | Implemented |
+| API-106 | POST | `/reception/cases/{caseId}/cancel` | Appointment/Billing policy | Pending |
+| API-107 | — | Không có route walk-in riêng | — | Dùng API-099 với `channel=WALK_IN` |
 
 ### Quy trình nghiệp vụ đã chốt
 
@@ -460,7 +462,7 @@ Patient Service:
 
 Appointment Service:
 
-- Tìm appointment tại quầy.
+- Tìm appointment tại quầy qua `SearchForReception`.
 - Đọc status/version/scheduled time/type.
 - Validate eligibility và check-in idempotently.
 - Lookup outcome sau timeout.
@@ -512,11 +514,11 @@ Auth Service:
 | `AUTH_JWT_AUDIENCE` | Yes | `maternal-healthcare-api` |
 | `AUTH_JWT_KEY_ID` | Yes | `local-dev-key` |
 | `AUTH_GRPC_TARGET` | Khi mở API-002/008 | `auth-service:<grpc-port>` |
-| `PATIENT_SERVICE_BASE_URL` | Khi mở Admission | Docker service URL |
-| `APPOINTMENT_SERVICE_BASE_URL` | Khi mở Admission | Docker service URL |
-| `BILLING_SERVICE_BASE_URL` | Khi mở Admission | Docker service URL |
-| `MEDICAL_RECORD_SERVICE_BASE_URL` | Khi mở Admission | Docker service URL |
-| `QUEUE_SERVICE_BASE_URL` | Khi mở Admission | Docker service URL |
+| `PATIENT_GRPC_TARGET` | No | `patient-service:6004` |
+| `APPOINTMENT_GRPC_TARGET` | No | `appointment-service:6008` |
+| `BILLING_GRPC_TARGET` | No | `billing-service:6009` |
+| `MEDICAL_RECORD_GRPC_TARGET` | No | `medical-record-service:6011` |
+| `QUEUE_GRPC_TARGET` | No | `queue-service:6012` |
 | `RECEPTION_IDEMPOTENCY_TTL_HOURS` | No | `24` |
 
 ---
@@ -534,7 +536,7 @@ Auth Service:
 - Deactivate retry cùng idempotency key không ghi audit lần hai.
 - API-002/008 không tồn tại trước Auth gate.
 - Không tồn tại route ca làm, lịch, nghỉ hoặc availability.
-- API-101..107 không tồn tại trước downstream gate.
+- API-106 (cancel case) chưa được mở. Walk-in booking dùng API-099 và không cần endpoint riêng.
 
 ### Implementation hiện tại
 
@@ -545,7 +547,7 @@ Auth Service:
 - Reception DB, Prisma schema/migration, audit/idempotency: implemented.
 - Docker Compose và Kong route `/api/receptionists`: implemented.
 - Create/activate Receptionist: blocked bởi Auth internal contract.
-- Admission/Saga/internal gRPC clients: NOT_IMPLEMENTED; target contracts nằm trong `docs/grpc/` và `docs/integration/internal-communication-matrix.md`.
+- Booking/Admission/Saga/internal gRPC clients cho luồng appointment: implemented; case cancel vẫn pending.
 
 ---
 
