@@ -3,24 +3,41 @@
 .admin-shell.patient-desktop-portal { min-width: 0; }
 
 .admin-shell .patient-sidebar {
-  inset: var(--admin-gap) auto var(--admin-gap) var(--admin-gap);
-  width: var(--admin-sidebar-w);
+  inset: var(--admin-gap) auto var(--admin-gap) var(--admin-gap) !important;
+  width: var(--admin-sidebar-w) !important;
+  min-width: var(--admin-sidebar-w) !important;
   border-radius: 22px;
   box-shadow: 0 8px 24px color-mix(in oklch, var(--deep) 8%, transparent);
+  transition: width 0.3s cubic-bezier(0.22, 0.8, 0.24, 1), transform 0.3s cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 .admin-shell .patient-sidebar:before { height: 76px; }
-.admin-shell .patient-sidebar-head { width: 100%; min-height: 64px; padding: 12px; gap: 10px; }
+.admin-shell .patient-sidebar-head { width: 100% !important; min-width: 0 !important; min-height: 64px; padding: 12px; gap: 10px; }
 .admin-shell .patient-menu-toggle { flex-basis: 40px; width: 40px; height: 40px; border-radius: 12px; }
 .admin-shell .patient-sidebar-brand { width: auto; min-width: 0; }
 .admin-shell .patient-sidebar-brand strong { font-size: 15px; white-space: nowrap; }
 .admin-shell .patient-sidebar-brand span { margin-top: 4px; font-size: 7.5px; }
 
-.admin-shell .patient-sidebar-nav { flex: 1; width: 100%; padding: 8px 10px; gap: 2px; align-content: start; overflow-y: auto; scrollbar-width: thin; }
+.admin-shell .patient-sidebar-nav {
+  flex: 1;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 8px 10px;
+  gap: 2px;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
 .admin-shell .patient-nav-label { height: auto; margin: 6px 10px 8px; font-size: 8.5px; }
 .admin-shell .patient-nav-item,
 .admin-shell .patient-logout {
-  width: 100%; min-height: 38px; gap: 10px; padding: 6px 10px; border-radius: 11px;
-  font-size: 13px; font-weight: 650;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 38px;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 650;
 }
 .admin-shell .patient-nav-item { background: transparent; border-color: transparent; color: color-mix(in oklch, var(--fg) 82%, var(--muted)); }
 .admin-shell .patient-nav-item:hover { background: var(--accent-soft); color: var(--deep); transform: none; box-shadow: none; }
@@ -30,18 +47,42 @@
 .admin-shell .patient-logout { margin: 6px 10px 10px; width: auto; border-color: var(--border); }
 .admin-shell .patient-logout:hover { background: var(--danger-soft); color: var(--danger); }
 
-.admin-shell .patient-main-view { margin-left: calc(var(--admin-sidebar-w) + var(--admin-gap) * 2); background: var(--bg); }
+.admin-shell .patient-main-view {
+  margin-left: calc(var(--admin-sidebar-w) + var(--admin-gap) * 2) !important;
+  background: var(--bg);
+  transition: margin-left 0.3s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
 
 @media (min-width: 821px) {
-  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar { width: var(--admin-sidebar-w-collapsed); }
-  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar-head { justify-content: center; padding: 12px 0; }
+  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar {
+    width: var(--admin-sidebar-w-collapsed) !important;
+    min-width: var(--admin-sidebar-w-collapsed) !important;
+  }
+  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar-head {
+    justify-content: center;
+    padding: 12px 0;
+  }
   .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar-brand,
   .admin-shell .patient-nav-shell.is-collapsed .patient-nav-label,
-  .admin-shell .patient-nav-shell.is-collapsed .patient-nav-text { display: none; }
-  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar-nav { justify-items: center; }
+  .admin-shell .patient-nav-shell.is-collapsed .patient-nav-text {
+    display: none !important;
+  }
+  .admin-shell .patient-nav-shell.is-collapsed .patient-sidebar-nav {
+    justify-items: center;
+    padding: 8px 0;
+  }
   .admin-shell .patient-nav-shell.is-collapsed .patient-nav-item,
-  .admin-shell .patient-nav-shell.is-collapsed .patient-logout { width: 40px; justify-content: center; padding: 0; }
-  .admin-shell .patient-nav-shell.is-collapsed + .patient-main-view { margin-left: calc(var(--admin-sidebar-w-collapsed) + var(--admin-gap) * 2); }
+  .admin-shell .patient-nav-shell.is-collapsed .patient-logout {
+    width: 40px !important;
+    min-width: 40px !important;
+    justify-content: center;
+    padding: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .admin-shell .patient-nav-shell.is-collapsed + .patient-main-view {
+    margin-left: calc(var(--admin-sidebar-w-collapsed) + var(--admin-gap) * 2) !important;
+  }
 }
 
 /* ───────── Topbar ───────── */

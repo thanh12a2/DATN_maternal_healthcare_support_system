@@ -33,17 +33,80 @@ const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   DOCTOR: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Lịch khám', icon: 'calendar', href: 'appointments' }, { label: 'Bệnh nhân phân công', icon: 'users', href: 'patients' }, { label: 'Hồ sơ khám', icon: 'clipboard', href: 'encounters' }, { label: 'Lịch làm việc', icon: 'clock', href: 'schedule' }, { label: 'Tư vấn', icon: 'stethoscope', href: 'consultations' }, { label: 'Hồ sơ cá nhân', icon: 'profile', href: 'profile' }],
   RECEPTIONIST: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Tiếp nhận', icon: 'check-in', href: 'reception' }, { label: 'Tra cứu bệnh nhân', icon: 'search', href: 'patients' }, { label: 'Lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Check-in', icon: 'check-in', href: 'check-in' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Hóa đơn', icon: 'clipboard', href: 'billing' }],
   NURSE: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Bệnh nhân hôm nay', icon: 'users', href: 'today' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Encounter phân công', icon: 'clipboard', href: 'encounters' }, { label: 'Sinh hiệu', icon: 'stethoscope', href: 'vitals' }, { label: 'Ghi chú điều dưỡng', icon: 'notes', href: 'notes' }],
-  ADMIN: [{ label: 'Dashboard', icon: 'home', href: 'overview' }, { label: 'Người dùng', icon: 'users', href: 'users' }, { label: 'Bác sĩ', icon: 'stethoscope', href: 'doctors' }, { label: 'Dịch vụ & giá', icon: 'clipboard', href: 'services' }, { label: 'Lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Audit log', icon: 'notes', href: 'audit-log' }, { label: 'Báo cáo', icon: 'report', href: 'reports' }],
+  ADMIN: [
+    { label: 'Dashboard', icon: 'home', href: 'overview' },
+    { label: 'Người dùng', icon: 'users', href: 'users' },
+    { label: 'Bác sĩ', icon: 'stethoscope', href: 'doctors' },
+    { label: 'Chuyên khoa', icon: 'clipboard', href: 'specialties' },
+    { label: 'Bệnh nhân', icon: 'search', href: 'patients' },
+    { label: 'Dịch vụ & giá', icon: 'clipboard', href: 'services' },
+    { label: 'Nhật ký & Kiểm toán', icon: 'notes', href: 'audit-log' },
+    { label: 'Giám sát & Sao lưu', icon: 'settings', href: 'system-health' },
+  ],
 };
 function isActive(path: string, href: string) { if (href === '/ho-so/hoan-thien') return path === href || path === '/ho-so'; return path === href || path.startsWith(`${href}/`); }
-export function PatientSidebar({ onLogout }: { onLogout: () => void }) { const pathname = usePathname(); const auth = useAuthSession(); const [collapsed, setCollapsed] = useState(() => window.localStorage.getItem(STORAGE_KEY) === 'true'); const [mobileOpen, setMobileOpen] = useState(false);
-  const role = auth.user?.role as Role | undefined; const items = role && role !== 'PATIENT' ? workspaceNav[role]?.map((item) => ({ ...item, href: `/workspace/${role.toLowerCase()}/${item.href}` })) ?? patientNavItems : patientNavItems;
-  useEffect(() => { window.localStorage.setItem(STORAGE_KEY, String(collapsed)); }, [collapsed]);
-  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileOpen(false); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, []);
-  return <div className={`patient-nav-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}>
-    <button className="patient-menu-toggle patient-mobile-menu" type="button" aria-label={mobileOpen ? 'Đóng thanh điều hướng' : 'Mở thanh điều hướng'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)}><MenuGlyph /></button>
-    <aside className="patient-sidebar" aria-label="Điều hướng chính"><div className="patient-sidebar-head"><button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button><div className="patient-sidebar-brand"><strong>An Tâm Medical</strong><span>Patient portal</span></div></div>
-      <nav className="patient-sidebar-nav"><p className="patient-nav-label">Không gian của bạn</p>{items.map((item) => <AppLink key={item.href} className="patient-nav-item" href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}><span className="patient-nav-icon"><PatientIcon name={item.icon} /></span><span className="patient-nav-text">{item.label}</span></AppLink>)}</nav>
-        <button className="patient-logout" type="button" onClick={onLogout}><span className="patient-nav-icon"><PatientIcon name="exit" /></span><span className="patient-nav-text">Đăng xuất</span></button></aside>
-    <button className="patient-sidebar-scrim" type="button" aria-label="Đóng thanh điều hướng" onClick={() => setMobileOpen(false)} /></div>;
+export function PatientSidebar({ onLogout }: { onLogout: () => void }) {
+  const pathname = usePathname();
+  const auth = useAuthSession();
+  const role = auth.user?.role as Role | undefined;
+  const storageKey = role === 'ADMIN' ? 'an-tam-admin-sidebar-collapsed' : STORAGE_KEY;
+
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      if (role === 'ADMIN') {
+        const saved = window.localStorage.getItem(storageKey);
+        return saved === 'true'; // Default is false (expanded)
+      }
+      return window.localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const items = role && role !== 'PATIENT' ? workspaceNav[role]?.map((item) => ({ ...item, href: `/workspace/${role.toLowerCase()}/${item.href}` })) ?? patientNavItems : patientNavItems;
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(storageKey, String(collapsed));
+    } catch {
+      // ignore storage errors
+    }
+  }, [collapsed, storageKey]);
+
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, []);
+
+  return (
+    <div className={`patient-nav-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}>
+      <button className="patient-menu-toggle patient-mobile-menu" type="button" aria-label={mobileOpen ? 'Đóng thanh điều hướng' : 'Mở thanh điều hướng'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)}><MenuGlyph /></button>
+      <aside className="patient-sidebar" aria-label="Điều hướng chính">
+        <div className="patient-sidebar-head">
+          <button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button>
+          <div className="patient-sidebar-brand">
+            <strong>An Tâm Medical</strong>
+            <span>{role === 'ADMIN' ? 'Admin portal' : 'Patient portal'}</span>
+          </div>
+        </div>
+        <nav className="patient-sidebar-nav">
+          <p className="patient-nav-label">{role === 'ADMIN' ? 'Quản trị hệ thống' : 'Không gian của bạn'}</p>
+          {items.map((item) => (
+            <AppLink key={item.href} className="patient-nav-item" href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
+              <span className="patient-nav-icon"><PatientIcon name={item.icon} /></span>
+              <span className="patient-nav-text">{item.label}</span>
+            </AppLink>
+          ))}
+        </nav>
+        <button className="patient-logout" type="button" onClick={onLogout}>
+          <span className="patient-nav-icon"><PatientIcon name="exit" /></span>
+          <span className="patient-nav-text">Đăng xuất</span>
+        </button>
+      </aside>
+      <button className="patient-sidebar-scrim" type="button" aria-label="Đóng thanh điều hướng" onClick={() => setMobileOpen(false)} />
+    </div>
+  );
 }
