@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, AuthRoleCode } from '@prisma/client';
+import { AccountStatus, Prisma, AuthRoleCode } from '@prisma/client';
 import { AuthRole } from '../auth/dto/auth-role.enum';
 import { PrismaService } from '../database/prisma.service';
 import {
@@ -12,10 +12,11 @@ import {
 
 const ROLE_PRIORITY: Record<AuthRole, number> = {
   [AuthRole.Admin]: 1,
-  [AuthRole.Doctor]: 2,
-  [AuthRole.Receptionist]: 3,
-  [AuthRole.Nurse]: 4,
-  [AuthRole.Patient]: 5,
+  [AuthRole.ClinicManager]: 2,
+  [AuthRole.Doctor]: 3,
+  [AuthRole.Receptionist]: 4,
+  [AuthRole.Nurse]: 5,
+  [AuthRole.Patient]: 6,
 };
 
 @Injectable()
@@ -102,6 +103,53 @@ export class AccountsRepository {
 
   async markLastLoginAt(accountId: string, lastLoginAt: Date): Promise<void> {
     await this.prisma.account.update({ where: { id: accountId }, data: { lastLoginAt } });
+  }
+
+  async listManagedStaff() {
+    const accounts = await this.prisma.account.findMany({
+      where: {
+        roles: {
+          some: {
+            role: {
+              code: { in: [AuthRoleCode.DOCTOR, AuthRoleCode.NURSE, AuthRoleCode.RECEPTIONIST] },
+            },
+          },
+        },
+      },
+      include: { roles: { include: { role: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return accounts.map((account) => ({
+      userId: account.id,
+      email: account.email,
+      status: account.status,
+      role: this.selectRole(account.roles.map((item) => item.role.code)),
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt,
+    }));
+  }
+
+  async changeManagedStaffStatus(
+    accountId: string,
+    status: Extract<AccountStatus, 'ACTIVE' | 'DISABLED'>,
+  ) {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+      include: { roles: { include: { role: true } } },
+    });
+    const role = this.selectRole(account?.roles.map((item) => item.role.code));
+    if (
+      !account ||
+      !role ||
+      ![AuthRole.Doctor, AuthRole.Nurse, AuthRole.Receptionist].includes(role)
+    ) {
+      return null;
+    }
+    const updated = await this.prisma.account.update({
+      where: { id: accountId },
+      data: { status },
+    });
+    return { userId: updated.id, email: updated.email, status: updated.status, role };
   }
 
   isUniqueConstraintError(error: unknown): boolean {

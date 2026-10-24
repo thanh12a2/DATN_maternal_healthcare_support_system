@@ -12,6 +12,7 @@ const SUPPORTED_ROLES: AuthRole[] = [
   'RECEPTIONIST',
   'DOCTOR',
   'NURSE',
+  'CLINIC_MANAGER',
   'ADMIN',
 ];
 

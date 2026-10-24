@@ -13,7 +13,7 @@ import {
 } from './dto';
 
 @Controller('admin')
-@Roles('ADMIN')
+@Roles('ADMIN', 'CLINIC_MANAGER')
 export class CatalogAdminController {
   constructor(private readonly service: CatalogService) {}
 

@@ -19,6 +19,7 @@ enum AuthRoleCode {
   RECEPTIONIST
   DOCTOR
   NURSE
+  CLINIC_MANAGER
   ADMIN
 }
 

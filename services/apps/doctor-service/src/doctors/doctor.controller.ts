@@ -44,7 +44,7 @@ export class DoctorController {
   }
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   create(
     @Body() dto: CreateDoctorDto,
     @Headers('idempotency-key') key: string,
@@ -105,7 +105,7 @@ export class DoctorController {
     );
   }
   @Post(':doctorId/activate')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   activate(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Headers('if-match') match: string,
@@ -121,7 +121,7 @@ export class DoctorController {
     );
   }
   @Post(':doctorId/deactivate')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   deactivate(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Headers('if-match') match: string,
@@ -139,7 +139,7 @@ export class DoctorController {
   }
 
   @Put(':doctorId/specialties/:specialtyId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   link(
     @Param('doctorId', ParseUUIDPipe) doctorId: string,
     @Param('specialtyId', ParseUUIDPipe) specialtyId: string,
@@ -157,7 +157,7 @@ export class DoctorController {
     );
   }
   @Delete(':doctorId/specialties/:specialtyId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
   unlink(
     @Param('doctorId', ParseUUIDPipe) doctorId: string,
@@ -172,7 +172,7 @@ export class DoctorController {
     );
   }
   @Post(':doctorId/schedules')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   createSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Body() dto: CreateScheduleDto,
@@ -196,7 +196,7 @@ export class DoctorController {
     return this.service.listSchedules(id, query, this.identity(req));
   }
   @Patch(':doctorId/schedules/:scheduleId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   updateSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Param('scheduleId', ParseUUIDPipe) scheduleId: string,
@@ -214,7 +214,7 @@ export class DoctorController {
     );
   }
   @Post(':doctorId/schedules/:scheduleId/cancel')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   cancelSchedule(
     @Param('doctorId', ParseUUIDPipe) id: string,
     @Param('scheduleId', ParseUUIDPipe) scheduleId: string,

@@ -60,7 +60,7 @@ export class DoctorDomainService {
     key?: string,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     this.requireKey(key);
     try {
     await this.verifyAccount(dto.accountId);
@@ -103,7 +103,7 @@ export class DoctorDomainService {
   }
 
   async listDoctors(query: ListQueryDto, actor?: Identity) {
-    const admin = actor?.role === 'ADMIN';
+    const admin = this.isClinicOperator(actor);
     const where: AnyRecord =
       admin && query.status
         ? { status: query.status }
@@ -149,13 +149,15 @@ export class DoctorDomainService {
     if (
       doctor.status !== DoctorStatus.ACTIVE &&
       !own &&
-      actor?.role !== 'ADMIN'
+      !this.isClinicOperator(actor)
     )
       this.notFound();
     return {
       data:
         own || actor?.role === 'ADMIN'
           ? this.adminView(doctor)
+          : actor?.role === 'CLINIC_MANAGER'
+            ? this.managerView(doctor)
           : this.publicView(doctor),
     };
   }
@@ -174,7 +176,8 @@ export class DoctorDomainService {
     });
     if (!doctor) this.notFound();
     const admin = actor.role === 'ADMIN';
-    if (!admin && actor.userId !== doctor.accountId)
+    const manager = actor.role === 'CLINIC_MANAGER';
+    if (!admin && !manager && actor.userId !== doctor.accountId)
       this.fail(403, 'FORBIDDEN');
     const allowed = admin
       ? [
@@ -186,7 +189,16 @@ export class DoctorDomainService {
           'photoUrl',
           'licenseNumber',
         ]
-      : ['biography', 'languages', 'photoUrl'];
+      : manager
+        ? [
+            'fullName',
+            'professionalTitle',
+            'biography',
+            'practiceStartYear',
+            'languages',
+            'photoUrl',
+          ]
+        : ['biography', 'languages', 'photoUrl'];
     const sent = Object.keys(dto).filter(
       (x) => (dto as AnyRecord)[x] !== undefined,
     );
@@ -235,7 +247,7 @@ export class DoctorDomainService {
       );
       return current!;
     });
-    return { data: this.adminView(updated) };
+    return { data: admin ? this.adminView(updated) : manager ? this.managerView(updated) : this.adminView(updated) };
   }
 
   async changeStatus(
@@ -246,7 +258,7 @@ export class DoctorDomainService {
     reason?: string,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     if (!Number.isInteger(version)) this.fail(400, 'VALIDATION_FAILED');
     if (
       !activate &&
@@ -363,7 +375,7 @@ export class DoctorDomainService {
     actor: Identity,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     const [doctor, specialty] = await Promise.all([
       this.prisma.doctor.findUnique({ where: { id: doctorId } }),
       this.prisma.specialty.findUnique({ where: { id: specialtyId } }),
@@ -404,7 +416,7 @@ export class DoctorDomainService {
     actor: Identity,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     const doctor = await this.prisma.doctor.findUnique({
       where: { id: doctorId },
     });
@@ -444,7 +456,7 @@ export class DoctorDomainService {
     key?: string,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     this.requireKey(key);
     const doctor = await this.prisma.doctor.findUnique({
       where: { id: doctorId },
@@ -486,11 +498,11 @@ export class DoctorDomainService {
       where: { id: doctorId },
     });
     if (!doctor) this.notFound();
-    this.requireOwnerOrAdmin(actor, doctor.accountId);
+    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
     const rows = await this.prisma.doctorSchedule.findMany({
       where: {
         doctorId,
-        ...(actor.role === 'ADMIN' && query.status
+        ...(this.isClinicOperator(actor) && query.status
           ? { status: query.status }
           : {}),
         ...(query.from
@@ -524,7 +536,7 @@ export class DoctorDomainService {
     version: number,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     const old = await this.prisma.doctorSchedule.findFirst({
       where: { id: scheduleId, doctorId },
     });
@@ -582,7 +594,7 @@ export class DoctorDomainService {
     dto: ReasonDto,
     requestId?: string,
   ) {
-    this.requireAdmin(actor);
+    this.requireClinicOperator(actor);
     if (dto.reason.trim().length < 3) this.fail(400, 'VALIDATION_FAILED');
     const old = await this.prisma.doctorSchedule.findFirst({
       where: { id: scheduleId, doctorId },
@@ -633,8 +645,8 @@ export class DoctorDomainService {
     if (!doctor) this.notFound();
     if (doctor.status !== DoctorStatus.ACTIVE)
       this.fail(422, 'DOCTOR_NOT_ACTIVE');
-    this.requireOwnerOrAdmin(actor, doctor.accountId);
-    if (actor.role !== 'ADMIN' && dto.type !== AvailabilityType.UNAVAILABLE)
+    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
+    if (!this.isClinicOperator(actor) && dto.type !== AvailabilityType.UNAVAILABLE)
       this.fail(403, 'FORBIDDEN');
     const startAt = new Date(dto.startAt),
       endAt = new Date(dto.endAt),
@@ -691,7 +703,7 @@ export class DoctorDomainService {
     });
     return {
       data:
-        actor.role === 'ADMIN' || actor.userId === value.createdBy
+        this.isClinicOperator(actor) || actor.userId === value.createdBy
           ? value
           : { ...value, note: undefined },
     };
@@ -706,7 +718,7 @@ export class DoctorDomainService {
       where: { id: doctorId },
     });
     if (!doctor) this.notFound();
-    this.requireOwnerOrAdmin(actor, doctor.accountId);
+    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
     const from = new Date(query.from),
       to = new Date(query.to);
     if (!(from < to)) this.fail(400, 'VALIDATION_FAILED');
@@ -811,8 +823,8 @@ export class DoctorDomainService {
       where: { id: overrideId, doctorId },
     });
     if (!old) this.fail(404, 'DOCTOR_NOT_FOUND');
-    this.requireOwnerOrAdmin(actor, doctor.accountId);
-    if (actor.role !== 'ADMIN' && actor.userId !== old.createdBy)
+    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
+    if (!this.isClinicOperator(actor) && actor.userId !== old.createdBy)
       this.fail(403, 'FORBIDDEN');
     if (old.status === AvailabilityStatus.CANCELLED) return { data: old };
     if (old.endAt <= new Date()) this.fail(409, 'AVAILABILITY_ALREADY_ENDED');
@@ -1186,11 +1198,27 @@ export class DoctorDomainService {
       ...(x.availabilities ? { availabilities: x.availabilities } : {}),
     };
   }
+  private managerView(x: AnyRecord) {
+    return {
+      ...this.publicView(x),
+      version: x.version,
+      createdAt: x.createdAt,
+      updatedAt: x.updatedAt,
+      ...(x.schedules ? { schedules: x.schedules } : {}),
+      ...(x.availabilities ? { availabilities: x.availabilities } : {}),
+    };
+  }
+  private isClinicOperator(actor?: Identity): boolean {
+    return actor?.role === 'ADMIN' || actor?.role === 'CLINIC_MANAGER';
+  }
+  private requireClinicOperator(actor: Identity) {
+    if (!this.isClinicOperator(actor)) this.fail(403, 'FORBIDDEN');
+  }
   private requireAdmin(actor: Identity) {
     if (actor.role !== 'ADMIN') this.fail(403, 'FORBIDDEN');
   }
-  private requireOwnerOrAdmin(actor: Identity, accountId: string) {
-    if (actor.role !== 'ADMIN' && actor.userId !== accountId)
+  private requireOwnerOrClinicOperator(actor: Identity, accountId: string) {
+    if (!this.isClinicOperator(actor) && actor.userId !== accountId)
       this.fail(403, 'FORBIDDEN');
   }
   private requireKey(key?: string) {

@@ -85,7 +85,7 @@ export class ReceptionistsService {
   async getById(id: string, auth: AuthContext): Promise<object> {
     const record = await this.findById(id);
     this.assertOwnOrAdmin(record.accountId, auth);
-    return presentReceptionist(record, auth.role === 'ADMIN');
+    return presentReceptionist(record, this.isClinicOperator(auth));
   }
 
   async updateOwn(
@@ -403,11 +403,15 @@ export class ReceptionistsService {
   }
 
   private assertOwnOrAdmin(accountId: string, auth: AuthContext): void {
-    if (auth.role !== 'ADMIN' && accountId !== auth.userId) {
+    if (!this.isClinicOperator(auth) && accountId !== auth.userId) {
       throw new ForbiddenException(
         'Receptionists may only access their own record',
       );
     }
+  }
+
+  private isClinicOperator(auth: AuthContext): boolean {
+    return auth.role === 'ADMIN' || auth.role === 'CLINIC_MANAGER';
   }
 
   private normalizeEmployeeCode(value: string): string {

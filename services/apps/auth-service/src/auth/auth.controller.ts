@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   UnauthorizedException,
@@ -16,6 +17,8 @@ import { ConfigService } from '@nestjs/config';
 import { AccountsRepository } from '../accounts/accounts.repository';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangeStaffStatusDto } from './dto/change-staff-status.dto';
+import { CreateStaffAccountDto } from './dto/create-staff-account.dto';
 import type { LoginResponseDto } from './dto/login-response.dto';
 import type { MeResponseDto } from './dto/me-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -62,6 +65,36 @@ export class AuthController {
     @Headers('authorization') authorizationHeader?: string,
   ): Promise<MeResponseDto> {
     return this.authService.getMe(this.extractBearerToken(authorizationHeader));
+  }
+
+  @Post('auth/staff')
+  @HttpCode(HttpStatus.CREATED)
+  createStaff(
+    @Body() dto: CreateStaffAccountDto,
+    @Headers('authorization') authorizationHeader?: string,
+  ) {
+    return this.authService.createStaff(
+      dto,
+      this.extractBearerToken(authorizationHeader),
+    );
+  }
+
+  @Get('auth/staff')
+  listStaff(@Headers('authorization') authorizationHeader?: string) {
+    return this.authService.listStaff(this.extractBearerToken(authorizationHeader));
+  }
+
+  @Patch('auth/staff/:accountId/status')
+  changeStaffStatus(
+    @Param('accountId', new ParseUUIDPipe()) accountId: string,
+    @Body() dto: ChangeStaffStatusDto,
+    @Headers('authorization') authorizationHeader?: string,
+  ) {
+    return this.authService.changeStaffStatus(
+      accountId,
+      dto,
+      this.extractBearerToken(authorizationHeader),
+    );
   }
 
   @Get('internal/accounts/:accountId')

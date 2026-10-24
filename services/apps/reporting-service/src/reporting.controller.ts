@@ -1,8 +1,10 @@
-import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import type { Response } from 'express';
 import {
   PublicHttp,
+  CurrentAuth,
+  type PublicAuthContext,
   PublicJwtGuard,
   ServiceJwtGuard,
   ServiceScopes,
@@ -23,7 +25,8 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/catalog', 'catalog'])
-  catalog() {
+  catalog(@CurrentAuth() auth: PublicAuthContext) {
+    this.requireClinicManager(auth);
     const reports = this.s.getCatalog();
     return {
       data: reports,
@@ -33,7 +36,8 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/overview', 'overview'])
-  async overviewRest(@Query() query: any) {
+  async overviewRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+    this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
       new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -44,7 +48,8 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/appointments', 'appointments'])
-  async appointmentsRest(@Query() query: any) {
+  async appointmentsRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+    this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
       new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -62,7 +67,8 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/revenue', 'revenue'])
-  async revenueRest(@Query() query: any) {
+  async revenueRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+    this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
       new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -91,7 +97,12 @@ export class ReportingController {
     'reports/APPOINTMENT_DAILY.csv',
     'APPOINTMENT_DAILY.csv',
   ])
-  async exportAppointmentsCsvRest(@Query() query: any, @Res() res: Response) {
+  async exportAppointmentsCsvRest(
+    @Query() query: any,
+    @Res() res: Response,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
       new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -112,7 +123,12 @@ export class ReportingController {
     'reports/REVENUE_DAILY.csv',
     'REVENUE_DAILY.csv',
   ])
-  async exportRevenueCsvRest(@Query() query: any, @Res() res: Response) {
+  async exportRevenueCsvRest(
+    @Query() query: any,
+    @Res() res: Response,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
       new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -131,12 +147,14 @@ export class ReportingController {
   async getReportByType(
     @Param('reportType') reportType: string,
     @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
   ) {
+    this.requireClinicManager(auth);
     if (reportType === 'catalog') {
-      return this.catalog();
+      return this.catalog(auth);
     }
     if (reportType === 'overview') {
-      return this.overviewRest(query);
+      return this.overviewRest(query, auth);
     }
     return this.s.getReportData(reportType, query);
   }
@@ -202,5 +220,11 @@ export class ReportingController {
   @GrpcMethod('ReportingInternalService', 'ExportRevenueCsv')
   exportR(r: any) {
     return this.s.csv('REVENUE_DAILY', r.filter.period);
+  }
+
+  private requireClinicManager(auth: PublicAuthContext): void {
+    if (!['ADMIN', 'CLINIC_MANAGER'].includes(auth.role)) {
+      throw new ForbiddenException('Clinic manager access required');
+    }
   }
 }
