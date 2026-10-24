@@ -48,24 +48,30 @@ function isActive(path: string, href: string) { if (href === '/ho-so/hoan-thien'
 export function PatientSidebar({ onLogout }: { onLogout: () => void }) {
   const pathname = usePathname();
   const auth = useAuthSession();
+  const role = auth.user?.role as Role | undefined;
+  const storageKey = role === 'ADMIN' ? 'an-tam-admin-sidebar-collapsed' : STORAGE_KEY;
+
   const [collapsed, setCollapsed] = useState(() => {
     try {
+      if (role === 'ADMIN') {
+        const saved = window.localStorage.getItem(storageKey);
+        return saved === 'true'; // Default is false (expanded)
+      }
       return window.localStorage.getItem(STORAGE_KEY) === 'true';
     } catch {
       return false;
     }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const role = auth.user?.role as Role | undefined;
   const items = role && role !== 'PATIENT' ? workspaceNav[role]?.map((item) => ({ ...item, href: `/workspace/${role.toLowerCase()}/${item.href}` })) ?? patientNavItems : patientNavItems;
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, String(collapsed));
+      window.localStorage.setItem(storageKey, String(collapsed));
     } catch {
       // ignore storage errors
     }
-  }, [collapsed]);
+  }, [collapsed, storageKey]);
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
