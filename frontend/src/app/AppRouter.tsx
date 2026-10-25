@@ -17,6 +17,8 @@ import type { Role } from '../components/navigation/PatientSidebar';
 import AdminWorkspacePage from '../admin/AdminWorkspacePage';
 import { AdminLoginPage } from '../admin/pages/AdminLoginPage';
 
+import { ChatbotLauncher } from '../components/ui/ChatbotLauncher';
+
 function Redirect({ to }: { to: string }) { useEffect(() => navigate(to, { replace: true }), [to]); return null; }
 function homeForRole(role?: Role) {
   if (role === 'PATIENT') return '/tong-quan';
@@ -29,7 +31,12 @@ function Protected({ children }: { children: ReactNode }) {
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
   if (auth.status === 'anonymous') return <Redirect to="/dang-nhap" />;
   if (auth.user?.role !== 'PATIENT') return <Redirect to={homeForRole(auth.user?.role as Role)} />;
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <ChatbotLauncher />
+    </>
+  );
 }
 function PatientProfileRequired({ children }: { children: ReactNode }) {
   const auth = useAuthSession();
