@@ -107,21 +107,57 @@
 .appointment-meta { display: flex; gap: 18px; margin-top: 9px; color: var(--fg); font-size: 12px; font-weight: 700; }
 .appointment-content p { margin-top: 8px; max-width: 580px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
 .appointment-detail-link {
+  display: inline-flex;
+  align-items: center;
   justify-self: end;
-  min-height: 40px;
-  padding: 0 0 4px;
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  background: transparent;
+  gap: 10px;
+  min-height: 42px;
+  padding: 6px 8px 6px 15px;
+  border: 1px solid color-mix(in oklch, var(--accent) 28%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--surface) 92%, var(--accent-soft));
   color: var(--deep);
-  font-size: 12px;
+  box-shadow: 0 8px 18px color-mix(in oklch, var(--deep) 8%, transparent);
+  font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
-  transition: color .18s ease, border-color .18s ease;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, transform .18s ease;
 }
-.appointment-detail-link:hover:not(:disabled) { border-bottom-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.appointment-detail-link:disabled { opacity: .45; cursor: not-allowed; }
+.appointment-detail-link-label { line-height: 1; }
+.appointment-detail-link-icon {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.appointment-detail-link-icon svg { width: 15px; height: 15px; }
+.appointment-detail-link:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 11px 24px color-mix(in oklch, var(--accent) 18%, transparent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+.appointment-detail-link:hover:not(:disabled) .appointment-detail-link-icon {
+  background: var(--accent);
+  color: #fff;
+  transform: translateX(2px);
+}
+.appointment-detail-link:active:not(:disabled) { transform: translateY(0); }
+.appointment-detail-link:focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--accent) 28%, transparent);
+  outline-offset: 3px;
+}
+.appointment-detail-link:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .appointment-detail-link,
+  .appointment-detail-link-icon { transition: none; }
+}
 .appointment-note {
   margin: 0;
   padding: 16px 28px 18px;

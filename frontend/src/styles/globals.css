@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
-*{box-sizing:border-box}html{color-scheme:light;-webkit-text-size-adjust:100%}html{scrollbar-width:thin;scrollbar-color:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%) var(--accent-soft)}
+*{box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif}html{color-scheme:light;-webkit-text-size-adjust:100%}html{scrollbar-width:thin;scrollbar-color:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%) var(--accent-soft)}
 html::-webkit-scrollbar{width:12px;height:12px}
 html::-webkit-scrollbar-track{background:var(--accent-soft)}
 html::-webkit-scrollbar-thumb{border:3px solid var(--accent-soft);border-radius:999px;background:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%)}

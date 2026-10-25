@@ -6,6 +6,7 @@ import { AuthPage } from '../pages/AuthPage';
 import { PatientHomePage } from '../pages/PatientHomePage';
 import { PatientProfilePage } from '../pages/PatientProfilePage';
 import { PatientBookingPage } from '../pages/PatientBookingPage';
+import { PatientServiceCatalogPage } from '../pages/PatientServiceCatalogPage';
 import { AppointmentDetailPage, PatientAppointmentsPage } from '../pages/PatientAppointmentsPage';
 import { PatientQueuePage } from '../pages/PatientQueuePage';
 import { PatientNotificationsBillingPage } from '../pages/PatientNotificationsBillingPage';
@@ -95,6 +96,7 @@ function Routes() {
 
   if (path === '/tong-quan') return <Protected><PatientHomePage /></Protected>;
   if (path === '/ho-so/hoan-thien' || path === '/ho-so') return <Protected><PatientProfilePage /></Protected>;
+  if (path === '/dich-vu') return <Protected><PatientServiceCatalogPage /></Protected>;
   if (path === '/dat-lich') return <Protected><PatientProfileRequired><PatientBookingPage /></PatientProfileRequired></Protected>;
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
   if (appointmentDetailMatch) return <Protected><PatientProfileRequired><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></PatientProfileRequired></Protected>;

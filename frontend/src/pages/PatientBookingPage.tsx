@@ -49,7 +49,7 @@ export function PatientBookingPage() {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [patientName, setPatientName] = useState("Tài khoản hiện tại");
-  const [serviceId, setServiceId] = useState("");
+  const [serviceId, setServiceId] = useState(() => new URLSearchParams(window.location.search).get("serviceId") ?? "");
   const [mode, setMode] = useState<SelectionMode>("RANK");
   const [doctorId, setDoctorId] = useState("");
   const [rank, setRank] = useState("BASIC");
@@ -69,7 +69,7 @@ export function PatientBookingPage() {
   const morningSlots = slots.filter((slot) => new Date(slot.startAt).getHours() < 12);
   const afternoonSlots = slots.filter((slot) => new Date(slot.startAt).getHours() >= 12);
 
-  useEffect(() => { let active = true; Promise.all([listCatalogServices(auth.request), auth.request<{ data?: { fullName?: string } }>("/api/patients/me")]).then(([catalog, patient]) => { if (!active) return; setServices(catalog); if (patient.data?.fullName) setPatientName(patient.data.fullName); setLoading(false); }).catch((reason) => { if (!active) return; setError(errorMessage(reason)); setLoading(false); }); return () => { active = false; }; }, [auth.request]);
+  useEffect(() => { let active = true; Promise.all([listCatalogServices(auth.request), auth.request<{ data?: { fullName?: string } }>("/api/patients/me")]).then(([catalog, patient]) => { if (!active) return; setServices(catalog); const requestedServiceId = new URLSearchParams(window.location.search).get("serviceId"); if (requestedServiceId && catalog.some((service) => idOf(service) === requestedServiceId)) setServiceId(requestedServiceId); if (patient.data?.fullName) setPatientName(patient.data.fullName); setLoading(false); }).catch((reason) => { if (!active) return; setError(errorMessage(reason)); setLoading(false); }); return () => { active = false; }; }, [auth.request]);
   useEffect(() => { if (mode !== "DOCTOR") return; void listDoctors(auth.request).then(setDoctors).catch((reason) => setError(errorMessage(reason))); }, [auth.request, mode]);
   useEffect(() => { if (!hold) return; const update = () => setSeconds(Math.max(0, Math.ceil((Date.parse(hold.expiresAt) - Date.now()) / 1000))); update(); const timer = window.setInterval(update, 1000); return () => window.clearInterval(timer); }, [hold]);
   useEffect(() => { if (seconds !== 0 || !hold) return; void releaseSlotHold(auth.request, hold.id).catch(() => undefined); setHold(null); setSelected(null); }, [auth.request, hold, seconds]);

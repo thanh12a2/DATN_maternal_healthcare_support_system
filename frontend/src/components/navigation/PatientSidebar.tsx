@@ -31,7 +31,7 @@ function PatientIcon({ name }: { name: IconName }) {
 const patientNavItems: NavItem[] = [
   { href: '/tong-quan', label: 'Tổng quan', icon: 'home' },
   { href: '/ho-so/hoan-thien', label: 'Hồ sơ', icon: 'profile' },
-  { href: '/dat-lich', label: 'Đặt lịch', icon: 'calendar-plus' },
+  { href: '/dich-vu', label: 'Dịch vụ khám', icon: 'calendar-plus' },
   { href: '/lich-hen', label: 'Lịch hẹn', icon: 'calendar' },
   { href: '/hang-doi', label: 'Hàng đợi khám', icon: 'queue' },
   { href: '/thong-bao-hoa-don', label: 'Thông báo & hóa đơn', icon: 'bell' },
