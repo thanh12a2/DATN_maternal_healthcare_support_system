@@ -75,7 +75,7 @@
   background: transparent;
   transition: background .18s ease, box-shadow .18s ease;
 }
-.appointment-item:hover { background: color-mix(in oklch, var(--accent-soft) 52%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 17%, var(--border)); }
+.appointment-item:hover { background: color-mix(in oklch, var(--accent-soft) 52%, var(--surface)); box-shadow: none; }
 .appointment-item.is-nearest {
   margin-inline: -28px;
   padding-inline: 24px 28px;
@@ -172,7 +172,7 @@
 
 /* Record hover spans the complete list width, not only the date/text columns. */
 .appointment-list .appointment-item { margin-inline: -28px; padding-inline: 28px; }
-.appointment-list .appointment-item:hover { background: #eef7ff; box-shadow: inset 0 0 0 1px #b9d9ff; }
+.appointment-list .appointment-item:hover { background: #eef7ff; box-shadow: none; }
 .appointment-list .appointment-item.is-nearest { border-left: 3px solid color-mix(in oklch, var(--accent) 58%, var(--border)); padding-left: 25px; }
 @media (max-width: 620px) {
   .appointment-list .appointment-item { margin-inline: -18px; padding-inline: 18px; }
@@ -182,7 +182,7 @@
 /* Màu hover lịch khám dùng xanh cố định, không pha theo màu theme. */
 .appointment-list .appointment-item:hover {
   background: #eef7ff;
-  box-shadow: inset 0 0 0 1px #b9d9ff;
+  box-shadow: none;
 }
 .appointment-list .appointment-item.is-nearest {
   border-left: 5px solid #0b4f9c;

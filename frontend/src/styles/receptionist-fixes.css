@@ -1,3 +1,125 @@
+/* Patient directory layout: keep the search/result UI from falling back to browser defaults. */
+.receptionist-app .search-panel { margin-bottom: 14px; padding: 24px; }
+.receptionist-app .patient-search { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: 12px; }
+.receptionist-app .search-field { display: grid; gap: 7px; min-width: 0; color: var(--muted); font-size: 10px; font-weight: 800; }
+.receptionist-app .search-field input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #dce6f0; border-radius: 9px; background: #f8fbff; color: var(--fg); font: 400 12px/1 var(--font-body); }
+.receptionist-app .search-field input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 14%, transparent); }
+.receptionist-app .patient-search > .solid-action { width: auto; min-width: 112px; min-height: 44px; margin: 0; padding: 0 16px; }
+.receptionist-app .inline-status { display: block; min-height: 18px; margin-top: 12px; color: var(--muted); font-size: 10px; }
+.receptionist-app .result-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 14px; align-items: start; }
+.receptionist-app .result-panel, .receptionist-app .detail-panel { min-width: 0; padding: 24px; }
+.receptionist-app .patient-result { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 12px; border: 0; border-radius: 10px; background: #f1f7fd; color: var(--fg); text-align: left; }
+.receptionist-app .patient-result + .patient-result { margin-top: 7px; }
+.receptionist-app .patient-result:hover, .receptionist-app .patient-result.active { background: var(--accent-soft); color: var(--deep); }
+.receptionist-app .patient-result > span:nth-child(2) { min-width: 0; }
+.receptionist-app .patient-result strong, .receptionist-app .patient-result small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.receptionist-app .patient-result strong { font-size: 12px; }
+.receptionist-app .patient-result small { margin-top: 5px; color: var(--muted); font-size: 10px; }
+.receptionist-app .patient-initial { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--deep); font: 800 12px/1 var(--font-mono); }
+.receptionist-app .patient-initial.large { width: 52px; height: 52px; border-radius: 16px; font-size: 15px; }
+.receptionist-app .panel-empty { margin: 0; color: var(--muted); font-size: 12px; }
+.receptionist-app .detail-panel h2 { margin-top: 10px; color: var(--fg); font: 800 22px/1.1 var(--font-display); letter-spacing: -.04em; }
+.receptionist-app .detail-actions { display: grid; gap: 10px; margin-top: 22px; }
+.receptionist-app .detail-actions .solid-action, .receptionist-app .detail-actions .quiet-action { width: 100%; min-height: 44px; margin: 0; }
+.receptionist-app .detail-actions .quiet-action { display: inline-flex; align-items: center; justify-content: center; }
+.receptionist-app .case-state { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 999px; background: var(--accent-soft); color: var(--deep); font: 800 10px/1 var(--font-mono); }
+@media (max-width: 900px) {
+  .receptionist-app .patient-search { grid-template-columns: 1fr 1fr; }
+  .receptionist-app .patient-search > .solid-action { justify-self: start; }
+  .receptionist-app .result-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .receptionist-app .search-panel, .receptionist-app .result-panel, .receptionist-app .detail-panel { padding: 18px; }
+  .receptionist-app .patient-search { grid-template-columns: 1fr; }
+  .receptionist-app .patient-search > .solid-action { width: 100%; }
+}
 
-/* Ensure the Receptionist intake/check-in controls remain readable inside the shared workspace. */
-.receptionist-app .stepper{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}.receptionist-app .step{display:flex;align-items:center;gap:10px;min-height:54px;padding:10px 13px;border-radius:11px;background:#e8f1fb;color:var(--muted)}.receptionist-app .step b{flex:0 0 auto;font:800 10px/1 var(--font-mono)}.receptionist-app .step span{font-size:11px;font-weight:800}.receptionist-app .step.active,.receptionist-app .step.done{background:var(--accent-soft);color:var(--deep)}.receptionist-app .checkin-grid,.receptionist-app .case-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:14px}.receptionist-app .checkin-patient,.receptionist-app .checkin-state,.receptionist-app .case-appointment{padding:24px}.receptionist-app .checkin-state .solid-action,.receptionist-app .checkin-state .quiet-action,.receptionist-app .case-appointment .solid-action,.receptionist-app .case-appointment .quiet-action{width:100%;min-height:44px}.receptionist-app .checkin-state .quiet-action,.receptionist-app .case-appointment .quiet-action{margin-top:10px}.receptionist-app .inline-status{display:block;min-height:18px;margin-top:12px;color:var(--muted);font-size:10px}.receptionist-app button:disabled{cursor:not-allowed;opacity:.5}@media(max-width:760px){.receptionist-app .stepper,.receptionist-app .checkin-grid,.receptionist-app .case-layout{grid-template-columns:1fr}}
+/* Intake and check-in layout: these controls must not fall back to inline browser layout. */
+.receptionist-app .stepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 14px; }
+.receptionist-app .step { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 10px 13px; border-radius: 11px; background: #e8f1fb; color: var(--muted); }
+.receptionist-app .step b { flex: 0 0 auto; color: inherit; font: 800 10px/1 var(--font-mono); }
+.receptionist-app .step span { color: inherit; font-size: 11px; font-weight: 800; line-height: 1.25; }
+.receptionist-app .step.active, .receptionist-app .step.done { background: var(--accent-soft); color: var(--deep); }
+.receptionist-app .case-layout, .receptionist-app .checkin-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 14px; align-items: start; }
+.receptionist-app .case-layout > :first-child { min-width: 0; }
+.receptionist-app .case-layout > .case-appointment, .receptionist-app .checkin-patient, .receptionist-app .checkin-state { min-width: 0; padding: 24px; }
+.receptionist-app .case-appointment h2 { margin-top: 10px; color: var(--fg); font: 800 22px/1.1 var(--font-display); letter-spacing: -.04em; }
+.receptionist-app .case-appointment > p { margin: 14px 0 5px; color: var(--fg); font-size: 14px; font-weight: 800; }
+.receptionist-app .case-appointment > small { display: block; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.receptionist-app .case-appointment .solid-action, .receptionist-app .case-appointment .quiet-action, .receptionist-app .checkin-state .solid-action, .receptionist-app .checkin-state .quiet-action { width: 100%; min-height: 44px; }
+.receptionist-app .case-appointment .solid-action, .receptionist-app .checkin-state .solid-action { margin-top: 24px; }
+.receptionist-app .case-appointment .quiet-action, .receptionist-app .checkin-state .quiet-action { margin-top: 10px; }
+.receptionist-app .checkin-patient { display: grid; justify-items: start; gap: 10px; }
+.receptionist-app .checkin-patient h2 { margin: 0; color: var(--fg); font: 800 22px/1.1 var(--font-display); letter-spacing: -.04em; }
+.receptionist-app .checkin-patient > p { color: var(--muted); font-size: 11px; }
+.receptionist-app .checkin-patient .detail-list { width: 100%; margin-top: 10px; }
+.receptionist-app .state-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 50px; padding: 13px 0; border-bottom: 1px solid #e7eef5; color: var(--muted); font-size: 11px; }
+.receptionist-app .state-row:last-of-type { border-bottom: 0; }
+.receptionist-app .state-row strong { color: var(--fg); font-weight: 800; text-align: right; }
+.receptionist-app button:disabled { cursor: not-allowed; opacity: .5; }
+.receptionist-app .reception-result { max-width: 100%; margin-top: 14px; overflow: auto; padding: 16px; border-radius: 12px; background: #eaf4ff; color: var(--deep); font: 11px/1.5 var(--font-mono); }
+@media (max-width: 900px) { .receptionist-app .case-layout, .receptionist-app .checkin-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .receptionist-app .stepper { grid-template-columns: 1fr; }
+  .receptionist-app .case-layout > .case-appointment, .receptionist-app .checkin-patient, .receptionist-app .checkin-state { padding: 18px; }
+}
+
+/* Receptionist shell refinement: mirrors the approved receptionist workspace prototype. */
+.receptionist-portal .patient-main-view { margin-right: 0; min-height: 100vh; background: #eef6ff; }
+.receptionist-app { min-height: 100vh; padding: 0 clamp(18px, 3vw, 46px) 72px; background: #eef6ff; font-family: var(--font-body); }
+.receptionist-topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 82px; margin: 0 calc(clamp(18px, 3vw, 46px) * -1) 26px; padding: 18px clamp(18px, 3vw, 46px); border-bottom: 1px solid color-mix(in oklch, var(--accent) 18%, var(--border)); background: var(--surface); }
+.receptionist-topbar-leading, .receptionist-topbar-actions { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.receptionist-topbar-copy span { display: block; color: var(--deep); font: 800 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+.receptionist-topbar-copy strong { display: block; margin-top: 7px; color: var(--fg); font: 800 20px/1.1 var(--font-display); letter-spacing: -.025em; }
+.receptionist-desk-state { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.receptionist-desk-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.receptionist-notification { position: relative; display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--deep); }
+.receptionist-notification svg { width: 18px; height: 18px; }
+.receptionist-notification > i { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border: 1px solid var(--surface); border-radius: 50%; background: var(--accent); }
+.receptionist-notification:hover { background: var(--accent-soft); border-color: var(--accent); }
+.receptionist-account-chip { display: flex; align-items: center; gap: 9px; min-height: 42px; max-width: 240px; padding: 5px 12px 5px 6px; overflow: hidden; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--fg); font-size: 11px; font-weight: 750; }
+.receptionist-account-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.receptionist-avatar { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; background: var(--deep); color: #fff; font: 800 9px/1 var(--font-mono); }
+.receptionist-app > .workspace-nav { margin-bottom: 32px; }
+.receptionist-overview-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.receptionist-overview-heading h1 { margin-top: 8px; color: var(--fg); font: 800 clamp(32px, 4vw, 48px)/1 var(--font-display); letter-spacing: -.06em; }
+.receptionist-hours { color: var(--muted); font: 700 10px/1.3 var(--font-mono); }
+.receptionist-empty-actions { display: flex; gap: 10px; margin-top: 18px; }
+.receptionist-empty-actions .solid-action { width: auto; margin: 0; padding: 0 14px; }
+.receptionist-empty-actions .quiet-action { min-height: 44px; }
+.receptionist-overview-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.receptionist-overview-grid article:first-child { background: var(--deep); }
+.receptionist-overview-grid article:first-child span, .receptionist-overview-grid article:first-child strong, .receptionist-overview-grid article:first-child p { color: #fff; }
+.receptionist-overview-grid strong { font: 800 34px/1 var(--font-mono); letter-spacing: -.08em; }
+.receptionist-overview-grid p { font-size: 11px; }
+.receptionist-overview-lower { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 14px; margin-top: 14px; }
+.receptionist-task-panel, .receptionist-shortcut-panel { padding: 24px; border-radius: 16px; background: var(--surface); box-shadow: 0 12px 26px color-mix(in oklch, var(--deep) 5%, transparent); }
+.receptionist-task-list, .receptionist-shortcut-list { display: grid; gap: 7px; }
+.receptionist-task-row, .receptionist-shortcut-button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 11px 12px; border: 0; border-radius: 10px; background: #f1f7fd; color: var(--fg); text-align: left; }
+.receptionist-task-row:hover, .receptionist-shortcut-button:hover { background: var(--accent-soft); color: var(--deep); }
+.receptionist-task-row > span:nth-child(2), .receptionist-shortcut-button > span { flex: 1; }
+.receptionist-task-row strong, .receptionist-task-row small { display: block; }
+.receptionist-task-row strong { font-size: 12px; }
+.receptionist-task-row small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.receptionist-task-index { display: grid; place-items: center; flex: 0 0 27px; width: 27px; height: 27px; border-radius: 8px; background: var(--accent-soft); color: var(--deep); font: 800 10px/1 var(--font-mono); }
+.receptionist-task-row svg, .receptionist-shortcut-button svg { flex: 0 0 auto; width: 17px; height: 17px; }
+.receptionist-shortcut-button { justify-content: space-between; }
+.receptionist-shortcut-button svg { color: var(--accent); }
+.receptionist-error-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; border-radius: 16px; background: var(--surface); box-shadow: 0 12px 26px color-mix(in oklch, var(--deep) 5%, transparent); }
+.receptionist-error-card p { margin-top: 7px; color: var(--muted); font-size: 12px; }
+.receptionist-error-card .quiet-action { flex: 0 0 auto; }
+.receptionist-unavailable { padding: 24px; border-radius: 16px; background: var(--surface); box-shadow: 0 12px 26px color-mix(in oklch, var(--deep) 5%, transparent); }
+.receptionist-unavailable p { margin-top: 7px; color: var(--muted); font-size: 12px; }
+@media (max-width: 1060px) { .receptionist-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .receptionist-overview-lower { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .receptionist-app { padding: 0 16px 52px; }
+  .receptionist-topbar { align-items: flex-start; flex-direction: column; margin-inline: -16px; padding: 18px 16px; }
+  .receptionist-topbar-actions { width: 100%; justify-content: space-between; }
+  .receptionist-desk-state { display: none; }
+  .receptionist-account-chip { max-width: calc(100% - 58px); }
+  .receptionist-overview-heading { align-items: flex-start; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .receptionist-overview-grid { grid-template-columns: 1fr 1fr; }
+  .receptionist-error-card { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 460px) { .receptionist-overview-grid { grid-template-columns: 1fr; } .receptionist-account-chip > span:last-child { max-width: 150px; } }

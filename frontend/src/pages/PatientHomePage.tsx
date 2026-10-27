@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Mascot } from 'page-mascot';
 import { useAuthSession } from '../app/AuthSessionProvider';
 import { AppLink } from '../app/navigation';
 import { PatientPortalLayout } from '../components/layout/PatientPortalLayout';
 import { LoadingPlaceholder } from '../components/ui/LoadingPlaceholder';
 import { ApiError } from '../services/api';
 import type { PatientProfile } from '../services/patient';
-import '../styles/patient-home.css';
 import '../styles/patient-overview.css';
 
 interface Envelope<T> { data: T; }
@@ -24,6 +24,7 @@ export function PatientHomePage() {
   const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
+  const canRenderMascot = typeof window.matchMedia === 'function';
 
   useEffect(() => {
     let active = true;
@@ -65,9 +66,10 @@ export function PatientHomePage() {
         <aside className="patient-screen-stack">
           <section className="patient-overview-progress"><span>Tiến độ hồ sơ</span><h3>{progressValue}% hoàn tất</h3><div><i style={{ width: String(progressValue) + '%' }} /></div><p>Tiến độ dựa trên hồ sơ hành chính hiện có của tài khoản.</p></section>
           <section className="patient-overview-state"><strong>Không có thông báo mới</strong><p>Các nhắc hẹn và cập nhật từ phòng khám sẽ được hiển thị tại đây.</p></section>
-          <section className="patient-overview-state unavailable"><strong>Tư vấn trực tuyến</strong><p>Sử dụng Trợ lý ảo ở góc màn hình để được hỗ trợ 24/7.</p></section>
+          <section className="patient-overview-state unavailable"><strong>Tư vấn đang phát triển</strong><p>Tính năng nhắn tin sẽ xuất hiện khi phòng khám kích hoạt.</p></section>
         </aside>
       </div>}
     </PatientPortalLayout>
+    {canRenderMascot && <div className="patient-chatbot-launcher" aria-label="Trợ lý ảo chăm sóc sức khỏe"><span className="patient-chatbot-mascot" aria-hidden="true"><Mascot directions="/mascots/crt-directions.webp" reactions="/mascots/crt-reactions.webp" size={74} label="Trợ lý ảo" /></span><span className="patient-chatbot-copy"><strong>Trợ lý ảo</strong><small>Hỏi đáp nhanh</small></span></div>}
   </>;
 }

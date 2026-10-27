@@ -1,8 +1,9 @@
 import type { Requester } from './catalog';
 export type SelectionMode = 'DOCTOR' | 'RANK';
+export type AppointmentStatus = 'BOOKED' | 'REASSIGNMENT_REQUIRED' | 'CHECKED_IN' | 'IN_CLINICAL_CARE' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 export interface BookableSlot { serviceId?: string; selectionMode?: SelectionMode; doctorId?: string | null; rankCode?: string; startAt: string; endAt: string; availableCapacity?: number; [key: string]: unknown; }
 export interface SlotHold { id: string; expiresAt: string; status?: string; [key: string]: unknown; }
-export interface Appointment { id?: string; appointmentCode?: string; patientId?: string; serviceId?: string; assignedDoctorId?: string; assignedRankCode?: string; startAt?: string; endAt?: string; status?: string; pricing?: {serviceName?: string; estimatedTotalMinor?: number; currency?: string}; [key: string]: unknown; }
+export interface Appointment { id?: string; appointmentCode?: string; patientId?: string; serviceId?: string; assignedDoctorId?: string; assignedRankCode?: string; startAt?: string; endAt?: string; status?: AppointmentStatus; pricing?: {serviceName?: string; estimatedTotalMinor?: number; currency?: string}; [key: string]: unknown; }
 export interface AppointmentPage { items?: Appointment[]; nextPageToken?: string | null; }
 const list = <T,>(raw: unknown): T[] => Array.isArray(raw) ? raw as T[] : Array.isArray((raw as {items?: unknown})?.items) ? (raw as {items: T[]}).items : Array.isArray((raw as {data?: unknown})?.data) ? (raw as {data: T[]}).data : [];
 export function idempotencyKey(): string { try { if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID(); } catch { /* fallback */ } return 'web-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2); }
