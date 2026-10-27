@@ -15,11 +15,15 @@ import {
 } from '@platform';
 import { TicketState } from '../../../../generated/queue-client';
 import { QueueDomainService } from './queue.service';
+import { PatientDependencyGateway } from './patient-dependency.gateway';
 
 @Controller()
 @UseGuards(PublicJwtGuard)
 export class QueueController {
-  constructor(private readonly s: QueueDomainService) {}
+  constructor(
+    private readonly s: QueueDomainService,
+    private readonly patient: PatientDependencyGateway,
+  ) {}
 
   @PublicHttp()
   @Get('health')
@@ -43,7 +47,8 @@ export class QueueController {
 
   @Get('me/journeys/active')
   async getMyActiveJourney(@CurrentAuth() a: PublicAuthContext) {
-    const data = await this.s.getActiveJourney(a.userId);
+    const patientId = await this.patient.resolvePatientId(a.userId);
+    const data = await this.s.getActiveJourney(patientId);
     return { data, id: data.id };
   }
 

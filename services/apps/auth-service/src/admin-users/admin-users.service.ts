@@ -18,10 +18,11 @@ import {
 
 const ROLE_PRIORITY: Record<AuthRole, number> = {
   [AuthRole.Admin]: 1,
-  [AuthRole.Doctor]: 2,
-  [AuthRole.Receptionist]: 3,
-  [AuthRole.Nurse]: 4,
-  [AuthRole.Patient]: 5,
+  [AuthRole.ClinicManager]: 2,
+  [AuthRole.Doctor]: 3,
+  [AuthRole.Receptionist]: 4,
+  [AuthRole.Nurse]: 5,
+  [AuthRole.Patient]: 6,
 };
 
 @Injectable()

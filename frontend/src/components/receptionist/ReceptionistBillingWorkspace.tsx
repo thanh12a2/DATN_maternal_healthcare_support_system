@@ -3,7 +3,6 @@ import type { Requester } from '../../services/catalog';
 import { ApiError } from '../../services/api';
 import {
   admitReceptionCase,
-  getReceptionCaseByAppointment,
   listReceptionAppointments,
   listReceptionInvoices,
   readReceptionSelection,
@@ -107,18 +106,6 @@ export function ReceptionistBillingWorkspace({
       const selected = readReceptionSelection();
       const storedCaseId = window.sessionStorage.getItem('an-tam-receptionist-case') ?? '';
       let caseId = storedCaseId;
-
-      if (!caseId && invoice.appointmentId) {
-        try {
-          const receptionCase = await getReceptionCaseByAppointment(request, invoice.appointmentId);
-          if (receptionCase?.id) {
-            caseId = receptionCase.id;
-            window.sessionStorage.setItem('an-tam-receptionist-case', caseId);
-          }
-        } catch (error) {
-          if (!(error instanceof ApiError && error.statusCode === 404)) throw error;
-        }
-      }
 
       if (!caseId && selected?.appointmentId === invoice.appointmentId) {
         setMessage(invoice.status === 'PAID'

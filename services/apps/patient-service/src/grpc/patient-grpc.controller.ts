@@ -9,7 +9,7 @@ export class PatientGrpcController {
   constructor(private readonly patients: PatientsService) {}
 
   @GrpcMethod('PatientInternalService', 'GetPatientEligibility')
-  @ServiceCallers('appointment-service', 'consultation-service')
+  @ServiceCallers('appointment-service', 'consultation-service', 'queue-service')
   @ServiceScopes('patient:eligibility:read')
   async getPatientEligibility(request: any) {
     let patientId = request?.patientId ?? request?.patient_id;

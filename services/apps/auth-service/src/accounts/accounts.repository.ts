@@ -170,7 +170,15 @@ export class AccountsRepository {
   }
 
   private toPrismaRoleCode(role: AuthRole): AuthRoleCode {
-    return role;
+    const roleCodeByRole: Record<AuthRole, AuthRoleCode> = {
+      [AuthRole.Patient]: AuthRoleCode.PATIENT,
+      [AuthRole.Receptionist]: AuthRoleCode.RECEPTIONIST,
+      [AuthRole.Doctor]: AuthRoleCode.DOCTOR,
+      [AuthRole.Nurse]: AuthRoleCode.NURSE,
+      [AuthRole.ClinicManager]: AuthRoleCode.CLINIC_MANAGER,
+      [AuthRole.Admin]: AuthRoleCode.ADMIN,
+    };
+    return roleCodeByRole[role];
   }
 }
 
