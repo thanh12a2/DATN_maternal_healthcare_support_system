@@ -14,6 +14,7 @@ import type { Role } from '../components/navigation/PatientSidebar';
 
 import AdminWorkspacePage from '../admin/AdminWorkspacePage';
 import { AdminLoginPage } from '../admin/pages/AdminLoginPage';
+import { ClinicManagerWorkspace } from '../components/clinic-manager/ClinicManagerWorkspace';
 
 function Redirect({ to }: { to: string }) { useEffect(() => navigate(to, { replace: true }), [to]); return null; }
 function homeForRole(role?: Role) {
@@ -82,9 +83,10 @@ function Routes() {
   if (workspaceMatch) {
     const workspaceRole = workspaceMatch[1].toUpperCase();
     if (auth.status === 'anonymous') return <Redirect to={workspaceRole === 'ADMIN' ? '/admin/login' : '/dang-nhap'} />;
-    if (!['DOCTOR', 'RECEPTIONIST', 'NURSE', 'ADMIN'].includes(workspaceRole)) return <main className="app-loading"><h1>403 - Không có quyền truy cập</h1><p>Workspace không hợp lệ.</p></main>;
+    if (!['DOCTOR', 'RECEPTIONIST', 'NURSE', 'CLINIC_MANAGER', 'ADMIN'].includes(workspaceRole)) return <main className="app-loading"><h1>403 - Không có quyền truy cập</h1><p>Workspace không hợp lệ.</p></main>;
     const role = workspaceRole as Exclude<Role, 'PATIENT'>;
     if (role === 'ADMIN') return <WorkspaceProtected role={role}><AdminWorkspacePage /></WorkspaceProtected>;
+    if (role === 'CLINIC_MANAGER') return <WorkspaceProtected role={role}><ClinicManagerWorkspace /></WorkspaceProtected>;
     return <WorkspaceProtected role={role}><RoleWorkspacePage role={role} /></WorkspaceProtected>;
   }
 

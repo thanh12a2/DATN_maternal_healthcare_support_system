@@ -10,6 +10,7 @@ function homeForRole(role: string): string {
     case 'DOCTOR': return '/workspace/doctor/overview';
     case 'NURSE': return '/workspace/nurse/overview';
     case 'RECEPTIONIST': return '/workspace/receptionist/overview';
+    case 'CLINIC_MANAGER': return '/workspace/clinic_manager/overview';
     case 'ADMIN': return '/workspace/admin/overview';
     default: return '/dang-nhap';
   }
