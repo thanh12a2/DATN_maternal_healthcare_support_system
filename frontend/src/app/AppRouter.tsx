@@ -1,10 +1,12 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ApiError } from '../services/api';
 import { AuthSessionProvider, useAuthSession } from './AuthSessionProvider';
 import { navigate, usePathname } from './navigation';
 import { AuthPage } from '../pages/AuthPage';
 import { PatientHomePage } from '../pages/PatientHomePage';
 import { PatientProfilePage } from '../pages/PatientProfilePage';
 import { PatientBookingPage } from '../pages/PatientBookingPage';
+import { PatientServiceCatalogPage } from '../pages/PatientServiceCatalogPage';
 import { AppointmentDetailPage, PatientAppointmentsPage } from '../pages/PatientAppointmentsPage';
 import { PatientQueuePage } from '../pages/PatientQueuePage';
 import { PatientNotificationsBillingPage } from '../pages/PatientNotificationsBillingPage';
@@ -15,6 +17,8 @@ import type { Role } from '../components/navigation/PatientSidebar';
 import AdminWorkspacePage from '../admin/AdminWorkspacePage';
 import { AdminLoginPage } from '../admin/pages/AdminLoginPage';
 import { ClinicManagerWorkspace } from '../components/clinic-manager/ClinicManagerWorkspace';
+
+import { ChatbotLauncher } from '../components/ui/ChatbotLauncher';
 
 function Redirect({ to }: { to: string }) { useEffect(() => navigate(to, { replace: true }), [to]); return null; }
 function homeForRole(role?: Role) {
@@ -27,9 +31,33 @@ function Protected({ children }: { children: ReactNode }) {
   const auth = useAuthSession();
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
   if (auth.status === 'anonymous') return <Redirect to="/dang-nhap" />;
-  if (auth.user?.role !== 'PATIENT') {
-    return <Redirect to={homeForRole(auth.user?.role as Role)} />;
-  }
+  if (auth.user?.role !== 'PATIENT') return <Redirect to={homeForRole(auth.user?.role as Role)} />;
+  return (
+    <>
+      {children}
+      <ChatbotLauncher />
+    </>
+  );
+}
+function PatientProfileRequired({ children }: { children: ReactNode }) {
+  const auth = useAuthSession();
+  const [state, setState] = useState<'loading' | 'complete' | 'missing' | 'error'>('loading');
+
+  useEffect(() => {
+    let active = true;
+    auth.request<{ data?: unknown }>('/api/patients/me')
+      .then(() => { if (active) setState('complete'); })
+      .catch((reason) => {
+        if (!active) return;
+        if (reason instanceof ApiError && reason.statusCode === 404) setState('missing');
+        else setState('error');
+      });
+    return () => { active = false; };
+  }, [auth.request]);
+
+  if (state === 'loading') return <main className="app-loading" role="status">Đang kiểm tra hồ sơ bệnh nhân…</main>;
+  if (state === 'missing') return <Redirect to="/ho-so/hoan-thien" />;
+  if (state === 'error') return <main className="app-loading" role="alert"><h1>Không thể kiểm tra hồ sơ</h1><p>Vui lòng thử lại sau.</p></main>;
   return <>{children}</>;
 }
 function WorkspaceProtected({ role, children }: { role: Exclude<Role, 'PATIENT'>; children: ReactNode }) {
@@ -46,38 +74,23 @@ function Routes() {
   const isAdminPort = typeof window !== 'undefined' && window.location.port === '3001';
 
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
-
-  // On Admin Port (3001): root `/` acts as admin login / overview
   if (isAdminPort && path === '/') {
-    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') {
-      return <Redirect to="/workspace/admin/overview" />;
-    }
+    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') return <Redirect to="/workspace/admin/overview" />;
     return <AdminLoginPage />;
   }
-
-  // Dedicated Admin Login routes
   if (path === '/admin/login' || path === '/admin/dang-nhap') {
-    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') {
-      return <Redirect to="/workspace/admin/overview" />;
-    }
+    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') return <Redirect to="/workspace/admin/overview" />;
     return <AdminLoginPage />;
   }
-
   if (path === '/admin') {
-    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') {
-      return <Redirect to="/workspace/admin/overview" />;
-    }
+    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') return <Redirect to="/workspace/admin/overview" />;
     return <Redirect to="/admin/login" />;
   }
-
   if (path === '/dang-nhap' || path === '/dang-ky') {
     if (auth.status === 'authenticated') return <Redirect to={homeForRole(auth.user?.role as Role)} />;
     return <AuthPage mode={path === '/dang-ky' ? 'register' : 'login'} />;
   }
-
-  if (path === '/') {
-    return <Redirect to={auth.status === 'authenticated' ? homeForRole(auth.user?.role as Role) : '/dang-nhap'} />;
-  }
+  if (path === '/') return <Redirect to={auth.status === 'authenticated' ? homeForRole(auth.user?.role as Role) : '/dang-nhap'} />;
 
   const workspaceMatch = path.match(/^\/workspace\/([^/]+)(?:\/.*)?$/);
   if (workspaceMatch) {
@@ -92,11 +105,12 @@ function Routes() {
 
   if (path === '/tong-quan') return <Protected><PatientHomePage /></Protected>;
   if (path === '/ho-so/hoan-thien' || path === '/ho-so') return <Protected><PatientProfilePage /></Protected>;
-  if (path === '/dat-lich') return <Protected><PatientBookingPage /></Protected>;
+  if (path === '/dich-vu') return <Protected><PatientServiceCatalogPage /></Protected>;
+  if (path === '/dat-lich') return <Protected><PatientProfileRequired><PatientBookingPage /></PatientProfileRequired></Protected>;
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
-  if (appointmentDetailMatch) return <Protected><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></Protected>;
-  if (path === '/lich-hen') return <Protected><PatientAppointmentsPage /></Protected>;
-  if (path === '/hang-doi') return <Protected><PatientQueuePage /></Protected>;
+  if (appointmentDetailMatch) return <Protected><PatientProfileRequired><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></PatientProfileRequired></Protected>;
+  if (path === '/lich-hen') return <Protected><PatientProfileRequired><PatientAppointmentsPage /></PatientProfileRequired></Protected>;
+  if (path === '/hang-doi') return <Protected><PatientProfileRequired><PatientQueuePage /></PatientProfileRequired></Protected>;
   if (path === '/thong-bao-hoa-don') return <Protected><PatientNotificationsBillingPage /></Protected>;
   return <NotFoundPage />;
 }

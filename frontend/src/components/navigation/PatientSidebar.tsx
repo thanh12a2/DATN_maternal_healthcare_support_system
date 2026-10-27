@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthSession } from '../../app/AuthSessionProvider';
-import { AppLink, usePathname } from '../../app/navigation';
+import { AppLink, navigate, usePathname } from '../../app/navigation';
+import { ApiError } from '../../services/api';
 
 const STORAGE_KEY = 'an-tam-sidebar-collapsed';
 export type Role = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'CLINIC_MANAGER' | 'ADMIN';
@@ -8,7 +9,8 @@ type IconName = 'home' | 'profile' | 'calendar-plus' | 'calendar' | 'queue' | 'b
 type NavItem = { href: string; label: string; icon: IconName };
 
 function MenuGlyph() { return <span className="patient-hamburger" aria-hidden="true"><span /><span /><span /></span>; }
-function PatientIcon({ name }: { name: IconName }) { const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+function PatientIcon({ name }: { name: IconName }) {
+  const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
   if (name === 'home') return <svg {...common}><path d="m4 10 8-6 8 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z" /><path d="M9 21v-7h6v7" /></svg>;
   if (name === 'profile') return <svg {...common}><circle cx="12" cy="8" r="4" /><path d="M5 21a7 7 0 0 1 14 0" /></svg>;
   if (name === 'calendar-plus') return <svg {...common}><path d="M8 2v4M16 2v4M3 10h18" /><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M12 14v5M9.5 16.5h5" /></svg>;
@@ -27,7 +29,12 @@ function PatientIcon({ name }: { name: IconName }) { const common = { viewBox: '
 }
 
 const patientNavItems: NavItem[] = [
-  { href: '/tong-quan', label: 'Tổng quan', icon: 'home' }, { href: '/ho-so/hoan-thien', label: 'Hồ sơ', icon: 'profile' }, { href: '/dat-lich', label: 'Đặt lịch', icon: 'calendar-plus' }, { href: '/lich-hen', label: 'Lịch hẹn', icon: 'calendar' }, { href: '/hang-doi', label: 'Hàng đợi khám', icon: 'queue' }, { href: '/thong-bao-hoa-don', label: 'Thông báo & hóa đơn', icon: 'bell' },
+  { href: '/tong-quan', label: 'Tổng quan', icon: 'home' },
+  { href: '/ho-so/hoan-thien', label: 'Hồ sơ', icon: 'profile' },
+  { href: '/dich-vu', label: 'Dịch vụ khám', icon: 'calendar-plus' },
+  { href: '/lich-hen', label: 'Lịch hẹn', icon: 'calendar' },
+  { href: '/hang-doi', label: 'Hàng đợi khám', icon: 'queue' },
+  { href: '/thong-bao-hoa-don', label: 'Thông báo & hóa đơn', icon: 'bell' },
 ];
 const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   DOCTOR: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Lịch khám', icon: 'calendar', href: 'appointments' }, { label: 'Bệnh nhân phân công', icon: 'users', href: 'patients' }, { label: 'Hồ sơ khám', icon: 'clipboard', href: 'encounters' }, { label: 'Lịch làm việc', icon: 'clock', href: 'schedule' }, { label: 'Tư vấn', icon: 'stethoscope', href: 'consultations' }, { label: 'Hồ sơ cá nhân', icon: 'profile', href: 'profile' }],
@@ -46,66 +53,53 @@ const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   ],
 };
 function isActive(path: string, href: string) { if (href === '/ho-so/hoan-thien') return path === href || path === '/ho-so'; return path === href || path.startsWith(`${href}/`); }
-export function PatientSidebar({ onLogout }: { onLogout: () => void }) {
+
+interface PatientSidebarProps {
+  onLogout: () => void;
+  profileComplete?: boolean | null;
+}
+
+export function PatientSidebar({ onLogout, profileComplete: profileCompleteProp }: PatientSidebarProps) {
   const pathname = usePathname();
   const auth = useAuthSession();
   const role = auth.user?.role as Role | undefined;
   const storageKey = role === 'ADMIN' ? 'an-tam-admin-sidebar-collapsed' : STORAGE_KEY;
-
   const [collapsed, setCollapsed] = useState(() => {
-    try {
-      if (role === 'ADMIN') {
-        const saved = window.localStorage.getItem(storageKey);
-        return saved === 'true'; // Default is false (expanded)
-      }
-      return window.localStorage.getItem(STORAGE_KEY) === 'true';
-    } catch {
-      return false;
-    }
+    try { return window.localStorage.getItem(storageKey) === 'true'; } catch { return false; }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const items = role && role !== 'PATIENT' ? workspaceNav[role]?.map((item) => ({ ...item, href: `/workspace/${role.toLowerCase()}/${item.href}` })) ?? patientNavItems : patientNavItems;
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(profileCompleteProp ?? (role !== 'PATIENT' ? true : null));
+  const profileRequiredPaths = new Set(['/dat-lich', '/lich-hen', '/hang-doi']);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, String(collapsed));
-    } catch {
-      // ignore storage errors
+    if (profileCompleteProp !== undefined) {
+      setProfileComplete(profileCompleteProp);
+      return;
     }
-  }, [collapsed, storageKey]);
+    if (role !== 'PATIENT') return;
+    let active = true;
+    auth.request('/api/patients/me')
+      .then(() => { if (active) setProfileComplete(true); })
+      .catch((reason) => { if (active && reason instanceof ApiError && reason.statusCode === 404) setProfileComplete(false); else if (active) setProfileComplete(true); });
+    return () => { active = false; };
+  }, [auth.request, profileCompleteProp, role]);
+  useEffect(() => { try { window.localStorage.setItem(storageKey, String(collapsed)); } catch { /* ignore */ } }, [collapsed, storageKey]);
+  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileOpen(false); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, []);
 
-  useEffect(() => {
-    const close = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileOpen(false);
-    };
-    document.addEventListener('keydown', close);
-    return () => document.removeEventListener('keydown', close);
-  }, []);
-
+  const items = role && role !== 'PATIENT' ? workspaceNav[role]?.map((item) => ({ ...item, href: `/workspace/${role.toLowerCase()}/${item.href}` })) ?? patientNavItems : patientNavItems;
   return (
     <div className={`patient-nav-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}>
       <button className="patient-menu-toggle patient-mobile-menu" type="button" aria-label={mobileOpen ? 'Đóng thanh điều hướng' : 'Mở thanh điều hướng'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)}><MenuGlyph /></button>
       <aside className="patient-sidebar" aria-label="Điều hướng chính">
-        <div className="patient-sidebar-head">
-          <button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button>
-          <div className="patient-sidebar-brand">
-            <strong>An Tâm Medical</strong>
-            <span>{role === 'ADMIN' ? 'Admin portal' : role === 'CLINIC_MANAGER' ? 'Clinic manager portal' : 'Patient portal'}</span>
-          </div>
-        </div>
-        <nav className="patient-sidebar-nav">
-          <p className="patient-nav-label">{role === 'ADMIN' ? 'Quản trị hệ thống' : role === 'CLINIC_MANAGER' ? 'Điều hành phòng khám' : 'Không gian của bạn'}</p>
-          {items.map((item) => (
-            <AppLink key={item.href} className="patient-nav-item" href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
-              <span className="patient-nav-icon"><PatientIcon name={item.icon} /></span>
-              <span className="patient-nav-text">{item.label}</span>
-            </AppLink>
-          ))}
+        <div className="patient-sidebar-head"><button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button><div className="patient-sidebar-brand"><strong>An Tâm Medical</strong><span>{role === 'ADMIN' ? 'Admin portal' : role === 'CLINIC_MANAGER' ? 'Clinic manager portal' : 'Patient portal'}</span></div></div>
+        <nav className="patient-sidebar-nav"><p className="patient-nav-label">{role === 'ADMIN' ? 'Quản trị hệ thống' : role === 'CLINIC_MANAGER' ? 'Điều hành phòng khám' : 'Không gian của bạn'}</p>
+          {items.map((item) => {
+            const locked = role === 'PATIENT' && profileComplete === false && profileRequiredPaths.has(item.href);
+            if (locked) return <button key={item.href} className="patient-nav-item patient-nav-item-locked" type="button" title="Hãy hoàn thiện hồ sơ trước" aria-disabled="true" onClick={() => navigate('/ho-so/hoan-thien')}><span className="patient-nav-icon"><PatientIcon name={item.icon} /></span><span className="patient-nav-text">{item.label}<small className="patient-nav-lock-label">Cần hồ sơ</small></span></button>;
+            return <AppLink key={item.href} className="patient-nav-item" href={item.href} aria-current={isActive(pathname, item.href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}><span className="patient-nav-icon"><PatientIcon name={item.icon} /></span><span className="patient-nav-text">{item.label}</span></AppLink>;
+          })}
         </nav>
-        <button className="patient-logout" type="button" onClick={onLogout}>
-          <span className="patient-nav-icon"><PatientIcon name="exit" /></span>
-          <span className="patient-nav-text">Đăng xuất</span>
-        </button>
+        <button className="patient-logout" type="button" onClick={onLogout}><span className="patient-nav-icon"><PatientIcon name="exit" /></span><span className="patient-nav-text">Đăng xuất</span></button>
       </aside>
       <button className="patient-sidebar-scrim" type="button" aria-label="Đóng thanh điều hướng" onClick={() => setMobileOpen(false)} />
     </div>

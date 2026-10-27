@@ -11,6 +11,13 @@ enum PrescriptionStatus {
   ISSUED
   CANCELLED
 }
+enum PregnancySafetyCategory {
+  CATEGORY_A
+  CATEGORY_B
+  CATEGORY_C
+  CATEGORY_D
+  CATEGORY_X
+}
 model Prescription {
   id String @id @default(uuid()) @db.Uuid
   encounterId String @map("encounter_id") @db.Uuid
@@ -56,4 +63,26 @@ model PrescriptionOutbox {
   occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
   @@index([status,occurredAt])
   @@map("prescription_outbox")
+}
+model MedicationCatalog {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  code               String                  @unique @db.VarChar(100)
+  name               String                  @db.VarChar(200)
+  activeIngredient   String                  @map("active_ingredient") @db.VarChar(500)
+  strength           String                  @db.VarChar(100)
+  dosageForm         String                  @map("dosage_form") @db.VarChar(100)
+  route              String                  @db.VarChar(80)
+  defaultDose        String?                 @map("default_dose") @db.VarChar(80)
+  defaultFrequency   String?                 @map("default_frequency") @db.VarChar(120)
+  defaultInstruction String?                 @map("default_instruction") @db.VarChar(1000)
+  pregnancyCategory  PregnancySafetyCategory @map("pregnancy_category")
+  pregnancyWarning   String?                 @map("pregnancy_warning") @db.VarChar(2000)
+  isActive           Boolean                 @default(true) @map("is_active")
+  version            Int                     @default(1)
+  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  @@index([isActive, pregnancyCategory, name], map: "medication_catalog_active_category_name_idx")
+  @@index([name], map: "medication_catalog_name_idx")
+  @@index([activeIngredient], map: "medication_catalog_ingredient_idx")
+  @@map("medication_catalog")
 }
