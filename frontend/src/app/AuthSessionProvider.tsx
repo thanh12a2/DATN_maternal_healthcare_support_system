@@ -4,7 +4,15 @@ import { getCurrentUser, login as loginRequest, logout as logoutRequest, refresh
 import type { LoginFormValues, RegisterFormValues } from '../schemas/auth';
 import { autoRecordAudit } from '../services/auditInterceptor';
 
-const SESSION_KEY = 'an-tam-auth-session';
+// Tách riêng biệt session key giữa Admin Portal và Patient/Staff để không đụng độ hay đè token của nhau
+export function getSessionStorageKey(): string {
+  if (typeof window === 'undefined') return 'an-tam-auth-session';
+  const isPort3001 = window.location.port === '3001';
+  const path = window.location.pathname.toLowerCase();
+  const isAdminRoute = isPort3001 || path.startsWith('/admin') || path.startsWith('/workspace/admin');
+  return isAdminRoute ? 'an-tam-admin-session' : 'an-tam-auth-session';
+}
+
 interface StoredSession extends LoginResponse { remember: boolean; }
 type AuthStatus = 'loading' | 'anonymous' | 'authenticated';
 interface AuthContextValue {
@@ -19,9 +27,11 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readStoredSession(): StoredSession | null {
+  if (typeof window === 'undefined') return null;
+  const key = getSessionStorageKey();
   for (const storage of [window.sessionStorage, window.localStorage]) {
     try {
-      const raw = storage.getItem(SESSION_KEY);
+      const raw = storage.getItem(key);
       if (raw) return JSON.parse(raw) as StoredSession;
     } catch { /* ignore unavailable storage */ }
   }
@@ -29,10 +39,12 @@ function readStoredSession(): StoredSession | null {
 }
 
 function persist(session: StoredSession | null) {
-  window.localStorage.removeItem(SESSION_KEY);
-  window.sessionStorage.removeItem(SESSION_KEY);
+  if (typeof window === 'undefined') return;
+  const key = getSessionStorageKey();
+  window.localStorage.removeItem(key);
+  window.sessionStorage.removeItem(key);
   if (!session) return;
-  (session.remember ? window.localStorage : window.sessionStorage).setItem(SESSION_KEY, JSON.stringify(session));
+  (session.remember ? window.localStorage : window.sessionStorage).setItem(key, JSON.stringify(session));
 }
 
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
@@ -129,7 +141,9 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
         const token = sessionRef.current?.accessToken || current?.accessToken;
         const currentUser = sessionRef.current?.user ?? null;
-        if (token) {
+        // Chỉ ghi Audit Log khi người thực hiện là ADMIN hoặc đang thao tác ở admin portal/dịch vụ quản trị
+        const isAdminOperation = currentUser?.role === 'ADMIN' || (typeof window !== 'undefined' && window.location.pathname.includes('/admin'));
+        if (token && isAdminOperation) {
           autoRecordAudit(
             (p: string, i?: RequestInit) => apiRequest(p, i, token),
             method,
