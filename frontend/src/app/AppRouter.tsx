@@ -2,24 +2,26 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError } from '../services/api';
 import { AuthSessionProvider, useAuthSession } from './AuthSessionProvider';
 import { navigate, usePathname } from './navigation';
-import { AuthPage } from '../pages/AuthPage';
-import { PatientHomePage } from '../pages/PatientHomePage';
-import { PatientProfilePage } from '../pages/PatientProfilePage';
-import { PatientBookingPage } from '../pages/PatientBookingPage';
-import { PatientServiceCatalogPage } from '../pages/PatientServiceCatalogPage';
-import { PatientServiceDetailPage } from '../pages/PatientServiceDetailPage';
-import { AppointmentDetailPage, PatientAppointmentsPage } from '../pages/PatientAppointmentsPage';
-import { PatientQueuePage } from '../pages/PatientQueuePage';
-import { PatientNotificationsBillingPage } from '../pages/PatientNotificationsBillingPage';
-import { RoleWorkspacePage } from '../pages/RoleWorkspacePage';
-import { NotFoundPage } from '../pages/NotFoundPage';
-import type { Role } from '../components/navigation/PatientSidebar';
+import { AuthPage } from '../shared/pages/AuthPage';
+import { NotFoundPage } from '../shared/pages/NotFoundPage';
+import { PatientHomePage } from '../modules/patient/pages/PatientHomePage';
+import { PatientProfilePage } from '../modules/patient/pages/PatientProfilePage';
+import { PatientBookingPage } from '../modules/patient/pages/PatientBookingPage';
+import { PatientServiceCatalogPage } from '../modules/patient/pages/PatientServiceCatalogPage';
+import { AppointmentDetailPage, PatientAppointmentsPage } from '../modules/patient/pages/PatientAppointmentsPage';
+import { PatientQueuePage } from '../modules/patient/pages/PatientQueuePage';
+import { PatientNotificationsBillingPage } from '../modules/patient/pages/PatientNotificationsBillingPage';
+import { PatientServiceDetailPage } from '../modules/patient/pages/PatientServiceDetailPage';
+import type { Role } from '../shared/components/navigation/PatientSidebar';
 
-import AdminWorkspacePage from '../admin/AdminWorkspacePage';
-import { AdminLoginPage } from '../admin/pages/AdminLoginPage';
-import { ClinicManagerWorkspace } from '../components/clinic-manager/ClinicManagerWorkspace';
+import AdminWorkspacePage from '../modules/admin/AdminWorkspacePage';
+import { AdminLoginPage } from '../modules/admin/pages/AdminLoginPage';
+import { DoctorWorkspacePage } from '../modules/doctor/pages/DoctorWorkspacePage';
+import { ReceptionistWorkspacePage } from '../modules/receptionist/pages/ReceptionistWorkspacePage';
+import { ClinicManagerWorkspacePage } from '../modules/clinic-manager/pages/ClinicManagerWorkspacePage';
+import { NurseWorkspacePage } from '../modules/nurse/pages/NurseWorkspacePage';
 
-import { ChatbotLauncher } from '../components/ui/ChatbotLauncher';
+import { ChatbotLauncher } from '../modules/patient/components/chatbot/ChatbotLauncher';
 
 function Redirect({ to }: { to: string }) { useEffect(() => navigate(to, { replace: true }), [to]); return null; }
 function homeForRole(role?: Role) {
@@ -100,8 +102,11 @@ function Routes() {
     if (!['DOCTOR', 'RECEPTIONIST', 'NURSE', 'CLINIC_MANAGER', 'ADMIN'].includes(workspaceRole)) return <main className="app-loading"><h1>403 - Không có quyền truy cập</h1><p>Workspace không hợp lệ.</p></main>;
     const role = workspaceRole as Exclude<Role, 'PATIENT'>;
     if (role === 'ADMIN') return <WorkspaceProtected role={role}><AdminWorkspacePage /></WorkspaceProtected>;
-    if (role === 'CLINIC_MANAGER') return <WorkspaceProtected role={role}><ClinicManagerWorkspace /></WorkspaceProtected>;
-    return <WorkspaceProtected role={role}><RoleWorkspacePage role={role} /></WorkspaceProtected>;
+    if (role === 'CLINIC_MANAGER') return <WorkspaceProtected role={role}><ClinicManagerWorkspacePage /></WorkspaceProtected>;
+    if (role === 'DOCTOR') return <WorkspaceProtected role={role}><DoctorWorkspacePage /></WorkspaceProtected>;
+    if (role === 'RECEPTIONIST') return <WorkspaceProtected role={role}><ReceptionistWorkspacePage /></WorkspaceProtected>;
+    if (role === 'NURSE') return <WorkspaceProtected role={role}><NurseWorkspacePage /></WorkspaceProtected>;
+    return <NotFoundPage />;
   }
 
   if (path === '/tong-quan') return <Protected><PatientHomePage /></Protected>;
