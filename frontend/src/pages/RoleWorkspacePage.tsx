@@ -3,7 +3,6 @@ import { PatientSidebar, type Role } from '../components/navigation/PatientSideb
 import { useAuthSession } from '../app/AuthSessionProvider';
 import { navigate, usePathname } from '../app/navigation';
 import { ApiError } from '../services/api';
-import { listDoctors } from '../services/doctor';
 import { listEncounters, listPrescriptions, listTreatmentPlans } from '../services/clinical';
 import { getReportOverview, getMyReceptionist, listConsultations } from '../services/operations';
 import { ReceptionistAdmissionWorkspace } from '../components/receptionist/ReceptionistAdmissionWorkspace';
@@ -26,6 +25,7 @@ const roleNames: Record<Exclude<Role, 'PATIENT'>, string> = {
   DOCTOR: 'Bác sĩ',
   RECEPTIONIST: 'Lễ tân',
   NURSE: 'Điều dưỡng',
+  CLINIC_MANAGER: 'Quản lý phòng khám',
   ADMIN: 'Quản trị viên',
 };
 
@@ -72,16 +72,8 @@ export function RoleWorkspacePage({ role }: { role: Exclude<Role, 'PATIENT'> }) 
     const load = async () => {
       try {
         if (role === 'DOCTOR') {
-          const [doctors, encounters, consultations] = await Promise.all([
-            listDoctors(auth.request),
-            listEncounters(auth.request),
-            listConsultations(auth.request),
-          ]);
-          if (active) setSummaries([
-            { label: 'Bác sĩ hoạt động', value: String(doctors.length), detail: 'Danh mục bác sĩ hiện có' },
-            { label: 'Encounter', value: String(encounters.length), detail: 'Dữ liệu theo quyền truy cập' },
-            { label: 'Tư vấn', value: String(consultations.length), detail: 'Cuộc hội thoại được phân công' },
-          ]);
+          // DoctorWorkspace tự nạp các endpoint đã được backend phân quyền.
+          // Không gọi danh sách Appointment/Encounter toàn hệ thống ở đây.
         } else if (role === 'NURSE') {
           const [encounters, prescriptions, plans] = await Promise.all([
             listEncounters(auth.request),
@@ -117,7 +109,7 @@ export function RoleWorkspacePage({ role }: { role: Exclude<Role, 'PATIENT'> }) 
   }, [auth.request, role, section]);
 
   if (role === 'DOCTOR') {
-    return <div className="patient-home-shell patient-desktop-portal doctor-portal"><PatientSidebar onLogout={() => void auth.signOut().then(() => navigate('/dang-nhap', { replace: true }))} /><main className="patient-main-view doctor-main"><DoctorWorkspaceFrame section={section}><DoctorWorkspace section={section} request={auth.request} email={auth.user?.email} /></DoctorWorkspaceFrame></main></div>;
+    return <div className="patient-home-shell patient-desktop-portal doctor-portal"><PatientSidebar onLogout={() => void auth.signOut().then(() => navigate('/dang-nhap', { replace: true }))} /><main className="patient-main-view doctor-main"><DoctorWorkspaceFrame section={section} email={auth.user?.email}><DoctorWorkspace section={section} request={auth.request} userId={auth.user?.userId} /></DoctorWorkspaceFrame></main></div>;
   }
 
   if (role === 'RECEPTIONIST') {

@@ -29,7 +29,7 @@ export class ReceptionistsController {
   constructor(private readonly receptionistsService: ReceptionistsService) {}
 
   @Get()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   list(@Query() query: ListReceptionistsQuery): Promise<object> {
     return this.receptionistsService.list(query);
   }
@@ -51,7 +51,7 @@ export class ReceptionistsController {
   }
 
   @Get(':receptionistId')
-  @Roles('ADMIN', 'RECEPTIONIST')
+  @Roles('ADMIN', 'CLINIC_MANAGER', 'RECEPTIONIST')
   getById(
     @Param('receptionistId', new ParseUUIDPipe()) receptionistId: string,
     @CurrentAuth() auth: AuthContext,
@@ -60,7 +60,7 @@ export class ReceptionistsController {
   }
 
   @Patch(':receptionistId')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   updateByAdmin(
     @Param('receptionistId', new ParseUUIDPipe()) receptionistId: string,
     @CurrentAuth() auth: AuthContext,
@@ -77,7 +77,7 @@ export class ReceptionistsController {
 
   @Post(':receptionistId/deactivate')
   @HttpCode(200)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
   deactivate(
     @Param('receptionistId', new ParseUUIDPipe()) receptionistId: string,
     @CurrentAuth() auth: AuthContext,

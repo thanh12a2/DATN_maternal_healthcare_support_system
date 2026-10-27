@@ -9,7 +9,7 @@ import { presentAppointment, presentHold } from './presenter';
 import type { AppointmentListDto, CreateAppointmentDto, CreateHoldDto, ReassignDto, ReasonVersionDto, RescheduleDto, SlotQueryDto } from './dto';
 
 type Ctx={requestId?:string;correlationId?:string;idempotencyKey?:string;actorAccountId?:string;actorRole?:string};
-const STAFF=['RECEPTIONIST','ADMIN'];
+const STAFF=['RECEPTIONIST','CLINIC_MANAGER','ADMIN'];
 @Injectable()
 export class AppointmentDomainService {
  constructor(private readonly db:AppointmentPrismaService,private readonly deps:AppointmentDependencyGateway){}

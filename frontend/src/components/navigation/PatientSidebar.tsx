@@ -4,7 +4,7 @@ import { AppLink, navigate, usePathname } from '../../app/navigation';
 import { ApiError } from '../../services/api';
 
 const STORAGE_KEY = 'an-tam-sidebar-collapsed';
-export type Role = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'ADMIN';
+export type Role = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'CLINIC_MANAGER' | 'ADMIN';
 type IconName = 'home' | 'profile' | 'calendar-plus' | 'calendar' | 'queue' | 'bell' | 'exit' | 'users' | 'clipboard' | 'search' | 'check-in' | 'stethoscope' | 'clock' | 'notes' | 'report' | 'settings';
 type NavItem = { href: string; label: string; icon: IconName };
 
@@ -40,7 +40,17 @@ const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   DOCTOR: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Lịch khám', icon: 'calendar', href: 'appointments' }, { label: 'Bệnh nhân phân công', icon: 'users', href: 'patients' }, { label: 'Hồ sơ khám', icon: 'clipboard', href: 'encounters' }, { label: 'Lịch làm việc', icon: 'clock', href: 'schedule' }, { label: 'Tư vấn', icon: 'stethoscope', href: 'consultations' }, { label: 'Hồ sơ cá nhân', icon: 'profile', href: 'profile' }],
   RECEPTIONIST: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Tiếp nhận', icon: 'check-in', href: 'reception' }, { label: 'Tra cứu bệnh nhân', icon: 'search', href: 'patients' }, { label: 'Lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Check-in', icon: 'check-in', href: 'check-in' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Hóa đơn', icon: 'clipboard', href: 'billing' }],
   NURSE: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Bệnh nhân hôm nay', icon: 'users', href: 'today' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Encounter phân công', icon: 'clipboard', href: 'encounters' }, { label: 'Sinh hiệu', icon: 'stethoscope', href: 'vitals' }, { label: 'Ghi chú điều dưỡng', icon: 'notes', href: 'notes' }],
-  ADMIN: [{ label: 'Dashboard', icon: 'home', href: 'overview' }, { label: 'Người dùng', icon: 'users', href: 'users' }, { label: 'Bác sĩ', icon: 'stethoscope', href: 'doctors' }, { label: 'Chuyên khoa', icon: 'clipboard', href: 'specialties' }, { label: 'Bệnh nhân', icon: 'search', href: 'patients' }, { label: 'Dịch vụ & giá', icon: 'clipboard', href: 'services' }, { label: 'Nhật ký & Kiểm toán', icon: 'notes', href: 'audit-log' }, { label: 'Giám sát & Sao lưu', icon: 'settings', href: 'system-health' }],
+  CLINIC_MANAGER: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Nhân sự vận hành', icon: 'users', href: 'staff' }, { label: 'Bác sĩ & lịch làm việc', icon: 'stethoscope', href: 'doctors' }, { label: 'Lễ tân', icon: 'clipboard', href: 'receptionists' }, { label: 'Dịch vụ & giá', icon: 'settings', href: 'services' }, { label: 'Điều phối lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Báo cáo', icon: 'report', href: 'reports' }],
+  ADMIN: [
+    { label: 'Dashboard', icon: 'home', href: 'overview' },
+    { label: 'Người dùng', icon: 'users', href: 'users' },
+    { label: 'Bác sĩ', icon: 'stethoscope', href: 'doctors' },
+    { label: 'Chuyên khoa', icon: 'clipboard', href: 'specialties' },
+    { label: 'Bệnh nhân', icon: 'search', href: 'patients' },
+    { label: 'Dịch vụ & giá', icon: 'clipboard', href: 'services' },
+    { label: 'Nhật ký & Kiểm toán', icon: 'notes', href: 'audit-log' },
+    { label: 'Giám sát & Sao lưu', icon: 'settings', href: 'system-health' },
+  ],
 };
 function isActive(path: string, href: string) { if (href === '/ho-so/hoan-thien') return path === href || path === '/ho-so'; return path === href || path.startsWith(`${href}/`); }
 
@@ -81,8 +91,8 @@ export function PatientSidebar({ onLogout, profileComplete: profileCompleteProp 
     <div className={`patient-nav-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}>
       <button className="patient-menu-toggle patient-mobile-menu" type="button" aria-label={mobileOpen ? 'Đóng thanh điều hướng' : 'Mở thanh điều hướng'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)}><MenuGlyph /></button>
       <aside className="patient-sidebar" aria-label="Điều hướng chính">
-        <div className="patient-sidebar-head"><button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button><div className="patient-sidebar-brand"><strong>An Tâm Medical</strong><span>{role === 'ADMIN' ? 'Admin portal' : 'Patient portal'}</span></div></div>
-        <nav className="patient-sidebar-nav"><p className="patient-nav-label">{role === 'ADMIN' ? 'Quản trị hệ thống' : 'Không gian của bạn'}</p>
+        <div className="patient-sidebar-head"><button className="patient-menu-toggle" type="button" aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} aria-expanded={!collapsed} onClick={() => { if (window.matchMedia?.('(max-width: 820px)').matches) setMobileOpen(false); else setCollapsed((v) => !v); }}><MenuGlyph /></button><div className="patient-sidebar-brand"><strong>An Tâm Medical</strong><span>{role === 'ADMIN' ? 'Admin portal' : role === 'CLINIC_MANAGER' ? 'Clinic manager portal' : 'Patient portal'}</span></div></div>
+        <nav className="patient-sidebar-nav"><p className="patient-nav-label">{role === 'ADMIN' ? 'Quản trị hệ thống' : role === 'CLINIC_MANAGER' ? 'Điều hành phòng khám' : 'Không gian của bạn'}</p>
           {items.map((item) => {
             const locked = role === 'PATIENT' && profileComplete === false && profileRequiredPaths.has(item.href);
             if (locked) return <button key={item.href} className="patient-nav-item patient-nav-item-locked" type="button" title="Hãy hoàn thiện hồ sơ trước" aria-disabled="true" onClick={() => navigate('/ho-so/hoan-thien')}><span className="patient-nav-icon"><PatientIcon name={item.icon} /></span><span className="patient-nav-text">{item.label}<small className="patient-nav-lock-label">Cần hồ sơ</small></span></button>;

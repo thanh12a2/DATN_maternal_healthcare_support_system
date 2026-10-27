@@ -2,7 +2,26 @@ import type { Requester } from './catalog';
 
 export interface ReceptionCase { id?: string; patientId?: string; status?: string; [key: string]: unknown; }
 export interface Report { [key: string]: unknown; }
-export interface Consultation { id?: string; status?: string; subject?: string; [key: string]: unknown; }
+export interface Consultation {
+  id?: string;
+  status?: string;
+  subject?: string;
+  patientId?: string;
+  assignedDoctorId?: string | null;
+  lastMessageAt?: string | null;
+  updatedAt?: string | null;
+  [key: string]: unknown;
+}
+export interface ConsultationMessage {
+  id?: string;
+  threadId?: string;
+  sequenceNo?: number;
+  senderAccountId?: string;
+  senderType?: string;
+  body?: string;
+  sentAt?: string | null;
+  [key: string]: unknown;
+}
 const list = <T,>(raw: unknown): T[] => Array.isArray(raw) ? raw as T[] : Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: T[] }).items : Array.isArray((raw as { data?: unknown })?.data) ? (raw as { data: T[] }).data : [];
 const post = <T>(request: Requester, path: string, body?: unknown) => request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
@@ -28,6 +47,9 @@ export function getRevenueReport(request: Requester, query = '') { return reques
 
 export async function listConsultations(request: Requester, query = '') { return list<Consultation>(await request<unknown>(`/api/consultations${query ? `?${query}` : ''}`)); }
 export function getConsultation(request: Requester, id: string) { return request<Consultation>(`/api/consultations/${encodeURIComponent(id)}`); }
+export async function listConsultationMessages(request: Requester, id: string): Promise<ConsultationMessage[]> {
+  return list<ConsultationMessage>(await request<unknown>(`/api/consultations/${encodeURIComponent(id)}/messages`));
+}
 export function sendConsultationMessage(request: Requester, id: string, body: unknown) { return post<Consultation>(request, `/api/consultations/${encodeURIComponent(id)}/messages`, body); }
 
 export interface ReceptionQueueStage { id?: string; code?: string; name?: string; roomCode?: string | null; [key: string]: unknown; }

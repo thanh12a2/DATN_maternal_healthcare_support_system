@@ -64,6 +64,7 @@ async function seedAuth(passwordHash: string) {
     [AuthRoleCode.PATIENT, 'Patient / Thai phụ'],
     [AuthRoleCode.DOCTOR, 'Doctor / Bác sĩ'],
     [AuthRoleCode.RECEPTIONIST, 'Receptionist / Lễ tân'],
+    [AuthRoleCode.CLINIC_MANAGER, 'Clinic operations manager'],
     [AuthRoleCode.ADMIN, 'System administrator'],
   ] as const;
 
