@@ -10,7 +10,20 @@ export async function listBookableSlots(request: Requester, params: {serviceId: 
 export function createSlotHold(request: Requester, body: {serviceId: string; selectionMode: SelectionMode; requestedDoctorId?: string; requestedRankCode?: string; startAt: string; endAt: string}) { return request<SlotHold>('/api/appointment/slot-holds', {method:'POST', headers:{'Idempotency-Key': idempotencyKey()}, body:JSON.stringify(body)}); }
 export function releaseSlotHold(request: Requester, id: string) { return request<void>('/api/appointment/slot-holds/' + encodeURIComponent(id), {method:'DELETE'}); }
 export function createAppointment(request: Requester, holdId: string) { return request<Appointment>('/api/appointment/appointments', {method:'POST', headers:{'Idempotency-Key': idempotencyKey()}, body:JSON.stringify({holdId, channel:'ONLINE'})}); }
-export async function listAppointments(request: Requester): Promise<AppointmentPage> { const raw = await request<unknown>('/api/appointment/appointments?limit=20'); return {items:list<Appointment>(raw), nextPageToken:(raw as AppointmentPage)?.nextPageToken}; }
+export interface AppointmentListFilters {
+  status?: string;
+  from?: string;
+  to?: string;
+}
+
+export async function listAppointments(request: Requester, filters: AppointmentListFilters = {}): Promise<AppointmentPage> {
+  const query = new URLSearchParams({ limit: '100' });
+  if (filters.status) query.set('status', filters.status);
+  if (filters.from) query.set('from', filters.from);
+  if (filters.to) query.set('to', filters.to);
+  const raw = await request<unknown>('/api/appointment/appointments?' + query.toString());
+  return {items:list<Appointment>(raw), nextPageToken:(raw as AppointmentPage)?.nextPageToken};
+}
 export function getAppointment(request: Requester, id: string) { return request<Appointment>('/api/appointment/appointments/' + encodeURIComponent(id)); }
 export function cancelAppointment(request: Requester, id: string, reason: string, version?: number) { return request<void>('/api/appointment/appointments/' + encodeURIComponent(id) + '/cancel', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey() }, body: JSON.stringify({ reason, ...(version === undefined ? {} : { version }) }) }); }
 export function rescheduleAppointment(request: Requester, id: string, body: { holdId: string; reason?: string; version?: number }) { return request<Appointment>('/api/appointment/appointments/' + encodeURIComponent(id) + '/reschedule', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey() }, body: JSON.stringify(body) }); }
