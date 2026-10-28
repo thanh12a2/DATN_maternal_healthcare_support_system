@@ -54,6 +54,7 @@ model StageTicket {
   journeyId String @map("journey_id") @db.Uuid
   stageId String @map("stage_id") @db.Uuid
   sourceOrderId String? @unique @map("source_order_id") @db.Uuid
+  roomCode String? @map("room_code") @db.VarChar(50)
   businessDate DateTime @map("business_date") @db.Date
   ordinal Int
   ticketCode String @map("ticket_code") @db.VarChar(30)

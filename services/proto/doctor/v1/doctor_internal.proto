@@ -72,4 +72,8 @@ message DoctorEligibility {
 message AvailabilityInterval {
   google.protobuf.Timestamp start_at = 1;
   google.protobuf.Timestamp end_at = 2;
+  string room_id = 3;
+  string room_code = 4;
+  string room_name = 5;
+  int32 slot_duration_minutes = 6;
 }

@@ -1,14 +1,14 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { createHash, randomUUID } from 'crypto';
+import { Injectable, HttpException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 import { GrpcClientFactory } from '@platform';
 import { ConfigService } from '@nestjs/config';
 import {
-  AvailabilityReasonCode,
   AvailabilityStatus,
   AvailabilityType,
   DoctorStatus,
   Prisma,
+  RoomStatus,
   ScheduleStatus,
   SpecialtyStatus,
 } from '../../../../generated/doctor-client';
@@ -17,25 +17,28 @@ import {
   AvailabilityQueryDto,
   CreateAvailabilityDto,
   CreateDoctorDto,
+  CreateRoomDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
   ListQueryDto,
   ReasonDto,
+  RoomListQueryDto,
   ScheduleListQueryDto,
   SpecialtyLinkDto,
   SpecialtyListQueryDto,
   UpdateDoctorDto,
+  UpdateRoomDto,
   UpdateScheduleDto,
 } from '../common/dto';
 
 const PUBLIC_INCLUDE = {
   profile: true,
   specialties: { include: { specialty: true } },
+  schedules: { include: { room: true } },
 } as const;
 const FULL_INCLUDE = {
   ...PUBLIC_INCLUDE,
-  schedules: true,
-  availabilities: true,
+  availabilities: { include: { room: true } },
 } as const;
 
 type Tx = Prisma.TransactionClient;
@@ -54,6 +57,152 @@ export class DoctorDomainService {
     return { status: 'ok' as const };
   }
 
+  async createRoom(dto: CreateRoomDto, actor: Identity, key?: string) {
+    this.requireClinicOperator(actor);
+    if (key !== undefined && (!key || key.length > 128))
+      this.fail(400, 'VALIDATION_FAILED');
+    const code = dto.code.trim().toUpperCase();
+    const name = dto.name.trim();
+    const duplicate = await this.prisma.clinicRoom.findFirst({
+      where: {
+        OR: [{ code }, { name: { equals: name, mode: 'insensitive' } }],
+      },
+    });
+    if (duplicate?.code === code) this.fail(409, 'ROOM_CODE_EXISTS');
+    if (duplicate) this.fail(409, 'ROOM_NAME_EXISTS');
+    const room = await this.prisma.clinicRoom.create({
+      data: {
+        code,
+        name,
+        status: dto.status ?? RoomStatus.ACTIVE,
+      },
+    });
+    return { data: room };
+  }
+
+  async listRooms(query: RoomListQueryDto, actor?: Identity) {
+    const isOperator = this.isClinicOperator(actor);
+    const where: AnyRecord =
+      isOperator && query.status
+        ? { status: query.status }
+        : isOperator
+          ? {}
+          : { status: RoomStatus.ACTIVE };
+    if (query.q?.trim()) {
+      const q = query.q.trim();
+      where.OR = [
+        { code: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    const rows = await this.prisma.clinicRoom.findMany({
+      where,
+      orderBy: [{ code: 'asc' }, { id: 'asc' }],
+      take: query.limit ?? 50,
+    });
+    return {
+      data: rows,
+      meta: {
+        nextCursor: null,
+        limit: query.limit ?? 50,
+        requestId: randomUUID(),
+      },
+    };
+  }
+
+  async getRoom(idOrCode: string, actor?: Identity) {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        idOrCode,
+      );
+    const room = await this.prisma.clinicRoom.findFirst({
+      where: isUuid
+        ? { id: idOrCode }
+        : { code: { equals: idOrCode.trim(), mode: 'insensitive' } },
+      include: {
+        schedules: {
+          where: { status: ScheduleStatus.ACTIVE },
+          include: { doctor: { include: { profile: true } } },
+          orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+        },
+      },
+    });
+    if (!room) this.fail(404, 'ROOM_NOT_FOUND');
+    if (room.status !== RoomStatus.ACTIVE && !this.isClinicOperator(actor))
+      this.fail(404, 'ROOM_NOT_FOUND');
+    return {
+      data: {
+        id: room.id,
+        code: room.code,
+        name: room.name,
+        status: room.status,
+        createdAt: room.createdAt,
+        updatedAt: room.updatedAt,
+        schedules: room.schedules.map((s) => ({
+          id: s.id,
+          doctorId: s.doctorId,
+          doctorName: s.doctor?.profile?.fullName ?? null,
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          slotDurationMinutes: s.slotDurationMinutes,
+          effectiveFrom: s.effectiveFrom,
+          effectiveTo: s.effectiveTo,
+          status: s.status,
+        })),
+      },
+    };
+  }
+
+  async updateRoom(idOrCode: string, dto: UpdateRoomDto, actor: Identity) {
+    this.requireClinicOperator(actor);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        idOrCode,
+      );
+    const existing = await this.prisma.clinicRoom.findFirst({
+      where: isUuid
+        ? { id: idOrCode }
+        : { code: { equals: idOrCode.trim(), mode: 'insensitive' } },
+    });
+    if (!existing) this.fail(404, 'ROOM_NOT_FOUND');
+    const data: AnyRecord = {};
+    if (dto.code !== undefined) {
+      const code = dto.code.trim().toUpperCase();
+      if (code !== existing.code) {
+        const dup = await this.prisma.clinicRoom.findUnique({ where: { code } });
+        if (dup) this.fail(409, 'ROOM_CODE_EXISTS');
+      }
+      data.code = code;
+    }
+    if (dto.name !== undefined) {
+      data.name = dto.name.trim();
+    }
+    if (dto.status !== undefined) {
+      data.status = dto.status;
+    }
+    const updated = await this.prisma.clinicRoom.update({
+      where: { id: existing.id },
+      data,
+    });
+    return { data: updated };
+  }
+
+  private async resolveRoomId(
+    roomId?: string,
+    roomCode?: string,
+  ): Promise<string | undefined> {
+    if (!roomId && !roomCode) return undefined;
+    const room = await this.prisma.clinicRoom.findFirst({
+      where: roomId
+        ? { id: roomId }
+        : { code: { equals: roomCode!.trim(), mode: 'insensitive' } },
+    });
+    if (!room) this.fail(404, 'ROOM_NOT_FOUND');
+    if (room.status !== RoomStatus.ACTIVE) this.fail(422, 'ROOM_INACTIVE');
+    return room.id;
+  }
+
   async createDoctor(
     dto: CreateDoctorDto,
     actor: Identity,
@@ -63,39 +212,39 @@ export class DoctorDomainService {
     this.requireClinicOperator(actor);
     this.requireKey(key);
     try {
-    await this.verifyAccount(dto.accountId);
-    const normalized = this.normalizeLicense(dto.licenseNumber);
-    this.validateProfile(dto.profile);
-    const result = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.doctor.findFirst({
-        where: {
-          OR: [{ accountId: dto.accountId }, { licenseNumber: normalized }],
-        },
+      await this.verifyAccount(dto.accountId);
+      const normalized = this.normalizeLicense(dto.licenseNumber);
+      this.validateProfile(dto.profile);
+      const result = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.doctor.findFirst({
+          where: {
+            OR: [{ accountId: dto.accountId }, { licenseNumber: normalized }],
+          },
+        });
+        if (existing?.accountId === dto.accountId)
+          this.fail(409, 'DOCTOR_ACCOUNT_EXISTS');
+        if (existing?.licenseNumber === normalized)
+          this.fail(409, 'LICENSE_NUMBER_EXISTS');
+        const doctor = await tx.doctor.create({
+          data: {
+            accountId: dto.accountId,
+            licenseNumber: normalized,
+            profile: { create: this.profileData(dto.profile) },
+          },
+          include: FULL_INCLUDE,
+        });
+        await this.auditOutbox(
+          tx,
+          'doctor.created',
+          actor.userId,
+          doctor.id,
+          doctor.version,
+          requestId,
+          { doctorId: doctor.id },
+        );
+        return doctor;
       });
-      if (existing?.accountId === dto.accountId)
-        this.fail(409, 'DOCTOR_ACCOUNT_EXISTS');
-      if (existing?.licenseNumber === normalized)
-        this.fail(409, 'LICENSE_NUMBER_EXISTS');
-      const doctor = await tx.doctor.create({
-        data: {
-          accountId: dto.accountId,
-          licenseNumber: normalized,
-          profile: { create: this.profileData(dto.profile) },
-        },
-        include: FULL_INCLUDE,
-      });
-      await this.auditOutbox(
-        tx,
-        'doctor.created',
-        actor.userId,
-        doctor.id,
-        doctor.version,
-        requestId,
-        { doctorId: doctor.id },
-      );
-      return doctor;
-    });
-    return { data: this.adminView(result) };
+      return { data: this.adminView(result) };
     } catch (err) {
       console.error('ERROR IN CREATEDOCTOR:', err);
       throw err;
@@ -158,7 +307,7 @@ export class DoctorDomainService {
           ? this.adminView(doctor)
           : actor?.role === 'CLINIC_MANAGER'
             ? this.managerView(doctor)
-          : this.publicView(doctor),
+            : this.publicView(doctor),
     };
   }
 
@@ -247,7 +396,13 @@ export class DoctorDomainService {
       );
       return current!;
     });
-    return { data: admin ? this.adminView(updated) : manager ? this.managerView(updated) : this.adminView(updated) };
+    return {
+      data: admin
+        ? this.adminView(updated)
+        : manager
+          ? this.managerView(updated)
+          : this.adminView(updated),
+    };
   }
 
   async changeStatus(
@@ -464,7 +619,8 @@ export class DoctorDomainService {
     if (!doctor) this.notFound();
     if (doctor.status !== DoctorStatus.ACTIVE)
       this.fail(422, 'DOCTOR_NOT_ACTIVE');
-    const input = this.scheduleInput(dto);
+    const resolvedRoomId = await this.resolveRoomId(dto.roomId, dto.roomCode);
+    const input = this.scheduleInput({ ...dto, roomId: resolvedRoomId });
     this.validateSchedule(input);
     const schedule = await this.prisma.$transaction(async (tx) => {
       await this.lockDoctor(tx, doctorId);
@@ -474,6 +630,7 @@ export class DoctorDomainService {
           doctorId,
           ...input,
         } as Prisma.DoctorScheduleUncheckedCreateInput,
+        include: { room: true },
       });
       await this.auditOutbox(
         tx,
@@ -482,11 +639,11 @@ export class DoctorDomainService {
         doctorId,
         doctor.version,
         requestId,
-        { scheduleId: value.id, action: 'CREATE' },
+        { scheduleId: value.id, roomId: value.roomId, action: 'CREATE' },
       );
       return value;
     });
-    return { data: schedule };
+    return { data: this.formatSchedule(schedule) };
   }
 
   async listSchedules(
@@ -498,13 +655,19 @@ export class DoctorDomainService {
       where: { id: doctorId },
     });
     if (!doctor) this.notFound();
-    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
+    const isPrivileged =
+      this.isClinicOperator(actor) ||
+      actor?.role === 'RECEPTIONIST' ||
+      actor?.userId === doctor.accountId;
     const rows = await this.prisma.doctorSchedule.findMany({
       where: {
         doctorId,
-        ...(this.isClinicOperator(actor) && query.status
+        ...(isPrivileged && query.status
           ? { status: query.status }
-          : {}),
+          : isPrivileged
+            ? {}
+            : { status: ScheduleStatus.ACTIVE }),
+        ...(query.roomId ? { roomId: query.roomId } : {}),
         ...(query.from
           ? {
               OR: [
@@ -515,11 +678,12 @@ export class DoctorDomainService {
           : {}),
         ...(query.to ? { effectiveFrom: { lte: new Date(query.to) } } : {}),
       },
+      include: { room: true },
       orderBy: [{ effectiveFrom: 'asc' }, { dayOfWeek: 'asc' }],
       take: query.limit ?? 20,
     });
     return {
-      data: rows,
+      data: rows.map((r) => this.formatSchedule(r)),
       meta: {
         nextCursor: null,
         limit: query.limit ?? 20,
@@ -545,6 +709,10 @@ export class DoctorDomainService {
       this.fail(409, 'INVALID_STATE_TRANSITION');
     if (old.effectiveFrom <= new Date())
       this.fail(422, 'SCHEDULE_ALREADY_STARTED');
+    const resolvedRoomId =
+      dto.roomId !== undefined || dto.roomCode !== undefined
+        ? await this.resolveRoomId(dto.roomId, dto.roomCode)
+        : old.roomId;
     const input: AnyRecord = {
       startTime: dto.startTime ?? old.startTime,
       endTime: dto.endTime ?? old.endTime,
@@ -556,7 +724,7 @@ export class DoctorDomainService {
         ? new Date(dto.effectiveTo)
         : old.effectiveTo,
       departmentId: dto.departmentId ?? old.departmentId,
-      roomId: dto.roomId ?? old.roomId,
+      roomId: resolvedRoomId ?? null,
       timezone: old.timezone,
       dayOfWeek: old.dayOfWeek,
     };
@@ -571,6 +739,7 @@ export class DoctorDomainService {
       if (updated.count !== 1) this.fail(409, 'VERSION_CONFLICT');
       const value = await tx.doctorSchedule.findUnique({
         where: { id: scheduleId },
+        include: { room: true },
       });
       await this.auditOutbox(
         tx,
@@ -579,11 +748,11 @@ export class DoctorDomainService {
         doctorId,
         value!.version,
         requestId,
-        { scheduleId, action: 'UPDATE' },
+        { scheduleId, roomId: value!.roomId, action: 'UPDATE' },
       );
       return value!;
     });
-    return { data: result };
+    return { data: this.formatSchedule(result) };
   }
 
   async cancelSchedule(
@@ -598,6 +767,7 @@ export class DoctorDomainService {
     if (dto.reason.trim().length < 3) this.fail(400, 'VALIDATION_FAILED');
     const old = await this.prisma.doctorSchedule.findFirst({
       where: { id: scheduleId, doctorId },
+      include: { room: true },
     });
     if (!old) this.fail(404, 'DOCTOR_NOT_FOUND');
     if (old.status === ScheduleStatus.CANCELLED)
@@ -616,6 +786,7 @@ export class DoctorDomainService {
       if (updated.count !== 1) this.fail(409, 'VERSION_CONFLICT');
       const value = await tx.doctorSchedule.findUnique({
         where: { id: scheduleId },
+        include: { room: true },
       });
       await this.auditOutbox(
         tx,
@@ -628,7 +799,7 @@ export class DoctorDomainService {
       );
       return value!;
     });
-    return { data: result };
+    return { data: this.formatSchedule(result) };
   }
 
   async createAvailability(
@@ -646,7 +817,10 @@ export class DoctorDomainService {
     if (doctor.status !== DoctorStatus.ACTIVE)
       this.fail(422, 'DOCTOR_NOT_ACTIVE');
     this.requireOwnerOrClinicOperator(actor, doctor.accountId);
-    if (!this.isClinicOperator(actor) && dto.type !== AvailabilityType.UNAVAILABLE)
+    if (
+      !this.isClinicOperator(actor) &&
+      dto.type !== AvailabilityType.UNAVAILABLE
+    )
       this.fail(403, 'FORBIDDEN');
     const startAt = new Date(dto.startAt),
       endAt = new Date(dto.endAt),
@@ -655,6 +829,7 @@ export class DoctorDomainService {
       this.fail(422, 'INVALID_TIME_RANGE');
     if (endAt.getTime() - startAt.getTime() > 31 * 86400000)
       this.fail(422, 'TIME_RANGE_TOO_LARGE');
+    const resolvedRoomId = await this.resolveRoomId(dto.roomId, dto.roomCode);
     const duplicate = await this.prisma.doctorAvailability.findFirst({
       where: {
         doctorId,
@@ -687,8 +862,10 @@ export class DoctorDomainService {
           endAt,
           reasonCode: dto.reasonCode,
           note: dto.note?.trim(),
+          roomId: resolvedRoomId,
           createdBy: actor.userId,
         },
+        include: { room: true },
       });
       await this.auditOutbox(
         tx,
@@ -697,15 +874,22 @@ export class DoctorDomainService {
         doctorId,
         doctor.version,
         requestId,
-        { overrideId: item.id, type: item.type, startAt, endAt },
+        {
+          overrideId: item.id,
+          type: item.type,
+          roomId: item.roomId,
+          startAt,
+          endAt,
+        },
       );
       return item;
     });
+    const formatted = this.formatAvailability(value);
     return {
       data:
         this.isClinicOperator(actor) || actor.userId === value.createdBy
-          ? value
-          : { ...value, note: undefined },
+          ? formatted
+          : { ...formatted, note: undefined },
     };
   }
 
@@ -718,7 +902,6 @@ export class DoctorDomainService {
       where: { id: doctorId },
     });
     if (!doctor) this.notFound();
-    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
     const from = new Date(query.from),
       to = new Date(query.to);
     if (!(from < to)) this.fail(400, 'VALIDATION_FAILED');
@@ -726,6 +909,7 @@ export class DoctorDomainService {
       this.fail(400, 'TIME_RANGE_TOO_LARGE');
     const schedules = await this.prisma.doctorSchedule.findMany({
       where: { doctorId, status: ScheduleStatus.ACTIVE },
+      include: { room: true },
     });
     const overrides = await this.prisma.doctorAvailability.findMany({
       where: {
@@ -734,7 +918,9 @@ export class DoctorDomainService {
         startAt: { lt: to },
         endAt: { gt: from },
       },
+      include: { room: true },
     });
+    const defaultRoom = schedules.find((s) => s.room)?.room ?? null;
     const intervals: AnyRecord[] = [];
     for (const date of this.localDates(from, to)) {
       const weekday = this.weekday(date);
@@ -748,12 +934,16 @@ export class DoctorDomainService {
           const startAt = new Date(Math.max(s.getTime(), from.getTime())),
             endAt = new Date(Math.min(e.getTime(), to.getTime()));
           if (startAt < endAt) {
+            const room = schedule.room ?? defaultRoom;
             intervals.push({
               startAt,
               endAt,
               slotDurationMinutes:
                 query.slotDurationMinutes ?? schedule.slotDurationMinutes,
               source: 'RECURRING_SCHEDULE',
+              roomId: room?.id ?? schedule.roomId ?? null,
+              roomCode: room?.code ?? null,
+              roomName: room?.name ?? null,
             });
           }
         }
@@ -765,11 +955,15 @@ export class DoctorDomainService {
       const startAt = new Date(Math.max(x.startAt.getTime(), from.getTime())),
         endAt = new Date(Math.min(x.endAt.getTime(), to.getTime()));
       if (startAt < endAt) {
+        const room = x.room ?? defaultRoom;
         intervals.push({
           startAt,
           endAt,
           slotDurationMinutes: query.slotDurationMinutes ?? 30,
           source: 'EXTRA_AVAILABLE',
+          roomId: room?.id ?? x.roomId ?? null,
+          roomCode: room?.code ?? null,
+          roomName: room?.name ?? null,
         });
       }
     }
@@ -821,12 +1015,14 @@ export class DoctorDomainService {
     if (!doctor) this.notFound();
     const old = await this.prisma.doctorAvailability.findFirst({
       where: { id: overrideId, doctorId },
+      include: { room: true },
     });
     if (!old) this.fail(404, 'DOCTOR_NOT_FOUND');
     this.requireOwnerOrClinicOperator(actor, doctor.accountId);
     if (!this.isClinicOperator(actor) && actor.userId !== old.createdBy)
       this.fail(403, 'FORBIDDEN');
-    if (old.status === AvailabilityStatus.CANCELLED) return { data: old };
+    if (old.status === AvailabilityStatus.CANCELLED)
+      return { data: this.formatAvailability(old) };
     if (old.endAt <= new Date()) this.fail(409, 'AVAILABILITY_ALREADY_ENDED');
     const value = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.doctorAvailability.updateMany({
@@ -839,6 +1035,7 @@ export class DoctorDomainService {
       if (updated.count !== 1) this.fail(409, 'VERSION_CONFLICT');
       const item = await tx.doctorAvailability.findUnique({
         where: { id: overrideId },
+        include: { room: true },
       });
       await this.auditOutbox(
         tx,
@@ -851,7 +1048,7 @@ export class DoctorDomainService {
       );
       return item!;
     });
-    return { data: value };
+    return { data: this.formatAvailability(value) };
   }
 
   async eligibility(
@@ -875,9 +1072,10 @@ export class DoctorDomainService {
     const specialtyMatched = doctor.specialties.some(
       (x) => x.specialtyId === specialtyId,
     );
-    const within = availability.data.intervals.some(
+    const matchedInterval = availability.data.intervals.find(
       (x: AnyRecord) => x.startAt <= startAt && x.endAt >= endAt,
     );
+    const within = Boolean(matchedInterval);
     const reasons = [
       ...(doctor.status !== DoctorStatus.ACTIVE ? ['DOCTOR_INACTIVE'] : []),
       ...(!specialtyMatched ? ['SPECIALTY_NOT_MATCHED'] : []),
@@ -891,6 +1089,9 @@ export class DoctorDomainService {
         specialtyMatched,
         withinWorkingAvailability: within,
         bookingOccupancyChecked: false,
+        roomId: matchedInterval?.roomId ?? null,
+        roomCode: matchedInterval?.roomCode ?? null,
+        roomName: matchedInterval?.roomName ?? null,
         version: doctor.version,
         ...(reasons.length ? { reasons } : {}),
       },
@@ -954,7 +1155,8 @@ export class DoctorDomainService {
           intervalEnd,
         );
         const covers = availability.intervals.some(
-          (item: any) => item.startAt <= intervalStart && item.endAt >= intervalEnd,
+          (item: any) =>
+            item.startAt <= intervalStart && item.endAt >= intervalEnd,
         );
         if (!covers) continue;
       }
@@ -964,7 +1166,9 @@ export class DoctorDomainService {
   }
 
   async getInternalAvailability(doctorId: string, from: Date, to: Date) {
-    const doctor = await this.prisma.doctor.findUnique({ where: { id: doctorId } });
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id: doctorId },
+    });
     if (!doctor) this.notFound();
     const response = await this.listAvailability(
       doctorId,
@@ -978,19 +1182,30 @@ export class DoctorDomainService {
     try {
       const client = this.grpc.client({
         key: 'auth',
-        target: this.config.get<string>('AUTH_GRPC_TARGET') ?? 'auth-service:6003',
+        target:
+          this.config.get<string>('AUTH_GRPC_TARGET') ?? 'auth-service:6003',
         proto: 'auth/v1/auth_internal.proto',
         package: 'maternal.auth.v1',
         service: 'AuthInternalService',
       });
-      const context = { requestId: randomUUID(), correlationId: randomUUID(), actorRole: 'ADMIN' };
+      const context = {
+        requestId: randomUUID(),
+        correlationId: randomUUID(),
+        actorRole: 'ADMIN',
+      };
       const response = await this.grpc.unary<any, any>(
-        client, 'getAccountAuthorization', { context, accountId },
-        this.grpc.metadata('auth-service', ['auth:account:read'], context), 1500,
+        client,
+        'getAccountAuthorization',
+        { context, accountId },
+        this.grpc.metadata('auth-service', ['auth:account:read'], context),
+        1500,
       );
       const account = response.account;
       const roles = account?.roles ?? [];
-      if (account?.status !== 'ACCOUNT_STATUS_ACTIVE' || !roles.includes('DOCTOR'))
+      if (
+        account?.status !== 'ACCOUNT_STATUS_ACTIVE' ||
+        !roles.includes('DOCTOR')
+      )
         this.fail(422, 'ACCOUNT_NOT_DOCTOR');
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -1055,6 +1270,26 @@ export class DoctorDomainService {
       const timesOverlap =
         input.startTime < row.endTime && row.startTime < input.endTime;
       if (datesOverlap && timesOverlap) this.fail(409, 'SCHEDULE_OVERLAP');
+    }
+    if (input.roomId) {
+      const roomRows = await tx.doctorSchedule.findMany({
+        where: {
+          roomId: input.roomId,
+          status: ScheduleStatus.ACTIVE,
+          dayOfWeek: input.dayOfWeek ?? undefined,
+          doctorId: { not: doctorId },
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+      });
+      for (const row of roomRows) {
+        const datesOverlap =
+          (!input.effectiveTo || row.effectiveFrom <= input.effectiveTo) &&
+          (!row.effectiveTo || input.effectiveFrom <= row.effectiveTo);
+        const timesOverlap =
+          input.startTime < row.endTime && row.startTime < input.endTime;
+        if (datesOverlap && timesOverlap)
+          this.fail(409, 'ROOM_SCHEDULE_CONFLICT');
+      }
     }
   }
   private scheduleInput(dto: CreateScheduleDto): AnyRecord {
@@ -1167,11 +1402,48 @@ export class DoctorDomainService {
       ),
     );
   }
+  private formatRoom(r?: AnyRecord | null) {
+    if (!r) return null;
+    return {
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      status: r.status,
+    };
+  }
+  private formatSchedule(s: AnyRecord) {
+    if (!s) return s;
+    return {
+      ...s,
+      roomId: s.roomId ?? null,
+      roomCode: s.room?.code ?? null,
+      roomName: s.room?.name ?? null,
+      room: this.formatRoom(s.room),
+    };
+  }
+  private formatAvailability(a: AnyRecord) {
+    if (!a) return a;
+    return {
+      ...a,
+      roomId: a.roomId ?? null,
+      roomCode: a.room?.code ?? null,
+      roomName: a.room?.name ?? null,
+      room: this.formatRoom(a.room),
+    };
+  }
   private publicView(x: AnyRecord) {
+    const primaryRoom =
+      x.schedules?.find(
+        (s: AnyRecord) => s.status === ScheduleStatus.ACTIVE && s.room,
+      )?.room ?? null;
     return {
       id: x.id,
       status: x.status,
       consultationRank: x.consultationRank,
+      roomId: primaryRoom?.id ?? null,
+      roomCode: primaryRoom?.code ?? null,
+      roomName: primaryRoom?.name ?? null,
+      room: this.formatRoom(primaryRoom),
       profile: x.profile,
       specialties:
         x.specialties
@@ -1194,8 +1466,16 @@ export class DoctorDomainService {
       version: x.version,
       createdAt: x.createdAt,
       updatedAt: x.updatedAt,
-      ...(x.schedules ? { schedules: x.schedules } : {}),
-      ...(x.availabilities ? { availabilities: x.availabilities } : {}),
+      ...(x.schedules
+        ? { schedules: x.schedules.map((s: AnyRecord) => this.formatSchedule(s)) }
+        : {}),
+      ...(x.availabilities
+        ? {
+            availabilities: x.availabilities.map((a: AnyRecord) =>
+              this.formatAvailability(a),
+            ),
+          }
+        : {}),
     };
   }
   private managerView(x: AnyRecord) {
@@ -1204,8 +1484,16 @@ export class DoctorDomainService {
       version: x.version,
       createdAt: x.createdAt,
       updatedAt: x.updatedAt,
-      ...(x.schedules ? { schedules: x.schedules } : {}),
-      ...(x.availabilities ? { availabilities: x.availabilities } : {}),
+      ...(x.schedules
+        ? { schedules: x.schedules.map((s: AnyRecord) => this.formatSchedule(s)) }
+        : {}),
+      ...(x.availabilities
+        ? {
+            availabilities: x.availabilities.map((a: AnyRecord) =>
+              this.formatAvailability(a),
+            ),
+          }
+        : {}),
     };
   }
   private isClinicOperator(actor?: Identity): boolean {

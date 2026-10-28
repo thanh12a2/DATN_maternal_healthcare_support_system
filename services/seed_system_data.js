@@ -42,8 +42,8 @@ const DB_CONFIGS = {
 };
 
 // Cấu hình Mã hóa Căn cước công dân (National ID)
-const NATIONAL_ID_PEPPER = process.env.PATIENT_NATIONAL_ID_LOOKUP_PEPPER || '1c55c01af1a821b2bf8a82051343ce2fd9ee5ed1fccd4eb8b50a38a9b2b83318';
-const NATIONAL_ID_KEY_BASE64 = process.env.PATIENT_NATIONAL_ID_ENCRYPTION_KEY || 'z2alpPJzDZUmMJOwG2yMZNp9ASkHBV1xWMvoVQ+XgLs=';
+const NATIONAL_ID_PEPPER = process.env.PATIENT_NATIONAL_ID_LOOKUP_PEPPER || 'd1a3011149525501818e85f551c880f07e2c556c50d86d04033dee5cead0ef34';
+const NATIONAL_ID_KEY_BASE64 = process.env.PATIENT_NATIONAL_ID_ENCRYPTION_KEY || 'oZu5EErVRbGFz2JEnP+cutgk8uLbsvWruE08vG/wpmg=';
 
 function encryptNationalId(val) {
   const key = Buffer.from(NATIONAL_ID_KEY_BASE64, 'base64');
@@ -135,6 +135,42 @@ async function main() {
     CREATE INDEX IF NOT EXISTS consultation_escalations_status_raised_at_idx ON consultation_escalations(status, raised_at);
   `);
 
+  // Đảm bảo cấu trúc bảng clinic_rooms và các cột phòng khám luôn tồn tại
+  await clients.doctor.query(`
+    DO $$ BEGIN
+      CREATE TYPE "RoomStatus" AS ENUM ('ACTIVE', 'INACTIVE');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+    CREATE TABLE IF NOT EXISTS clinic_rooms (
+      id UUID NOT NULL PRIMARY KEY,
+      code VARCHAR(50) NOT NULL UNIQUE,
+      name VARCHAR(150) NOT NULL,
+      status "RoomStatus" NOT NULL DEFAULT 'ACTIVE',
+      created_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS clinic_rooms_status_code_idx ON clinic_rooms(status, code);
+    ALTER TABLE doctor_availabilities ADD COLUMN IF NOT EXISTS room_id UUID REFERENCES clinic_rooms(id) ON DELETE SET NULL ON UPDATE CASCADE;
+    CREATE INDEX IF NOT EXISTS doctor_availabilities_room_id_start_at_end_at_idx ON doctor_availabilities(room_id, start_at, end_at);
+  `);
+
+  await clients.appointment.query(`
+    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_id UUID;
+    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
+    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_name_snapshot VARCHAR(150);
+    CREATE INDEX IF NOT EXISTS appointments_room_id_start_at_idx ON appointments(room_id, start_at);
+    CREATE INDEX IF NOT EXISTS appointments_room_code_start_at_idx ON appointments(room_code, start_at);
+    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_id UUID;
+    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
+    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_name VARCHAR(150);
+  `);
+
+  await clients.queue.query(`
+    ALTER TABLE stage_tickets ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
+    CREATE INDEX IF NOT EXISTS stage_tickets_stage_id_room_code_state_idx ON stage_tickets(stage_id, room_code, state);
+  `);
+
   await clients.consultation.query('TRUNCATE TABLE consultation_escalations, consultation_messages, consultation_assignments, consultation_threads, consultation_outbox CASCADE;');
   await clients.notification.query('TRUNCATE TABLE delivery_attempts, notification_consumed_events, notifications CASCADE;');
   await clients.treatmentPlan.query('TRUNCATE TABLE treatment_plan_versions, treatment_plan_items, treatment_plans, treatment_plan_outbox CASCADE;');
@@ -147,7 +183,7 @@ async function main() {
   await clients.catalog.query('TRUNCATE TABLE medical_service_categories, medical_service_tags, base_prices, medical_services, catalog_tags, service_categories, doctor_rank_surcharges CASCADE;');
   await clients.catalog.query('ALTER TABLE medical_service_categories ADD COLUMN IF NOT EXISTS is_primary BOOLEAN NOT NULL DEFAULT false;');
   await clients.receptionist.query('TRUNCATE TABLE admission_status_history, admissions, identity_verifications, reception_audit_logs, reception_cases, reception_idempotency_records, receptionist_profiles, receptionists CASCADE;');
-  await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties CASCADE;');
+  await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties, clinic_rooms CASCADE;');
   await clients.auth.query('TRUNCATE TABLE auth_sessions, password_reset_tokens, credentials, account_roles, accounts, roles CASCADE;');
   await clients.auditLog.query('TRUNCATE TABLE audit_entries CASCADE;');
   console.log('✅ Đã dọn sạch dữ liệu cũ trong tất cả các dịch vụ.');
@@ -764,14 +800,14 @@ async function main() {
   // ============================================================================
   console.log('\n--- BƯỚC 4: KHỞI TẠO CÁC CHẶNG HÀNG ĐỢI PHÒNG KHÁM (QUEUE STAGES) ---');
   const queueStagesDef = [
-    { code: 'RECEPTION', name: 'Tiếp đón & Đăng ký khám', roomCode: 'Sảnh T1 - Bàn 01-04' },
-    { code: 'VITALS', name: 'Đo sinh hiệu & Tiền sàng lọc', roomCode: 'P.102 - Tiền sàng lọc' },
-    { code: 'CONSULTATION', name: 'Phòng khám Bác sĩ Chuyên khoa', roomCode: 'P.201 - P.208' },
-    { code: 'ULTRASOUND', name: 'Phòng Siêu âm Chẩn đoán', roomCode: 'P.301 - P.304' },
-    { code: 'LAB_SAMPLE', name: 'Phòng Lấy mẫu Xét nghiệm', roomCode: 'P.105 - Xét nghiệm' },
-    { code: 'PROCEDURE', name: 'Phòng Thủ thuật & Can thiệp Sản khoa', roomCode: 'P.401 - Thủ thuật' },
-    { code: 'IMMUNIZATION', name: 'Phòng Tiêm chủng Vắc xin Thai kỳ', roomCode: 'P.108 - Tiêm chủng' },
-    { code: 'PHARMACY', name: 'Nhà thuốc & Cấp phát thuốc', roomCode: 'Sảnh T1 - Quầy Dược' },
+    { code: 'RECEPTION', name: 'Tiếp đón & Đăng ký khám', roomCode: 'P.101' },
+    { code: 'VITALS', name: 'Đo sinh hiệu & Tiền sàng lọc', roomCode: 'P.102' },
+    { code: 'CONSULTATION', name: 'Phòng khám Bác sĩ Chuyên khoa', roomCode: 'P.201' },
+    { code: 'ULTRASOUND', name: 'Phòng Siêu âm Chẩn đoán', roomCode: 'P.301' },
+    { code: 'LAB_SAMPLE', name: 'Phòng Lấy mẫu Xét nghiệm', roomCode: 'P.105' },
+    { code: 'PROCEDURE', name: 'Phòng Thủ thuật & Can thiệp Sản khoa', roomCode: 'P.401' },
+    { code: 'IMMUNIZATION', name: 'Phòng Tiêm chủng Vắc xin Thai kỳ', roomCode: 'P.108' },
+    { code: 'PHARMACY', name: 'Nhà thuốc & Cấp phát thuốc', roomCode: 'P.109' },
   ];
 
   const stageMap = {};
@@ -981,7 +1017,38 @@ async function main() {
   // ============================================================================
   // 6. ĐỘI NGŨ BÁC SĨ & LỊCH LÀM VIỆC (DOCTORS & SCHEDULES)
   // ============================================================================
-  console.log('\n--- BƯỚC 6: KHỞI TẠO ĐỘI NGŨ BÁC SĨ & LỊCH KHÁM CHUYÊN KHOA ---');
+  console.log('\n--- BƯỚC 6: KHỞI TẠO PHÒNG KHÁM (CLINIC ROOMS), ĐỘI NGŨ BÁC SĨ & LỊCH KHÁM ---');
+  const clinicRoomsDef = [
+    { code: 'P.101', name: 'Phòng Tiếp đón & Tư vấn 101', status: 'ACTIVE' },
+    { code: 'P.102', name: 'Phòng Đo sinh hiệu & Tiền sàng lọc 102', status: 'ACTIVE' },
+    { code: 'P.105', name: 'Phòng Lấy mẫu Xét nghiệm 105', status: 'ACTIVE' },
+    { code: 'P.108', name: 'Phòng Tiêm chủng Vắc xin 108', status: 'ACTIVE' },
+    { code: 'P.109', name: 'Quầy Dược & Cấp phát thuốc 109', status: 'ACTIVE' },
+    { code: 'P.201', name: 'Phòng khám Sản Phụ khoa 201', status: 'ACTIVE' },
+    { code: 'P.202', name: 'Phòng khám & Chẩn đoán trước sinh 202', status: 'ACTIVE' },
+    { code: 'P.203', name: 'Phòng khám Sản Phụ khoa 203', status: 'ACTIVE' },
+    { code: 'P.204', name: 'Phòng khám Y học bào thai 204', status: 'ACTIVE' },
+    { code: 'P.205', name: 'Phòng khám Hỗ trợ sinh sản 205', status: 'ACTIVE' },
+    { code: 'P.206', name: 'Phòng khám Nội tiết & Bệnh lý thai kỳ 206', status: 'ACTIVE' },
+    { code: 'P.207', name: 'Phòng khám Sản Phụ khoa 207', status: 'ACTIVE' },
+    { code: 'P.208', name: 'Phòng khám Chuyên gia Cố vấn 208', status: 'ACTIVE' },
+    { code: 'P.301', name: 'Phòng Siêu âm 4D/5D 301', status: 'ACTIVE' },
+    { code: 'P.302', name: 'Phòng Siêu âm Doppler 302', status: 'ACTIVE' },
+    { code: 'P.401', name: 'Phòng Thủ thuật Sản khoa 401', status: 'ACTIVE' },
+    { code: 'P.209', name: 'Phòng khám Dự phòng 209 (Tạm ngưng bảo trì)', status: 'INACTIVE' },
+  ];
+
+  const roomMap = {};
+  for (const rm of clinicRoomsDef) {
+    const rmRes = await clients.doctor.query(
+      `INSERT INTO clinic_rooms (id, code, name, status, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING id, code, name, status`,
+      [rm.code, rm.name, rm.status]
+    );
+    roomMap[rm.code] = rmRes.rows[0];
+  }
+
+  const doctorRoomCodes = ['P.201', 'P.202', 'P.203', 'P.204', 'P.205', 'P.206', 'P.207', 'P.208'];
   const doctorsDef = [
     {
       email: 'dr.lethuha@antam.local',
@@ -1084,7 +1151,9 @@ async function main() {
   const doctorList = [];
   const effectiveDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  for (const doc of doctorsDef) {
+  for (let docIdx = 0; docIdx < doctorsDef.length; docIdx++) {
+    const doc = doctorsDef[docIdx];
+    const assignedRoom = roomMap[doctorRoomCodes[docIdx]] || roomMap['P.201'];
     const accId = await createAuthAccount(doc.email, 'DOCTOR');
 
     const docRes = await clients.doctor.query(
@@ -1109,16 +1178,23 @@ async function main() {
       );
     }
 
-    // Lịch làm việc từ Thứ 2 đến Thứ 7 (day_of_week: 2 -> 7)
-    for (let day = 2; day <= 7; day++) {
+    // Lịch làm việc cả tuần từ Chủ nhật đến Thứ 7 (day_of_week: 1 -> 7) gắn với phòng khám cố định của bác sĩ
+    for (let day = 1; day <= 7; day++) {
       await clients.doctor.query(
-        `INSERT INTO doctor_schedules (id, doctor_id, day_of_week, start_time, end_time, slot_duration_minutes, effective_from, timezone, status, version, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, '08:00:00', '17:00:00', 30, $3, 'Asia/Ho_Chi_Minh', 'ACTIVE', 1, NOW(), NOW())`,
-        [doctorId, day, effectiveDate]
+        `INSERT INTO doctor_schedules (id, doctor_id, day_of_week, start_time, end_time, slot_duration_minutes, room_id, effective_from, timezone, status, version, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, '08:00:00', '17:00:00', 30, $3, $4, 'Asia/Ho_Chi_Minh', 'ACTIVE', 1, NOW(), NOW())`,
+        [doctorId, day, assignedRoom.id, effectiveDate]
       );
     }
 
-    doctorList.push({ id: doctorId, accountId: accId, ...doc });
+    doctorList.push({
+      id: doctorId,
+      accountId: accId,
+      roomId: assignedRoom.id,
+      roomCode: assignedRoom.code,
+      roomName: assignedRoom.name,
+      ...doc,
+    });
   }
 
   // Chuyên khoa phụ (Secondary specialty) cho Trưởng khoa BS. Lê Thu Hà: Thêm Phụ khoa
@@ -1192,9 +1268,9 @@ async function main() {
   extraShiftEnd.setHours(20, 0, 0, 0);
 
   await clients.doctor.query(
-    `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, reason_code, note, status, created_by, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 'EXTRA_AVAILABLE', $2, $3, 'EXTRA_SHIFT', 'Tăng cường ca hội chẩn thai kỳ nguy cơ cao ngoài giờ', 'ACTIVE', $4, 1, NOW(), NOW())`,
-    [doctorList[0].id, extraShiftStart, extraShiftEnd, adminAccountId]
+    `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, room_id, reason_code, note, status, created_by, version, created_at, updated_at)
+     VALUES (gen_random_uuid(), $1, 'EXTRA_AVAILABLE', $2, $3, $4, 'EXTRA_SHIFT', 'Tăng cường ca hội chẩn thai kỳ nguy cơ cao ngoài giờ tại P.201', 'ACTIVE', $5, 1, NOW(), NOW())`,
+    [doctorList[0].id, extraShiftStart, extraShiftEnd, doctorList[0].roomId, adminAccountId]
   );
 
   // 3. BS. Trần Thanh Mai xin nghỉ phép cá nhân nhưng đã hủy (CANCELLED)
@@ -1968,12 +2044,13 @@ async function main() {
     const clinicalStartedTime = ['IN_CLINICAL_CARE', 'COMPLETED'].includes(app.status) ? new Date(appDate.getTime() + 10 * 60 * 1000) : null;
     const completedTime = app.status === 'COMPLETED' ? appEndDate : null;
 
-    // 1. Tạo Lịch hẹn (Appointment)
+    // 1. Tạo Lịch hẹn (Appointment) kèm đầy đủ thông tin Phòng khám (room_id, room_code, room_name_snapshot)
     const appRes = await clients.appointment.query(
       `INSERT INTO appointments (
         id, appointment_code, patient_id, service_id, channel, selection_mode,
         requested_doctor_id, requested_rank_code, assigned_doctor_id, assigned_rank_code,
-        specialty_id, start_at, end_at, status, service_name_snapshot, service_version,
+        specialty_id, room_id, room_code, room_name_snapshot,
+        start_at, end_at, status, service_name_snapshot, service_version,
         base_price_id, base_amount_minor, rank_surcharge_price_id, rank_surcharge_amount_minor,
         estimated_total_minor, currency, availability_version, queue_estimate_minutes,
         checked_in_at, clinical_started_at, completed_at, cancellation_reason, reschedule_count,
@@ -1981,7 +2058,8 @@ async function main() {
       ) VALUES (
         gen_random_uuid(), $1, $2, $3, $4, $5,
         $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, 1,
+        $10, $24, $25, $26,
+        $11, $12, $13, $14, 1,
         $15, $16, $17, $18,
         $19, 'VND', 1, 15,
         $20, $21, $22, $23, 0,
@@ -1993,7 +2071,8 @@ async function main() {
         srv.specialtyId, appDate, appEndDate, app.status, srv.name,
         srv.priceId, baseAmount, rankInfo.id, surchargeAmount,
         totalAmount,
-        checkedInTime, clinicalStartedTime, completedTime, app.cancellationReason || null
+        checkedInTime, clinicalStartedTime, completedTime, app.cancellationReason || null,
+        doc.roomId, doc.roomCode, doc.roomName
       ]
     );
     const appointmentId = appRes.rows[0].id;
@@ -2340,26 +2419,26 @@ async function main() {
           );
           journeyId = jrnRes.rows[0].id;
 
-          // Vé 1: Sinh hiệu (VITALS - COMPLETED)
+          // Vé 1: Sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 1, 'VIT-001', 'COMPLETED', 'ROUTINE', false, 1, 1, $4, $5, $6, 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 1, 'VIT-001', 'COMPLETED', 'ROUTINE', false, 1, 1, $4, $5, $6, 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate, new Date(appDate.getTime() - 25 * 60000), new Date(appDate.getTime() - 20 * 60000), new Date(appDate.getTime() - 10 * 60000)]
           );
 
-          // Vé 2: Bác sĩ chuyên khoa (CONSULTATION - IN_SERVICE)
+          // Vé 2: Bác sĩ chuyên khoa (CONSULTATION - IN_SERVICE tại P.201)
           const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 1, 'CONS-001', 'IN_SERVICE', 'ROUTINE', false, 2, 1, $4, $5, 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate, appDate, new Date(appDate.getTime() + 2 * 60000)]
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, $6, $3, 1, 'CONS-001', 'IN_SERVICE', 'ROUTINE', false, 2, 1, $4, $5, 1, NOW(), NOW()) RETURNING id`,
+            [journeyId, stageMap['CONSULTATION'], businessDate, appDate, new Date(appDate.getTime() + 2 * 60000), doc.roomCode]
           );
           ticketId = t2Res.rows[0].id;
 
           // Lần gọi vé (Call Attempt)
           await clients.queue.query(
             `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, $2, $3, 'ANSWERED', $4, 'P.201')`,
-            [ticketId, appDate, new Date(appDate.getTime() + 5 * 60000), doc.accountId]
+             VALUES (gen_random_uuid(), $1, 1, $2, $3, 'ANSWERED', $4, $5)`,
+            [ticketId, appDate, new Date(appDate.getTime() + 5 * 60000), doc.accountId, doc.roomCode]
           );
 
           // Bác sĩ chỉ định siêu âm 4D bổ sung trong phiên khám
@@ -2369,10 +2448,10 @@ async function main() {
             [encounterId, serviceMap['US_4D_5D'].id, doc.id]
           );
 
-          // Vé 3: Siêu âm chẩn đoán (ULTRASOUND - WAITING)
+          // Vé 3: Siêu âm chẩn đoán (ULTRASOUND - WAITING tại P.301)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 1, 'US-001', 'WAITING', 'ROUTINE', false, 3, 0, 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.301', $3, $4, 1, 'US-001', 'WAITING', 'ROUTINE', false, 3, 0, 1, NOW(), NOW())`,
             [journeyId, stageMap['ULTRASOUND'], ordRes.rows[0].id, businessDate]
           );
 
@@ -2385,27 +2464,27 @@ async function main() {
           );
           journeyId = jrnRes.rows[0].id;
 
-          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED)
+          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 2, 'VIT-002', 'COMPLETED', 'ROUTINE', true, 4, 1, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '5 minutes', 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 2, 'VIT-002', 'COMPLETED', 'ROUTINE', true, 4, 1, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '5 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate]
           );
 
-          // Vé 2: Phòng khám Bác sĩ (CONSULTATION - CALLED)
+          // Vé 2: Phòng khám Bác sĩ (CONSULTATION - CALLED tại P.202)
           const callExp = new Date(now.getTime() + 4 * 60000);
           const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, call_expires_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 2, 'CONS-002', 'CALLED', 'ROUTINE', true, 5, 1, NOW() - INTERVAL '1 minute', $4, 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate, callExp]
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, call_expires_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, $5, $3, 2, 'CONS-002', 'CALLED', 'ROUTINE', true, 5, 1, NOW() - INTERVAL '1 minute', $4, 1, NOW(), NOW()) RETURNING id`,
+            [journeyId, stageMap['CONSULTATION'], businessDate, callExp, doc.roomCode]
           );
           ticketId = t2Res.rows[0].id;
 
           // Lần gọi vé (Call Attempt đang chờ bệnh nhân bước vào)
           await clients.queue.query(
             `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '1 minute', $2, 'CALLING', $3, 'P.202')`,
-            [ticketId, callExp, doc.accountId]
+             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '1 minute', $2, 'CALLING', $3, $4)`,
+            [ticketId, callExp, doc.accountId, doc.roomCode]
           );
 
         } else if (app.code === 'AT-2026-0003') {
@@ -2417,25 +2496,25 @@ async function main() {
           );
           journeyId = jrnRes.rows[0].id;
 
-          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED)
+          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 3, 'VIT-003', 'COMPLETED', 'ROUTINE', false, 6, 1, NOW() - INTERVAL '105 minutes', 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 3, 'VIT-003', 'COMPLETED', 'ROUTINE', false, 6, 1, NOW() - INTERVAL '105 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate]
           );
 
-          // Vé 2: Khám Bác sĩ (CONSULTATION - COMPLETED)
+          // Vé 2: Khám Bác sĩ (CONSULTATION - COMPLETED tại P.206)
           const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 3, 'CONS-003', 'COMPLETED', 'ROUTINE', false, 7, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', NOW() - INTERVAL '70 minutes', 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate]
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, $4, $3, 3, 'CONS-003', 'COMPLETED', 'ROUTINE', false, 7, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', NOW() - INTERVAL '70 minutes', 1, NOW(), NOW()) RETURNING id`,
+            [journeyId, stageMap['CONSULTATION'], businessDate, doc.roomCode]
           );
           ticketId = t2Res.rows[0].id;
 
           await clients.queue.query(
             `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', 'ANSWERED', $2, 'P.205')`,
-            [ticketId, doc.accountId]
+             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', 'ANSWERED', $2, $3)`,
+            [ticketId, doc.accountId, doc.roomCode]
           );
 
           // Chỉ định xét nghiệm OGTT
@@ -2445,17 +2524,17 @@ async function main() {
             [encounterId, serviceMap['OGTT_DIABETES'].id, doc.id]
           );
 
-          // Vé 3: Xét nghiệm máu OGTT (LAB_SAMPLE - COMPLETED)
+          // Vé 3: Xét nghiệm máu OGTT (LAB_SAMPLE - COMPLETED tại P.105)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 1, 'LAB-001', 'COMPLETED', 'ROUTINE', false, 8, 1, NOW() - INTERVAL '65 minutes', NOW() - INTERVAL '25 minutes', 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.105', $3, $4, 1, 'LAB-001', 'COMPLETED', 'ROUTINE', false, 8, 1, NOW() - INTERVAL '65 minutes', NOW() - INTERVAL '25 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['LAB_SAMPLE'], ordRes.rows[0].id, businessDate]
           );
 
-          // Vé 4: Nhà thuốc (PHARMACY - COMPLETED)
+          // Vé 4: Nhà thuốc (PHARMACY - COMPLETED tại P.109)
           await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, 1, 'PHARM-001', 'COMPLETED', 'ROUTINE', false, 9, 1, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '10 minutes', 1, NOW(), NOW())`,
+            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2, 'P.109', $3, 1, 'PHARM-001', 'COMPLETED', 'ROUTINE', false, 9, 1, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '10 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['PHARMACY'], businessDate]
           );
         }
@@ -2485,19 +2564,22 @@ async function main() {
   // ============================================================================
   // APPOINTMENT DỮ LIỆU ĐẦY ĐỦ: SLOT HOLDS, PHÂN CÔNG BÁC SĨ, AUDIT, OUTBOX & IDEMPOTENCY
   // ============================================================================
-  // 1. Giữ chỗ (SlotHold) đầy đủ 4 trạng thái: CONSUMED, ACTIVE, EXPIRED, RELEASED
+  // 1. Giữ chỗ (SlotHold) đầy đủ 4 trạng thái: CONSUMED, ACTIVE, EXPIRED, RELEASED kèm thông tin phòng khám
   const hold1Res = await clients.appointment.query(
     `INSERT INTO slot_holds (
       id, patient_id, service_id, doctor_id, rank_code, selection_mode,
+      room_id, room_code, room_name,
       start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
     ) VALUES (
       gen_random_uuid(), $1, $2, $3, $4, 'DOCTOR',
+      $9, $10, $11,
       $5, $6, 'CONSUMED', $7, $8, NOW() - INTERVAL '15 minutes'
     ) RETURNING id`,
     [
       seededAppointments[0].patientId, seededAppointments[0].serviceId, seededAppointments[0].doctorId,
       doctorList[0].rank, seededAppointments[0].appDate, seededAppointments[0].appEndDate,
-      new Date(seededAppointments[0].appDate.getTime() + 5 * 60 * 1000), seededAppointments[0].appointmentId
+      new Date(seededAppointments[0].appDate.getTime() + 5 * 60 * 1000), seededAppointments[0].appointmentId,
+      doctorList[0].roomId, doctorList[0].roomCode, doctorList[0].roomName
     ]
   );
   const hold1Id = hold1Res.rows[0].id;
@@ -2505,14 +2587,17 @@ async function main() {
   const hold2Res = await clients.appointment.query(
     `INSERT INTO slot_holds (
       id, patient_id, service_id, doctor_id, rank_code, selection_mode,
+      room_id, room_code, room_name,
       start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
     ) VALUES (
       gen_random_uuid(), $1, $2, $3, $4, 'DOCTOR',
+      $7, $8, $9,
       $5, $6, 'ACTIVE', NOW() + INTERVAL '5 minutes', NULL, NOW()
     ) RETURNING id`,
     [
       patientList[5].id, serviceMap['PRENATAL_ROUTINE'].id, doctorList[2].id,
-      doctorList[2].rank, new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000)
+      doctorList[2].rank, new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      doctorList[2].roomId, doctorList[2].roomCode, doctorList[2].roomName
     ]
   );
   const hold2Id = hold2Res.rows[0].id;
@@ -2520,14 +2605,17 @@ async function main() {
   const hold3Res = await clients.appointment.query(
     `INSERT INTO slot_holds (
       id, patient_id, service_id, doctor_id, rank_code, selection_mode,
+      room_id, room_code, room_name,
       start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
     ) VALUES (
       gen_random_uuid(), $1, $2, $3, $4, 'RANK',
+      $7, $8, $9,
       $5, $6, 'EXPIRED', NOW() - INTERVAL '30 minutes', NULL, NOW() - INTERVAL '35 minutes'
     ) RETURNING id`,
     [
       patientList[7].id, serviceMap['US_2D'].id, doctorList[6].id,
-      'BS', new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000)
+      'BS', new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      doctorList[6].roomId, doctorList[6].roomCode, doctorList[6].roomName
     ]
   );
   const hold3Id = hold3Res.rows[0].id;
@@ -2535,14 +2623,17 @@ async function main() {
   const hold4Res = await clients.appointment.query(
     `INSERT INTO slot_holds (
       id, patient_id, service_id, doctor_id, rank_code, selection_mode,
+      room_id, room_code, room_name,
       start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
     ) VALUES (
       gen_random_uuid(), $1, $2, $3, $4, 'RANK',
+      $7, $8, $9,
       $5, $6, 'RELEASED', NOW() + INTERVAL '2 minutes', NULL, NOW() - INTERVAL '10 minutes'
     ) RETURNING id`,
     [
       patientList[8].id, serviceMap['PRENATAL_VIP'].id, doctorList[5].id,
-      'CKI', new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000)
+      'CKI', new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      doctorList[5].roomId, doctorList[5].roomCode, doctorList[5].roomName
     ]
   );
   const hold4Id = hold4Res.rows[0].id;
@@ -3265,8 +3356,8 @@ async function main() {
   );
   const urgentJourneyId = urgentJrnRes.rows[0].id;
   const urgentTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, 4, 'CONS-004', 'WAITING', 'URGENT', false, 10, 0, 1, NOW(), NOW()) RETURNING id`,
+    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
+     VALUES (gen_random_uuid(), $1, $2, 'P.201', $3, 4, 'CONS-004', 'WAITING', 'URGENT', false, 10, 0, 1, NOW(), NOW()) RETURNING id`,
     [urgentJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
   );
   const urgentTicketId = urgentTicketRes.rows[0].id;
@@ -3282,8 +3373,8 @@ async function main() {
   );
   const skippedJourneyId = skippedJrnRes.rows[0].id;
   const skippedTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, 5, 'CONS-005', 'SKIPPED', 'ROUTINE', false, 11, 2, NOW() - INTERVAL '20 minutes', 1, NOW(), NOW()) RETURNING id`,
+    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, version, created_at, updated_at)
+     VALUES (gen_random_uuid(), $1, $2, 'P.201', $3, 5, 'CONS-005', 'SKIPPED', 'ROUTINE', false, 11, 2, NOW() - INTERVAL '20 minutes', 1, NOW(), NOW()) RETURNING id`,
     [skippedJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
   );
   const skippedTicketId = skippedTicketRes.rows[0].id;
@@ -3311,8 +3402,8 @@ async function main() {
   );
   const cancelledJourneyId = cancelledJrnRes.rows[0].id;
   const cancelledTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, 6, 'CONS-006', 'CANCELLED', 'ROUTINE', false, 12, 0, 1, NOW(), NOW()) RETURNING id`,
+    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
+     VALUES (gen_random_uuid(), $1, $2, 'P.203', $3, 6, 'CONS-006', 'CANCELLED', 'ROUTINE', false, 12, 0, 1, NOW(), NOW()) RETURNING id`,
     [cancelledJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
   );
   const cancelledTicketId = cancelledTicketRes.rows[0].id;

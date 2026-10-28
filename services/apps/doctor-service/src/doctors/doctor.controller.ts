@@ -20,14 +20,17 @@ import {
   CreateAvailabilityDto,
   AvailabilityQueryDto,
   CreateDoctorDto,
+  CreateRoomDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
   ListQueryDto,
   ReasonDto,
+  RoomListQueryDto,
   ScheduleListQueryDto,
   SpecialtyLinkDto,
   SpecialtyListQueryDto,
   UpdateDoctorDto,
+  UpdateRoomDto,
   UpdateScheduleDto,
 } from '../common/dto';
 import { DoctorDomainService } from './doctor.service';
@@ -81,6 +84,38 @@ export class DoctorController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.service.listSpecialties(query, this.identity(req));
+  }
+  @Post('rooms')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
+  createRoom(
+    @Body() dto: CreateRoomDto,
+    @Headers('idempotency-key') key: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.createRoom(dto, this.identity(req), key);
+  }
+  @Get('rooms')
+  rooms(
+    @Query() query: RoomListQueryDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.listRooms(query, req.identity);
+  }
+  @Get('rooms/:roomId')
+  getRoom(
+    @Param('roomId') roomId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.getRoom(roomId, req.identity);
+  }
+  @Patch('rooms/:roomId')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
+  updateRoom(
+    @Param('roomId') roomId: string,
+    @Body() dto: UpdateRoomDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateRoom(roomId, dto, this.identity(req));
   }
   @Get(':doctorId')
   get(
@@ -146,8 +181,6 @@ export class DoctorController {
     @Body() dto: SpecialtyLinkDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    console.log('PUT SPECIALTY BODY:', req.body);
-    console.log('PUT SPECIALTY DTO:', dto);
     return this.service.linkSpecialty(
       doctorId,
       specialtyId,
@@ -283,4 +316,3 @@ export class DoctorController {
     return this.service.eligibility(id, specialtyId, startAt, endAt);
   }
 }
-

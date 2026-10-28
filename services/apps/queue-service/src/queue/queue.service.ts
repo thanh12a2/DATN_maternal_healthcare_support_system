@@ -56,7 +56,7 @@ export class QueueDomainService {
         name: input.initialStageCode,
         roomCode: input.roomCode || null,
       },
-      update: { active: true, roomCode: input.roomCode || undefined },
+      update: { active: true },
     });
     const arrival = this.date(input.arrivalAt) ?? new Date();
     const scheduled = this.date(input.scheduledAt) ?? arrival;
@@ -71,6 +71,8 @@ export class QueueDomainService {
         arrival.getUTCDate(),
       ),
     );
+
+    const ticketRoomCode = input.roomCode || stage.roomCode || null;
 
     return this.db.$transaction(
       async (tx) => {
@@ -91,6 +93,7 @@ export class QueueDomainService {
             tickets: {
               create: {
                 stageId: stage.id,
+                roomCode: ticketRoomCode,
                 businessDate: day,
                 ordinal,
                 ticketCode: stage.code + '-' + String(ordinal).padStart(3, '0'),
@@ -128,11 +131,13 @@ export class QueueDomainService {
       where: { stageId: stage.id, businessDate: journey.businessDate },
       _max: { ordinal: true, enqueueSequence: true },
     });
+    const ticketRoomCode = input.roomCode || stage.roomCode || null;
     return this.viewTicket(
       await this.db.stageTicket.create({
         data: {
           journeyId: journey.id,
           stageId: stage.id,
+          roomCode: ticketRoomCode,
           sourceOrderId: input.sourceOrderId || null,
           businessDate: journey.businessDate,
           ordinal: (max._max.ordinal ?? 0) + 1,
@@ -206,6 +211,7 @@ export class QueueDomainService {
     actor: string,
     overrideId?: string,
     reason?: string,
+    roomCode?: string,
   ) {
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -231,7 +237,11 @@ export class QueueDomainService {
         });
       } else {
         ticket = await tx.stageTicket.findFirst({
-          where: { stageId: targetStageId, state: TicketState.WAITING },
+          where: {
+            stageId: targetStageId,
+            state: TicketState.WAITING,
+            ...(roomCode ? { roomCode } : {}),
+          },
           orderBy: [
             { basePriority: 'desc' },
             { lateDemotion: 'asc' },
@@ -240,6 +250,8 @@ export class QueueDomainService {
         });
       }
       if (!ticket) return null;
+      const effectiveRoomCode =
+        roomCode || ticket.roomCode || stage?.roomCode || null;
       const expires = new Date(Date.now() + 300000);
       const u = await tx.stageTicket.updateMany({
         where: {
@@ -249,6 +261,7 @@ export class QueueDomainService {
         },
         data: {
           state: TicketState.CALLED,
+          ...(effectiveRoomCode ? { roomCode: effectiveRoomCode } : {}),
           calledAt: new Date(),
           callExpiresAt: expires,
           callCount: { increment: 1 },
@@ -262,6 +275,7 @@ export class QueueDomainService {
           attemptNumber: ticket.callCount + 1,
           expiresAt: expires,
           callerAccountId: actor,
+          roomCode: effectiveRoomCode,
         },
       });
       return this.viewTicket(
@@ -376,7 +390,7 @@ export class QueueDomainService {
       stageId: t.stageId,
       sourceOrderId: t.sourceOrderId ?? '',
       stageCode: t.stage?.code ?? '',
-      roomCode: t.stage?.roomCode ?? '',
+      roomCode: t.roomCode || t.stage?.roomCode || '',
       ordinal: t.ordinal,
       ticketCode: t.ticketCode,
       state: 'TICKET_STATE_' + t.state,
@@ -447,6 +461,10 @@ export class QueueDomainService {
       stageId: resolvedStageId,
     };
 
+    if (query?.roomCode) {
+      where.roomCode = String(query.roomCode).trim();
+    }
+
     if (query?.state) {
       const parts = String(query.state).split(',');
       const cleanStates: TicketState[] = [];
@@ -502,7 +520,7 @@ export class QueueDomainService {
       sourceOrderId: t.sourceOrderId ?? null,
       stageCode: t.stage?.code ?? '',
       stageName: t.stage?.name ?? '',
-      roomCode: t.stage?.roomCode ?? null,
+      roomCode: t.roomCode ?? t.stage?.roomCode ?? null,
       ordinal: t.ordinal,
       ticketCode: t.ticketCode,
       state: t.state,
@@ -567,7 +585,7 @@ export class QueueDomainService {
       create: {
         code: b?.initialStageCode || 'CONSULTATION',
         name: 'Phòng khám sản',
-        roomCode: 'P.101',
+        roomCode: b?.roomCode || 'P.101',
         active: true,
       },
       update: { active: true },
@@ -582,6 +600,7 @@ export class QueueDomainService {
     });
     const ord = (max._max.ordinal ?? 0) + 1;
     const seq = (max._max.enqueueSequence ?? 0n) + 1n;
+    const ticketRoomCode = b?.roomCode || stage.roomCode || 'P.101';
     const j = await this.db.queueJourney.create({
       data: {
         appointmentId,
@@ -593,6 +612,7 @@ export class QueueDomainService {
         tickets: {
           create: {
             stageId: stage.id,
+            roomCode: ticketRoomCode,
             businessDate: day,
             ordinal: ord,
             ticketCode: stage.code + '-' + String(ord).padStart(3, '0'),
