@@ -20,6 +20,8 @@
     "prisma:migrate:receptionist:dev": "prisma migrate dev --schema=prisma/receptionist/schema.prisma",
     "prisma:migrate:receptionist:deploy": "prisma migrate deploy --schema=prisma/receptionist/schema.prisma",
     "prisma:seed": "prisma db seed",
+    "seed:system": "node seed_system_data.js",
+    "seed:all": "node seed_system_data.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
