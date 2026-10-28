@@ -84,6 +84,9 @@ message AppointmentView {
   google.protobuf.Timestamp clinical_started_at = 21;
   google.protobuf.Timestamp completed_at = 22;
   int64 version = 23;
+  string room_id = 24;
+  string room_code = 25;
+  string room_name = 26;
 }
 
 message GetAppointmentRequest {
@@ -116,6 +119,9 @@ message ValidateForAdmissionResponse {
   bool late = 11;
   int32 late_minutes = 12;
   int64 appointment_version = 13;
+  string room_id = 14;
+  string room_code = 15;
+  string room_name = 16;
 }
 
 message CheckInAppointmentRequest {

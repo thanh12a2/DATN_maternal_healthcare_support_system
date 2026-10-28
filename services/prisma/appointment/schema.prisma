@@ -48,6 +48,9 @@ model Appointment {
   assignedDoctorId         String                         @map("assigned_doctor_id") @db.Uuid
   assignedRankCode         String                         @map("assigned_rank_code") @db.VarChar(50)
   specialtyId              String                         @map("specialty_id") @db.Uuid
+  roomId                   String?                        @map("room_id") @db.Uuid
+  roomCode                 String?                        @map("room_code") @db.VarChar(30)
+  roomNameSnapshot         String?                        @map("room_name_snapshot") @db.VarChar(120)
   startAt                  DateTime                       @map("start_at") @db.Timestamptz(6)
   endAt                    DateTime                       @map("end_at") @db.Timestamptz(6)
   status                   AppointmentStatus              @default(BOOKED)
@@ -76,6 +79,7 @@ model Appointment {
 
   @@index([patientId, startAt])
   @@index([assignedDoctorId, startAt, endAt])
+  @@index([roomId, startAt])
   @@index([status, startAt])
   @@map("appointments")
 }
@@ -87,6 +91,9 @@ model SlotHold {
   doctorId                String         @map("doctor_id") @db.Uuid
   rankCode                String         @map("rank_code") @db.VarChar(50)
   selectionMode           SelectionMode  @map("selection_mode")
+  roomId                  String?        @map("room_id") @db.Uuid
+  roomCode                String?        @map("room_code") @db.VarChar(30)
+  roomName                String?        @map("room_name") @db.VarChar(120)
   startAt                 DateTime       @map("start_at") @db.Timestamptz(6)
   endAt                   DateTime       @map("end_at") @db.Timestamptz(6)
   status                  SlotHoldStatus @default(ACTIVE)

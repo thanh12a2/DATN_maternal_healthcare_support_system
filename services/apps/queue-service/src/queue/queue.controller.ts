@@ -70,7 +70,7 @@ export class QueueController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    return this.s.callNext(id, a.userId, b?.overrideTicketId, b?.reason);
+    return this.s.callNext(id, a.userId, b?.overrideTicketId, b?.reason, b?.roomCode);
   }
 
   @Post('tickets/:id/start')

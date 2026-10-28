@@ -31,7 +31,14 @@ export class DoctorGrpcController {
     const value = await this.doctors.getInternalAvailability(request.doctorId, start, end);
     return {
       doctorId: request.doctorId,
-      availableIntervals: value.intervals.map((x: any) => ({ startAt: dateToTimestamp(x.startAt), endAt: dateToTimestamp(x.endAt) })),
+      availableIntervals: value.intervals.map((x: any) => ({
+        startAt: dateToTimestamp(x.startAt),
+        endAt: dateToTimestamp(x.endAt),
+        roomId: x.roomId ?? '',
+        roomCode: x.roomCode ?? '',
+        roomName: x.roomName ?? '',
+        slotDurationMinutes: x.slotDurationMinutes ?? 30,
+      })),
       availabilityVersion: String(value.version),
     };
   }

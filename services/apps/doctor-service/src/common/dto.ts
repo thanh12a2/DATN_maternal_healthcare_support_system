@@ -6,7 +6,6 @@ import {
   IsEnum,
   IsInt,
   IsISO8601,
-  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
@@ -21,6 +20,7 @@ import {
   AvailabilityReasonCode,
   AvailabilityType,
   DoctorStatus,
+  RoomStatus,
   ScheduleStatus,
   SpecialtyStatus,
 } from '../../../../generated/doctor-client';
@@ -83,6 +83,21 @@ export class SpecialtyLinkDto {
   @IsBoolean()
   isPrimary!: boolean;
 }
+export class CreateRoomDto {
+  @IsString() @Length(2, 30) code!: string;
+  @IsString() @Length(2, 120) name!: string;
+  @IsOptional() @IsEnum(RoomStatus) status?: RoomStatus;
+}
+export class UpdateRoomDto {
+  @IsOptional() @IsString() @Length(2, 30) code?: string;
+  @IsOptional() @IsString() @Length(2, 120) name?: string;
+  @IsOptional() @IsEnum(RoomStatus) status?: RoomStatus;
+}
+export class RoomListQueryDto {
+  @IsOptional() @IsEnum(RoomStatus) status?: RoomStatus;
+  @IsOptional() @IsString() @MaxLength(100) q?: string;
+  @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
+}
 export class CreateScheduleDto {
   @IsInt() @Min(1) @Max(7) dayOfWeek!: number;
   @IsString() startTime!: string;
@@ -96,6 +111,7 @@ export class CreateScheduleDto {
   @IsOptional() @IsString() timezone?: string;
   @IsOptional() @IsUUID() departmentId?: string;
   @IsOptional() @IsUUID() roomId?: string;
+  @IsOptional() @IsString() @MaxLength(30) roomCode?: string;
 }
 export class UpdateScheduleDto {
   @IsOptional() @IsString() startTime?: string;
@@ -105,6 +121,7 @@ export class UpdateScheduleDto {
   @IsOptional() @IsDateString() effectiveTo?: string;
   @IsOptional() @IsUUID() departmentId?: string;
   @IsOptional() @IsUUID() roomId?: string;
+  @IsOptional() @IsString() @MaxLength(30) roomCode?: string;
 }
 export class ReasonDto {
   @IsString() @Length(3, 500) reason!: string;
@@ -115,6 +132,8 @@ export class CreateAvailabilityDto {
   @IsISO8601() endAt!: string;
   @IsEnum(AvailabilityReasonCode) reasonCode!: AvailabilityReasonCode;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
+  @IsOptional() @IsUUID() roomId?: string;
+  @IsOptional() @IsString() @MaxLength(30) roomCode?: string;
 }
 export class AvailabilityQueryDto {
   @IsISO8601() from!: string;
@@ -137,5 +156,6 @@ export class ScheduleListQueryDto {
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;
   @IsOptional() @IsEnum(ScheduleStatus) status?: ScheduleStatus;
+  @IsOptional() @IsUUID() roomId?: string;
   @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
 }
