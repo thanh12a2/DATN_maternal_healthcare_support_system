@@ -22,6 +22,7 @@ interface AuthContextValue {
   signUp(values: RegisterFormValues): Promise<AuthUser>;
   signOut(): Promise<void>;
   request<T>(path: string, init?: RequestInit): Promise<T>;
+  stream(path: string, signal?: AbortSignal): Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -158,7 +159,25 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     }
   }, [renew]);
 
-  const value = useMemo<AuthContextValue>(() => ({ status, user: session?.user ?? null, signIn, signUp, signOut, request }), [status, session, signIn, signUp, signOut, request]);
+  const stream = useCallback(async (path: string, signal?: AbortSignal): Promise<Response> => {
+    let current = sessionRef.current;
+    if (!current) throw new ApiError('Bạn cần đăng nhập để tiếp tục.', 401);
+    let response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}${path}`, {
+      headers: { Authorization: `Bearer ${current.accessToken}`, Accept: 'text/event-stream' },
+      signal,
+    });
+    if (response.status === 401) {
+      current = await renew();
+      response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}${path}`, {
+        headers: { Authorization: `Bearer ${current.accessToken}`, Accept: 'text/event-stream' },
+        signal,
+      });
+    }
+    if (!response.ok || !response.body) throw new ApiError('Không thể kết nối cập nhật hàng đợi.', response.status);
+    return response;
+  }, [renew]);
+
+  const value = useMemo<AuthContextValue>(() => ({ status, user: session?.user ?? null, signIn, signUp, signOut, request, stream }), [status, session, signIn, signUp, signOut, request, stream]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

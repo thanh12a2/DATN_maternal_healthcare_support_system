@@ -10,10 +10,14 @@ import {
   TicketState,
 } from '../../../../generated/queue-client';
 import { QueuePrismaService } from '../database/prisma.service';
+import { QueueRealtimeService } from './queue-realtime.service';
 
 @Injectable()
 export class QueueDomainService {
-  constructor(private readonly db: QueuePrismaService) {}
+  constructor(
+    private readonly db: QueuePrismaService,
+    private readonly realtime: QueueRealtimeService,
+  ) {}
 
   async create(input: any) {
     const old = await this.db.queueJourney.findUnique({
@@ -291,6 +295,23 @@ export class QueueDomainService {
         include: { stage: true },
       }),
     );
+  }
+
+  async notifyTicketChange(ticketId: string, eventType: string): Promise<void> {
+    const ticket = await this.db.stageTicket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, journeyId: true, state: true, version: true, journey: { select: { patientId: true } } },
+    });
+    if (!ticket) return;
+    this.realtime.publish(ticket.journey.patientId, {
+      eventType,
+      data: {
+        journeyId: ticket.journeyId,
+        ticketId: ticket.id,
+        state: String(ticket.state),
+        version: String(ticket.version),
+      },
+    });
   }
 
   async cancelWaiting(journeyId: string, reason: string) {

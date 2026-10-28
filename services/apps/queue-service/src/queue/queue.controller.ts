@@ -5,8 +5,10 @@ import {
   Param,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   CurrentAuth,
   PublicHttp,
@@ -16,6 +18,7 @@ import {
 import { TicketState } from '../../../../generated/queue-client';
 import { QueueDomainService } from './queue.service';
 import { PatientDependencyGateway } from './patient-dependency.gateway';
+import { QueueRealtimeService } from './queue-realtime.service';
 
 @Controller()
 @UseGuards(PublicJwtGuard)
@@ -23,6 +26,7 @@ export class QueueController {
   constructor(
     private readonly s: QueueDomainService,
     private readonly patient: PatientDependencyGateway,
+    private readonly realtime: QueueRealtimeService,
   ) {}
 
   @PublicHttp()
@@ -45,6 +49,31 @@ export class QueueController {
     return this.s.listStageTickets(stageId, query);
   }
 
+  @Get('me/events')
+  async streamMyEvents(
+    @CurrentAuth() a: PublicAuthContext,
+    @Res() response: Response,
+  ): Promise<void> {
+    const patientId = await this.patient.resolvePatientId(a.userId);
+    response.status(200);
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache, no-transform');
+    response.setHeader('Connection', 'keep-alive');
+    response.setHeader('X-Accel-Buffering', 'no');
+    response.flushHeaders();
+    response.write(': connected\n\n');
+
+    const unsubscribe = this.realtime.subscribe(patientId, (event) => {
+      response.write('event: ' + event.eventType + '\n');
+      response.write('data: ' + JSON.stringify(event.data) + '\n\n');
+    });
+    const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 25_000);
+    response.once('close', () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+    });
+  }
+
   @Get('me/journeys/active')
   async getMyActiveJourney(@CurrentAuth() a: PublicAuthContext) {
     const patientId = await this.patient.resolvePatientId(a.userId);
@@ -65,41 +94,51 @@ export class QueueController {
   }
 
   @Post('stages/:stageId/call-next')
-  call(
+  async call(
     @Param('stageId') id: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    return this.s.callNext(id, a.userId, b?.overrideTicketId, b?.reason);
+    const ticket = await this.s.callNext(id, a.userId, b?.overrideTicketId, b?.reason);
+    if (ticket?.id) await this.s.notifyTicketChange(ticket.id, 'queue.ticket_called.v1');
+    return ticket;
   }
 
   @Post('tickets/:id/start')
-  start(@Param('id') id: string, @Body() b: any) {
-    return this.s.transition(id, TicketState.IN_SERVICE, b.expectedVersion);
+  async start(@Param('id') id: string, @Body() b: any) {
+    const ticket = await this.s.transition(id, TicketState.IN_SERVICE, b.expectedVersion);
+    await this.s.notifyTicketChange(id, 'queue.ticket_service_started.v1');
+    return ticket;
   }
 
   @Post('tickets/:id/complete')
-  complete(@Param('id') id: string, @Body() b: any) {
-    return this.s.transition(id, TicketState.COMPLETED, b.expectedVersion);
+  async complete(@Param('id') id: string, @Body() b: any) {
+    const ticket = await this.s.transition(id, TicketState.COMPLETED, b.expectedVersion);
+    await this.s.notifyTicketChange(id, 'queue.ticket_completed.v1');
+    return ticket;
   }
 
   @Post('tickets/:id/requeue')
-  requeue(@Param('id') id: string, @Body() b: any) {
-    return this.s.transition(
+  async requeue(@Param('id') id: string, @Body() b: any) {
+    const ticket = await this.s.transition(
       id,
       TicketState.WAITING,
       b.expectedVersion,
       b.reason,
     );
+    await this.s.notifyTicketChange(id, 'queue.ticket_requeued.v1');
+    return ticket;
   }
 
   @Post('tickets/:id/cancel')
-  cancel(@Param('id') id: string, @Body() b: any) {
-    return this.s.transition(
+  async cancel(@Param('id') id: string, @Body() b: any) {
+    const ticket = await this.s.transition(
       id,
       TicketState.CANCELLED,
       b.expectedVersion,
       b.reason,
     );
+    await this.s.notifyTicketChange(id, 'queue.ticket_cancelled.v1');
+    return ticket;
   }
 }
