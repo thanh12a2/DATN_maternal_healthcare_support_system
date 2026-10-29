@@ -1,106 +1,650 @@
-import { useEffect, useState } from 'react';
-import { PatientSidebar } from '../../../shared/components/navigation/PatientSidebar';
+import {
+  DownOutlined,
+  LogoutOutlined,
+  ReloadOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons';
+import {
+  Alert,
+  App as AntApp,
+  Avatar,
+  Button,
+  ConfigProvider,
+  DatePicker,
+  Dropdown,
+  Select,
+  Skeleton,
+} from 'antd';
+import viVN from 'antd/locale/vi_VN';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
-import { navigate, usePathname } from '../../../app/navigation';
+import { navigate } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
-import { getMyReceptionist } from '../../../services/operations';
-import { ReceptionistAdmissionWorkspace } from '../components/ReceptionistAdmissionWorkspace';
-import { ReceptionistQueueWorkspace } from '../components/ReceptionistQueueWorkspace';
-import { ReceptionistBillingWorkspace } from '../components/ReceptionistBillingWorkspace';
-import { ReceptionistWorkspaceFrame } from '../components/ReceptionistWorkspaceFrame';
-import { ReceptionistAppointmentsWorkspace } from '../components/ReceptionistAppointmentsWorkspace';
-import '../../../styles/patient-home.css';
-import '../../../styles/patient-portal.css';
-import '../../../styles/receptionist-content.css';
-import '../../../styles/receptionist-fixes.css';
+import {
+  cancelAppointment,
+  checkInAppointment,
+  collectCash,
+  createWalkInAppointment,
+  fetchCatalog,
+  fetchDayAppointments,
+  loadPatientWorkspace,
+  refreshAppointment,
+  searchDesk,
+  type AppointmentSource,
+  type AppointmentStatus,
+  type DeskAppointment,
+  type DeskCatalog,
+  type DeskPatient,
+  type PatientMap,
+  type WalkInInput,
+} from '../../../services/receptionDesk';
+import { AppointmentDrawer } from '../components/AppointmentDrawer';
+import { AppointmentTable } from '../components/AppointmentTable';
+import { PatientSearchBar } from '../components/PatientSearchBar';
+import { SearchResults } from '../components/SearchResults';
+import { StatsStrip } from '../components/StatsStrip';
+import { WalkInModal } from '../components/WalkInModal';
+import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
-type WorkspaceState = 'loading' | 'ready' | 'error' | 'unavailable';
-type Summary = { label: string; value: string; detail: string };
+dayjs.locale('vi');
 
-function ReceptionistOverview({ summaries, state, error }: { summaries: Summary[]; state: WorkspaceState; error: string }) {
-  if (state === 'loading') return <div className="receptionist-loading-lines"><i /><i /><i /></div>;
-  if (state === 'error') return <section className="receptionist-empty" role="alert"><strong>Không thể tải tổng quan</strong><p>{error}</p></section>;
-  if (!summaries.length) return <section className="receptionist-empty"><strong>Chưa có dữ liệu vận hành</strong><p>Hãy bắt đầu từ Tiếp nhận để tìm bệnh nhân và lịch hẹn.</p></section>;
+interface SearchState {
+  found: DeskPatient[];
+  patients: PatientMap;
+  appointments: DeskAppointment[];
+}
+const errText = (e: unknown) =>
+  e instanceof ApiError || e instanceof Error ? e.message : 'Có lỗi xảy ra, vui lòng thử lại.';
+
+function Desk() {
+  const { message } = AntApp.useApp();
+  const auth = useAuthSession();
+  const { request } = auth;
+
+  const [catalog, setCatalog] = useState<DeskCatalog | null>(null);
+  const [rows, setRows] = useState<DeskAppointment[]>([]);
+  const [patients, setPatients] = useState<PatientMap>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [search, setSearch] = useState<SearchState | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [resetSignal, setResetSignal] = useState(0);
+  const [room, setRoom] = useState('P.201');
+  const [date, setDate] = useState(dayjs());
+  const [status, setStatus] = useState<AppointmentStatus | undefined>();
+  const [source, setSource] = useState<AppointmentSource | undefined>();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [walkInOpen, setWalkInOpen] = useState(false);
+
+  const dateStr = date.format('YYYY-MM-DD');
+  const trimmed = query.trim();
+
+  // User display info
+  const userEmail = auth.user?.email || 'reception.hoangyen@antam.local';
+  const userName = userEmail.split('@')[0];
+  const userInitials = userName.slice(0, 2).toUpperCase();
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      navigate('/dang-nhap', { replace: true });
+    } catch {
+      navigate('/dang-nhap', { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    fetchCatalog(request)
+      .then(setCatalog)
+      .catch((e) => setError(errText(e)));
+  }, [request]);
+
+  useEffect(() => {
+    if (!catalog) return;
+    let live = true;
+    setLoading(true);
+    setError('');
+    fetchDayAppointments(request, catalog, dateStr)
+      .then((r) => {
+        if (live) {
+          setRows(r.rows);
+          setPatients((cur) => ({ ...cur, ...r.patients }));
+        }
+      })
+      .catch((e) => {
+        if (live) setError(errText(e));
+      })
+      .finally(() => {
+        if (live) setLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [request, catalog, dateStr, reload]);
+
+  useEffect(() => {
+    if (!catalog || trimmed.length < 2) {
+      setSearch(null);
+      return;
+    }
+    let live = true;
+    setSearching(true);
+    searchDesk(request, catalog, trimmed)
+      .then((r) => {
+        if (live) setSearch(r);
+      })
+      .catch((e) => {
+        if (live) {
+          setSearch({ found: [], patients: {}, appointments: [] });
+          message.error(errText(e));
+        }
+      })
+      .finally(() => {
+        if (live) setSearching(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [request, catalog, trimmed, message]);
+
+  const obgynRows = useMemo(() => {
+    const codes = new Set((catalog?.rooms ?? []).map((r) => r.code));
+    return rows.filter((a) => codes.has(a.roomCode));
+  }, [rows, catalog]);
+
+  const dayRoomList = useMemo(
+    () => obgynRows.filter((a) => room === 'ALL' || a.roomCode === room),
+    [obgynRows, room]
+  );
+
+  const tableData = useMemo(
+    () =>
+      sortByStart(
+        dayRoomList.filter(
+          (a) => (!status || a.status === status) && (!source || a.source === source)
+        )
+      ),
+    [dayRoomList, status, source]
+  );
+
+  const waiting = useMemo(() => {
+    const w: Record<string, number> = {};
+    obgynRows
+      .filter((a) => a.status === 'CHECKED_IN')
+      .forEach((a) => {
+        w[a.roomCode] = (w[a.roomCode] ?? 0) + 1;
+      });
+    return w;
+  }, [obgynRows]);
+
+  const roomOptions = useMemo(() => {
+    const list = catalog?.rooms ?? [];
+    return [
+      {
+        value: 'ALL',
+        label: 'Tất cả phòng',
+      },
+      ...list.map((r) => {
+        const waitCount = waiting[r.code] ?? 0;
+        return {
+          value: r.code,
+          label: `${r.code} - ${r.doctorName || r.name}${waitCount > 0 ? ` (${waitCount} ca chờ)` : ''}`,
+        };
+      }),
+    ];
+  }, [catalog, waiting]);
+
+  useEffect(() => {
+    if (catalog?.rooms?.length && !catalog.rooms.some((r) => r.code === room) && room !== 'ALL') {
+      setRoom(catalog.rooms[0].code);
+    }
+  }, [catalog, room]);
+
+  const allPatients = useMemo(
+    () => ({ ...patients, ...(search?.patients ?? {}) }),
+    [patients, search]
+  );
+
+  const opened = useMemo(
+    () =>
+      [...rows, ...(search?.appointments ?? [])].find((a) => a.id === openId) ?? null,
+    [rows, search, openId]
+  );
+
+  const replace = (n: DeskAppointment) => {
+    setRows((cur) => cur.map((a) => (a.id === n.id ? n : a)));
+    setSearch((cur) =>
+      cur
+        ? {
+            ...cur,
+            appointments: cur.appointments.map((a) => (a.id === n.id ? n : a)),
+          }
+        : cur
+    );
+  };
+
+  const run = async (a: DeskAppointment, fn: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await fn();
+      if (catalog) replace(await refreshAppointment(request, catalog, a));
+    } catch (e) {
+      message.error(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const checkIn = (a: DeskAppointment) =>
+    run(a, async () => {
+      const r = await checkInAppointment(request, a);
+      if (r.awaitingPayment) {
+        message.warning(
+          'Cần thanh toán hóa đơn trước khi check-in. Mở chi tiết → Hóa đơn để thu tiền.'
+        );
+        setOpenId(a.id);
+      } else {
+        message.success('Check-in thành công, bệnh nhân đã vào hàng đợi.');
+      }
+    });
+
+  const cancel = (a: DeskAppointment) =>
+    run(a, async () => {
+      await cancelAppointment(request, a, 'Lễ tân hủy lịch theo yêu cầu bệnh nhân');
+      message.success('Đã hủy lịch hẹn');
+    });
+
+  const collect = (a: DeskAppointment) =>
+    run(a, async () => {
+      if (a.invoice) await collectCash(request, a.invoice);
+      message.success('Đã thu tiền thành công');
+    });
+
+  const handleCreateWalkIn = async (data: WalkInInput) => {
+    try {
+      const res = await createWalkInAppointment(request, data);
+      message.success(
+        `Đã tiếp nhận bệnh nhân vãng lai thành công! (Mã hẹn: ${res.appointmentCode || res.code || ''})`
+      );
+      setWalkInOpen(false);
+      setReload((n) => n + 1);
+    } catch (err: any) {
+      message.error(errText(err));
+      throw err;
+    }
+  };
+
+  const handleOpenPatientDetail = async (a: DeskAppointment) => {
+    if (!catalog) return;
+    setSearching(true);
+    try {
+      const res = await loadPatientWorkspace(request, catalog, a.patientId);
+      if (res.found.length > 0) {
+        setSearch(res);
+        setQuery(res.found[0].phone || res.found[0].fullName);
+      } else {
+        const p = allPatients[a.patientId] || {
+          id: a.patientId,
+          fullName: 'Bệnh nhân',
+          emergencyContacts: [],
+        };
+        setSearch({
+          found: [p],
+          patients: { [p.id]: p },
+          appointments: rows.filter((item) => item.patientId === a.patientId),
+        });
+        setQuery(p.fullName);
+      }
+    } catch (err) {
+      console.error('Lỗi khi mở hồ sơ bệnh nhân:', err);
+      message.error('Không thể tải thông tin bệnh nhân');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clear = useCallback(() => {
+    setQuery('');
+    setResetSignal((n) => n + 1);
+  }, []);
+
   return (
-    <>
-      <section className="receptionist-overview-grid">
-        {summaries.map((item) => (
-          <article key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.detail}</p>
-          </article>
-        ))}
-      </section>
-      <section className="receptionist-next-actions">
-        <span className="receptionist-kicker">Việc cần làm</span>
-        <h2>Bắt đầu tiếp nhận bệnh nhân</h2>
-        <p>Tìm bệnh nhân theo họ tên, số điện thoại hoặc CCCD; sau đó chọn lịch hẹn để mở case.</p>
-        <div>
-          <button type="button" onClick={() => navigate('/workspace/receptionist/patients')}>Tra cứu bệnh nhân</button>
-          <button type="button" onClick={() => navigate('/workspace/receptionist/reception')}>Mở tiếp nhận</button>
-        </div>
-      </section>
-    </>
+    <div style={{ minHeight: '100vh', background: '#F0F6FD', padding: '20px 16px' }}>
+      <div
+        style={{
+          maxWidth: 1400,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        {/* TOP COMPACT HEADER BAR */}
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            background: '#ffffff',
+            padding: '10px 18px',
+            borderRadius: 12,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            flexWrap: 'wrap',
+          }}
+        >
+          {/* Left: Brand Logo + Compact Search Input */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              flex: 1,
+              minWidth: 320,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #0B5CAD 0%, #1677ff 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: 18,
+                  fontWeight: 700,
+                }}
+              >
+                ✚
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', lineHeight: 1.2 }}>
+                  An Tâm Medical
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Bàn Tiếp đón Lễ tân</div>
+              </div>
+            </div>
+
+            {/* Compact Search Bar */}
+            <div style={{ maxWidth: 440, width: '100%' }}>
+              <PatientSearchBar onSearch={setQuery} resetSignal={resetSignal} />
+            </div>
+          </div>
+
+          {/* Right: + Tiếp nhận vãng lai & User Info Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <Button
+              type="primary"
+              icon={<UserAddOutlined />}
+              onClick={() => setWalkInOpen(true)}
+              style={{
+                fontWeight: 600,
+                height: 38,
+                borderRadius: 8,
+                backgroundColor: '#0B5CAD',
+              }}
+            >
+              + Tiếp nhận vãng lai
+            </Button>
+
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'user-info',
+                    disabled: true,
+                    label: (
+                      <div style={{ padding: '4px 0', color: '#1f2937' }}>
+                        <div style={{ fontWeight: 600 }}>{userEmail}</div>
+                        <div style={{ fontSize: 12, color: '#6b7280' }}>
+                          Vai trò: Nhân viên Lễ tân
+                        </div>
+                      </div>
+                    ),
+                  },
+                  { type: 'divider' },
+                  {
+                    key: 'logout',
+                    danger: true,
+                    icon: <LogoutOutlined />,
+                    label: 'Đăng xuất',
+                    onClick: handleLogout,
+                  },
+                ],
+              }}
+              placement="bottomRight"
+              trigger={['click']}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 10px 4px 6px',
+                  borderRadius: 24,
+                  border: '1px solid #e5e7eb',
+                  cursor: 'pointer',
+                  background: '#f9fafb',
+                  transition: 'all 0.2s',
+                  userSelect: 'none',
+                }}
+              >
+                <Avatar
+                  style={{ backgroundColor: '#0B5CAD', verticalAlign: 'middle', fontWeight: 600 }}
+                  size={28}
+                >
+                  {userInitials}
+                </Avatar>
+                <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#111827',
+                      maxWidth: 140,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {userName}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>Lễ tân</div>
+                </div>
+                <DownOutlined style={{ fontSize: 10, color: '#9ca3af', marginLeft: 2 }} />
+              </div>
+            </Dropdown>
+          </div>
+        </header>
+
+        {error && (
+          <Alert
+            type="error"
+            showIcon
+            message="Không tải được dữ liệu"
+            description={error}
+            action={
+              <Button size="small" onClick={() => setReload((n) => n + 1)}>
+                Thử lại
+              </Button>
+            }
+          />
+        )}
+
+        {trimmed.length >= 2 ? (
+          searching || !search ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <SearchResults
+              query={trimmed}
+              patients={search.found}
+              patientMap={allPatients}
+              appointments={search.appointments}
+              catalog={catalog}
+              busy={busy}
+              onOpen={(a) => setOpenId(a.id)}
+              onCheckIn={checkIn}
+              onCancel={cancel}
+              onCollect={collect}
+              onPrint={(w) => message.info(`Đang gửi lệnh in ${w}...`)}
+              onClear={clear}
+              onPatientUpdated={(updated) => {
+                message.success('Đã cập nhật thông tin bệnh nhân thành công!');
+                setPatients((prev) => ({ ...prev, [updated.id]: updated }));
+                setSearch((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        found: prev.found.map((p) => (p.id === updated.id ? updated : p)),
+                        patients: { ...prev.patients, [updated.id]: updated },
+                      }
+                    : prev
+                );
+              }}
+              onAppointmentUpdated={(updated) => {
+                message.success('Đã dời lịch khám thành công!');
+                replace(updated);
+                setReload((n) => n + 1);
+              }}
+            />
+          )
+        ) : (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                background: '#ffffff',
+                padding: '12px 16px',
+                borderRadius: 12,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                  Phòng khám:
+                </span>
+                <Select
+                  style={{ minWidth: 260 }}
+                  value={room}
+                  onChange={setRoom}
+                  options={roomOptions}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                  Ngày:
+                </span>
+                <DatePicker
+                  value={date}
+                  allowClear={false}
+                  format="DD/MM/YYYY"
+                  onChange={(d) => d && setDate(d)}
+                />
+              </div>
+
+              <Select
+                allowClear
+                placeholder="Tất cả trạng thái"
+                style={{ minWidth: 180 }}
+                value={status}
+                onChange={setStatus}
+                options={Object.entries(statusMeta).map(([value, m]) => ({
+                  value,
+                  label: m.label,
+                }))}
+              />
+
+              <Select
+                allowClear
+                placeholder="Tất cả nguồn"
+                style={{ minWidth: 140 }}
+                value={source}
+                onChange={setSource}
+                options={Object.entries(sourceMeta).map(([value, m]) => ({
+                  value,
+                  label: m.label,
+                }))}
+              />
+
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => setReload((n) => n + 1)}
+              >
+                Làm mới
+              </Button>
+            </div>
+            <StatsStrip data={dayRoomList} />
+            <div style={{ background: '#fff', borderRadius: 12, padding: 12 }}>
+              {loading && !rows.length ? (
+                <Skeleton active paragraph={{ rows: 6 }} />
+              ) : (
+                <AppointmentTable
+                  data={tableData}
+                  patients={allPatients}
+                  loading={loading}
+                  onOpen={handleOpenPatientDetail}
+                  onCheckIn={checkIn}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <WalkInModal
+        open={walkInOpen}
+        catalog={catalog}
+        request={request}
+        initialPatient={search?.found?.[0] || null}
+        onCancel={() => setWalkInOpen(false)}
+        onSubmit={handleCreateWalkIn}
+        onPatientUpdated={(updated) => {
+          message.success('Đã cập nhật thông tin bệnh nhân thành công!');
+          setPatients((prev) => ({ ...prev, [updated.id]: updated }));
+          setSearch((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  found: prev.found.map((p) => (p.id === updated.id ? updated : p)),
+                  patients: { ...prev.patients, [updated.id]: updated },
+                }
+              : prev
+          );
+        }}
+      />
+    </div>
   );
 }
 
-function apiMessage(error: unknown) {
-  if (error instanceof ApiError && error.statusCode === 403) return 'Tài khoản không có quyền xem dữ liệu này.';
-  if (error instanceof ApiError && error.statusCode === 404) return 'API chưa có dữ liệu cho khu vực này.';
-  return error instanceof Error ? error.message : 'Không thể tải dữ liệu workspace.';
-}
-
+/** Màn hình lễ tân: một trang duy nhất (tìm kiếm → lịch hẹn theo phòng → drawer chi tiết). */
 export function ReceptionistWorkspacePage() {
-  const auth = useAuthSession();
-  const pathname = usePathname();
-  const section = pathname.split('/').filter(Boolean).at(-1) || 'overview';
-  const [state, setState] = useState<WorkspaceState>('loading');
-  const [error, setError] = useState('');
-  const [summaries, setSummaries] = useState<Summary[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    setState('loading');
-    setError('');
-    setSummaries([]);
-    const load = async () => {
-      try {
-        const profile = await getMyReceptionist(auth.request);
-        if (active) {
-          setSummaries([
-            { label: 'Hồ sơ tài khoản', value: profile ? 'Đã kết nối' : 'Trống', detail: 'Receptionist Service' },
-            { label: 'Tiếp nhận', value: 'Sẵn sàng', detail: 'Mở case khi có appointment hợp lệ' },
-            { label: 'Check-in', value: 'Theo quyền', detail: 'Business flow do backend quyết định' },
-          ]);
-          setState('ready');
-        }
-      } catch (reason) {
-        if (!active) return;
-        if (reason instanceof ApiError && [404, 501].includes(reason.statusCode)) setState('unavailable');
-        else { setError(apiMessage(reason)); setState('error'); }
-      }
-    };
-    void load();
-    return () => { active = false; };
-  }, [auth.request, section]);
-
-  const receptionistContent = section === 'appointments'
-    ? <ReceptionistAppointmentsWorkspace request={auth.request} />
-    : section === 'queue'
-    ? <ReceptionistQueueWorkspace request={auth.request} />
-    : section === 'billing'
-    ? <ReceptionistBillingWorkspace request={auth.request} />
-    : ['patients', 'reception', 'check-in'].includes(section)
-    ? <ReceptionistAdmissionWorkspace section={section} request={auth.request} />
-    : <ReceptionistOverview summaries={summaries} state={state} error={error} />;
-
   return (
-    <div className="patient-home-shell patient-desktop-portal receptionist-portal">
-      <PatientSidebar onLogout={() => void auth.signOut().then(() => navigate('/dang-nhap', { replace: true }))} />
-      <main className="patient-main-view receptionist-main">
-        <ReceptionistWorkspaceFrame section={section}>{receptionistContent}</ReceptionistWorkspaceFrame>
-      </main>
-    </div>
+    <ConfigProvider
+      locale={viVN}
+      theme={{
+        token: {
+          colorPrimary: '#0B5CAD',
+          borderRadius: 10,
+          borderRadiusLG: 12,
+          colorBgLayout: '#F0F6FD',
+        },
+      }}
+    >
+      <AntApp>
+        <Desk />
+      </AntApp>
+    </ConfigProvider>
   );
 }

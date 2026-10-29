@@ -38,7 +38,13 @@ const patientNavItems: NavItem[] = [
 ];
 const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   DOCTOR: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Lịch khám', icon: 'calendar', href: 'appointments' }, { label: 'Bệnh nhân phân công', icon: 'users', href: 'patients' }, { label: 'Hồ sơ khám', icon: 'clipboard', href: 'encounters' }, { label: 'Lịch làm việc', icon: 'clock', href: 'schedule' }, { label: 'Tư vấn', icon: 'stethoscope', href: 'consultations' }, { label: 'Hồ sơ cá nhân', icon: 'profile', href: 'profile' }],
-  RECEPTIONIST: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Tiếp nhận', icon: 'check-in', href: 'reception' }, { label: 'Tra cứu bệnh nhân', icon: 'search', href: 'patients' }, { label: 'Lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Check-in', icon: 'check-in', href: 'check-in' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Hóa đơn', icon: 'clipboard', href: 'billing' }],
+  RECEPTIONIST: [
+    { label: 'Lịch hẹn & Tiếp nhận', icon: 'calendar', href: 'appointments' },
+    { label: 'Hàng đợi phòng khám', icon: 'queue', href: 'queue' },
+    { label: 'Tra cứu bệnh nhân', icon: 'search', href: 'patients' },
+    { label: 'Viện phí & Hóa đơn', icon: 'clipboard', href: 'billing' },
+    { label: 'Tổng quan ca trực', icon: 'home', href: 'overview' },
+  ],
   NURSE: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Bệnh nhân hôm nay', icon: 'users', href: 'today' }, { label: 'Hàng đợi', icon: 'queue', href: 'queue' }, { label: 'Encounter phân công', icon: 'clipboard', href: 'encounters' }, { label: 'Sinh hiệu', icon: 'stethoscope', href: 'vitals' }, { label: 'Ghi chú điều dưỡng', icon: 'notes', href: 'notes' }],
   CLINIC_MANAGER: [{ label: 'Tổng quan', icon: 'home', href: 'overview' }, { label: 'Nhân sự vận hành', icon: 'users', href: 'staff' }, { label: 'Bác sĩ & lịch làm việc', icon: 'stethoscope', href: 'doctors' }, { label: 'Lễ tân', icon: 'clipboard', href: 'receptionists' }, { label: 'Dịch vụ & giá', icon: 'settings', href: 'services' }, { label: 'Điều phối lịch hẹn', icon: 'calendar', href: 'appointments' }, { label: 'Báo cáo', icon: 'report', href: 'reports' }],
   ADMIN: [

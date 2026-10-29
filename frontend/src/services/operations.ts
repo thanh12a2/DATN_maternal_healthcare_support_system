@@ -34,8 +34,23 @@ export async function verifyReceptionIdentity(request: Requester, id: string, bo
 export async function admitReceptionCase(request: Requester, id: string) { return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, `/api/reception/cases/${encodeURIComponent(id)}/admit`)); }
 export interface ReceptionPatient { id: string; fullName?: string; phoneNumber?: string; nationalIdMasked?: string | null; [key: string]: unknown; }
 export async function searchReceptionPatients(request: Requester, body: { fullName?: string; phoneNumber?: string; nationalId?: string }) { const raw = await request<unknown>('/api/patients/search', { method: 'POST', body: JSON.stringify({ ...body, limit: 20, page: 1 }) }); const value = raw as { data?: { items?: ReceptionPatient[] }; items?: ReceptionPatient[] }; return value.data?.items ?? value.items ?? []; }
-export interface ReceptionAppointment { id?: string; appointmentCode?: string; patientId?: string; startAt?: string; endAt?: string; status?: string; pricing?: { serviceName?: string }; [key: string]: unknown; }
-export async function listReceptionAppointments(request: Requester, patientId?: string, filters: { from?: string; to?: string; status?: string } = {}): Promise<ReceptionAppointment[]> { const query = new URLSearchParams({ limit: '50' }); if (patientId) query.set('patientId', patientId); if (filters.from) query.set('from', filters.from); if (filters.to) query.set('to', filters.to); if (filters.status) query.set('status', filters.status); const raw = await request<unknown>('/api/appointment/appointments?' + query); const value = raw as { items?: ReceptionAppointment[]; data?: ReceptionAppointment[] }; return Array.isArray(value.items) ? value.items : Array.isArray(value.data) ? value.data : []; }
+export interface ReceptionAppointment {
+  id?: string;
+  appointmentCode?: string;
+  patientId?: string;
+  doctorId?: string;
+  assignedDoctorId?: string;
+  roomId?: string;
+  roomCode?: string;
+  roomName?: string;
+  roomNameSnapshot?: string;
+  startAt?: string;
+  endAt?: string;
+  status?: string;
+  pricing?: { serviceName?: string; price?: number };
+  [key: string]: unknown;
+}
+export async function listReceptionAppointments(request: Requester, patientId?: string, filters: { from?: string; to?: string; status?: string; limit?: number } = {}): Promise<ReceptionAppointment[]> { const query = new URLSearchParams({ limit: String(filters.limit ?? 50) }); if (patientId) query.set('patientId', patientId); if (filters.from) query.set('from', filters.from); if (filters.to) query.set('to', filters.to); if (filters.status) query.set('status', filters.status); const raw = await request<unknown>('/api/appointment/appointments?' + query); const value = raw as { items?: ReceptionAppointment[]; data?: ReceptionAppointment[] }; return Array.isArray(value.items) ? value.items : Array.isArray(value.data) ? value.data : []; }
 export async function getReceptionPatient(request: Requester, patientId: string): Promise<ReceptionPatient | null> { const raw = await request<unknown>('/api/patients/' + encodeURIComponent(patientId)); const value = raw as { data?: ReceptionPatient }; return value.data ?? raw as ReceptionPatient; }
 export const receptionistSelectionKey = 'an-tam-receptionist-selection';
 export function saveReceptionSelection(value: { patientId: string; appointmentId: string }) { window.sessionStorage.setItem(receptionistSelectionKey, JSON.stringify(value)); }
