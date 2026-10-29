@@ -288,6 +288,17 @@ export class DoctorDomainService {
     };
   }
 
+  async findDoctorIdByAccount(accountId: string) {
+    const doctor = await this.prisma.doctor.findUnique({ where: { accountId }, select: { id: true } });
+    return doctor?.id ?? null;
+  }
+
+  async getMyDoctor(actor: Identity) {
+    const id = await this.findDoctorIdByAccount(actor.userId);
+    if (!id) this.notFound();
+    return this.getDoctor(id!, actor);
+  }
+
   async getDoctor(id: string, actor?: Identity) {
     const doctor = await this.prisma.doctor.findUnique({
       where: { id },

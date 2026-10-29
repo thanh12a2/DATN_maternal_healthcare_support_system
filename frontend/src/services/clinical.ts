@@ -8,6 +8,18 @@ const list = <T,>(raw: unknown): T[] => Array.isArray(raw) ? raw as T[] : Array.
 const post = <T>(request: Requester, path: string, body?: unknown) => request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
 export async function listEncounters(request: Requester, query = '') { return list<Encounter>(await request<unknown>(`/api/medical-records/encounters${query ? `?${query}` : ''}`)); }
+export async function listAllDoctorEncounters(request: Requester): Promise<Encounter[]> {
+  const rows: Encounter[] = [];
+  for (let page = 1; ; page++) {
+    const raw = await request<{ data: Encounter[]; total: number }>(`/api/medical-records/encounters?limit=100&page=${page}`);
+    if (!Array.isArray(raw.data) || typeof raw.total !== 'number') throw new Error('Không thể tải đầy đủ hồ sơ khám.');
+    rows.push(...raw.data);
+    if (rows.length >= raw.total || raw.data.length === 0) {
+      if (rows.length < raw.total) throw new Error('Danh sách hồ sơ khám chưa đầy đủ.');
+      return rows;
+    }
+  }
+}
 export function getEncounter(request: Requester, id: string) { return request<Encounter>(`/api/medical-records/encounters/${encodeURIComponent(id)}`); }
 export function startEncounter(request: Requester, id: string) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/start`); }
 export function recordVitalSigns(request: Requester, id: string, body: unknown) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/vital-signs`, body); }

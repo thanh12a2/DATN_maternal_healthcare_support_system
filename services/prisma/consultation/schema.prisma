@@ -44,10 +44,22 @@ model ConsultationThread {
   messages           ConsultationMessage[]
   assignments        ConsultationAssignment[]
   escalations        ConsultationEscalation[]
+  readReceipts       ConsultationReadReceipt[]
 
   @@index([patientId, updatedAt])
   @@index([assignedDoctorId, status])
   @@map("consultation_threads")
+}
+
+model ConsultationReadReceipt {
+  threadId String @map("thread_id") @db.Uuid
+  accountId String @map("account_id") @db.Uuid
+  lastReadSequence BigInt @default(0) @map("last_read_sequence")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  thread ConsultationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, accountId])
+  @@map("consultation_read_receipts")
 }
 
 model ConsultationMessage {

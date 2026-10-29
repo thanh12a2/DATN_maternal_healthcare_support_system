@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -11,6 +12,7 @@ import {
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CurrentAuth,
+  ClinicalDoctorAccess,
   PublicHttp,
   PublicJwtGuard,
   ServiceJwtGuard,
@@ -22,7 +24,7 @@ import { PrescriptionService } from './prescription.service';
 
 @Controller()
 export class PrescriptionController {
-  constructor(private readonly s: PrescriptionService) {}
+  constructor(private readonly s: PrescriptionService, private readonly access: ClinicalDoctorAccess) {}
 
   @PublicHttp()
   @Get('health')
@@ -38,19 +40,23 @@ export class PrescriptionController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.createRest(b, a);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get(['', 'prescriptions'])
-  listPrescriptions(@Query() q: any) {
+  async listPrescriptions(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'prescriptions/:id'])
-  getPrescription(@Param('id') id: string) {
-    return this.s.getRest(id);
+  async getPrescription(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+    const result = await this.s.getRest(id);
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, result.data.encounterId, result.data.patientId);
+    return result;
   }
 
   @UseGuards(PublicJwtGuard)
@@ -58,7 +64,9 @@ export class PrescriptionController {
   updatePrescriptionDraft(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.updateRest(id, b);
   }
 
@@ -67,7 +75,9 @@ export class PrescriptionController {
   issuePrescription(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.issueRest(id, b);
   }
 
@@ -76,7 +86,9 @@ export class PrescriptionController {
   cancelPrescription(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.cancelRest(id, b);
   }
 

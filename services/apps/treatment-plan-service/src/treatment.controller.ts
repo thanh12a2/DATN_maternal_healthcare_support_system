@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -11,6 +12,7 @@ import {
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CurrentAuth,
+  ClinicalDoctorAccess,
   PublicHttp,
   PublicJwtGuard,
   ServiceJwtGuard,
@@ -22,7 +24,7 @@ import { TreatmentService } from './treatment.service';
 
 @Controller()
 export class TreatmentController {
-  constructor(private readonly s: TreatmentService) {}
+  constructor(private readonly s: TreatmentService, private readonly access: ClinicalDoctorAccess) {}
 
   @PublicHttp()
   @Get('health')
@@ -38,19 +40,23 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.createRest(b, a);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get(['', 'treatment-plans'])
-  listTreatmentPlans(@Query() q: any) {
+  async listTreatmentPlans(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'treatment-plans/:id'])
-  getTreatmentPlan(@Param('id') id: string) {
-    return this.s.getRest(id);
+  async getTreatmentPlan(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+    const result = await this.s.getRest(id);
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, result.data.sourceEncounterId, result.data.patientId);
+    return result;
   }
 
   @UseGuards(PublicJwtGuard)
@@ -60,6 +66,7 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.updateRest(id, b, a);
   }
 
@@ -68,7 +75,9 @@ export class TreatmentController {
   activateTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.commandRest(id, TreatmentPlanStatus.ACTIVE, b);
   }
 
@@ -77,7 +86,9 @@ export class TreatmentController {
   completeTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.commandRest(id, TreatmentPlanStatus.COMPLETED, b);
   }
 
@@ -86,7 +97,9 @@ export class TreatmentController {
   cancelTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     return this.s.commandRest(id, TreatmentPlanStatus.CANCELLED, b);
   }
 
@@ -101,7 +114,9 @@ export class TreatmentController {
     @Param('id') planId: string,
     @Param('itemId') itemId: string,
     @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     // If route was items/:itemId/complete, planId param might be undefined or hold itemId
     const actualItemId = itemId || planId;
     const actualPlanId = itemId ? planId : undefined;

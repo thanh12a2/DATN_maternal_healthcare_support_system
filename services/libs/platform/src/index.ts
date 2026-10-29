@@ -3,6 +3,7 @@ export * from './http/public.decorator';
 export * from './http/public-jwt.guard';
 export * from './http/current-auth.decorator';
 export * from './grpc/grpc-client.factory';
+export * from './grpc/clinical-doctor-access';
 export * from './grpc/grpc-bootstrap';
 export * from './grpc/grpc-context';
 export * from './grpc/service-auth.decorators';

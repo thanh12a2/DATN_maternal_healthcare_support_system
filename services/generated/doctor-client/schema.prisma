@@ -54,6 +54,25 @@ enum AvailabilityReasonCode {
   OTHER
 }
 
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model ClinicRoom {
+  id             String               @id @default(uuid()) @db.Uuid
+  code           String               @unique @db.VarChar(30)
+  name           String               @db.VarChar(120)
+  status         RoomStatus           @default(ACTIVE)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  schedules      DoctorSchedule[]
+  availabilities DoctorAvailability[]
+
+  @@index([status, code])
+  @@map("clinic_rooms")
+}
+
 model Doctor {
   id               String                 @id @default(uuid()) @db.Uuid
   accountId        String                 @unique @map("account_id") @db.Uuid
@@ -133,8 +152,10 @@ model DoctorSchedule {
   createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor              Doctor         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  room                ClinicRoom?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
 
   @@index([doctorId, status, dayOfWeek, effectiveFrom, effectiveTo])
+  @@index([roomId, status, dayOfWeek, effectiveFrom, effectiveTo], map: "doctor_schedules_room_lookup_idx")
   @@map("doctor_schedules")
 }
 
@@ -146,12 +167,14 @@ model DoctorAvailability {
   endAt      DateTime               @map("end_at") @db.Timestamptz(6)
   reasonCode AvailabilityReasonCode @map("reason_code")
   note       String?                @db.VarChar(500)
+  roomId     String?                @map("room_id") @db.Uuid
   status     AvailabilityStatus     @default(ACTIVE)
   createdBy  String                 @map("created_by") @db.Uuid
   version    Int                    @default(1)
   createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor     Doctor                 @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  room       ClinicRoom?            @relation(fields: [roomId], references: [id], onDelete: SetNull)
 
   @@index([doctorId, status, startAt, endAt])
   @@map("doctor_availabilities")
