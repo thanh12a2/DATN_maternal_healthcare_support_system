@@ -19,6 +19,7 @@
  * 14. Audit Log Service (audit_entries)
  */
 
+process.env.TZ = 'Asia/Ho_Chi_Minh';
 const { Client } = require('pg');
 const argon2 = require('argon2');
 const crypto = require('crypto');
@@ -800,14 +801,14 @@ async function main() {
   // ============================================================================
   console.log('\n--- BƯỚC 4: KHỞI TẠO CÁC CHẶNG HÀNG ĐỢI PHÒNG KHÁM (QUEUE STAGES) ---');
   const queueStagesDef = [
-    { code: 'RECEPTION', name: 'Tiếp đón & Đăng ký khám', roomCode: 'P.101' },
-    { code: 'VITALS', name: 'Đo sinh hiệu & Tiền sàng lọc', roomCode: 'P.102' },
+    { code: 'RECEPTION', name: 'Tiếp đón & Đăng ký khám', roomCode: null },
+    { code: 'VITALS', name: 'Đo sinh hiệu & Tiền sàng lọc', roomCode: null },
     { code: 'CONSULTATION', name: 'Phòng khám Bác sĩ Chuyên khoa', roomCode: 'P.201' },
-    { code: 'ULTRASOUND', name: 'Phòng Siêu âm Chẩn đoán', roomCode: 'P.301' },
-    { code: 'LAB_SAMPLE', name: 'Phòng Lấy mẫu Xét nghiệm', roomCode: 'P.105' },
-    { code: 'PROCEDURE', name: 'Phòng Thủ thuật & Can thiệp Sản khoa', roomCode: 'P.401' },
-    { code: 'IMMUNIZATION', name: 'Phòng Tiêm chủng Vắc xin Thai kỳ', roomCode: 'P.108' },
-    { code: 'PHARMACY', name: 'Nhà thuốc & Cấp phát thuốc', roomCode: 'P.109' },
+    { code: 'ULTRASOUND', name: 'Phòng Siêu âm Chẩn đoán', roomCode: null },
+    { code: 'LAB_SAMPLE', name: 'Phòng Lấy mẫu Xét nghiệm', roomCode: null },
+    { code: 'PROCEDURE', name: 'Phòng Thủ thuật & Can thiệp Sản khoa', roomCode: null },
+    { code: 'IMMUNIZATION', name: 'Phòng Tiêm chủng Vắc xin Thai kỳ', roomCode: null },
+    { code: 'PHARMACY', name: 'Nhà thuốc & Cấp phát thuốc', roomCode: null },
   ];
 
   const stageMap = {};
@@ -1019,23 +1020,9 @@ async function main() {
   // ============================================================================
   console.log('\n--- BƯỚC 6: KHỞI TẠO PHÒNG KHÁM (CLINIC ROOMS), ĐỘI NGŨ BÁC SĨ & LỊCH KHÁM ---');
   const clinicRoomsDef = [
-    { code: 'P.101', name: 'Phòng Tiếp đón & Tư vấn 101', status: 'ACTIVE' },
-    { code: 'P.102', name: 'Phòng Đo sinh hiệu & Tiền sàng lọc 102', status: 'ACTIVE' },
-    { code: 'P.105', name: 'Phòng Lấy mẫu Xét nghiệm 105', status: 'ACTIVE' },
-    { code: 'P.108', name: 'Phòng Tiêm chủng Vắc xin 108', status: 'ACTIVE' },
-    { code: 'P.109', name: 'Quầy Dược & Cấp phát thuốc 109', status: 'ACTIVE' },
     { code: 'P.201', name: 'Phòng khám Sản Phụ khoa 201', status: 'ACTIVE' },
-    { code: 'P.202', name: 'Phòng khám & Chẩn đoán trước sinh 202', status: 'ACTIVE' },
     { code: 'P.203', name: 'Phòng khám Sản Phụ khoa 203', status: 'ACTIVE' },
-    { code: 'P.204', name: 'Phòng khám Y học bào thai 204', status: 'ACTIVE' },
-    { code: 'P.205', name: 'Phòng khám Hỗ trợ sinh sản 205', status: 'ACTIVE' },
-    { code: 'P.206', name: 'Phòng khám Nội tiết & Bệnh lý thai kỳ 206', status: 'ACTIVE' },
     { code: 'P.207', name: 'Phòng khám Sản Phụ khoa 207', status: 'ACTIVE' },
-    { code: 'P.208', name: 'Phòng khám Chuyên gia Cố vấn 208', status: 'ACTIVE' },
-    { code: 'P.301', name: 'Phòng Siêu âm 4D/5D 301', status: 'ACTIVE' },
-    { code: 'P.302', name: 'Phòng Siêu âm Doppler 302', status: 'ACTIVE' },
-    { code: 'P.401', name: 'Phòng Thủ thuật Sản khoa 401', status: 'ACTIVE' },
-    { code: 'P.209', name: 'Phòng khám Dự phòng 209 (Tạm ngưng bảo trì)', status: 'INACTIVE' },
   ];
 
   const roomMap = {};
@@ -1048,7 +1035,16 @@ async function main() {
     roomMap[rm.code] = rmRes.rows[0];
   }
 
-  const doctorRoomCodes = ['P.201', 'P.202', 'P.203', 'P.204', 'P.205', 'P.206', 'P.207', 'P.208'];
+  const doctorRoomShifts = [
+    { roomCode: 'P.201', startTime: '07:30:00', endTime: '12:00:00' }, // 0: BS. Lê Thu Hà (Trưởng khoa Sản - P.201 Ca sáng)
+    { roomCode: 'P.203', startTime: '07:30:00', endTime: '12:00:00' }, // 1: PGS. TS. BS. Nguyễn Quang Minh (CĐTS - P.203 Ca sáng)
+    { roomCode: 'P.201', startTime: '12:30:00', endTime: '17:00:00' }, // 2: ThS. BS. Trần Thanh Mai (Sản Phụ khoa - P.201 Ca chiều)
+    { roomCode: 'P.203', startTime: '12:30:00', endTime: '17:00:00' }, // 3: BS. CKI. Đặng Kim Oanh (Y học bào thai - P.203 Ca chiều)
+    { roomCode: 'P.201', startTime: '17:30:00', endTime: '20:30:00' }, // 4: BS. CKII. Vũ Hoàng Long (Hiếm muộn & IVF - P.201 Ca tối)
+    { roomCode: 'P.207', startTime: '07:30:00', endTime: '12:00:00' }, // 5: BS. CKI. Phạm Thùy Dương (Nội tiết thai kỳ - P.207 Ca sáng)
+    { roomCode: 'P.207', startTime: '12:30:00', endTime: '17:00:00' }, // 6: BS. Nguyễn Hồng Nhung (Sản Phụ khoa - P.207 Ca chiều)
+    { roomCode: 'P.207', startTime: '17:30:00', endTime: '20:30:00' }, // 7: TS. BS. Đoàn Văn Bắc (Chuyên gia Cố vấn - P.207 Ca tối)
+  ];
   const doctorsDef = [
     {
       email: 'dr.lethuha@antam.local',
@@ -1153,7 +1149,8 @@ async function main() {
 
   for (let docIdx = 0; docIdx < doctorsDef.length; docIdx++) {
     const doc = doctorsDef[docIdx];
-    const assignedRoom = roomMap[doctorRoomCodes[docIdx]] || roomMap['P.201'];
+    const shift = doctorRoomShifts[docIdx];
+    const assignedRoom = roomMap[shift.roomCode] || roomMap['P.201'];
     const accId = await createAuthAccount(doc.email, 'DOCTOR');
 
     const docRes = await clients.doctor.query(
@@ -1182,8 +1179,8 @@ async function main() {
     for (let day = 1; day <= 7; day++) {
       await clients.doctor.query(
         `INSERT INTO doctor_schedules (id, doctor_id, day_of_week, start_time, end_time, slot_duration_minutes, room_id, effective_from, timezone, status, version, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, '08:00:00', '17:00:00', 30, $3, $4, 'Asia/Ho_Chi_Minh', 'ACTIVE', 1, NOW(), NOW())`,
-        [doctorId, day, assignedRoom.id, effectiveDate]
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, 30, $5, $6, 'Asia/Ho_Chi_Minh', 'ACTIVE', 1, NOW(), NOW())`,
+        [doctorId, day, shift.startTime, shift.endTime, assignedRoom.id, effectiveDate]
       );
     }
 
@@ -1263,9 +1260,9 @@ async function main() {
 
   // 2. BS. Lê Thu Hà tăng cường ca trực hội chẩn ngoài giờ (EXTRA_AVAILABLE)
   const extraShiftStart = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  extraShiftStart.setHours(17, 0, 0, 0);
+  extraShiftStart.setHours(7, 0, 0, 0);
   const extraShiftEnd = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  extraShiftEnd.setHours(20, 0, 0, 0);
+  extraShiftEnd.setHours(7, 30, 0, 0);
 
   await clients.doctor.query(
     `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, room_id, reason_code, note, status, created_by, version, created_at, updated_at)
@@ -1275,9 +1272,9 @@ async function main() {
 
   // 3. BS. Trần Thanh Mai xin nghỉ phép cá nhân nhưng đã hủy (CANCELLED)
   const leaveStart = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-  leaveStart.setHours(8, 0, 0, 0);
+  leaveStart.setHours(13, 0, 0, 0);
   const leaveEnd = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-  leaveEnd.setHours(12, 0, 0, 0);
+  leaveEnd.setHours(17, 0, 0, 0);
 
   await clients.doctor.query(
     `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, reason_code, note, status, created_by, version, created_at, updated_at)
@@ -1782,7 +1779,7 @@ async function main() {
     // Lịch khám HÔM NAY - Nguyễn Minh Anh
     {
       patientIdx: 0,
-      doctorIdx: 0, // BS. Lê Thu Hà
+      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
       serviceCode: 'PRENATAL_VIP',
       dayOffset: 0,
       startHour: 9,
@@ -1801,7 +1798,7 @@ async function main() {
     // Lịch khám HÔM NAY - Trần Thị Thanh Hằng
     {
       patientIdx: 1,
-      doctorIdx: 1, // PGS. Nguyễn Quang Minh
+      doctorIdx: 1, // PGS. Nguyễn Quang Minh (P.203, 07:30 - 12:00)
       serviceCode: 'US_4D_5D',
       dayOffset: 0,
       startHour: 10,
@@ -1813,14 +1810,14 @@ async function main() {
       code: 'AT-2026-0002',
       vitals: { sys: 110, dia: 70, hr: 78, temp: 36.5, weight: 52.0 },
       complaint: 'Siêu âm 4D sàng lọc hình thái và đo độ mờ da gáy tuần 12.',
-      summary: 'Đã check-in tiếp đón, hoàn tất đo sinh hiệu và chuyển tiếp đến phòng Siêu âm P.301.',
+      summary: 'Đã check-in tiếp đón, hoàn tất đo sinh hiệu và chuyển tiếp đến phòng khám P.203.',
       diagnosis: null,
       medications: [],
     },
     // Lịch khám HÔM NAY - Lê Ngọc Mai
     {
       patientIdx: 2,
-      doctorIdx: 5, // BS. Phạm Thùy Dương
+      doctorIdx: 5, // BS. Phạm Thùy Dương (P.207, 07:30 - 12:00)
       serviceCode: 'OGTT_DIABETES',
       dayOffset: 0,
       startHour: 8,
@@ -1839,10 +1836,10 @@ async function main() {
     // Lịch khám QUÁ KHỨ (3 ngày trước) - Phạm Quỳnh Chi
     {
       patientIdx: 3,
-      doctorIdx: 0, // BS. Lê Thu Hà
+      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
       serviceCode: 'PRENATAL_ROUTINE',
       dayOffset: -3,
-      startHour: 14,
+      startHour: 10,
       startMinute: 0,
       channel: 'ONLINE',
       selectionMode: 'DOCTOR',
@@ -1858,11 +1855,11 @@ async function main() {
     // Lịch khám QUÁ KHỨ (5 ngày trước) - Hoàng Thùy Dương
     {
       patientIdx: 4,
-      doctorIdx: 3, // BS. Đặng Kim Oanh
+      doctorIdx: 3, // BS. Đặng Kim Oanh (P.203, 12:30 - 17:00)
       serviceCode: 'NIPT_BASIC',
       dayOffset: -5,
-      startHour: 9,
-      startMinute: 30,
+      startHour: 14,
+      startMinute: 0,
       channel: 'ONLINE',
       selectionMode: 'RANK',
       status: 'COMPLETED',
@@ -1877,10 +1874,10 @@ async function main() {
     // Lịch khám NGÀY MAI - Vũ Thị Kim Ngân
     {
       patientIdx: 5,
-      doctorIdx: 2, // ThS. BS. Trần Thanh Mai
+      doctorIdx: 2, // ThS. BS. Trần Thanh Mai (P.201, 12:30 - 17:00)
       serviceCode: 'PRENATAL_ROUTINE',
       dayOffset: 1,
-      startHour: 8,
+      startHour: 13,
       startMinute: 30,
       channel: 'RECEPTION',
       selectionMode: 'DOCTOR',
@@ -1896,7 +1893,7 @@ async function main() {
     // Lịch khám NGÀY MAI - Đỗ Thu Trang
     {
       patientIdx: 6,
-      doctorIdx: 1, // PGS. Nguyễn Quang Minh
+      doctorIdx: 1, // PGS. Nguyễn Quang Minh (P.203, 07:30 - 12:00)
       serviceCode: 'US_4D_5D',
       dayOffset: 1,
       startHour: 10,
@@ -1915,7 +1912,7 @@ async function main() {
     // Lịch khám 3 NGÀY NỮA - Bùi Phương Linh
     {
       patientIdx: 7,
-      doctorIdx: 6, // BS. Nguyễn Hồng Nhung
+      doctorIdx: 6, // BS. Nguyễn Hồng Nhung (P.207, 12:30 - 17:00)
       serviceCode: 'US_2D',
       dayOffset: 3,
       startHour: 14,
@@ -1934,7 +1931,7 @@ async function main() {
     // Lịch khám 4 NGÀY NỮA - Đinh Thị Hồng Hạnh
     {
       patientIdx: 8,
-      doctorIdx: 5, // BS. Phạm Thùy Dương
+      doctorIdx: 5, // BS. Phạm Thùy Dương (P.207, 07:30 - 12:00)
       serviceCode: 'PRENATAL_VIP',
       dayOffset: 4,
       startHour: 9,
@@ -1953,11 +1950,11 @@ async function main() {
     // Lịch khám HÔM NAY - Phan Thị Bích Thủy (Cần chuyển giao bác sĩ: REASSIGNMENT_REQUIRED)
     {
       patientIdx: 9,
-      doctorIdx: 0, // BS. Lê Thu Hà
+      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
       serviceCode: 'PRENATAL_ROUTINE',
       dayOffset: 0,
-      startHour: 15,
-      startMinute: 30,
+      startHour: 11,
+      startMinute: 0,
       channel: 'ONLINE',
       selectionMode: 'RANK',
       status: 'REASSIGNMENT_REQUIRED',
@@ -1972,10 +1969,10 @@ async function main() {
     // Lịch khám HÔM QUA - Dương Yến Nhi (Bị hủy: CANCELLED)
     {
       patientIdx: 10,
-      doctorIdx: 4, // BS. CKII. Vũ Hoàng Long
+      doctorIdx: 4, // BS. CKII. Vũ Hoàng Long (P.201, 17:30 - 20:30)
       serviceCode: 'IUI_PROCEDURE',
       dayOffset: -1,
-      startHour: 10,
+      startHour: 18,
       startMinute: 0,
       channel: 'RECEPTION',
       selectionMode: 'DOCTOR',
@@ -1992,7 +1989,7 @@ async function main() {
     // Lịch khám 2 NGÀY TRƯỚC - Võ Bảo Châu (Vắng mặt: NO_SHOW)
     {
       patientIdx: 11,
-      doctorIdx: 6, // BS. Nguyễn Hồng Nhung
+      doctorIdx: 6, // BS. Nguyễn Hồng Nhung (P.207, 12:30 - 17:00)
       serviceCode: 'US_2D',
       dayOffset: -2,
       startHour: 16,
@@ -2422,7 +2419,7 @@ async function main() {
           // Vé 1: Sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 1, 'VIT-001', 'COMPLETED', 'ROUTINE', false, 1, 1, $4, $5, $6, 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, 1, 'VIT-001', 'COMPLETED', 'ROUTINE', false, 1, 1, $4, $5, $6, 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate, new Date(appDate.getTime() - 25 * 60000), new Date(appDate.getTime() - 20 * 60000), new Date(appDate.getTime() - 10 * 60000)]
           );
 
@@ -2451,7 +2448,7 @@ async function main() {
           // Vé 3: Siêu âm chẩn đoán (ULTRASOUND - WAITING tại P.301)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.301', $3, $4, 1, 'US-001', 'WAITING', 'ROUTINE', false, 3, 0, 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, $4, 1, 'US-001', 'WAITING', 'ROUTINE', false, 3, 0, 1, NOW(), NOW())`,
             [journeyId, stageMap['ULTRASOUND'], ordRes.rows[0].id, businessDate]
           );
 
@@ -2467,7 +2464,7 @@ async function main() {
           // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 2, 'VIT-002', 'COMPLETED', 'ROUTINE', true, 4, 1, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '5 minutes', 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, 2, 'VIT-002', 'COMPLETED', 'ROUTINE', true, 4, 1, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '5 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate]
           );
 
@@ -2499,7 +2496,7 @@ async function main() {
           // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.102', $3, 3, 'VIT-003', 'COMPLETED', 'ROUTINE', false, 6, 1, NOW() - INTERVAL '105 minutes', 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, 3, 'VIT-003', 'COMPLETED', 'ROUTINE', false, 6, 1, NOW() - INTERVAL '105 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['VITALS'], businessDate]
           );
 
@@ -2527,14 +2524,14 @@ async function main() {
           // Vé 3: Xét nghiệm máu OGTT (LAB_SAMPLE - COMPLETED tại P.105)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.105', $3, $4, 1, 'LAB-001', 'COMPLETED', 'ROUTINE', false, 8, 1, NOW() - INTERVAL '65 minutes', NOW() - INTERVAL '25 minutes', 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, $4, 1, 'LAB-001', 'COMPLETED', 'ROUTINE', false, 8, 1, NOW() - INTERVAL '65 minutes', NOW() - INTERVAL '25 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['LAB_SAMPLE'], ordRes.rows[0].id, businessDate]
           );
 
           // Vé 4: Nhà thuốc (PHARMACY - COMPLETED tại P.109)
           await clients.queue.query(
             `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, 'P.109', $3, 1, 'PHARM-001', 'COMPLETED', 'ROUTINE', false, 9, 1, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '10 minutes', 1, NOW(), NOW())`,
+             VALUES (gen_random_uuid(), $1, $2, null, $3, 1, 'PHARM-001', 'COMPLETED', 'ROUTINE', false, 9, 1, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '10 minutes', 1, NOW(), NOW())`,
             [journeyId, stageMap['PHARMACY'], businessDate]
           );
         }
@@ -2584,6 +2581,18 @@ async function main() {
   );
   const hold1Id = hold1Res.rows[0].id;
 
+  const hold2Start = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+  hold2Start.setHours(13, 30, 0, 0);
+  const hold2EndDate = new Date(hold2Start.getTime() + 30 * 60 * 1000);
+
+  const hold3Start = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  hold3Start.setHours(14, 30, 0, 0);
+  const hold3EndDate = new Date(hold3Start.getTime() + 30 * 60 * 1000);
+
+  const hold4Start = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
+  hold4Start.setHours(9, 30, 0, 0);
+  const hold4EndDate = new Date(hold4Start.getTime() + 30 * 60 * 1000);
+
   const hold2Res = await clients.appointment.query(
     `INSERT INTO slot_holds (
       id, patient_id, service_id, doctor_id, rank_code, selection_mode,
@@ -2596,7 +2605,7 @@ async function main() {
     ) RETURNING id`,
     [
       patientList[5].id, serviceMap['PRENATAL_ROUTINE'].id, doctorList[2].id,
-      doctorList[2].rank, new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      doctorList[2].rank, hold2Start, hold2EndDate,
       doctorList[2].roomId, doctorList[2].roomCode, doctorList[2].roomName
     ]
   );
@@ -2614,7 +2623,7 @@ async function main() {
     ) RETURNING id`,
     [
       patientList[7].id, serviceMap['US_2D'].id, doctorList[6].id,
-      'BS', new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      'BS', hold3Start, hold3EndDate,
       doctorList[6].roomId, doctorList[6].roomCode, doctorList[6].roomName
     ]
   );
@@ -2632,7 +2641,7 @@ async function main() {
     ) RETURNING id`,
     [
       patientList[8].id, serviceMap['PRENATAL_VIP'].id, doctorList[5].id,
-      'CKI', new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000), new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      'CKI', hold4Start, hold4EndDate,
       doctorList[5].roomId, doctorList[5].roomCode, doctorList[5].roomName
     ]
   );
@@ -3414,7 +3423,7 @@ async function main() {
   // Nhật ký kiểm toán điều phối hàng đợi (QueueAudit)
   const queueAuditLogs = [
     { event: 'QUEUE_JOURNEY_CREATED', actor: receptionistList[0].accountId, ticketId: seededAppointments[0].ticketId, reason: 'Khởi tạo hành trình tiếp đón thai phụ Nguyễn Minh Anh' },
-    { event: 'QUEUE_TICKET_CALLED', actor: doctorList[1].accountId, ticketId: seededAppointments[1].ticketId, reason: 'Bác sĩ gọi số thứ tự CONS-002 vào phòng P.202' },
+    { event: 'QUEUE_TICKET_CALLED', actor: doctorList[1].accountId, ticketId: seededAppointments[1].ticketId, reason: 'Bác sĩ gọi số thứ tự CONS-002 vào phòng P.203' },
     { event: 'QUEUE_OVERRIDE_CALLED', actor: doctorList[0].accountId, ticketId: urgentTicketId, reason: 'Bác sĩ ưu tiên gọi trước thai phụ nguy cơ cao cấp cứu' },
     { event: 'QUEUE_TICKET_SKIPPED', actor: nurseAccountId, ticketId: skippedTicketId, reason: 'Bệnh nhân vắng mặt tại sảnh sau 2 lần phát thanh gọi số' },
     { event: 'QUEUE_TICKET_CANCELLED', actor: receptionistList[0].accountId, ticketId: cancelledTicketId, reason: 'Bệnh nhân xin hủy chuyển tuyến theo nguyện vọng' },
@@ -3457,7 +3466,7 @@ async function main() {
   await clients.queue.query(
     `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
      VALUES (gen_random_uuid(), 'queue.ticket_called.v1', $1, 1, $2, 'PUBLISHED', NOW(), NOW())`,
-    [seededAppointments[1].journeyId, JSON.stringify({ ticketCode: 'CONS-002', stage: 'CONSULTATION', room: 'P.202', calledAt: new Date() })]
+    [seededAppointments[1].journeyId, JSON.stringify({ ticketCode: 'CONS-002', stage: 'CONSULTATION', room: 'P.203', calledAt: new Date() })]
   );
   await clients.queue.query(
     `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
