@@ -8,3 +8,4 @@ export class ReasonVersionDto { @IsString() @Length(3,500) reason!:string; @IsOp
 export class RescheduleDto extends ReasonVersionDto { @IsUUID() newHoldId!:string; }
 export class ReassignDto extends ReasonVersionDto { @IsUUID() doctorId!:string; @IsString() @Length(1,500) confirmationEvidence!:string; }
 export class AppointmentListDto { @IsOptional() @IsUUID() patientId?:string; @IsOptional() @IsUUID() doctorId?:string; @IsOptional() @IsUUID() roomId?:string; @IsOptional() @IsString() @Length(1,50) roomCode?:string; @IsOptional() @IsString() status?:string; @IsOptional() @IsDateString() from?:string; @IsDateString() @IsOptional() to?:string; @IsOptional() @IsInt() @Min(1) @Max(100) @Type(()=>Number) limit?:number; @IsOptional() @IsString() cursor?:string; }
+export class DoctorOccupancyDto { @IsDateString() from!:string; @IsDateString() to!:string; }

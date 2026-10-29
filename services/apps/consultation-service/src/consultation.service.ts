@@ -53,20 +53,28 @@ export class ConsultationService {
       const patientId = await access.assertPatientOwner(undefined, auth);
       where.patientId = patientId;
     } else if (auth.role === 'DOCTOR') {
-      where.OR = [
-        { assignedDoctorId: auth.userId },
-        { status: ConsultationStatus.OPEN },
-      ];
+      const doctorId = await access.doctorId(auth);
+      where.assignedDoctorId = doctorId;
+      where.OR = [{ status: ConsultationStatus.CLOSED }, { assignments: { some: { doctorId, status: 'ACTIVE' } } }];
     }
     if (q?.status) where.status = q.status;
 
-    const rows = await this.db.consultationThread.findMany({
+    const limit = Math.min(Math.max(Number(q?.limit) || 50, 1), 100);
+    const found = await this.db.consultationThread.findMany({
       where,
-      orderBy: { updatedAt: 'desc' },
-      take: Math.min(Number(q?.limit) || 50, 100),
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(q?.cursor ? { cursor: { id: String(q.cursor) }, skip: 1 } : {}),
     });
-
-    return { data: rows.map((x) => this.view(x)) };
+    const rows = found.slice(0, limit);
+    const meta = { nextCursor: found.length > limit ? rows[rows.length - 1].id : null };
+    if (auth.role !== 'DOCTOR') return { data: rows.map((x) => this.view(x)), meta };
+    const data = await Promise.all(rows.map(async (x) => {
+      const receipt = await this.db.consultationReadReceipt.findUnique({ where: { threadId_accountId: { threadId: x.id, accountId: auth.userId } } });
+      const unreadCount = await this.db.consultationMessage.count({ where: { threadId: x.id, sequenceNo: { gt: receipt?.lastReadSequence ?? 0n }, senderAccountId: { not: auth.userId } } });
+      return { ...this.view(x), unreadCount };
+    }));
+    return { data, meta };
   }
 
   async assign(id: string, doctorId: string, actor: string) {
@@ -92,6 +100,7 @@ export class ConsultationService {
 
   async message(id: string, r: any) {
     const t = await this.raw(id);
+    if (t.status === ConsultationStatus.CLOSED) throw new ConflictException('CONSULTATION_CLOSED');
     const next = t.lastSequenceNo + 1n;
     const body = String(r.body ?? r.content ?? '').trim();
     const clientMessageId = r.clientMessageId || randomUUID();
@@ -186,11 +195,11 @@ export class ConsultationService {
     };
   }
 
-  async messagesRest(id: string, limit = 50) {
+  async messagesRest(id: string, limit = 50, afterSequence = 0) {
     const rows = await this.db.consultationMessage.findMany({
-      where: { threadId: id },
+      where: { threadId: id, sequenceNo: { gt: BigInt(afterSequence) } },
       orderBy: { sequenceNo: 'asc' },
-      take: Math.min(limit, 100),
+      take: Math.min(Math.max(Number(limit) || 50, 1), 100),
     });
     return {
       data: rows.map((x) => ({
@@ -205,6 +214,15 @@ export class ConsultationService {
     };
   }
 
+  async markRead(id: string, accountId: string, sequence: number) {
+    if (!Number.isSafeInteger(sequence) || sequence < 0) throw new ConflictException('INVALID_SEQUENCE');
+    const thread = await this.raw(id);
+    if (BigInt(sequence) > thread.lastSequenceNo) throw new ConflictException('INVALID_SEQUENCE');
+    await this.db.consultationReadReceipt.createMany({ data: [{ threadId: id, accountId, lastReadSequence: 0n }], skipDuplicates: true });
+    await this.db.consultationReadReceipt.updateMany({ where: { threadId: id, accountId, lastReadSequence: { lt: BigInt(sequence) } }, data: { lastReadSequence: BigInt(sequence), updatedAt: new Date() } });
+    return { data: { lastReadSequence: sequence } };
+  }
+
   async authorizeParticipant(
     id: string,
     auth: PublicAuthContext,
@@ -216,7 +234,12 @@ export class ConsultationService {
       return;
     }
     if (auth.role === 'DOCTOR') {
-      return;
+      const doctorId = await access.doctorId(auth);
+      if (thread.assignedDoctorId !== doctorId) throw new ForbiddenException('NOT_ASSIGNED');
+      if (thread.status === ConsultationStatus.CLOSED) return;
+      const assigned = await this.db.consultationAssignment.findFirst({ where: { threadId: id, doctorId, status: 'ACTIVE' } });
+      if (assigned) return;
+      throw new ForbiddenException('NOT_ASSIGNED');
     }
     if (['RECEPTIONIST', 'ADMIN'].includes(auth.role)) return;
     throw new ForbiddenException('NOT_A_PARTICIPANT');
@@ -237,6 +260,7 @@ export class ConsultationService {
       patientId: t.patientId,
       doctorId: t.assignedDoctorId ?? '',
       assignedDoctorId: t.assignedDoctorId ?? '',
+      lastMessageAt: t.lastMessageAt ? t.lastMessageAt.toISOString() : null,
       subject: t.subject,
       status: t.status,
       version: t.version,

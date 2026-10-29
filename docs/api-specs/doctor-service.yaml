@@ -35,6 +35,11 @@ paths:
         - { $ref: '#/components/parameters/Limit' }
         - { $ref: '#/components/parameters/Cursor' }
       responses: { '200': { $ref: '#/components/responses/DataResponse' } }
+  /doctors/me:
+    get:
+      summary: Get the authenticated doctor's own profile
+      description: Resolves the authenticated account to its doctor profile, including inactive profiles. Requires the DOCTOR role.
+      responses: { '200': { $ref: '#/components/responses/DataResponse' }, '403': { $ref: '#/components/responses/ErrorResponse' }, '404': { $ref: '#/components/responses/ErrorResponse' } }
   /doctors/{doctorId}:
     parameters: [{ $ref: '#/components/parameters/DoctorId' }]
     get:

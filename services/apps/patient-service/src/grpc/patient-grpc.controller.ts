@@ -43,7 +43,7 @@ export class PatientGrpcController {
   }
 
   @GrpcMethod('PatientInternalService', 'GetPatientIdentity')
-  @ServiceCallers('receptionist-service', 'medical-record-service')
+  @ServiceCallers('receptionist-service', 'medical-record-service', 'appointment-service')
   @ServiceScopes('patient:identity:read')
   async getPatientIdentity(request: { patientId: string; purpose?: string }) {
     return { patient: await this.patients.getInternalIdentity(request.patientId, request.purpose ?? 'CLINICAL') };

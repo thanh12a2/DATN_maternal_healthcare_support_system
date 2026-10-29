@@ -9,9 +9,19 @@ option java_multiple_files = true;
 option java_package = "vn.maternal.doctor.v1";
 
 service DoctorInternalService {
+  rpc ResolveDoctorByAccount(ResolveDoctorByAccountRequest) returns (ResolveDoctorByAccountResponse);
   rpc GetDoctorEligibility(GetDoctorEligibilityRequest) returns (GetDoctorEligibilityResponse);
   rpc ListEligibleDoctors(ListEligibleDoctorsRequest) returns (ListEligibleDoctorsResponse);
   rpc GetDoctorAvailability(GetDoctorAvailabilityRequest) returns (GetDoctorAvailabilityResponse);
+}
+
+message ResolveDoctorByAccountRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string account_id = 2;
+}
+message ResolveDoctorByAccountResponse {
+  string doctor_id = 1;
+  bool found = 2;
 }
 
 enum DoctorOperationalStatus {

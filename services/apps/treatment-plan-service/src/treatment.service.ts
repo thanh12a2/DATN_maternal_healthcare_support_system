@@ -65,6 +65,7 @@ export class TreatmentService {
   async listRest(q: any) {
     const where: any = {};
     if (q?.patientId) where.patientId = String(q.patientId);
+    if (q?.encounterId) where.sourceEncounterId = String(q.encounterId);
     if (q?.pregnancyEpisodeId) where.pregnancyEpisodeId = String(q.pregnancyEpisodeId);
 
     const items = await this.db.treatmentPlan.findMany({

@@ -75,10 +75,20 @@ export class ConsultationController {
   async getMessages(
     @Param('id') id: string,
     @Query('limit') limit: string,
+    @Query('afterSequence') afterSequence: string,
     @CurrentAuth() auth: PublicAuthContext,
   ) {
     await this.service.authorizeParticipant(id, auth, this.access);
-    return this.service.messagesRest(id, limit ? Number(limit) : 50);
+    const after = afterSequence ? Number(afterSequence) : 0;
+    if (!Number.isSafeInteger(after) || after < 0) throw new ForbiddenException('INVALID_SEQUENCE');
+    return this.service.messagesRest(id, limit ? Number(limit) : 50, after);
+  }
+
+  @UseGuards(PublicJwtGuard)
+  @Post(['consultations/:id/read', ':id/read'])
+  async markRead(@Param('id') id: string, @Body() body: any, @CurrentAuth() auth: PublicAuthContext) {
+    await this.service.authorizeParticipant(id, auth, this.access);
+    return this.service.markRead(id, auth.userId, Number(body.sequenceNo));
   }
 
   @UseGuards(PublicJwtGuard)

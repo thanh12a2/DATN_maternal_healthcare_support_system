@@ -12,7 +12,8 @@ services:
       POSTGRES_USER: ${APPOINTMENT_DB_USER:-appointment}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -35,7 +36,7 @@ services:
     build:
       args:
         APP_NAME: appointment-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -51,7 +52,7 @@ services:
     build:
       args:
         APP_NAME: appointment-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       appointment-migrate:
@@ -94,7 +95,8 @@ services:
       POSTGRES_USER: ${AUDIT_LOG_DB_USER:-audit_log}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -117,7 +119,7 @@ services:
     build:
       args:
         APP_NAME: audit-log-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -133,7 +135,7 @@ services:
     build:
       args:
         APP_NAME: audit-log-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       audit-log-migrate:
@@ -176,7 +178,8 @@ services:
       POSTGRES_USER: ${AUTH_DB_USER:-auth}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -195,7 +198,7 @@ services:
     build:
       args:
         APP_NAME: auth-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -211,7 +214,7 @@ services:
     build:
       args:
         APP_NAME: auth-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       auth-migrate:
@@ -257,7 +260,8 @@ services:
       POSTGRES_USER: ${BILLING_DB_USER:-billing}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -280,7 +284,7 @@ services:
     build:
       args:
         APP_NAME: billing-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -296,7 +300,7 @@ services:
     build:
       args:
         APP_NAME: billing-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       billing-migrate:
@@ -339,7 +343,8 @@ services:
       POSTGRES_USER: ${CATALOG_DB_USER:-catalog}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -358,7 +363,7 @@ services:
     build:
       args:
         APP_NAME: service-catalog-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -377,7 +382,8 @@ services:
       POSTGRES_USER: ${CONSULTATION_DB_USER:-consultation}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -400,7 +406,7 @@ services:
     build:
       args:
         APP_NAME: consultation-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -416,7 +422,7 @@ services:
     build:
       args:
         APP_NAME: consultation-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       consultation-migrate:
@@ -459,7 +465,8 @@ services:
       POSTGRES_USER: ${DOCTOR_DB_USER:-doctor}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -478,7 +485,7 @@ services:
     build:
       args:
         APP_NAME: doctor-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -494,7 +501,7 @@ services:
     build:
       args:
         APP_NAME: doctor-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       auth-service:
@@ -530,7 +537,8 @@ services:
       POSTGRES_USER: ${DOCUMENT_DB_USER:-document}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -553,7 +561,7 @@ services:
     build:
       args:
         APP_NAME: document-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -569,7 +577,7 @@ services:
     build:
       args:
         APP_NAME: document-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       document-migrate:
@@ -607,7 +615,7 @@ services:
       - ${DOCUMENT_SERVICE_PORT:-5013}:5013
   frontend:
     build:
-      context: D:\DATN_maternal_healthcare_support_system\frontend
+      context: ./frontend
       dockerfile: Dockerfile
     depends_on:
       gateway:
@@ -621,7 +629,7 @@ services:
       - ${FRONTEND_PORT:-3000}:3000
   gateway:
     build:
-      context: D:\DATN_maternal_healthcare_support_system
+      context: .
       dockerfile: gateway/Dockerfile
     depends_on:
       appointment-service:
@@ -679,7 +687,8 @@ services:
       POSTGRES_USER: ${KONG_PG_USER:-kong}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -694,7 +703,7 @@ services:
         volume: {}
   kong-init:
     build:
-      context: D:\DATN_maternal_healthcare_support_system
+      context: .
       dockerfile: gateway/Dockerfile
     command:
       - /usr/local/bin/init-kong.sh
@@ -720,7 +729,8 @@ services:
       POSTGRES_USER: ${MEDICAL_RECORD_DB_USER:-medical_record}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -743,7 +753,7 @@ services:
     build:
       args:
         APP_NAME: medical-record-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -759,7 +769,7 @@ services:
     build:
       args:
         APP_NAME: medical-record-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       medical-record-migrate:
@@ -802,7 +812,8 @@ services:
       POSTGRES_USER: ${NOTIFICATION_DB_USER:-notification}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -825,7 +836,7 @@ services:
     build:
       args:
         APP_NAME: notification-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -841,7 +852,7 @@ services:
     build:
       args:
         APP_NAME: notification-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       notification-migrate:
@@ -884,7 +895,8 @@ services:
       POSTGRES_USER: ${PATIENT_DB_USER:-patient}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -903,7 +915,7 @@ services:
     build:
       args:
         APP_NAME: patient-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -919,7 +931,7 @@ services:
     build:
       args:
         APP_NAME: patient-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       patient-migrate:
@@ -965,7 +977,8 @@ services:
       POSTGRES_USER: ${PRESCRIPTION_DB_USER:-prescription}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -988,7 +1001,7 @@ services:
     build:
       args:
         APP_NAME: prescription-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1004,7 +1017,7 @@ services:
     build:
       args:
         APP_NAME: prescription-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       prescription-migrate:
@@ -1047,7 +1060,8 @@ services:
       POSTGRES_USER: ${QUEUE_DB_USER:-queue}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -1070,7 +1084,7 @@ services:
     build:
       args:
         APP_NAME: queue-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1086,7 +1100,7 @@ services:
     build:
       args:
         APP_NAME: queue-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       queue-migrate:
@@ -1128,15 +1142,11 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-maternal}
     healthcheck:
       interval: 10s
-      retries: 12
-      start_period: 10s
+      retries: 5
+      start_period: 30s
       test:
-        - CMD
-        - su-exec
-        - rabbitmq
-        - rabbitmq-diagnostics
-        - -q
-        - ping
+        - CMD-SHELL
+        - nc -z 127.0.0.1 5672 || exit 1
       timeout: 5s
     image: rabbitmq:4-management-alpine
     networks:
@@ -1155,7 +1165,8 @@ services:
       POSTGRES_USER: ${RECEPTIONIST_DB_USER:-receptionist}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -1174,7 +1185,7 @@ services:
     build:
       args:
         APP_NAME: receptionist-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1190,7 +1201,7 @@ services:
     build:
       args:
         APP_NAME: receptionist-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       appointment-service:
@@ -1241,7 +1252,8 @@ services:
       POSTGRES_USER: ${REPORTING_DB_USER:-reporting}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -1264,7 +1276,7 @@ services:
     build:
       args:
         APP_NAME: reporting-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1280,7 +1292,7 @@ services:
     build:
       args:
         APP_NAME: reporting-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       rabbitmq:
@@ -1320,7 +1332,7 @@ services:
     build:
       args:
         APP_NAME: sample-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     environment:
       PORT: 5000
@@ -1332,7 +1344,7 @@ services:
     build:
       args:
         APP_NAME: service-catalog-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       catalog-migrate:
@@ -1371,7 +1383,8 @@ services:
       POSTGRES_USER: ${TREATMENT_PLAN_DB_USER:-treatment_plan}
     healthcheck:
       interval: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
       test:
         - CMD-SHELL
         - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
@@ -1394,7 +1407,7 @@ services:
     build:
       args:
         APP_NAME: treatment-plan-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
       target: migrator
     depends_on:
@@ -1410,7 +1423,7 @@ services:
     build:
       args:
         APP_NAME: treatment-plan-service
-      context: D:\DATN_maternal_healthcare_support_system\services
+      context: ./services
       dockerfile: Dockerfile
     depends_on:
       rabbitmq:

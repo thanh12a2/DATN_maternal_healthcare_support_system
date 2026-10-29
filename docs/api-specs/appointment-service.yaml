@@ -110,6 +110,19 @@ paths:
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /doctor-occupancy:
+    get:
+      tags: [Appointments]
+      summary: Read occupied intervals for the authenticated doctor
+      description: Returns appointment and unexpired hold intervals without patient information. This snapshot does not reserve availability.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        '200': { description: Occupied intervals in the data array. }
+        '400': { description: Invalid range or range exceeds 31 days. }
+        '403': { description: Doctor role or profile missing. }
+        '503': { description: Doctor Service unavailable. }
   /appointments:
     post:
       tags: [Appointments]
@@ -140,6 +153,7 @@ paths:
       tags: [Appointments]
       operationId: listAppointments
       summary: List appointments visible to the caller
+      description: For a doctor, results are restricted to assigned appointments and include the patient's name from Patient Service.
       parameters:
         - name: patientId
           in: query

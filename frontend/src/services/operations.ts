@@ -10,6 +10,7 @@ export interface Consultation {
   assignedDoctorId?: string | null;
   lastMessageAt?: string | null;
   updatedAt?: string | null;
+  unreadCount?: number;
   [key: string]: unknown;
 }
 export interface ConsultationMessage {
@@ -61,11 +62,33 @@ export function getAppointmentReport(request: Requester, query = '') { return re
 export function getRevenueReport(request: Requester, query = '') { return request<Report>(`/api/reports/revenue${query ? `?${query}` : ''}`); }
 
 export async function listConsultations(request: Requester, query = '') { return list<Consultation>(await request<unknown>(`/api/consultations${query ? `?${query}` : ''}`)); }
+export async function listAllDoctorConsultations(request: Requester): Promise<Consultation[]> {
+  const rows: Consultation[] = []; const seen = new Set<string>(); let cursor = '';
+  for (;;) {
+    const query = new URLSearchParams({ limit: '100' }); if (cursor) query.set('cursor', cursor);
+    const page = await request<{ data: Consultation[]; meta?: { nextCursor?: string | null } }>(`/api/consultations?${query}`);
+    if (!Array.isArray(page.data)) throw new Error('Không thể tải đầy đủ tư vấn.');
+    rows.push(...page.data); const next = page.meta?.nextCursor;
+    if (!next) return rows;
+    if (seen.has(next)) throw new Error('Không thể tải đầy đủ tư vấn.');
+    seen.add(next); cursor = next;
+  }
+}
 export function getConsultation(request: Requester, id: string) { return request<Consultation>(`/api/consultations/${encodeURIComponent(id)}`); }
 export async function listConsultationMessages(request: Requester, id: string): Promise<ConsultationMessage[]> {
-  return list<ConsultationMessage>(await request<unknown>(`/api/consultations/${encodeURIComponent(id)}/messages`));
+  const messages: ConsultationMessage[] = [];
+  let after = 0;
+  for (;;) {
+    const page = list<ConsultationMessage>(await request<unknown>(`/api/consultations/${encodeURIComponent(id)}/messages?limit=100&afterSequence=${after}`));
+    messages.push(...page);
+    if (page.length < 100) return messages;
+    const next = page[page.length - 1]?.sequenceNo;
+    if (!next || next <= after) throw new Error('Không thể tải đầy đủ tin nhắn.');
+    after = next;
+  }
 }
 export function sendConsultationMessage(request: Requester, id: string, body: unknown) { return post<Consultation>(request, `/api/consultations/${encodeURIComponent(id)}/messages`, body); }
+export function markConsultationRead(request: Requester, id: string, sequenceNo: number) { return post(request, `/api/consultations/${encodeURIComponent(id)}/read`, { sequenceNo }); }
 
 export interface ReceptionQueueStage { id?: string; code?: string; name?: string; roomCode?: string | null; [key: string]: unknown; }
 export interface ReceptionQueueTicket { id?: string; ticketCode?: string; stageId?: string; stageName?: string; roomCode?: string | null; state?: string; version?: number | string; [key: string]: unknown; }

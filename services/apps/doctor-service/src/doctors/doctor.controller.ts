@@ -108,6 +108,11 @@ export class DoctorController {
   ) {
     return this.service.getRoom(roomId, req.identity);
   }
+  @Get('me')
+  @Roles('DOCTOR')
+  me(@Req() req: AuthenticatedRequest) {
+    return this.service.getMyDoctor(this.identity(req));
+  }
   @Patch('rooms/:roomId')
   @Roles('ADMIN', 'CLINIC_MANAGER')
   updateRoom(

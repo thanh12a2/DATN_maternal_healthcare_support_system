@@ -8,3 +8,8 @@ export async function listClinicRooms(request: Requester): Promise<ClinicRoom[]>
 export async function listSpecialties(request: Requester): Promise<Specialty[]> { return items<Specialty>(await request('/api/doctors/specialties')); }
 export function getDoctor(request: Requester, id: string) { return request<Doctor>('/api/doctors/' + encodeURIComponent(id)); }
 export function getDoctorAvailability(request: Requester, id: string, from: string, to: string) { const q = new URLSearchParams({ from, to }); return request<unknown>('/api/doctors/' + encodeURIComponent(id) + '/availability?' + q); }
+export interface MyDoctor { id: string; status: string; consultationRank?: string; version: number; profile: { fullName?: string; professionalTitle?: string; biography?: string | null; languages?: string[]; photoUrl?: string | null }; specialties?: { name: string }[]; }
+export async function getMyDoctor(request: Requester) { return (await request<{ data: MyDoctor }>('/api/doctors/me')).data; }
+export async function updateMyDoctor(request: Requester, doctor: MyDoctor, body: { biography?: string; languages?: string[]; photoUrl?: string }) { return (await request<{ data: MyDoctor }>('/api/doctors/' + encodeURIComponent(doctor.id), { method: 'PATCH', headers: { 'If-Match': String(doctor.version) }, body: JSON.stringify(body) })).data; }
+export interface DoctorInterval { startAt: string; endAt: string; roomName?: string | null; roomCode?: string | null; }
+export async function listMyAvailability(request: Requester, id: string, from: string, to: string) { return (await request<{ data: { intervals: DoctorInterval[]; bookingOccupancyApplied: boolean } }>('/api/doctors/' + encodeURIComponent(id) + '/availability?' + new URLSearchParams({ from, to }))).data; }

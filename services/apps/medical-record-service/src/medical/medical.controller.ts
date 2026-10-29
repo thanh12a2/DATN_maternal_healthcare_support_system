@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Headers,
   Param,
@@ -29,17 +30,20 @@ export class MedicalController {
   }
 
   @Get('encounters')
-  async listEncounters(@Query() query: any) {
-    return this.s.listEncounters(query);
+  async listEncounters(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+    const doctorId = auth.role === 'DOCTOR' ? await this.s.doctorIdForAccount(auth.userId) : undefined;
+    return this.s.listEncounters(query, doctorId);
   }
 
   @Get('encounters/:id')
-  async getEncounter(@Param('id') id: string) {
+  async getEncounter(@Param('id') id: string, @CurrentAuth() auth: PublicAuthContext) {
+    if (auth.role === 'DOCTOR') await this.s.assertDoctorAssigned(id, auth.userId);
     return this.s.getEncounter(id);
   }
 
   @Post('encounters')
-  async createEncounterRest(@Body() b: any) {
+  async createEncounterRest(@Body() b: any, @CurrentAuth() auth: PublicAuthContext) {
+    if (auth.role === 'DOCTOR') throw new ForbiddenException('ADMISSION_REQUIRED');
     const res = await this.s.open(b);
     return { data: res.encounter };
   }
@@ -115,7 +119,7 @@ export class MedicalController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    return this.s.ready(id, b.expectedVersion, a.userId);
+    return this.s.ready(id, b.expectedVersion, a.userId, a.role);
   }
 
   @Post('encounters/:id/finalize')
@@ -124,7 +128,7 @@ export class MedicalController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    return this.s.finalize(id, b.expectedVersion, a.userId);
+    return this.s.finalize(id, b.expectedVersion, a.userId, a.role);
   }
 
   @Post('encounters/:id/amendments')
@@ -133,7 +137,7 @@ export class MedicalController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    return this.s.amend(id, b, a.userId);
+    return this.s.amend(id, b, a.userId, a.role);
   }
 
   @Post('pregnancy-episodes')
