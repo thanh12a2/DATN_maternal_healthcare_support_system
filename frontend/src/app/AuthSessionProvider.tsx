@@ -110,7 +110,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
   const request = useCallback(async <T,>(path: string, init: RequestInit = {}) => {
     let current = sessionRef.current;
-    if (!current) throw new ApiError('Bạn cần đăng nhập để tiếp tục.', 401);
+    if (!current) {
+      if (path.startsWith('/api/catalog') || path.startsWith('/auth') || path.startsWith('/health')) {
+        return apiRequest<T>(path, init);
+      }
+      throw new ApiError('Bạn cần đăng nhập để tiếp tục.', 401);
+    }
 
     const method = (init.method || 'GET').toUpperCase();
     let bodyData: any = null;

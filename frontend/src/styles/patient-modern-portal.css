@@ -1,0 +1,86 @@
+/* ==========================================================================
+   PATIENT MODERN PORTAL SHELL (VINMEC STYLE - NO SIDEBAR)
+   ========================================================================== */
+
+.patient-modern-portal-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1e293b;
+}
+
+.patient-modern-portal-main {
+  flex: 1;
+  width: 100%;
+  padding: 32px 0 64px;
+}
+
+.patient-modern-portal-main .portal-container {
+  width: 100%;
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* Page Top Header for Sub-pages */
+.patient-page-top-header {
+  margin-bottom: 24px;
+}
+
+.patient-page-top-header .patient-page-eyebrow {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b4f9c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.patient-page-top-header .patient-page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Reset any legacy 2-column shells if nested */
+.patient-modern-portal-shell .patient-home-shell {
+  display: block !important;
+  min-height: auto !important;
+}
+
+.patient-modern-portal-shell .patient-sidebar {
+  display: none !important;
+}
+
+.patient-modern-portal-shell .patient-main-view {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.patient-modern-portal-shell .patient-portal-main {
+  margin: 0 !important;
+  border-radius: 20px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(11, 79, 156, 0.05) !important;
+  background: #ffffff !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .patient-modern-portal-main {
+    padding: 20px 0 40px;
+  }
+  .patient-page-top-header .patient-page-title {
+    font-size: 22px;
+  }
+}
+

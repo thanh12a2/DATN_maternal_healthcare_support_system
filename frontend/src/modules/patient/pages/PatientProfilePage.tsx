@@ -450,8 +450,8 @@ export function PatientProfilePage() {
     >
       <LoadingPlaceholder visible={loading} label="Đang tải hồ sơ bệnh nhân" />
       <section className="profile-page">
-        <AppLink className="profile-back-link" href="/tong-quan">
-          ← Quay lại Tổng quan
+        <AppLink className="profile-back-link" href="/">
+          ← Về Cổng Bệnh Nhân (Trang chủ)
         </AppLink>
         <header className="profile-page-heading">
           <div>

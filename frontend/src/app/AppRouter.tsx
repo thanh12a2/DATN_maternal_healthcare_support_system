@@ -5,6 +5,7 @@ import { navigate, usePathname } from './navigation';
 import { AuthPage } from '../shared/pages/AuthPage';
 import { NotFoundPage } from '../shared/pages/NotFoundPage';
 import { PatientHomePage } from '../modules/patient/pages/PatientHomePage';
+import { PortalLandingPage } from '../modules/patient/pages/PortalLandingPage';
 import { PatientProfilePage } from '../modules/patient/pages/PatientProfilePage';
 import { PatientBookingPage } from '../modules/patient/pages/PatientBookingPage';
 import { PatientServiceCatalogPage } from '../modules/patient/pages/PatientServiceCatalogPage';
@@ -25,7 +26,7 @@ import { ChatbotLauncher } from '../modules/patient/components/chatbot/ChatbotLa
 
 function Redirect({ to }: { to: string }) { useEffect(() => navigate(to, { replace: true }), [to]); return null; }
 function homeForRole(role?: Role) {
-  if (role === 'PATIENT') return '/tong-quan';
+  if (role === 'PATIENT') return '/';
   if (role === 'ADMIN') return '/workspace/admin/overview';
   if (role) return `/workspace/${role.toLowerCase()}/overview`;
   return '/dang-nhap';
@@ -93,7 +94,7 @@ function Routes() {
     if (auth.status === 'authenticated') return <Redirect to={homeForRole(auth.user?.role as Role)} />;
     return <AuthPage mode={path === '/dang-ky' ? 'register' : 'login'} />;
   }
-  if (path === '/') return <Redirect to={auth.status === 'authenticated' ? homeForRole(auth.user?.role as Role) : '/dang-nhap'} />;
+  if (path === '/') return <PortalLandingPage />;
 
   const workspaceMatch = path.match(/^\/workspace\/([^/]+)(?:\/.*)?$/);
   if (workspaceMatch) {
@@ -109,11 +110,11 @@ function Routes() {
     return <NotFoundPage />;
   }
 
-  if (path === '/tong-quan') return <Protected><PatientHomePage /></Protected>;
+  if (path === '/tong-quan') return <Redirect to="/" />;
   if (path === '/ho-so/hoan-thien' || path === '/ho-so') return <Protected><PatientProfilePage /></Protected>;
   const serviceDetailMatch = rawPath.match(/^\/dich-vu\/([^/]+)$/i);
-  if (serviceDetailMatch) return <Protected><PatientServiceDetailPage serviceId={decodeURIComponent(serviceDetailMatch[1])} /></Protected>;
-  if (path === '/dich-vu') return <Protected><PatientServiceCatalogPage /></Protected>;
+  if (serviceDetailMatch) return <PatientServiceDetailPage serviceId={decodeURIComponent(serviceDetailMatch[1])} />;
+  if (path === '/dich-vu') return <PatientServiceCatalogPage />;
   if (path === '/dat-lich') return <Protected><PatientProfileRequired><PatientBookingPage /></PatientProfileRequired></Protected>;
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
   if (appointmentDetailMatch) return <Protected><PatientProfileRequired><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></PatientProfileRequired></Protected>;

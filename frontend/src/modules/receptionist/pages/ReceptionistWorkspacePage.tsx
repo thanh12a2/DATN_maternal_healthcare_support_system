@@ -46,6 +46,7 @@ import { PatientSearchBar } from '../components/PatientSearchBar';
 import { SearchResults } from '../components/SearchResults';
 import { StatsStrip } from '../components/StatsStrip';
 import { WalkInModal } from '../components/WalkInModal';
+import { UserChip } from '../../../shared/components/navigation/UserChip';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
 dayjs.locale('vi');
@@ -395,73 +396,7 @@ function Desk() {
               + Tiếp nhận vãng lai
             </Button>
 
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: 'user-info',
-                    disabled: true,
-                    label: (
-                      <div style={{ padding: '4px 0', color: '#1f2937' }}>
-                        <div style={{ fontWeight: 600 }}>{userEmail}</div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          Vai trò: Nhân viên Lễ tân
-                        </div>
-                      </div>
-                    ),
-                  },
-                  { type: 'divider' },
-                  {
-                    key: 'logout',
-                    danger: true,
-                    icon: <LogoutOutlined />,
-                    label: 'Đăng xuất',
-                    onClick: handleLogout,
-                  },
-                ],
-              }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '4px 10px 4px 6px',
-                  borderRadius: 24,
-                  border: '1px solid #e5e7eb',
-                  cursor: 'pointer',
-                  background: '#f9fafb',
-                  transition: 'all 0.2s',
-                  userSelect: 'none',
-                }}
-              >
-                <Avatar
-                  style={{ backgroundColor: '#0B5CAD', verticalAlign: 'middle', fontWeight: 600 }}
-                  size={28}
-                >
-                  {userInitials}
-                </Avatar>
-                <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#111827',
-                      maxWidth: 140,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {userName}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#6b7280' }}>Lễ tân</div>
-                </div>
-                <DownOutlined style={{ fontSize: 10, color: '#9ca3af', marginLeft: 2 }} />
-              </div>
-            </Dropdown>
+            <UserChip displayName={userName} showWorkspaceLink={false} onLogout={handleLogout} />
           </div>
         </header>
 

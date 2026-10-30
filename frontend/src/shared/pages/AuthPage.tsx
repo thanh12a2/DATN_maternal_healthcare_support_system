@@ -6,7 +6,7 @@ import type { AuthUser } from '../../services/auth';
 
 function homeForRole(role: string): string {
   switch (role) {
-    case 'PATIENT': return '/tong-quan';
+    case 'PATIENT': return '/';
     case 'DOCTOR': return '/workspace/doctor/overview';
     case 'NURSE': return '/workspace/nurse/overview';
     case 'RECEPTIONIST': return '/workspace/receptionist/overview';
@@ -17,6 +17,12 @@ function homeForRole(role: string): string {
 }
 
 function redirectAfterAuth(user: AuthUser) {
+  const searchParams = new URLSearchParams(window.location.search);
+  const returnUrl = searchParams.get('returnUrl') || searchParams.get('redirect');
+  if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
+    navigate(returnUrl, { replace: true });
+    return;
+  }
   navigate(homeForRole(user.role), { replace: true });
 }
 
@@ -33,5 +39,15 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     redirectAfterAuth(user);
   }
 
-  return <AuthShell initialMode={mode} onModeChange={(next) => navigate(next === 'login' ? '/dang-nhap' : '/dang-ky')} onLogin={login} onRegister={register} />;
+  return (
+    <AuthShell
+      initialMode={mode}
+      onModeChange={(next) => {
+        const search = window.location.search;
+        navigate((next === 'login' ? '/dang-nhap' : '/dang-ky') + search);
+      }}
+      onLogin={login}
+      onRegister={register}
+    />
+  );
 }

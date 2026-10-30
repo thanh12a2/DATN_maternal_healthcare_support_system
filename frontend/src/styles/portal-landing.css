@@ -1,0 +1,1683 @@
+/* ==========================================================================
+   AN TÂM MATERNAL HEALTHCARE - PUBLIC PORTAL (VINMEC STYLE)
+   ========================================================================== */
+
+:root {
+  --portal-navy: #0b4f9c;
+  --portal-navy-dark: #07376e;
+  --portal-blue: #1677ff;
+  --portal-blue-light: #4096ff;
+  --portal-blue-soft: #eaf4ff;
+  --portal-amber: #e67e22;
+  --portal-amber-hover: #d35400;
+  --portal-bg: #f8fafc;
+  --portal-card-bg: #ffffff;
+  --portal-text-dark: #183153;
+  --portal-text-muted: #5c6f84;
+  --portal-border: #e2e8f0;
+  --portal-border-soft: #edf2f7;
+  --portal-success: #10b981;
+  --portal-success-soft: #ecfdf5;
+  --portal-shadow-sm: 0 2px 8px rgba(11, 79, 156, 0.06);
+  --portal-shadow-md: 0 8px 24px rgba(11, 79, 156, 0.08);
+  --portal-shadow-lg: 0 16px 40px rgba(11, 79, 156, 0.12);
+  --portal-radius-sm: 8px;
+  --portal-radius-md: 12px;
+  --portal-radius-lg: 18px;
+  --portal-container-max: 1340px;
+}
+
+.portal-container {
+  width: 100%;
+  max-width: var(--portal-container-max);
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   PUBLIC HEADER (2-TIER VINMEC-STYLE HOSPITALS NAVBAR)
+   -------------------------------------------------------------------------- */
+.public-portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(11, 79, 156, 0.06);
+  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+}
+
+/* Tier 1: Top Spacious Bar (Logo & Auth/UserChip Actions) */
+.portal-header-top {
+  background: #ffffff;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+  transition: padding 0.2s ease;
+}
+
+.portal-header-top-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.portal-brand:hover {
+  opacity: 0.9;
+}
+
+.portal-brand-symbol {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.portal-brand-typography {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.portal-brand-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.brand-name-main {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--portal-navy);
+  line-height: 1;
+  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+}
+
+.brand-badge-sub {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--portal-amber);
+  letter-spacing: 0.08em;
+}
+
+.portal-brand-slogan-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: -0.01em;
+  margin-top: 3px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.portal-brand-slogan-text .slogan-accent {
+  color: var(--portal-amber);
+  font-weight: 800;
+}
+
+.portal-footer-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.portal-footer-symbol {
+  height: 52px;
+  width: auto;
+  background: #ffffff;
+  padding: 4px;
+  border-radius: 8px;
+  display: block;
+}
+
+.portal-footer-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-footer-brand-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.portal-footer-brand-slogan {
+  font-size: 13px;
+  color: #ffd8a8;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+/* Header Actions (Top Right) */
+.portal-header-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.portal-auth-group,
+.portal-authenticated-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-top-btn-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 18px;
+  font-size: 14px;
+  font-weight: 650;
+  color: #0b4f9c;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.portal-top-btn-login:hover {
+  background: #f0f7ff;
+  border-color: #1677ff;
+  color: #1677ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.12);
+}
+
+.portal-top-btn-register {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 18px;
+  font-size: 14px;
+  font-weight: 650;
+  color: #0b4f9c;
+  background: #e4effc;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.portal-top-btn-register:hover {
+  background: #d5e5fa;
+  color: #07376e;
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.portal-top-btn-login:focus-visible,
+.portal-top-btn-register:focus-visible {
+  outline: 3px solid #1677ff;
+  outline-offset: 2px;
+}
+
+.portal-top-btn-booking:focus-visible {
+  outline: 3px solid #e67e22;
+  outline-offset: 2px;
+}
+
+.portal-top-btn-booking {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 3px 10px rgba(230, 126, 34, 0.28);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.portal-top-btn-booking:hover {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  box-shadow: 0 6px 16px rgba(230, 126, 34, 0.38);
+  transform: translateY(-1px);
+}
+
+/* Tier 2: Sub Navigation Bar (Clean & Airy) */
+.portal-header-nav {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.portal-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.portal-nav-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.portal-nav-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 4px 12px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  position: relative;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition: color 0.18s ease;
+}
+
+.portal-nav-item:hover {
+  color: var(--portal-navy);
+}
+
+.portal-nav-item.active {
+  color: var(--portal-navy);
+  font-weight: 700;
+}
+
+.portal-nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  border-radius: 3px 3px 0 0;
+  transition: background-color 0.18s ease;
+}
+
+.portal-nav-item:hover::after {
+  background: #93c5fd;
+}
+
+.portal-nav-item.active::after {
+  background: var(--portal-navy);
+}
+
+/* Shared Portal Button Utilities */
+.portal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--portal-radius-sm);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.portal-btn-outline {
+  border-color: #cbd5e1;
+  color: var(--portal-navy);
+  background: #ffffff;
+}
+
+.portal-btn-outline:hover {
+  border-color: var(--portal-blue);
+  color: var(--portal-blue);
+  background: var(--portal-blue-soft);
+}
+
+.portal-btn-soft {
+  background: var(--portal-blue-soft);
+  color: var(--portal-blue);
+}
+
+.portal-btn-soft:hover {
+  background: #d4e8ff;
+  color: var(--portal-navy);
+}
+
+.portal-btn-booking {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  font-weight: 700;
+}
+
+.portal-btn-booking:hover {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  box-shadow: 0 6px 16px rgba(230, 126, 34, 0.4);
+  transform: translateY(-1px);
+}
+
+.portal-btn-portal {
+  background: var(--portal-navy);
+  color: #ffffff;
+}
+
+.portal-btn-portal:hover {
+  background: var(--portal-blue);
+}
+
+.portal-btn-logout {
+  background: transparent;
+  border-color: #e2e8f0;
+  color: #64748b;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.portal-btn-logout:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.portal-mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.portal-hamburger-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--portal-navy);
+  border-radius: 2px;
+}
+
+/* Authenticated Patient Quick Welcome Strip */
+.portal-patient-welcome-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 0;
+  box-shadow: 0 2px 6px rgba(11, 79, 156, 0.03);
+}
+
+.portal-patient-welcome-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.portal-patient-welcome-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-patient-welcome-badge {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: #0d9488;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.portal-patient-welcome-greeting {
+  font-size: 14px;
+  color: #334155;
+  margin: 0;
+}
+
+.portal-patient-welcome-greeting strong {
+  color: #0f172a;
+}
+
+.portal-patient-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.portal-patient-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b4f9c;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.portal-patient-action-pill svg {
+  width: 15px;
+  height: 15px;
+  color: #0b4f9c;
+}
+
+.portal-patient-action-pill:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   HERO BANNER & QUICK BOOKING SECTION
+   -------------------------------------------------------------------------- */
+.portal-hero-section {
+  position: relative;
+  background: linear-gradient(135deg, #0b4f9c 0%, #0d5ea6 50%, #1579b8 100%);
+  color: #ffffff;
+  padding: 60px 0 90px;
+  overflow: hidden;
+}
+
+.portal-hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image: radial-gradient(#ffffff 2px, transparent 2px);
+  background-size: 24px 24px;
+}
+
+.portal-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 40px;
+}
+
+.portal-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffd8a8;
+  margin-bottom: 18px;
+}
+
+.portal-hero-badge span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #52c41a;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #52c41a;
+}
+
+.portal-hero-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.22;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+
+.portal-hero-title span {
+  color: #ffe066;
+}
+
+.portal-hero-subtitle {
+  font-size: 17px;
+  line-height: 1.6;
+  opacity: 0.92;
+  margin: 0 0 28px;
+  max-width: 580px;
+}
+
+.portal-hero-ctas {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hero-cta-btn-primary {
+  padding: 13px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: var(--portal-radius-md);
+  background: #ffffff;
+  color: var(--portal-navy);
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  transition: all 0.2s;
+}
+
+.hero-cta-btn-primary:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+.hero-cta-btn-secondary {
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--portal-radius-md);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+  transition: all 0.2s;
+}
+
+.hero-cta-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Hero Clinical Excellence & Trust Showcase Card (Replacing quick booking form) */
+.portal-hero-showcase-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px 26px;
+  color: var(--portal-text-dark);
+  box-shadow: 0 24px 50px rgba(0, 32, 80, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.showcase-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.showcase-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 750;
+  color: #0b4f9c;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.showcase-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.showcase-rating {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fffbeb;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #fef3c7;
+}
+
+.showcase-card-title {
+  font-size: 17.5px;
+  font-weight: 800;
+  color: var(--portal-navy);
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+
+.showcase-card-intro {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.showcase-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.showcase-pillar-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.showcase-pillar-item:hover {
+  background: #f0f7ff;
+  border-color: #dbeafe;
+  transform: translateX(3px);
+}
+
+.pillar-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pillar-icon-wrap svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pillar-icon-wrap.blue {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.pillar-icon-wrap.emerald {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.pillar-icon-wrap.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.pillar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pillar-content strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.pillar-content span {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.showcase-card-footer {
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.showcase-hotline-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.showcase-hotline-strip svg {
+  width: 20px;
+  height: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.hotline-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.hotline-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.hotline-number {
+  font-size: 15px;
+  font-weight: 800;
+  color: #dc2626;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.hotline-number:hover {
+  text-decoration: underline;
+}
+
+.showcase-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(230, 126, 34, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.showcase-action-btn svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+}
+
+.showcase-action-btn:hover {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(230, 126, 34, 0.45);
+}
+
+.showcase-action-btn:hover svg {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------------------
+   QUICK UTILITY STRIP (3 THẺ TIỆN ÍCH TRỌNG TÂM)
+   -------------------------------------------------------------------------- */
+.portal-quick-strip {
+  margin-top: -45px;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 60px;
+}
+
+.portal-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.portal-quick-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 22px;
+  text-decoration: none;
+  color: var(--portal-text-dark);
+  box-shadow: 0 10px 30px rgba(11, 79, 156, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-quick-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(11, 79, 156, 0.14);
+  border-color: #93c5fd;
+}
+
+.portal-quick-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.portal-quick-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.portal-quick-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portal-quick-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.portal-quick-icon.blue {
+  background: #eaf4ff;
+  color: var(--portal-navy);
+}
+
+.portal-quick-icon.amber {
+  background: #fff4e6;
+  color: var(--portal-amber);
+}
+
+.portal-quick-icon.emerald {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.portal-quick-icon.purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.portal-quick-tag {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.portal-quick-tag.amber {
+  background: #fff4e6;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.portal-quick-tag.blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.portal-quick-tag.emerald {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.portal-quick-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.portal-quick-title {
+  font-size: 17px;
+  font-weight: 750;
+  color: var(--portal-navy);
+  margin: 0 0 6px;
+}
+
+.portal-quick-desc {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.portal-quick-cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0b4f9c;
+  margin-top: auto;
+  transition: gap 0.2s ease;
+}
+
+.portal-quick-cta-link svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.portal-quick-card:hover .portal-quick-cta-link {
+  color: #1d4ed8;
+  gap: 9px;
+}
+
+.portal-quick-card:hover .portal-quick-cta-link svg {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION HEADINGS & LAYOUT
+   -------------------------------------------------------------------------- */
+.portal-section {
+  padding: 50px 0;
+}
+
+.portal-section-head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 40px;
+}
+
+.portal-section-eyebrow {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--portal-blue);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.portal-section-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--portal-navy);
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.portal-section-desc {
+  font-size: 15.5px;
+  color: var(--portal-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   FEATURED PACKAGES / SERVICES (GÓI KHÁM THAI SẢN)
+   -------------------------------------------------------------------------- */
+.portal-packages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+
+.portal-package-card {
+  background: #ffffff;
+  border-radius: var(--portal-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  box-shadow: var(--portal-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.portal-package-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--portal-shadow-md);
+  border-color: #cbd5e1;
+}
+
+.package-card-media {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.package-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.portal-package-card:hover .package-card-media img {
+  transform: scale(1.05);
+}
+
+.package-card-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(11, 79, 156, 0.9);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.package-card-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.package-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--portal-navy);
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.package-card-summary {
+  font-size: 13.5px;
+  color: var(--portal-text-muted);
+  line-height: 1.5;
+  margin: 0 0 18px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.package-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--portal-border-soft);
+  padding-top: 14px;
+  margin-top: auto;
+}
+
+.package-card-price {
+  display: flex;
+  flex-direction: column;
+}
+
+.price-label {
+  font-size: 11.5px;
+  color: var(--portal-text-muted);
+}
+
+.price-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #d9381e;
+}
+
+.package-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.package-btn-detail {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--portal-navy);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--portal-radius-sm);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.package-btn-detail:hover {
+  border-color: var(--portal-blue);
+  color: var(--portal-blue);
+}
+
+.package-btn-book {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--portal-navy);
+  border-radius: var(--portal-radius-sm);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.package-btn-book:hover {
+  background: var(--portal-navy-dark);
+}
+
+/* --------------------------------------------------------------------------
+   SPECIALIST DOCTORS SECTION (ĐỘI NGŨ BÁC SĨ)
+   -------------------------------------------------------------------------- */
+.portal-doctors-section {
+  background: #f1f6fb;
+}
+
+.portal-doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+.portal-doctor-card {
+  background: #ffffff;
+  border-radius: var(--portal-radius-md);
+  overflow: hidden;
+  box-shadow: var(--portal-shadow-sm);
+  border: 1px solid var(--portal-border-soft);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.portal-doctor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--portal-shadow-md);
+}
+
+.doctor-card-media {
+  width: 100%;
+  height: 220px;
+  background: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.doctor-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doctor-card-rank-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(11, 79, 156, 0.92);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.doctor-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.doctor-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--portal-amber);
+  margin-bottom: 4px;
+}
+
+.doctor-card-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--portal-navy);
+  margin: 0 0 8px;
+}
+
+.doctor-card-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.specialty-pill {
+  font-size: 11px;
+  background: var(--portal-blue-soft);
+  color: var(--portal-navy);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.doctor-card-bio {
+  font-size: 12.5px;
+  color: var(--portal-text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.doctor-card-btn {
+  margin-top: auto;
+  text-align: center;
+  padding: 9px;
+  background: var(--portal-blue-soft);
+  color: var(--portal-blue);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--portal-radius-sm);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.doctor-card-btn:hover {
+  background: var(--portal-blue);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   CLINICAL ADVANTAGES / TECHNOLOGY (THẾ MẠNH CHUYÊN MÔN)
+   -------------------------------------------------------------------------- */
+.portal-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+
+.portal-feature-item {
+  background: #ffffff;
+  border-radius: var(--portal-radius-md);
+  padding: 28px;
+  border: 1px solid var(--portal-border);
+  box-shadow: var(--portal-shadow-sm);
+}
+
+.feature-item-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--portal-blue-soft);
+  color: var(--portal-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.feature-item-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.feature-item-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--portal-navy);
+  margin: 0 0 10px;
+}
+
+.feature-item-desc {
+  font-size: 14px;
+  color: var(--portal-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   PREGNANCY GUIDES / ARTICLES (CẨM NANG THAI KỲ)
+   -------------------------------------------------------------------------- */
+.portal-guides-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.portal-guide-card {
+  background: #ffffff;
+  border-radius: var(--portal-radius-md);
+  border: 1px solid var(--portal-border);
+  overflow: hidden;
+  box-shadow: var(--portal-shadow-sm);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-guide-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--portal-shadow-md);
+}
+
+.guide-card-thumb {
+  height: 180px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.guide-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guide-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.guide-card-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--portal-blue);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.guide-card-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--portal-navy);
+  line-height: 1.35;
+  margin: 0 0 8px;
+}
+
+.guide-card-desc {
+  font-size: 13px;
+  color: var(--portal-text-muted);
+  line-height: 1.5;
+  margin: 0 0 14px;
+  flex: 1;
+}
+
+.guide-card-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--portal-navy);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guide-card-link:hover {
+  color: var(--portal-blue);
+}
+
+/* --------------------------------------------------------------------------
+   PUBLIC FOOTER
+   -------------------------------------------------------------------------- */
+.public-portal-footer {
+  background: #072a53;
+  color: #cbd5e1;
+  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  margin-top: 60px;
+}
+
+.portal-footer-main {
+  padding: 60px 20px 40px;
+}
+
+.portal-footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+  gap: 36px;
+}
+
+.portal-footer-brand {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.footer-brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.footer-brand-sub {
+  font-size: 12px;
+  color: #ffd8a8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.portal-footer-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0 0 18px;
+}
+
+.portal-footer-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footer-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.portal-footer-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 18px;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.portal-footer-heading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 32px;
+  height: 2px;
+  background: var(--portal-amber);
+}
+
+.portal-footer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portal-footer-list li a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: color 0.15s;
+}
+
+.portal-footer-list li a:hover {
+  color: #ffffff;
+  padding-left: 4px;
+}
+
+.portal-footer-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item span {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.contact-item p {
+  margin: 0;
+  font-size: 13px;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.phone-number {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ff6b6b;
+  text-decoration: none;
+}
+
+.phone-number.secondary {
+  font-size: 16px;
+  color: #ffd8a8;
+}
+
+.portal-footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.portal-footer-bottom-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.portal-footer-copy-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal-footer-copy-wrap p {
+  margin: 0;
+}
+
+.portal-footer-disclaimer {
+  font-size: 12.5px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.portal-footer-bottom-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-footer-bottom-links a {
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.portal-footer-bottom-links a:hover {
+  color: #ffffff;
+}
+
+.dot {
+  color: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN (TABLETS & PHONES)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .portal-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .portal-quick-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .portal-packages-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .portal-doctors-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .portal-footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .portal-mobile-toggle {
+    display: flex;
+  }
+  .portal-header-nav {
+    display: none;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+  }
+  .portal-header-nav.is-open {
+    display: block;
+  }
+  .portal-nav-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px 0;
+  }
+  .portal-nav-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .portal-nav-item::after {
+    display: none;
+  }
+  .portal-hero-title {
+    font-size: 28px;
+  }
+  .portal-quick-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-packages-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-doctors-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-features-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-guides-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-footer-bottom-inner {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}
+

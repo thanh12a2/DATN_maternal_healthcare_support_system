@@ -1,0 +1,165 @@
+/* ==========================================================================
+   TẠI SAO NÊN CHỌN TÂM AN (VINMEC-STYLE QUALITY PILLARS SECTION)
+   Bảng màu chuẩn đồ án:
+   - Màu chính: #0B4F9C (Navy Đậm)
+   - Màu bổ trợ: #1677FF (Xanh Dương Y Tế)
+   - Màu chữ: #183153 (Xanh than đậm) / #5B6F8A (Xanh xám thanh lịch)
+   - Màu nền: #FFFFFF
+   ========================================================================== */
+
+.why-choose-us-section {
+  background: #ffffff;
+  padding: 64px 0 0;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.why-choose-us-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.why-choose-header {
+  margin-bottom: 36px;
+}
+
+.why-choose-title {
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 800;
+  color: #183153;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.why-choose-accent-line {
+  width: 68px;
+  height: 4px;
+  background: #1677FF;
+  border-radius: 2px;
+}
+
+.why-choose-content-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 56px;
+  align-items: flex-end;
+}
+
+/* Cột Trái: Ảnh bác sĩ chuyên khoa */
+.why-choose-media-col {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+.why-choose-doctor-img {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  max-height: 500px;
+  display: block;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 14px 28px rgba(11, 79, 156, 0.08));
+}
+
+/* Cột Phải: Lưới 4 trụ cột 2x2 */
+.why-choose-pillars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px 48px;
+  padding-bottom: 56px;
+  align-self: center;
+}
+
+.why-choose-pillar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.why-pillar-icon {
+  width: 44px;
+  height: 44px;
+  color: #1677FF;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.why-pillar-icon svg {
+  width: 38px;
+  height: 38px;
+}
+
+.why-pillar-title {
+  font-size: 19px;
+  font-weight: 750;
+  color: #1677FF;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.why-pillar-desc {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #5B6F8A;
+  margin: 0;
+  text-align: justify;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN (<= 992px, <= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .why-choose-content-grid {
+    grid-template-columns: 320px 1fr;
+    gap: 36px;
+  }
+  .why-choose-pillars-grid {
+    gap: 28px 32px;
+    padding-bottom: 40px;
+  }
+  .why-pillar-title {
+    font-size: 17.5px;
+  }
+  .why-pillar-desc {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 768px) {
+  .why-choose-us-section {
+    padding: 44px 0 0;
+  }
+  .why-choose-header {
+    margin-bottom: 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .why-choose-content-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: center;
+  }
+  .why-choose-media-col {
+    order: 2;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+  .why-choose-pillars-grid {
+    order: 1;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-bottom: 0;
+  }
+  .why-pillar-desc {
+    text-align: left;
+  }
+}
+

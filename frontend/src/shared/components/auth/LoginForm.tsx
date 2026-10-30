@@ -4,7 +4,7 @@ import type { ValidationResult } from '../../../schemas/auth';
 import { login } from '../../../services/auth';
 import { FormField } from './FormField';
 import { PasswordField } from './PasswordField';
-import { MailIcon, ShieldIcon } from './icons';
+import { MailIcon } from './icons';
 
 interface Props {
   onSwitchMode: () => void;
@@ -22,7 +22,7 @@ export function LoginForm({ onSwitchMode, onSubmit }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [alert, setAlert] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const [remember, setRemember] = useState(false);
 
   function setField(field: LoginField, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -93,7 +93,6 @@ export function LoginForm({ onSwitchMode, onSubmit }: Props) {
         <button className="primary-button" type="submit" disabled={submitting}>{submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       </form>
       <p className="switch-copy">Chưa có tài khoản? <button className="text-link mode-switch" type="button" onClick={onSwitchMode}>Đăng ký ngay</button></p>
-      <div className="security-badge"><ShieldIcon />Thông tin của bạn được mã hóa và bảo mật</div>
     </div>
   );
 }
