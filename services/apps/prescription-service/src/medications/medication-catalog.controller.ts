@@ -9,6 +9,8 @@ import {
   Post,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CurrentAuth, PublicJwtGuard, type PublicAuthContext } from '@platform';
 import { MedicationCatalogService } from './medication-catalog.service';
@@ -21,6 +23,7 @@ import {
 
 @Controller('medications')
 @UseGuards(PublicJwtGuard)
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class MedicationCatalogController {
   constructor(private readonly medications: MedicationCatalogService) {}
 

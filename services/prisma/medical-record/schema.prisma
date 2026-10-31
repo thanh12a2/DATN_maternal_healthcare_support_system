@@ -72,10 +72,30 @@ model ClinicalEncounter {
   orders             ClinicalServiceOrder[]
   externalReferences ExternalClinicalReference[]
   amendments         EncounterAmendment[]
+  appointmentSyncJobs EncounterAppointmentSync[]
 
   @@index([patientId, createdAt])
   @@index([state, updatedAt])
   @@map("clinical_encounters")
+}
+
+model EncounterAppointmentSync {
+  id               String @id @default(uuid()) @db.Uuid
+  encounterId      String @map("encounter_id") @db.Uuid
+  appointmentId    String @map("appointment_id") @db.Uuid
+  encounterVersion Int @map("encounter_version")
+  action           String @db.VarChar(20)
+  status           String @default("PENDING") @db.VarChar(20)
+  attempts         Int @default(0)
+  nextAttemptAt    DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError        String? @map("last_error") @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  encounter        ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@unique([encounterId, encounterVersion])
+  @@index([status, nextAttemptAt, createdAt])
+  @@map("encounter_appointment_sync")
 }
 
 model EncounterAssignment {

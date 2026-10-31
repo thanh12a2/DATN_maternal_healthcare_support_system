@@ -270,6 +270,7 @@ export class MedicalDomainService {
         notes: true,
         diagnoses: true,
         orders: true,
+        appointmentSyncJobs: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -297,6 +298,7 @@ export class MedicalDomainService {
         diagnoses: true,
         orders: true,
         amendments: true,
+        appointmentSyncJobs: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
       },
     });
     if (!x) throw new NotFoundException('ENCOUNTER_NOT_FOUND');
@@ -306,11 +308,13 @@ export class MedicalDomainService {
 
   async start(id: string, version: number, actor: string, role?: string) {
     await this.access(id, actor, role);
+    let assignedDoctorId: string | undefined;
     if (role === 'DOCTOR') {
       this.requireVersion(version);
       const encounter = await this.get(id);
       const doctorId = await this.doctorIdentity.resolve(actor);
       if (!await this.doctorIdentity.checkedIn(encounter.appointmentId, id, doctorId)) throw new ConflictException('APPOINTMENT_NOT_CHECKED_IN');
+      assignedDoctorId = doctorId;
     }
     const x = await this.transition(
       id,
@@ -320,12 +324,15 @@ export class MedicalDomainService {
       { startedAt: new Date() },
       actor,
       'medical.encounter_started.v1',
+      assignedDoctorId,
     );
     return { data: this.viewEncounter(x) };
   }
 
   async ready(id: string, version: number, actor: string, role?: string) {
-    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); }
+    if (!['DOCTOR', 'ADMIN', 'NURSE', 'CLINICAL_STAFF'].includes(role ?? '')) throw new ForbiddenException('FORBIDDEN');
+    let assignedDoctorId: string | undefined;
+    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); assignedDoctorId = await this.doctorIdentity.resolve(actor); }
     const pending = await this.db.clinicalServiceOrder.count({
       where: {
         encounterId: id,
@@ -342,12 +349,15 @@ export class MedicalDomainService {
       { reviewReadyAt: new Date() },
       actor,
       'medical.encounter_ready.v1',
+      assignedDoctorId,
     );
     return { data: this.viewEncounter(x) };
   }
 
   async finalize(id: string, version: number, actor: string, role?: string) {
-    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); }
+    if (!['DOCTOR', 'ADMIN'].includes(role ?? '')) throw new ForbiddenException('FORBIDDEN');
+    let assignedDoctorId: string | undefined;
+    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); assignedDoctorId = await this.doctorIdentity.resolve(actor); }
     const x = await this.transition(
       id,
       version,
@@ -356,6 +366,7 @@ export class MedicalDomainService {
       { finalizedAt: new Date() },
       actor,
       'medical.encounter_finalized.v1',
+      assignedDoctorId,
     );
     return { data: this.viewEncounter(x) };
   }
@@ -515,6 +526,13 @@ export class MedicalDomainService {
   }
 
   async order(id: string, data: any, actor: string, role?: string) {
+    if (role === 'DOCTOR') {
+      if (typeof data?.catalogServiceId !== 'string' || !data.catalogServiceId || typeof data?.stageCode !== 'string' || !data.stageCode.trim()) throw new BadRequestException('INVALID_SERVICE_ORDER');
+      return this.doctorClinicalWrite(id, actor, data.expectedVersion, async (tx, version) => {
+        const item = await tx.clinicalServiceOrder.create({ data: { encounterId: id, catalogServiceId: data.catalogServiceId, stageCode: data.stageCode.trim(), orderedByDoctorId: actor, requiredResult: typeof data.requiredResult === 'boolean' ? data.requiredResult : true, billableSnapshot: typeof data.billableSnapshot === 'boolean' ? data.billableSnapshot : true } });
+        return { data: { id: item.id, version } };
+      });
+    }
     await this.access(id, actor, role);
     const o = await this.db.clinicalServiceOrder.create({
       data: {
@@ -628,6 +646,7 @@ export class MedicalDomainService {
         : undefined,
       diagnoses: x.diagnoses ?? undefined,
       orders: x.orders ?? undefined,
+      appointmentSyncPending: x.appointmentSyncJobs ? x.appointmentSyncJobs.length > 0 : undefined,
     };
   }
 
@@ -693,16 +712,21 @@ export class MedicalDomainService {
     data: any,
     actor: string,
     event: string,
+    assignedDoctorId?: string,
   ) {
     const current = await this.get(id);
     const versionToUse =
       v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : current.version;
     return this.db.$transaction(async (tx) => {
       const u = await tx.clinicalEncounter.updateMany({
-        where: { id, version: versionToUse, state: { in: from } },
+        where: { id, version: versionToUse, state: { in: from }, ...(assignedDoctorId ? { assignments: { some: { staffId: assignedDoctorId, status: AssignmentStatus.ACTIVE } } } : {}), ...(to === EncounterState.READY_FOR_REVIEW || to === EncounterState.FINALIZED ? { appointmentSyncJobs: { none: { status: 'PENDING' } } } : {}) },
         data: { ...data, state: to, version: { increment: 1 } },
       });
       if (!u.count) throw new ConflictException('INVALID_STATE_TRANSITION');
+      if (to === EncounterState.READY_FOR_REVIEW) {
+        const pending = await tx.clinicalServiceOrder.count({ where: { encounterId: id, requiredResult: true, status: { not: 'VERIFIED' } } });
+        if (pending) throw new ConflictException('REQUIRED_RESULTS_PENDING');
+      }
       const x = await tx.clinicalEncounter.findUnique({
         where: { id },
         include: { externalReferences: true },
@@ -711,6 +735,9 @@ export class MedicalDomainService {
         data: { eventType: event, actorId: actor, encounterId: id },
       });
       await this.event(tx, x!, event);
+      if (to === EncounterState.IN_PROGRESS || to === EncounterState.FINALIZED) {
+        await tx.encounterAppointmentSync.create({ data: { encounterId: id, appointmentId: x!.appointmentId, encounterVersion: x!.version, action: to === EncounterState.IN_PROGRESS ? 'START' : 'COMPLETE' } });
+      }
       return x!;
     });
   }
