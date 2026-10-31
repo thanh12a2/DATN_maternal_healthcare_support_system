@@ -13,6 +13,9 @@ import { AppointmentDetailPage, PatientAppointmentsPage } from '../modules/patie
 import { PatientQueuePage } from '../modules/patient/pages/PatientQueuePage';
 import { PatientNotificationsBillingPage } from '../modules/patient/pages/PatientNotificationsBillingPage';
 import { PatientServiceDetailPage } from '../modules/patient/pages/PatientServiceDetailPage';
+import { PatientDoctorCatalogPage } from '../modules/patient/pages/PatientDoctorCatalogPage';
+import { PatientSpecialtyDetailPage } from '../modules/patient/pages/PatientSpecialtyDetailPage';
+import { PatientPregnancyGuidePage } from '../modules/patient/pages/PatientPregnancyGuidePage';
 import type { Role } from '../shared/components/navigation/PatientSidebar';
 
 import AdminWorkspacePage from '../modules/admin/AdminWorkspacePage';
@@ -77,6 +80,12 @@ function Routes() {
   const auth = useAuthSession();
   const isAdminPort = typeof window !== 'undefined' && window.location.port === '3001';
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#cam-nang-thai-ky') {
+      navigate('/cam-nang-thai-ky', { replace: true });
+    }
+  }, []);
+
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
   if (isAdminPort && path === '/') {
     if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') return <Redirect to="/workspace/admin/overview" />;
@@ -94,6 +103,7 @@ function Routes() {
     if (auth.status === 'authenticated') return <Redirect to={homeForRole(auth.user?.role as Role)} />;
     return <AuthPage mode={path === '/dang-ky' ? 'register' : 'login'} />;
   }
+  if (path === '/cam-nang-thai-ky' || (typeof window !== 'undefined' && window.location.hash === '#cam-nang-thai-ky')) return <PatientPregnancyGuidePage />;
   if (path === '/') return <PortalLandingPage />;
 
   const workspaceMatch = path.match(/^\/workspace\/([^/]+)(?:\/.*)?$/);
@@ -114,7 +124,11 @@ function Routes() {
   if (path === '/ho-so/hoan-thien' || path === '/ho-so') return <Protected><PatientProfilePage /></Protected>;
   const serviceDetailMatch = rawPath.match(/^\/dich-vu\/([^/]+)$/i);
   if (serviceDetailMatch) return <PatientServiceDetailPage serviceId={decodeURIComponent(serviceDetailMatch[1])} />;
+  const specialtyDetailMatch = rawPath.match(/^\/chuyen-khoa\/([^/]+)$/i);
+  if (specialtyDetailMatch) return <PatientSpecialtyDetailPage slug={decodeURIComponent(specialtyDetailMatch[1])} />;
   if (path === '/dich-vu') return <PatientServiceCatalogPage />;
+  if (path === '/bac-si') return <PatientDoctorCatalogPage />;
+  if (path === '/cam-nang-thai-ky') return <PatientPregnancyGuidePage />;
   if (path === '/dat-lich') return <Protected><PatientProfileRequired><PatientBookingPage /></PatientProfileRequired></Protected>;
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
   if (appointmentDetailMatch) return <Protected><PatientProfileRequired><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></PatientProfileRequired></Protected>;

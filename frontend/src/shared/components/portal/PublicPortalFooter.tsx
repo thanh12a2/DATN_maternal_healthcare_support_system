@@ -60,8 +60,8 @@ export function PublicPortalFooter() {
               <li><AppLink href="/hang-doi">Theo dõi số thứ tự phòng khám (Live)</AppLink></li>
               <li><AppLink href="/ho-so/hoan-thien">Cổng hồ sơ sức khỏe thai kỳ</AppLink></li>
               <li><AppLink href="/dich-vu">Bảng giá dịch vụ niêm yết</AppLink></li>
-              <li><a href="#doi-ngu-bac-si">Danh bạ Chuyên gia &amp; Bác sĩ</a></li>
-              <li><a href="#cam-nang-thai-ky">Cẩm nang kiến thức cho mẹ bầu</a></li>
+              <li><AppLink href="/bac-si">Danh bạ Chuyên gia &amp; Bác sĩ</AppLink></li>
+              <li><AppLink href="/cam-nang-thai-ky">Cẩm nang kiến thức cho mẹ bầu</AppLink></li>
             </ul>
           </div>
 

@@ -27,7 +27,6 @@ export class ListServicesQueryDto {
   @IsOptional() @IsString() @Length(1, 100) q?: string;
   @IsOptional() @IsEnum(MedicalServiceKind) kind?: MedicalServiceKind;
   @IsOptional() @IsUUID() specialtyId?: string;
-  @IsOptional() @IsString() @Length(1, 160) category?: string;
   @IsOptional() @IsString() @Length(1, 160) tag?: string;
   @IsOptional() @IsBoolean() @Type(() => Boolean) bookingEnabled?: boolean;
   @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
@@ -46,8 +45,7 @@ export class CreateServiceDto {
   @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
   @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
-  @IsOptional() @IsUUID() primaryCategoryId?: string;
-  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsUUID('4', { each: true }) categoryIds?: string[];
+  @IsOptional() content?: any;
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
 }
 
@@ -63,8 +61,7 @@ export class UpdateServiceDto {
   @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
   @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
-  @IsOptional() @IsUUID() primaryCategoryId?: string;
-  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsUUID('4', { each: true }) categoryIds?: string[];
+  @IsOptional() content?: any;
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
 }
 
@@ -72,20 +69,12 @@ export class CreateCategoryDto {
   @IsString() @Length(2, 50) code!: string;
   @IsOptional() @IsString() @Length(2, 160) slug?: string;
   @IsString() @Length(2, 160) name!: string;
-  @IsOptional() @IsString() @MaxLength(1000) description?: string;
-  @IsOptional() @IsUUID() parentId?: string;
-  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
-  @IsOptional() @IsInt() @Min(0) @Max(100000) @Type(() => Number) sortOrder?: number;
 }
 
 export class UpdateCategoryDto {
   @IsOptional() @IsString() @Length(2, 50) code?: string;
   @IsOptional() @IsString() @Length(2, 160) slug?: string;
   @IsOptional() @IsString() @Length(2, 160) name?: string;
-  @IsOptional() @IsString() @MaxLength(1000) description?: string;
-  @IsOptional() @IsUUID() parentId?: string;
-  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
-  @IsOptional() @IsInt() @Min(0) @Max(100000) @Type(() => Number) sortOrder?: number;
 }
 
 export class CreateTagDto {

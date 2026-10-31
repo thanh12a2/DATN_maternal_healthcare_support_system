@@ -24,7 +24,6 @@ import {
 
 type ServiceWithRelations = Prisma.MedicalServiceGetPayload<{
   include: {
-    categories: { include: { category: true } };
     tags: { include: { tag: true } };
     basePrices: true;
   };
@@ -54,9 +53,6 @@ export class CatalogService {
             ],
           }
         : {}),
-      ...(query.category
-        ? { categories: { some: { category: { OR: this.categoryIdentifierWhere(query.category) } } } }
-        : {}),
       ...(query.tag
         ? { tags: { some: { tag: { OR: this.tagIdentifierWhere(query.tag) } } } }
         : {}),
@@ -75,26 +71,71 @@ export class CatalogService {
   }
 
   async getPublicService(idOrSlug: string) {
-    const service = await this.findServiceByIdOrSlug(idOrSlug, { status: 'ACTIVE' });
-    return { data: this.presentService(service) };
+    const service = await this.findServiceByIdOrSlug(idOrSlug, {
+      status: { in: ['ACTIVE', 'INACTIVE', 'ARCHIVED'] as any },
+    });
+
+    const activePrice = service.basePrices.find((p) => p.status === 'ACTIVE') ?? service.basePrices[0] ?? null;
+
+    let doctorRankSurcharges: any[] = [];
+    if (service.doctorRankSelectionPolicy === 'RANK_UPGRADE_ALLOWED') {
+      const surcharges = await this.db.doctorRankSurcharge.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: { amountMinor: 'asc' },
+      });
+      doctorRankSurcharges = surcharges.map((s) => this.presentSurcharge(s));
+    }
+
+    const tagIds = service.tags.map((t) => t.tagId);
+    const relatedOr: Prisma.MedicalServiceWhereInput[] = [];
+    if (service.specialtyId) {
+      relatedOr.push({ specialtyId: service.specialtyId });
+    }
+    if (tagIds.length > 0) {
+      relatedOr.push({ tags: { some: { tagId: { in: tagIds } } } });
+    }
+
+    let relatedServices: any[] = [];
+    if (relatedOr.length > 0) {
+      const related = await this.db.medicalService.findMany({
+        where: {
+          id: { not: service.id },
+          status: 'ACTIVE',
+          OR: relatedOr,
+        },
+        include: this.serviceIncludes(),
+        take: 4,
+        orderBy: [{ bookingEnabled: 'desc' }, { createdAt: 'desc' }],
+      });
+      relatedServices = related.map((r) => this.presentService(r));
+    }
+
+    const specialty = service.specialtyId ? await this.resolveSpecialty(service.specialtyId) : null;
+    const presented = this.presentService(service);
+
+    return {
+      data: {
+        ...presented,
+        specialty,
+        basePrice: activePrice ? this.presentPrice(activePrice) : null,
+        doctorRankSurcharges,
+        relatedServices,
+      },
+    };
   }
 
   async listPublicCategories() {
-    const categories = await this.db.serviceCategory.findMany({
-      where: { status: 'ACTIVE' },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-    return { data: categories.map((category) => this.presentCategory(category)) };
+    return { data: [] };
   }
 
   async getFilters() {
-    const [categories, tags] = await Promise.all([
-      this.db.serviceCategory.findMany({ where: { status: 'ACTIVE' }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
-      this.db.catalogTag.findMany({ where: { status: 'ACTIVE' }, orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }] }),
-    ]);
+    const tags = await this.db.catalogTag.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+    });
     return {
       data: {
-        categories: categories.map((category) => this.presentCategory(category)),
+        categories: [],
         tags: tags.map((tag) => this.presentTag(tag)),
       },
     };
@@ -116,9 +157,10 @@ export class CatalogService {
             durationMinutes: dto.durationMinutes,
             bookingEnabled: dto.bookingEnabled ?? true,
             doctorRankSelectionPolicy: dto.doctorRankSelectionPolicy ?? 'NOT_REQUIRED',
+            ...(dto.content !== undefined ? { content: dto.content } : {}),
           },
         });
-        await this.replaceServiceLinks(tx, created.id, dto.primaryCategoryId, dto.categoryIds, dto.tagIds);
+        await this.replaceServiceLinks(tx, created.id, dto.tagIds);
         return tx.medicalService.findUniqueOrThrow({ where: { id: created.id }, include: this.serviceIncludes() });
       });
       return { data: this.presentService(service) };
@@ -145,11 +187,12 @@ export class CatalogService {
             ...(dto.durationMinutes !== undefined ? { durationMinutes: dto.durationMinutes } : {}),
             ...(dto.bookingEnabled !== undefined ? { bookingEnabled: dto.bookingEnabled } : {}),
             ...(dto.doctorRankSelectionPolicy ? { doctorRankSelectionPolicy: dto.doctorRankSelectionPolicy } : {}),
+            ...(dto.content !== undefined ? { content: dto.content } : {}),
             version: { increment: 1 },
           },
         });
-        if (dto.primaryCategoryId !== undefined || dto.categoryIds !== undefined || dto.tagIds !== undefined) {
-          await this.replaceServiceLinks(tx, serviceId, dto.primaryCategoryId, dto.categoryIds, dto.tagIds);
+        if (dto.tagIds !== undefined) {
+          await this.replaceServiceLinks(tx, serviceId, dto.tagIds);
         }
         return tx.medicalService.findUniqueOrThrow({ where: { id: serviceId }, include: this.serviceIncludes() });
       });
@@ -175,43 +218,12 @@ export class CatalogService {
     return { data: this.presentService(updated) };
   }
 
-  async createCategory(dto: CreateCategoryDto) {
-    try {
-      const category = await this.db.serviceCategory.create({
-        data: {
-          code: this.normalizeCode(dto.code),
-          slug: this.normalizeSlug(dto.slug ?? dto.name),
-          name: dto.name.trim(),
-          description: this.clean(dto.description),
-          parentId: dto.parentId,
-          status: dto.status ?? 'DRAFT',
-          sortOrder: dto.sortOrder ?? 0,
-        },
-      });
-      return { data: this.presentCategory(category) };
-    } catch (error) {
-      this.mapPrismaError(error);
-    }
+  async createCategory(_dto: CreateCategoryDto) {
+    return { data: null };
   }
 
-  async updateCategory(categoryId: string, dto: UpdateCategoryDto) {
-    try {
-      const category = await this.db.serviceCategory.update({
-        where: { id: categoryId },
-        data: {
-          ...(dto.code ? { code: this.normalizeCode(dto.code) } : {}),
-          ...(dto.slug ? { slug: this.normalizeSlug(dto.slug) } : {}),
-          ...(dto.name ? { name: dto.name.trim() } : {}),
-          ...(dto.description !== undefined ? { description: this.clean(dto.description) } : {}),
-          ...(dto.parentId !== undefined ? { parentId: dto.parentId } : {}),
-          ...(dto.status ? { status: dto.status } : {}),
-          ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
-        },
-      });
-      return { data: this.presentCategory(category) };
-    } catch (error) {
-      this.mapPrismaError(error);
-    }
+  async updateCategory(_categoryId: string, _dto: UpdateCategoryDto) {
+    return { data: null };
   }
 
   async createTag(dto: CreateTagDto) {
@@ -360,10 +372,6 @@ export class CatalogService {
   }
 
   private async validateActivation(service: ServiceWithRelations) {
-    const primaryCount = service.categories.filter((item) => item.isPrimary).length;
-    if (primaryCount !== 1) throw new DomainException('PRIMARY_CATEGORY_REQUIRED', 'Active service must have exactly one primary category', HttpStatus.CONFLICT);
-    const activePrimary = service.categories.find((item) => item.isPrimary)?.category.status === 'ACTIVE';
-    if (!activePrimary) throw new DomainException('PRIMARY_CATEGORY_INACTIVE', 'Primary category must be active', HttpStatus.CONFLICT);
     if (service.doctorRankSelectionPolicy === 'RANK_UPGRADE_ALLOWED') {
       const basic = await this.findEffectiveSurcharge(DEFAULT_RANK_CODE, 'VND', new Date());
       if (!basic || Number(basic.amountMinor) !== 0) {
@@ -375,17 +383,8 @@ export class CatalogService {
   private async replaceServiceLinks(
     tx: Prisma.TransactionClient,
     serviceId: string,
-    primaryCategoryId?: string,
-    categoryIds?: string[],
     tagIds?: string[],
   ) {
-    if (primaryCategoryId !== undefined || categoryIds !== undefined) {
-      const categorySet = new Set([...(categoryIds ?? []), ...(primaryCategoryId ? [primaryCategoryId] : [])]);
-      await tx.medicalServiceCategory.deleteMany({ where: { medicalServiceId: serviceId } });
-      for (const categoryId of categorySet) {
-        await tx.medicalServiceCategory.create({ data: { medicalServiceId: serviceId, categoryId, isPrimary: categoryId === primaryCategoryId } });
-      }
-    }
     if (tagIds !== undefined) {
       await tx.medicalServiceTag.deleteMany({ where: { medicalServiceId: serviceId } });
       for (const tagId of new Set(tagIds)) {
@@ -396,7 +395,6 @@ export class CatalogService {
 
   private serviceIncludes() {
     return {
-      categories: { include: { category: true }, orderBy: [{ isPrimary: 'desc' as const }, { category: { sortOrder: 'asc' as const } }] },
       tags: { include: { tag: true }, orderBy: [{ tag: { group: 'asc' as const } }, { tag: { sortOrder: 'asc' as const } }] },
       basePrices: { where: { status: { in: ACTIVE_PRICE_STATUSES } }, orderBy: [{ effectiveFrom: 'desc' as const }] },
     };
@@ -420,14 +418,7 @@ export class CatalogService {
     return terms;
   }
 
-  private categoryIdentifierWhere(value: string): Prisma.ServiceCategoryWhereInput[] {
-    const terms: Prisma.ServiceCategoryWhereInput[] = [
-      { slug: value },
-      { code: this.normalizeCode(value) },
-    ];
-    if (this.isUuid(value)) terms.unshift({ id: value });
-    return terms;
-  }
+  
 
   private tagIdentifierWhere(value: string): Prisma.CatalogTagWhereInput[] {
     const terms: Prisma.CatalogTagWhereInput[] = [
@@ -502,6 +493,12 @@ export class CatalogService {
   }
 
   private presentService(service: ServiceWithRelations) {
+    let content = (service as any).content;
+    if (content && typeof content === 'object') {
+      const { review, ...publicContent } = content;
+      content = publicContent;
+    }
+
     return {
       id: service.id,
       code: service.code,
@@ -516,14 +513,66 @@ export class CatalogService {
       bookingEnabled: service.bookingEnabled,
       doctorRankSelectionPolicy: service.doctorRankSelectionPolicy,
       status: service.status,
+      content,
       version: service.version,
       publishedAt: service.publishedAt,
-      categories: service.categories.map((link) => ({ ...this.presentCategory(link.category), isPrimary: link.isPrimary })),
+      categories: [],
       tags: service.tags.map((link) => this.presentTag(link.tag)),
       prices: service.basePrices.map((price) => this.presentPrice(price)),
       createdAt: service.createdAt,
       updatedAt: service.updatedAt,
     };
+  }
+
+  private specialtyCache: Map<string, { id: string; name: string; slug: string; code?: string }> = new Map();
+  private lastSpecialtyFetch = 0;
+
+  private async resolveSpecialty(specialtyId: string): Promise<{ id: string; name: string; slug: string; code?: string } | null> {
+    const now = Date.now();
+    if (this.specialtyCache.size === 0 || now - this.lastSpecialtyFetch > 60000) {
+      const urls = [
+        'http://doctor-service:5005/doctors/specialties',
+        'http://localhost:5005/doctors/specialties',
+      ];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+          if (res.ok) {
+            const body: any = await res.json();
+            const list = Array.isArray(body) ? body : body?.data;
+            if (Array.isArray(list)) {
+              for (const item of list) {
+                if (item && item.id) {
+                  this.specialtyCache.set(item.id, {
+                    id: item.id,
+                    name: item.name,
+                    slug: item.slug,
+                    code: item.code,
+                  });
+                }
+              }
+              this.lastSpecialtyFetch = now;
+              break;
+            }
+          }
+        } catch {
+          // ignore error
+        }
+      }
+    }
+
+    if (this.specialtyCache.has(specialtyId)) {
+      return this.specialtyCache.get(specialtyId)!;
+    }
+
+    const staticFallback: Record<string, { id: string; name: string; slug: string; code: string }> = {
+      'fc272dd3-009d-46f8-8d51-b35a723c7d52': { id: 'fc272dd3-009d-46f8-8d51-b35a723c7d52', name: 'Sản khoa', slug: 'san-khoa', code: 'OBSTETRICS' },
+      '9f84d9d3-0ff4-4d71-999e-e5bea709549d': { id: '9f84d9d3-0ff4-4d71-999e-e5bea709549d', name: 'Phụ khoa', slug: 'phu-khoa', code: 'GYNECOLOGY' },
+      'bbf85ca8-348d-445f-9591-9747d5395183': { id: 'bbf85ca8-348d-445f-9591-9747d5395183', name: 'Y học bào thai & Chẩn đoán trước sinh', slug: 'y-hoc-bao-thai-chan-doan-truoc-sinh', code: 'PERINATOLOGY' },
+      'c2a57cf4-2ce7-496d-80ad-b4bb351e53ce': { id: 'c2a57cf4-2ce7-496d-80ad-b4bb351e53ce', name: 'Hiếm muộn & Hỗ trợ sinh sản', slug: 'hiem-muon-ho-tro-sinh-san', code: 'REPRODUCTIVE_ENDOCRINOLOGY' },
+      'cefed4f4-0d8a-44c7-9dc3-f5f1c634e3c6': { id: 'cefed4f4-0d8a-44c7-9dc3-f5f1c634e3c6', name: 'Bệnh lý nội khoa thai kỳ', slug: 'benh-ly-noi-khoa-thai-ky', code: 'MATERNAL_MEDICINE' },
+    };
+    return staticFallback[specialtyId] || null;
   }
 
   private presentCategory(category: { id: string; code: string; slug: string; name: string; description: string | null; parentId: string | null; status: CatalogStatus; sortOrder: number }) {

@@ -15,6 +15,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
+import { Public } from '../auth/public.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   CreateAvailabilityDto,
@@ -60,6 +61,7 @@ export class DoctorController {
       req.requestId,
     );
   }
+  @Public()
   @Get()
   list(@Query() query: ListQueryDto, @Req() req: AuthenticatedRequest) {
     return this.service.listDoctors(query, req.identity);
@@ -78,12 +80,13 @@ export class DoctorController {
       req.requestId,
     );
   }
+  @Public()
   @Get('specialties')
   specialties(
     @Query() query: SpecialtyListQueryDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.service.listSpecialties(query, this.identity(req));
+    return this.service.listSpecialties(query, req.identity);
   }
   @Post('rooms')
   @Roles('ADMIN', 'CLINIC_MANAGER')
