@@ -1,0 +1,364 @@
+openapi: 3.0.3
+info:
+  title: Reporting Service API
+  version: 1.0.0
+  description: >-
+    Read-only operational reporting API backed by asynchronously maintained
+    projections. CSV exports contain the same projected data and may be eventually
+    consistent with source services.
+servers:
+  - url: /api/v1
+tags:
+  - name: Reports
+    description: Read projected operational reports.
+  - name: Exports
+    description: Download projected report data as CSV.
+security:
+  - bearerAuth: []
+paths:
+  /reports/overview:
+    get:
+      tags: [Reports]
+      operationId: getReportOverview
+      summary: Get clinic overview metrics
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Overview metrics retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /reports/appointments:
+    get:
+      tags: [Reports]
+      operationId: getAppointmentReport
+      summary: Get appointment report
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - name: doctorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Appointment report retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /reports/revenue:
+    get:
+      tags: [Reports]
+      operationId: getRevenueReport
+      summary: Get collected service revenue report
+      description: Reports service-only payments; no health-insurance reimbursement is included.
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - name: paymentMethod
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMethod'
+      responses:
+        '200':
+          description: Revenue report retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /reports/appointments.csv:
+    get:
+      tags: [Exports]
+      operationId: exportAppointmentsCsv
+      summary: Export appointment report as CSV
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - name: doctorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: UTF-8 CSV appointment report.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Attachment filename.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /reports/revenue.csv:
+    get:
+      tags: [Exports]
+      operationId: exportRevenueCsv
+      summary: Export revenue report as CSV
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - name: paymentMethod
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMethod'
+      responses:
+        '200':
+          description: UTF-8 CSV revenue report.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Attachment filename.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    FromDate:
+      name: fromDate
+      in: query
+      required: true
+      description: Inclusive start date in clinic local time.
+      schema:
+        type: string
+        format: date
+    ToDate:
+      name: toDate
+      in: query
+      required: true
+      description: Inclusive end date in clinic local time.
+      schema:
+        type: string
+        format: date
+  responses:
+    BadRequest:
+      description: Invalid report criteria.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ProjectionMetadata:
+      type: object
+      required: [projectedAt]
+      properties:
+        projectedAt:
+          type: string
+          format: date-time
+        dataThrough:
+          type: string
+          format: date-time
+          nullable: true
+    ReportPeriod:
+      type: object
+      required: [fromDate, toDate]
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+    ReportOverview:
+      type: object
+      required: [period, totalAppointments, completedAppointments, cancelledAppointments, totalCollectedAmount, currency, projection]
+      properties:
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        totalAppointments:
+          type: integer
+          format: int64
+        completedAppointments:
+          type: integer
+          format: int64
+        cancelledAppointments:
+          type: integer
+          format: int64
+        totalCollectedAmount:
+          type: integer
+          format: int64
+          description: Amount in the currency's smallest unit.
+        currency:
+          type: string
+          example: VND
+        projection:
+          $ref: '#/components/schemas/ProjectionMetadata'
+    AppointmentReport:
+      type: object
+      required: [period, summary, rows, projection]
+      properties:
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        summary:
+          $ref: '#/components/schemas/AppointmentSummary'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppointmentReportRow'
+        projection:
+          $ref: '#/components/schemas/ProjectionMetadata'
+    AppointmentSummary:
+      type: object
+      required: [total, scheduled, checkedIn, completed, cancelled, noShow]
+      properties:
+        total: { type: integer, format: int64 }
+        scheduled: { type: integer, format: int64 }
+        checkedIn: { type: integer, format: int64 }
+        completed: { type: integer, format: int64 }
+        cancelled: { type: integer, format: int64 }
+        noShow: { type: integer, format: int64 }
+    AppointmentReportRow:
+      type: object
+      required: [date, total, scheduled, checkedIn, completed, cancelled, noShow]
+      properties:
+        date: { type: string, format: date }
+        total: { type: integer, format: int64 }
+        scheduled: { type: integer, format: int64 }
+        checkedIn: { type: integer, format: int64 }
+        completed: { type: integer, format: int64 }
+        cancelled: { type: integer, format: int64 }
+        noShow: { type: integer, format: int64 }
+    PaymentMethod:
+      type: string
+      enum: [CASH, MANUAL_TRANSFER]
+    RevenueReport:
+      type: object
+      required: [period, totalCollectedAmount, currency, rows, projection]
+      properties:
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        totalCollectedAmount:
+          type: integer
+          format: int64
+          description: Amount in the currency's smallest unit.
+        currency:
+          type: string
+          example: VND
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/RevenueReportRow'
+        projection:
+          $ref: '#/components/schemas/ProjectionMetadata'
+    RevenueReportRow:
+      type: object
+      required: [date, paymentMethod, paymentCount, collectedAmount, currency]
+      properties:
+        date: { type: string, format: date }
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethod'
+        paymentCount: { type: integer, format: int64 }
+        collectedAmount:
+          type: integer
+          format: int64
+          description: Amount in the currency's smallest unit.
+        currency:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [error, timestamp]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        timestamp:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorField'
+    ErrorField:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }

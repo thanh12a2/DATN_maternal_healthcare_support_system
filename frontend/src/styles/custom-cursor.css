@@ -1,0 +1,41 @@
+@media (pointer: fine) {
+  .custom-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 20px;
+    height: 24px;
+    pointer-events: none;
+    opacity: 0;
+    background: var(--deep);
+    clip-path: polygon(4% 0, 100% 69%, 62% 72%, 80% 100%, 65% 100%, 48% 76%, 20% 100%);
+    filter: drop-shadow(0 1px 1px color-mix(in oklch, var(--deep) 35%, transparent));
+    transform: translate3d(-2px, -2px, 0);
+    transform-origin: 4% 0;
+    transition: opacity .12s ease, background .12s ease, transform .12s ease, filter .12s ease;
+  }
+  .custom-cursor.is-visible { opacity: 1; }
+  .custom-cursor.is-default { background: var(--accent); }
+  .custom-cursor.is-clickable {
+    background: var(--deep);
+    transform: translate3d(-2px, -2px, 0) scale(1.08);
+    filter: drop-shadow(0 2px 2px color-mix(in oklch, var(--deep) 38%, transparent));
+  }
+  .custom-cursor.is-text {
+    width: 3px;
+    height: 22px;
+    clip-path: none;
+    border-radius: 999px;
+    background: var(--accent);
+    transform: translate3d(-1px, -11px, 0);
+  }
+  .custom-cursor.is-disabled {
+    background: var(--muted);
+    filter: none;
+  }
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .custom-cursor { display: none; }
+}

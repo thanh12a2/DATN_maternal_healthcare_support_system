@@ -1,0 +1,1 @@
+import { BillingDomainException } from '../common/domain.exception';describe('Billing invariants',()=>{it('has no refund state',()=>expect(['OPEN','PAID','OUTSTANDING']).not.toContain('REFUNDED'));it('enforces one payment conflict code',()=>expect(new BillingDomainException('PAYMENT_ALREADY_EXISTS','one payment',409).code).toBe('PAYMENT_ALREADY_EXISTS'));});

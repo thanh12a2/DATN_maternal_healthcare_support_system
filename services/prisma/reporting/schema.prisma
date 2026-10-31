@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/reporting-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("REPORTING_DATABASE_URL")
+}
+
+enum ExportStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+model ConsumedEvent {
+  eventId     String   @id @map("event_id") @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(120)
+  occurredAt  DateTime @map("occurred_at") @db.Timestamptz(6)
+  payloadHash String   @map("payload_hash") @db.Char(64)
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@map("reporting_consumed_events")
+}
+
+model DailyMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessDate DateTime @map("business_date") @db.Date
+  reportType   String   @map("report_type") @db.VarChar(80)
+  dimensionKey String   @map("dimension_key") @db.VarChar(200)
+  dimensions   Json
+  measures     Json
+  version      Int      @default(1)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([businessDate, reportType, dimensionKey])
+  @@index([reportType, businessDate])
+  @@map("daily_metrics")
+}
+
+model ExportJob {
+  id                 String       @id @default(uuid()) @db.Uuid
+  requestedByActorId String       @map("requested_by_actor_id") @db.Uuid
+  reportType         String       @map("report_type") @db.VarChar(80)
+  filters            Json
+  status             ExportStatus @default(QUEUED)
+  storageKey         String?      @map("storage_key") @db.VarChar(300)
+  errorCode          String?      @map("error_code") @db.VarChar(80)
+  expiresAt          DateTime?    @map("expires_at") @db.Timestamptz(6)
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([requestedByActorId, createdAt])
+  @@map("report_export_jobs")
+}

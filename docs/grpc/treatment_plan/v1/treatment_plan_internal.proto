@@ -1,0 +1,23 @@
+syntax = "proto3";
+package maternal.treatment_plan.v1;
+import "google/protobuf/timestamp.proto";
+import "common/v1/common.proto";
+service TreatmentPlanInternalService {
+  rpc CreateDraftPlan(CreateDraftPlanRequest) returns (TreatmentPlanView);
+  rpc GetTreatmentPlan(GetTreatmentPlanRequest) returns (TreatmentPlanView);
+  rpc ListPlansByPatient(ListPlansByPatientRequest) returns (ListPlansResponse);
+  rpc ActivatePlan(PlanCommandRequest) returns (TreatmentPlanView);
+  rpc CompletePlan(PlanCommandRequest) returns (TreatmentPlanView);
+  rpc CancelPlan(CancelPlanRequest) returns (TreatmentPlanView);
+  rpc ValidateTreatmentPlanReference(ValidateTreatmentPlanReferenceRequest) returns (ValidateTreatmentPlanReferenceResponse);
+}
+message PlanItemInput { string type = 1; string title = 2; string description = 3; google.protobuf.Timestamp due_at = 4; }
+message CreateDraftPlanRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string patient_id = 3; string pregnancy_episode_id = 4; string source_encounter_id = 5; string doctor_id = 6; string title = 7; string summary = 8; repeated PlanItemInput items = 9; }
+message GetTreatmentPlanRequest { maternal.common.v1.RequestContext context = 1; string plan_id = 2; }
+message ListPlansByPatientRequest { maternal.common.v1.RequestContext context = 1; string patient_id = 2; string pregnancy_episode_id = 3; }
+message ListPlansResponse { repeated TreatmentPlanView plans = 1; }
+message PlanCommandRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string plan_id = 3; int32 expected_version = 4; }
+message CancelPlanRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string plan_id = 3; int32 expected_version = 4; string reason = 5; }
+message ValidateTreatmentPlanReferenceRequest { maternal.common.v1.RequestContext context = 1; string plan_id = 2; string patient_id = 3; string encounter_id = 4; }
+message ValidateTreatmentPlanReferenceResponse { bool valid = 1; string status = 2; }
+message TreatmentPlanView { string plan_id = 1; string patient_id = 2; string pregnancy_episode_id = 3; string source_encounter_id = 4; string doctor_id = 5; string status = 6; int32 version = 7; string title = 8; string summary = 9; repeated PlanItemInput items = 10; google.protobuf.Timestamp activated_at = 11; google.protobuf.Timestamp completed_at = 12; }

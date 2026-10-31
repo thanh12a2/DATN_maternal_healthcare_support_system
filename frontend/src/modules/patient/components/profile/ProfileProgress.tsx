@@ -1,0 +1,1 @@
+export function ProfileProgress({value}:{value:number}){return <div className="profile-progress" aria-label={`Tiến độ hoàn thiện hồ sơ ${value}%`}><div><span>Tiến độ</span><strong>{value}%</strong></div><div className="profile-progress-track" aria-hidden="true"><div style={{width:value+'%'}} /></div></div>;}

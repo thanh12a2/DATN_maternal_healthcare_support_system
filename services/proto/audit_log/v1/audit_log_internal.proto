@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package maternal.audit_log.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.maternal.audit_log.v1";
+
+// Internal read API. Audit ingestion is async-first through RabbitMQ domain events.
+// Stored records are append-only and cannot be updated or deleted through RPC.
+service AuditLogInternalService {
+  rpc GetAuditLog(GetAuditLogRequest) returns (GetAuditLogResponse);
+  rpc ListAuditLogs(ListAuditLogsRequest) returns (ListAuditLogsResponse);
+}
+
+message GetAuditLogRequest {
+  string audit_log_id = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetAuditLogResponse {
+  AuditLog audit_log = 1;
+}
+
+message ListAuditLogsRequest {
+  string actor_id = 1;
+  string action = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+  AuditOutcome outcome = 5;
+  google.protobuf.Timestamp occurred_from = 6;
+  google.protobuf.Timestamp occurred_to = 7;
+  maternal.common.v1.PageRequest page = 8;
+  maternal.common.v1.RequestContext context = 9;
+}
+
+message ListAuditLogsResponse {
+  repeated AuditLog audit_logs = 1;
+  maternal.common.v1.PageInfo page = 2;
+}
+
+message AuditLog {
+  string id = 1;
+  string event_id = 2;
+  string correlation_id = 3;
+  google.protobuf.Timestamp occurred_at = 4;
+  google.protobuf.Timestamp recorded_at = 5;
+  AuditActor actor = 6;
+  string action = 7;
+  AuditResource resource = 8;
+  AuditOutcome outcome = 9;
+  string source_service = 10;
+  string ip_address = 11;
+  string user_agent = 12;
+  map<string, string> metadata = 13;
+}
+
+message AuditActor {
+  string id = 1;
+  ActorType type = 2;
+  string role = 3;
+}
+
+message AuditResource {
+  string type = 1;
+  string id = 2;
+}
+
+enum ActorType {
+  ACTOR_TYPE_UNSPECIFIED = 0;
+  ACTOR_TYPE_USER = 1;
+  ACTOR_TYPE_SERVICE = 2;
+  ACTOR_TYPE_SYSTEM = 3;
+}
+
+enum AuditOutcome {
+  AUDIT_OUTCOME_UNSPECIFIED = 0;
+  AUDIT_OUTCOME_SUCCESS = 1;
+  AUDIT_OUTCOME_FAILURE = 2;
+  AUDIT_OUTCOME_DENIED = 3;
+}

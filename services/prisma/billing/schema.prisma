@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/billing-client"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("BILLING_DATABASE_URL")
+}
+enum InvoiceType {
+  BASE
+  SUPPLEMENTARY
+}
+enum InvoiceStatus {
+  OPEN
+  PAYMENT_PENDING_VERIFICATION
+  PAID
+  CREDIT_APPROVED
+  OUTSTANDING
+  CANCELLED
+}
+enum PaymentMethod {
+  CASH
+  MANUAL_BANK_TRANSFER
+}
+enum PaymentStatus {
+  RECORDED
+  VERIFIED
+  REJECTED
+}
+enum CreditApprovalStatus {
+  APPROVED
+  REVOKED
+}
+enum LineSource {
+  APPOINTMENT_SNAPSHOT
+  PERFORMED_SERVICE
+}
+model Invoice {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceNumber String @unique @map("invoice_number") @db.VarChar(24)
+  patientId String @map("patient_id") @db.Uuid
+  appointmentId String @map("appointment_id") @db.Uuid
+  encounterId String? @map("encounter_id") @db.Uuid
+  type InvoiceType
+  status InvoiceStatus @default(OPEN)
+  currency String @default("VND") @db.Char(3)
+  subtotalMinor BigInt @default(0) @map("subtotal_minor")
+  totalMinor BigInt @default(0) @map("total_minor")
+  paidMinor BigInt @default(0) @map("paid_minor")
+  balanceMinor BigInt @default(0) @map("balance_minor")
+  sourceVersion BigInt @map("source_version")
+  dueAt DateTime? @map("due_at") @db.Timestamptz(6)
+  paidAt DateTime? @map("paid_at") @db.Timestamptz(6)
+  version Int @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines InvoiceLine[]
+  payment Payment?
+  credits CreditApproval[]
+  @@unique([appointmentId, type])
+  @@index([patientId, createdAt])
+  @@index([status, dueAt])
+  @@map("invoices")
+}
+model InvoiceLine {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @map("invoice_id") @db.Uuid
+  lineNo Int @map("line_no")
+  source LineSource
+  sourceReferenceId String @map("source_reference_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  descriptionSnapshot String @map("description_snapshot") @db.VarChar(300)
+  quantity Int
+  unitAmountMinor BigInt @map("unit_amount_minor")
+  lineAmountMinor BigInt @map("line_amount_minor")
+  priceReferenceId String? @map("price_reference_id") @db.Uuid
+  performedAt DateTime? @map("performed_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  @@unique([invoiceId, lineNo])
+  @@unique([source, sourceReferenceId])
+  @@map("invoice_lines")
+}
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @unique @map("invoice_id") @db.Uuid
+  method PaymentMethod
+  status PaymentStatus
+  amountMinor BigInt @map("amount_minor")
+  currency String @default("VND") @db.Char(3)
+  receivedAt DateTime @map("received_at") @db.Timestamptz(6)
+  verifiedAt DateTime? @map("verified_at") @db.Timestamptz(6)
+  reference String? @unique @db.VarChar(100)
+  recordedBy String @map("recorded_by") @db.Uuid
+  version Int @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  @@map("payments")
+}
+model CreditApproval {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @map("invoice_id") @db.Uuid
+  status CreditApprovalStatus @default(APPROVED)
+  reasonCode String @map("reason_code") @db.VarChar(80)
+  reasonText String @map("reason_text") @db.VarChar(500)
+  approvedBy String @map("approved_by") @db.Uuid
+  approvedAt DateTime @default(now()) @map("approved_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  version Int @default(1)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  @@index([invoiceId, status])
+  @@map("credit_approvals")
+}
+model BillingIdempotencyRecord {
+  id String @id @default(uuid()) @db.Uuid
+  scope String @db.VarChar(100)
+  key String @db.VarChar(128)
+  requestHash String @map("request_hash") @db.Char(64)
+  resourceId String? @map("resource_id") @db.Uuid
+  responseStatus Int @map("response_status")
+  responseBody Json @map("response_body")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  @@unique([scope, key])
+  @@map("billing_idempotency_records")
+}
+model BillingAuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  eventType String @map("event_type") @db.VarChar(100)
+  actorId String? @map("actor_id") @db.Uuid
+  invoiceId String? @map("invoice_id") @db.Uuid
+  reason String? @db.VarChar(500)
+  requestId String? @map("request_id") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  @@index([invoiceId, createdAt])
+  @@map("billing_audit_logs")
+}
+model BillingOutboxEvent {
+  id String @id @default(uuid()) @db.Uuid
+  eventType String @map("event_type") @db.VarChar(120)
+  aggregateId String @map("aggregate_id") @db.Uuid
+  aggregateVersion Int @map("aggregate_version")
+  payload Json
+  status String @default("PENDING") @db.VarChar(20)
+  attempts Int @default(0)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  @@index([status, occurredAt])
+  @@map("billing_outbox_events")
+}

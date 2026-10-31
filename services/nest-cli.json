@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/services/src",
+  "sourceRoot": "apps/auth-service/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/services/tsconfig.app.json"
+    "tsConfigPath": "apps/auth-service/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/services",
+  "root": "apps/auth-service",
   "projects": {
     "auth-service": {
       "type": "application",
@@ -19,13 +19,148 @@
         "tsConfigPath": "apps/auth-service/tsconfig.app.json"
       }
     },
-    "services": {
+    "doctor-service": {
       "type": "application",
-      "root": "apps/services",
+      "root": "apps/doctor-service",
       "entryFile": "main",
-      "sourceRoot": "apps/services/src",
+      "sourceRoot": "apps/doctor-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/services/tsconfig.app.json"
+        "tsConfigPath": "apps/doctor-service/tsconfig.app.json"
+      }
+    },
+    "patient-service": {
+      "type": "application",
+      "root": "apps/patient-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/patient-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/patient-service/tsconfig.app.json"
+      }
+    },
+    "receptionist-service": {
+      "type": "application",
+      "root": "apps/receptionist-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/receptionist-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/receptionist-service/tsconfig.app.json"
+      }
+    },
+    "sample-service": {
+      "type": "application",
+      "root": "apps/sample-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/sample-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/sample-service/tsconfig.app.json"
+      }
+    },
+    "service-catalog-service": {
+      "type": "application",
+      "root": "apps/service-catalog-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/service-catalog-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/service-catalog-service/tsconfig.app.json"
+      }
+    },
+    "appointment-service": {
+      "type": "application",
+      "root": "apps/appointment-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/appointment-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/appointment-service/tsconfig.app.json"
+      }
+    },
+    "billing-service": {
+      "type": "application",
+      "root": "apps/billing-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/billing-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/billing-service/tsconfig.app.json"
+      }
+    },
+    "medical-record-service": {
+      "type": "application",
+      "root": "apps/medical-record-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/medical-record-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/medical-record-service/tsconfig.app.json"
+      }
+    },
+    "queue-service": {
+      "type": "application",
+      "root": "apps/queue-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/queue-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/queue-service/tsconfig.app.json"
+      }
+    },
+    "document-service": {
+      "type": "application",
+      "root": "apps/document-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/document-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/document-service/tsconfig.app.json"
+      }
+    },
+    "prescription-service": {
+      "type": "application",
+      "root": "apps/prescription-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/prescription-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/prescription-service/tsconfig.app.json"
+      }
+    },
+    "treatment-plan-service": {
+      "type": "application",
+      "root": "apps/treatment-plan-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/treatment-plan-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/treatment-plan-service/tsconfig.app.json"
+      }
+    },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "audit-log-service": {
+      "type": "application",
+      "root": "apps/audit-log-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/audit-log-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/audit-log-service/tsconfig.app.json"
+      }
+    },
+    "reporting-service": {
+      "type": "application",
+      "root": "apps/reporting-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/reporting-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/reporting-service/tsconfig.app.json"
+      }
+    },
+    "consultation-service": {
+      "type": "application",
+      "root": "apps/consultation-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/consultation-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/consultation-service/tsconfig.app.json"
       }
     }
   }

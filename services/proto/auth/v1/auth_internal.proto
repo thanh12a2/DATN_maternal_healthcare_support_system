@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package maternal.auth.v1;
+
+import "common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.auth.v1";
+
+service AuthInternalService {
+  // Dùng khi tạo/kích hoạt business profile; không dùng để verify mọi user request.
+  rpc GetAccountAuthorization(GetAccountAuthorizationRequest) returns (GetAccountAuthorizationResponse);
+  rpc BatchGetAccountAuthorization(BatchGetAccountAuthorizationRequest) returns (BatchGetAccountAuthorizationResponse);
+}
+
+enum AccountStatus {
+  ACCOUNT_STATUS_UNSPECIFIED = 0;
+  ACCOUNT_STATUS_PENDING = 1;
+  ACCOUNT_STATUS_ACTIVE = 2;
+  ACCOUNT_STATUS_DISABLED = 3;
+  ACCOUNT_STATUS_LOCKED = 4;
+}
+
+message GetAccountAuthorizationRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string account_id = 2;
+}
+
+message GetAccountAuthorizationResponse {
+  AccountAuthorization account = 1;
+}
+
+message BatchGetAccountAuthorizationRequest {
+  maternal.common.v1.RequestContext context = 1;
+  repeated string account_ids = 2;
+}
+
+message BatchGetAccountAuthorizationResponse {
+  repeated AccountAuthorization accounts = 1;
+}
+
+// Contract view tối thiểu; không phải Auth database entity.
+message AccountAuthorization {
+  string account_id = 1;
+  AccountStatus status = 2;
+  repeated string roles = 3;
+  int64 authorization_version = 4;
+}

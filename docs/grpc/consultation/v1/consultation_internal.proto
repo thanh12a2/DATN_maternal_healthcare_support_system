@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package maternal.consultation.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.maternal.consultation.v1";
+
+// Internal integration API for asynchronous appointment Q&A messaging.
+// It intentionally defines no AI, video, diagnosis, prescription, or clinical command RPCs.
+service ConsultationInternalService {
+  rpc GetConsultation(GetConsultationRequest) returns (GetConsultationResponse);
+  rpc GetConsultationByAppointment(GetConsultationByAppointmentRequest) returns (GetConsultationByAppointmentResponse);
+  rpc ListConsultationMessages(ListConsultationMessagesRequest) returns (ListConsultationMessagesResponse);
+}
+
+message GetConsultationRequest {
+  string consultation_id = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetConsultationResponse {
+  Consultation consultation = 1;
+}
+
+message GetConsultationByAppointmentRequest {
+  string appointment_id = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetConsultationByAppointmentResponse {
+  Consultation consultation = 1;
+  bool found = 2;
+}
+
+message ListConsultationMessagesRequest {
+  string consultation_id = 1;
+  google.protobuf.Timestamp before = 2;
+  int32 limit = 3;
+  maternal.common.v1.RequestContext context = 4;
+}
+
+message ListConsultationMessagesResponse {
+  repeated ConsultationMessage messages = 1;
+  bool has_more = 2;
+}
+
+message Consultation {
+  string id = 1;
+  string appointment_id = 2;
+  string patient_id = 3;
+  string doctor_id = 4;
+  ConsultationStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp closed_at = 8;
+}
+
+message ConsultationMessage {
+  string id = 1;
+  string consultation_id = 2;
+  string sender_id = 3;
+  ParticipantRole sender_role = 4;
+  MessageType type = 5;
+  string content = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp read_at = 8;
+}
+
+enum ConsultationStatus {
+  CONSULTATION_STATUS_UNSPECIFIED = 0;
+  CONSULTATION_STATUS_OPEN = 1;
+  CONSULTATION_STATUS_CLOSED = 2;
+}
+
+enum ParticipantRole {
+  PARTICIPANT_ROLE_UNSPECIFIED = 0;
+  PARTICIPANT_ROLE_PATIENT = 1;
+  PARTICIPANT_ROLE_DOCTOR = 2;
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_SYSTEM = 2;
+}

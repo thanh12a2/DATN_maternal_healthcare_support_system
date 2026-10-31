@@ -1,0 +1,27 @@
+syntax = "proto3";
+package maternal.queue.v1;
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+service QueueInternalService {
+  rpc CreateOrGetJourney(CreateOrGetJourneyRequest) returns (CreateOrGetJourneyResponse);
+  rpc EnqueueStage(EnqueueStageRequest) returns (StageTicketView);
+  rpc GetJourney(GetJourneyRequest) returns (QueueJourneyView);
+  rpc EstimateWait(EstimateWaitRequest) returns (EstimateWaitResponse);
+  rpc CancelWaitingTickets(CancelWaitingTicketsRequest) returns (CancelWaitingTicketsResponse);
+}
+
+enum JourneyState { JOURNEY_STATE_UNSPECIFIED = 0; JOURNEY_STATE_ACTIVE = 1; JOURNEY_STATE_COMPLETED = 2; JOURNEY_STATE_CANCELLED = 3; }
+enum TicketState { TICKET_STATE_UNSPECIFIED = 0; TICKET_STATE_WAITING = 1; TICKET_STATE_CALLED = 2; TICKET_STATE_IN_SERVICE = 3; TICKET_STATE_COMPLETED = 4; TICKET_STATE_SKIPPED = 5; TICKET_STATE_CANCELLED = 6; }
+enum BasePriority { BASE_PRIORITY_UNSPECIFIED = 0; BASE_PRIORITY_ROUTINE = 1; BASE_PRIORITY_URGENT = 2; }
+message AdmissionEvidence { string reception_case_id = 1; string invoice_id = 2; string payment_condition = 3; google.protobuf.Timestamp checked_in_at = 4; }
+message CreateOrGetJourneyRequest { maternal.common.v1.RequestContext context = 1; string appointment_id = 2; string patient_id = 3; string encounter_id = 4; string initial_stage_code = 5; string room_code = 6; google.protobuf.Timestamp scheduled_at = 7; google.protobuf.Timestamp arrival_at = 8; AdmissionEvidence admission = 9; }
+message CreateOrGetJourneyResponse { QueueJourneyView journey = 1; StageTicketView initial_ticket = 2; bool created = 3; bool idempotent_replay = 4; }
+message EnqueueStageRequest { maternal.common.v1.RequestContext context = 1; string journey_id = 2; string source_order_id = 3; string stage_code = 4; string room_code = 5; BasePriority priority = 6; }
+message GetJourneyRequest { maternal.common.v1.RequestContext context = 1; string journey_id = 2; string appointment_id = 3; }
+message EstimateWaitRequest { maternal.common.v1.RequestContext context = 1; string stage_code = 2; string doctor_id = 3; google.protobuf.Timestamp expected_arrival_at = 4; }
+message EstimateWaitResponse { int32 estimated_wait_minutes = 1; int32 lower_bound_minutes = 2; int32 upper_bound_minutes = 3; google.protobuf.Timestamp calculated_at = 4; bool authoritative = 5; }
+message CancelWaitingTicketsRequest { maternal.common.v1.RequestContext context = 1; string journey_id = 2; string appointment_id = 3; string reason = 4; }
+message CancelWaitingTicketsResponse { int32 cancelled_count = 1; QueueJourneyView journey = 2; }
+message QueueJourneyView { string journey_id = 1; string appointment_id = 2; string patient_id = 3; string encounter_id = 4; string business_date = 5; int32 late_minutes = 6; bool late_demoted = 7; JourneyState state = 8; int64 version = 9; repeated StageTicketView tickets = 10; }
+message StageTicketView { string ticket_id = 1; string journey_id = 2; string source_order_id = 3; string stage_code = 4; string room_code = 5; int32 ordinal = 6; string ticket_code = 7; TicketState state = 8; BasePriority base_priority = 9; bool late_demotion = 10; int32 call_count = 11; int64 version = 12; google.protobuf.Timestamp enqueued_at = 13; google.protobuf.Timestamp called_at = 14; google.protobuf.Timestamp call_expires_at = 15; }

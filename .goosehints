@@ -1,0 +1,453 @@
+# Project Instructions
+
+Bạn đang làm việc trong một hệ thống microservice.
+
+Hãy coi các hướng dẫn trong file này là quy tắc mặc định khi làm việc với repository này.
+
+---
+
+## 1. Ngôn ngữ
+
+* Luôn trao đổi, giải thích, báo cáo và lập kế hoạch với tôi bằng tiếng Việt.
+* Tên class, function, variable, API, pattern và thuật ngữ kỹ thuật có thể giữ bằng tiếng Anh.
+* Code phải tuân theo ngôn ngữ và convention hiện tại của project.
+
+---
+
+## 2. Hiểu project trước khi thay đổi
+
+Trước khi implement hoặc sửa bất kỳ chức năng nào:
+
+1. Đọc code hiện tại liên quan.
+2. Đọc documentation liên quan trong `docs/`.
+3. Kiểm tra configuration và infrastructure liên quan.
+4. Xác định service nào thực sự chịu trách nhiệm cho chức năng đó.
+5. Tìm implementation/pattern tương tự đã tồn tại trong repository.
+6. Hiểu dependency và ảnh hưởng tới các service khác.
+
+Không tạo implementation mới chỉ vì chưa nhìn thấy implementation hiện tại.
+
+Ưu tiên reuse pattern và abstraction đang được project sử dụng.
+
+---
+
+## 3. Source of Truth
+
+Repository có cả documentation và source code.
+
+Khi xác định trạng thái thực tế của hệ thống, ưu tiên theo thứ tự:
+
+1. Source code hiện tại.
+2. Configuration và infrastructure thực tế.
+3. Tests.
+4. Documentation trong `docs/`.
+
+Documentation mô tả thiết kế và ý định của hệ thống nhưng có thể chưa được cập nhật.
+
+Không được mặc định documentation luôn đúng.
+
+Nếu documentation mâu thuẫn với implementation:
+
+* Không tự ý sửa code theo documentation.
+* Chỉ rõ sự khác biệt.
+* Nêu implementation hiện tại đang hoạt động như thế nào.
+* Thông báo cho tôi rằng documentation có khả năng outdated.
+* Chờ quyết định của tôi nếu sự khác biệt ảnh hưởng đến task.
+
+---
+
+## 4. Quy tắc kiến trúc Microservice
+
+Luôn bảo toàn boundary giữa các microservice.
+
+Mỗi service phải chịu trách nhiệm cho domain của chính nó.
+
+Không được:
+
+* Truy cập trực tiếp database của service khác.
+* Import repository/entity/database model nội bộ từ service khác.
+* Di chuyển business logic sang API Gateway.
+* Tạo coupling không cần thiết giữa các service.
+* Tạo synchronous dependency mới giữa các service nếu chưa thực sự cần thiết.
+* Duplicate business logic đã tồn tại ở service khác.
+
+Khi một service cần dữ liệu của service khác, trước tiên phải kiểm tra communication pattern hiện tại của hệ thống.
+
+Không tự ý lựa chọn HTTP, RPC, event hoặc message broker nếu project đã có convention cho trường hợp tương tự.
+
+---
+
+## 5. API Gateway
+
+API Gateway chỉ nên đảm nhiệm các concern phù hợp ở gateway như:
+
+* Routing.
+* Authentication/token verification nếu architecture hiện tại thiết kế như vậy.
+* CORS.
+* Rate limiting.
+* Logging hoặc các cross-cutting concern phù hợp.
+
+Không đưa business logic nghiệp vụ vào API Gateway.
+
+Trước khi thay đổi Gateway:
+
+* Kiểm tra route hiện tại.
+* Kiểm tra plugin/middleware hiện tại.
+* Kiểm tra ảnh hưởng tới downstream services.
+
+---
+
+## 6. Authentication và Authorization
+
+Authentication và Authorization là các concern nhạy cảm.
+
+Trước khi thay đổi:
+
+* Trace authentication flow hiện tại.
+* Xác định nơi phát hành access token.
+* Xác định nơi xử lý refresh token.
+* Xác định nơi validate token.
+* Xác định nơi role/permission được lưu.
+* Xác định nơi authorization được thực hiện.
+
+Không tạo dependency khiến mọi request phải synchronously gọi Authentication Service nếu architecture hiện tại không yêu cầu điều đó.
+
+Không thay đổi JWT payload, authentication contract hoặc authorization model mà không phân tích impact trước.
+
+---
+
+## 7. Shared Code
+
+Trước khi tạo:
+
+* DTO
+* interface
+* enum
+* event contract
+* utility
+* decorator
+* guard
+* common type
+
+hãy kiểm tra xem thứ tương tự đã tồn tại hay chưa.
+
+Chỉ đưa code vào shared library khi nó thực sự là contract hoặc concern được nhiều service chia sẻ.
+
+Không đưa business logic riêng của một service vào shared library chỉ để tránh duplicate code.
+
+Không share database entity giữa các bounded context nếu điều đó tạo coupling.
+
+---
+
+## 8. Khi được yêu cầu phân tích
+
+Nếu tôi yêu cầu:
+
+* phân tích,
+* research,
+* investigate,
+* review,
+* tìm hiểu,
+* giải thích implementation hiện tại,
+
+thì mặc định đây là READ-ONLY TASK.
+
+Trong read-only task:
+
+KHÔNG:
+
+* sửa file,
+* tạo file,
+* xóa file,
+* rename/move file,
+* cài dependency,
+* chạy migration,
+* thay đổi database,
+* format toàn project,
+* refactor,
+* tự động sửa lỗi.
+
+Chỉ:
+
+* đọc,
+* trace,
+* phân tích,
+* đối chiếu,
+* báo cáo.
+
+Nếu phát hiện vấn đề, hãy báo cho tôi nhưng không tự sửa.
+
+---
+
+## 9. Khi được yêu cầu implement
+
+Không bắt đầu bằng việc viết code ngay.
+
+Trước tiên:
+
+1. Xác định yêu cầu.
+2. Đọc implementation hiện tại.
+3. Xác định affected services.
+4. Xác định affected files/modules.
+5. Kiểm tra documentation liên quan.
+6. Kiểm tra dependency và contracts.
+7. Chọn giải pháp phù hợp với architecture hiện tại.
+
+Sau đó mới implement.
+
+Ưu tiên:
+
+* Thay đổi nhỏ nhất có thể.
+* Ít service bị ảnh hưởng nhất.
+* Ít coupling nhất.
+* Reuse code hiện tại.
+* Giữ backward compatibility nếu có thể.
+
+---
+
+## 10. Scope Control
+
+Chỉ sửa những phần cần thiết cho task hiện tại.
+
+Không:
+
+* refactor code không liên quan,
+* rename file/class không cần thiết,
+* đổi architecture ngoài scope,
+* đổi formatting toàn project,
+* upgrade dependency ngoài scope,
+* sửa các lỗi không liên quan chỉ vì phát hiện chúng.
+
+Nếu phát hiện vấn đề ngoài scope:
+
+* báo cho tôi,
+* giải thích ngắn gọn,
+* không tự sửa.
+
+---
+
+## 11. Không tự ý tạo abstraction
+
+Không over-engineer.
+
+Không tự tạo thêm:
+
+* service,
+* layer,
+* interface,
+* repository abstraction,
+* wrapper,
+* factory,
+* event,
+* queue,
+* shared library,
+
+chỉ vì chúng có vẻ "cleaner".
+
+Chỉ tạo abstraction khi:
+
+* project đã sử dụng pattern tương tự,
+* nó thực sự cần thiết,
+* hoặc task yêu cầu.
+
+Ưu tiên consistency với codebase hiện tại hơn việc áp đặt một architecture mới.
+
+---
+
+## 12. Database
+
+Mỗi service phải sở hữu dữ liệu thuộc bounded context của nó.
+
+Trước khi thay đổi database:
+
+* Xác định database owner.
+* Kiểm tra entity/schema hiện tại.
+* Kiểm tra migration hiện tại.
+* Kiểm tra impact tới dữ liệu cũ.
+
+Không:
+
+* truy cập database service khác,
+* xóa dữ liệu,
+* reset database,
+* chạy destructive migration,
+
+nếu tôi chưa yêu cầu rõ ràng.
+
+---
+
+## 13. Dependency
+
+Không tự ý:
+
+* thêm package,
+* update package,
+* downgrade package,
+* thay package,
+
+nếu implementation có thể thực hiện bằng dependencies hiện tại.
+
+Nếu thực sự cần dependency mới:
+
+* giải thích tại sao cần,
+* kiểm tra project hiện tại có giải pháp tương đương hay không,
+* chỉ thêm khi hợp lý với task.
+
+---
+
+## 14. Command Safety
+
+Được phép chạy các command read-only hoặc verification an toàn khi cần.
+
+Không chạy command có khả năng:
+
+* xóa dữ liệu,
+* reset database,
+* xóa volume,
+* force push Git,
+* xóa branch,
+* thay đổi production environment,
+* deploy,
+* chạy destructive migration,
+
+trừ khi tôi yêu cầu rõ ràng.
+
+---
+
+## 15. Verification
+
+Sau khi thay đổi code, luôn cố gắng verify phần đã thay đổi bằng các command phù hợp có sẵn trong project, ví dụ:
+
+* build,
+* lint,
+* unit test,
+* integration test liên quan.
+
+Không sửa các lỗi unrelated chỉ để làm toàn bộ project pass.
+
+Nếu verification fail:
+
+1. Xác định lỗi có phải do thay đổi vừa thực hiện không.
+2. Nếu có, sửa.
+3. Nếu không, báo rõ đây là lỗi tồn tại ngoài scope.
+
+---
+
+## 16. Sau khi implement
+
+Luôn báo cáo ngắn gọn:
+
+### Đã thay đổi
+
+* Những gì đã implement.
+
+### Files
+
+* Những file đã tạo/sửa/xóa.
+
+### Architecture impact
+
+* Service nào bị ảnh hưởng.
+* Contract/API/database nào thay đổi.
+
+### Verification
+
+* Những test/build/lint đã chạy.
+* Kết quả.
+
+### Issues
+
+* Vấn đề còn lại hoặc điều cần lưu ý.
+
+Không tuyên bố task hoàn thành nếu verification cần thiết chưa được thực hiện hoặc đang fail do thay đổi vừa tạo.
+
+---
+
+## 17. Git
+
+Không tự:
+
+* commit,
+* push,
+* merge,
+* rebase,
+* reset,
+* force push,
+
+trừ khi tôi yêu cầu rõ ràng.
+
+Có thể sử dụng `git status` và `git diff` để kiểm tra thay đổi.
+
+Không ghi đè hoặc xóa thay đổi hiện có của tôi.
+
+---
+
+## 18. Documentation
+
+Khi implementation thay đổi hành vi hoặc architecture:
+
+* xác định documentation nào có thể bị ảnh hưởng,
+* báo cho tôi biết.
+
+Không tự sửa documentation nếu task chỉ yêu cầu sửa code, trừ khi việc cập nhật docs rõ ràng nằm trong scope hoặc tôi yêu cầu.
+
+---
+
+## 19. Ưu tiên chung
+
+Khi có nhiều giải pháp, ưu tiên theo thứ tự:
+
+1. Đúng yêu cầu.
+2. Đúng architecture hiện tại.
+3. Không phá service boundary.
+4. Consistent với codebase hiện tại.
+5. Ít coupling.
+6. Thay đổi nhỏ.
+7. Dễ test.
+8. Dễ maintain.
+9. Tránh over-engineering.
+
+---
+
+## 20. Khi không chắc chắn
+
+Không hallucinate.
+
+Nếu không tìm thấy bằng chứng trong repository:
+
+* nói rõ điều đó.
+
+Phân biệt rõ:
+
+* điều được xác nhận từ code,
+* điều được mô tả trong docs,
+* điều chỉ là suy luận.
+
+Nếu một quyết định có khả năng thay đổi architecture, public API, database schema hoặc communication giữa các service và không thể suy ra chắc chắn từ project, hãy trình bày vấn đề trước khi tự đưa ra quyết định.
+
+## Tool Usage Transparency
+
+Trước khi thực hiện một tool call hoặc shell command cần approval, hãy giải thích ngắn gọn cho tôi bằng tiếng Việt:
+
+- Bạn sắp làm gì.
+- Tại sao cần làm việc đó.
+- File/thư mục/service nào sẽ bị đọc hoặc thay đổi.
+- Thao tác đó là read-only hay có khả năng thay đổi project.
+
+Ví dụ:
+
+"Tôi sẽ đọc cấu hình Kong và source của auth-service để xác định authentication flow. Đây là thao tác read-only, không sửa file."
+
+Sau đó mới thực hiện tool call.
+
+Nếu command có khả năng:
+- sửa file,
+- tạo/xóa file,
+- cài dependency,
+- thay đổi database,
+- thay đổi Git,
+- thay đổi Docker state,
+
+phải nói rõ trước khi yêu cầu approval.
+
+Không gom quá nhiều thao tác không liên quan vào một shell command lớn nếu có thể chia thành các bước dễ kiểm tra hơn.

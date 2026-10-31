@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: Notification Service API
+  version: 1.0.0
+  description: |
+    Public read-state API for delivered notifications. Notification Service is
+    delivery-only: domain services publish notification requests through RabbitMQ,
+    and this API provides no synchronous create, send, template, or campaign command.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Notifications
+paths:
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for the authenticated recipient
+      operationId: listMyNotifications
+      parameters:
+        - name: read
+          in: query
+          schema: { type: boolean }
+        - name: channel
+          in: query
+          schema: { $ref: '#/components/schemas/DeliveryChannel' }
+        - name: deliveryStatus
+          in: query
+          schema: { $ref: '#/components/schemas/DeliveryStatus' }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Recipient notifications ordered newest first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPageResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Get unread in-app notification count
+      operationId: getMyUnreadNotificationCount
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [unreadCount]
+                    properties:
+                      unreadCount: { type: integer, minimum: 0 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /notifications/{notificationId}:
+    get:
+      tags: [Notifications]
+      summary: Get one notification owned by the authenticated recipient
+      operationId: getMyNotification
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification delivery
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /notifications/{notificationId}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark an in-app notification as read
+      operationId: markMyNotificationRead
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification marked as read; repeated requests are idempotent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /notifications/read-all:
+    put:
+      tags: [Notifications]
+      summary: Mark all in-app notifications as read
+      operationId: markAllMyNotificationsRead
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [updatedCount, readAt]
+                    properties:
+                      updatedCount: { type: integer, minimum: 0 }
+                      readAt: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  responses:
+    BadRequest:
+      description: Malformed request
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Unauthorized:
+      description: Missing or invalid JWT
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Forbidden:
+      description: Notification belongs to another recipient
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    NotFound:
+      description: Notification not found
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Conflict:
+      description: Operation is not valid for the notification channel or state
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    InternalError:
+      description: Unexpected server error
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  schemas:
+    DeliveryChannel:
+      type: string
+      enum: [IN_APP, EMAIL, SMS, PUSH]
+    DeliveryStatus:
+      type: string
+      enum: [PENDING, PROCESSING, DELIVERED, FAILED, DEAD_LETTERED]
+    Notification:
+      type: object
+      required:
+        - id
+        - recipientId
+        - eventId
+        - channel
+        - title
+        - body
+        - deliveryStatus
+        - createdAt
+      properties:
+        id: { type: string, format: uuid }
+        recipientId: { type: string, format: uuid }
+        eventId:
+          type: string
+          description: RabbitMQ message/event identifier used for idempotency and traceability.
+        correlationId: { type: string, nullable: true }
+        channel: { $ref: '#/components/schemas/DeliveryChannel' }
+        title: { type: string }
+        body: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+          nullable: true
+        deliveryStatus: { $ref: '#/components/schemas/DeliveryStatus' }
+        providerMessageId: { type: string, nullable: true }
+        failureCode: { type: string, nullable: true }
+        failureMessage: { type: string, nullable: true }
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Recipient read time; applicable to IN_APP delivery.
+        deliveredAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time, nullable: true }
+    NotificationResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/Notification' }
+    NotificationPageResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Notification' }
+        pagination: { $ref: '#/components/schemas/Pagination' }
+    Pagination:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { $ref: '#/components/schemas/Error' }
+    Error:
+      type: object
+      required: [code, message, timestamp]
+      properties:
+        code: { type: string, example: NOTIFICATION_NOT_FOUND }
+        message: { type: string }
+        details:
+          type: array
+          items: { $ref: '#/components/schemas/ErrorDetail' }
+        traceId: { type: string, nullable: true }
+        timestamp: { type: string, format: date-time }
+    ErrorDetail:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }
+        code: { type: string, nullable: true }

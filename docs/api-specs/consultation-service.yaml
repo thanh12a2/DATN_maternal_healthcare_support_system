@@ -1,0 +1,442 @@
+openapi: 3.0.3
+info:
+  title: Consultation Service API
+  version: 1.0.0
+  description: >-
+    Asynchronous patient-doctor messaging for appointment Q&A. A consultation is
+    available only after payment and check-in. This service does not provide AI,
+    video calling, diagnosis, prescriptions, or other clinical commands.
+servers:
+  - url: /api/v1
+tags:
+  - name: Consultations
+  - name: Messages
+security:
+  - bearerAuth: []
+paths:
+  /consultations:
+    get:
+      tags: [Consultations]
+      operationId: listConsultations
+      summary: List consultations visible to the current user
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ConsultationStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Consultations retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Consultations]
+      operationId: createConsultation
+      summary: Open an asynchronous appointment Q&A thread
+      description: The appointment must be paid and checked in before a Q&A thread can be opened.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConsultationRequest'
+      responses:
+        '201':
+          description: Consultation opened.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /consultations/{consultationId}:
+    get:
+      tags: [Consultations]
+      operationId: getConsultation
+      summary: Get a consultation thread
+      parameters:
+        - $ref: '#/components/parameters/ConsultationId'
+      responses:
+        '200':
+          description: Consultation retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /consultations/{consultationId}/read:
+    post:
+      tags: [Messages]
+      summary: Advance the caller's read position
+      parameters:
+        - $ref: '#/components/parameters/ConsultationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sequenceNo]
+              properties:
+                sequenceNo: { type: integer, minimum: 0 }
+      responses:
+        '201': { description: Read position advanced. }
+        '403': { description: Caller is not a participant. }
+        '409': { description: Invalid sequence. }
+  /consultations/{consultationId}/messages:
+    get:
+      tags: [Messages]
+      operationId: listConsultationMessages
+      summary: List messages in a consultation
+      parameters:
+        - $ref: '#/components/parameters/ConsultationId'
+        - name: afterSequence
+          in: query
+          description: Return messages after this sequence number in ascending order.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: before
+          in: query
+          description: Return messages created before this timestamp.
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Messages retrieved in ascending creation order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Messages]
+      operationId: sendConsultationMessage
+      summary: Send an asynchronous text message
+      parameters:
+        - $ref: '#/components/parameters/ConsultationId'
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Message accepted and persisted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /consultations/{consultationId}/read:
+    put:
+      tags: [Messages]
+      operationId: markConsultationRead
+      summary: Mark received messages as read
+      parameters:
+        - $ref: '#/components/parameters/ConsultationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkReadRequest'
+      responses:
+        '204':
+          description: Read position updated.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ConsultationId:
+      name: consultationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Resource state conflicts with the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business eligibility rule failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ConsultationStatus:
+      type: string
+      enum: [OPEN, CLOSED]
+    ParticipantRole:
+      type: string
+      enum: [PATIENT, DOCTOR]
+    MessageType:
+      type: string
+      enum: [TEXT, SYSTEM]
+    CreateConsultationRequest:
+      type: object
+      required: [appointmentId, initialMessage]
+      additionalProperties: false
+      properties:
+        appointmentId:
+          type: string
+          format: uuid
+        initialMessage:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    SendMessageRequest:
+      type: object
+      required: [content]
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    MarkReadRequest:
+      type: object
+      required: [lastReadMessageId]
+      additionalProperties: false
+      properties:
+        lastReadMessageId:
+          type: string
+          format: uuid
+    Consultation:
+      type: object
+      required: [id, appointmentId, patientId, doctorId, status, createdAt, updatedAt, unreadCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        appointmentId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ConsultationStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastMessage:
+          allOf:
+            - $ref: '#/components/schemas/ConsultationMessage'
+          nullable: true
+        unreadCount:
+          type: integer
+          minimum: 0
+    ConsultationMessage:
+      type: object
+      required: [id, consultationId, senderId, senderRole, type, content, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        consultationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        senderRole:
+          $ref: '#/components/schemas/ParticipantRole'
+        type:
+          $ref: '#/components/schemas/MessageType'
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+    ConsultationPage:
+      type: object
+      required: [items, page, pageSize, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consultation'
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    MessagePage:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationMessage'
+        hasMore:
+          type: boolean
+    ErrorResponse:
+      type: object
+      required: [error, timestamp]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        timestamp:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorField'
+    ErrorField:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }

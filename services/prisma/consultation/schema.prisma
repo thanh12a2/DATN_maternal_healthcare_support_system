@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/consultation-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CONSULTATION_DATABASE_URL")
+}
+
+enum ConsultationStatus {
+  OPEN
+  ASSIGNED
+  ANSWERED
+  CLOSED
+  REOPENED
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  ENDED
+}
+
+enum EscalationStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  CANCELLED
+}
+
+model ConsultationThread {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  patientId          String                   @map("patient_id") @db.Uuid
+  appointmentId      String?                  @map("appointment_id") @db.Uuid
+  subject            String                   @db.VarChar(160)
+  status             ConsultationStatus       @default(OPEN)
+  assignedDoctorId   String?                  @map("assigned_doctor_id") @db.Uuid
+  lastSequenceNo     BigInt                   @default(0) @map("last_sequence_no")
+  lastMessageAt      DateTime?                @map("last_message_at") @db.Timestamptz(6)
+  createdByAccountId String                   @map("created_by_account_id") @db.Uuid
+  version            Int                      @default(1)
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  messages           ConsultationMessage[]
+  assignments        ConsultationAssignment[]
+  escalations        ConsultationEscalation[]
+  readReceipts       ConsultationReadReceipt[]
+
+  @@index([patientId, updatedAt])
+  @@index([assignedDoctorId, status])
+  @@map("consultation_threads")
+}
+
+model ConsultationReadReceipt {
+  threadId String @map("thread_id") @db.Uuid
+  accountId String @map("account_id") @db.Uuid
+  lastReadSequence BigInt @default(0) @map("last_read_sequence")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  thread ConsultationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, accountId])
+  @@map("consultation_read_receipts")
+}
+
+model ConsultationMessage {
+  id              String             @id @default(uuid()) @db.Uuid
+  threadId        String             @map("thread_id") @db.Uuid
+  sequenceNo      BigInt             @map("sequence_no")
+  senderAccountId String             @map("sender_account_id") @db.Uuid
+  senderType      String             @map("sender_type") @db.VarChar(30)
+  clientMessageId String             @map("client_message_id") @db.Uuid
+  body            String             @db.VarChar(4000)
+  bodyHash        String             @map("body_hash") @db.Char(64)
+  sentAt          DateTime           @default(now()) @map("sent_at") @db.Timestamptz(6)
+  thread          ConsultationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, sequenceNo])
+  @@unique([threadId, senderAccountId, clientMessageId])
+  @@index([threadId, sentAt])
+  @@map("consultation_messages")
+}
+
+model ConsultationAssignment {
+  id         String             @id @default(uuid()) @db.Uuid
+  threadId   String             @map("thread_id") @db.Uuid
+  doctorId   String             @map("doctor_id") @db.Uuid
+  status     AssignmentStatus   @default(ACTIVE)
+  assignedBy String             @map("assigned_by") @db.Uuid
+  assignedAt DateTime           @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedAt    DateTime?          @map("ended_at") @db.Timestamptz(6)
+  thread     ConsultationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, status])
+  @@map("consultation_assignments")
+}
+
+model ConsultationOutbox {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(120)
+  aggregateId String   @map("aggregate_id") @db.Uuid
+  payload     Json
+  status      String   @default("PENDING") @db.VarChar(20)
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@index([status, occurredAt])
+  @@map("consultation_outbox")
+}
+
+model ConsultationEscalation {
+  id                      String           @id @default(uuid()) @db.Uuid
+  threadId                String           @map("thread_id") @db.Uuid
+  reasonCode              String           @map("reason_code") @db.VarChar(50)
+  detail                  String?          @db.VarChar(500)
+  status                  EscalationStatus @default(OPEN)
+  raisedByAccountId       String           @map("raised_by_account_id") @db.Uuid
+  raisedAt                DateTime         @default(now()) @map("raised_at") @db.Timestamptz(6)
+  acknowledgedByAccountId String?          @map("acknowledged_by_account_id") @db.Uuid
+  acknowledgedAt          DateTime?        @map("acknowledged_at") @db.Timestamptz(6)
+  resolvedByAccountId     String?          @map("resolved_by_account_id") @db.Uuid
+  resolvedAt              DateTime?        @map("resolved_at") @db.Timestamptz(6)
+  resolutionNote          String?          @map("resolution_note") @db.VarChar(500)
+  version                 Int              @default(1)
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  thread                  ConsultationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, raisedAt])
+  @@index([status, raisedAt])
+  @@map("consultation_escalations")
+}

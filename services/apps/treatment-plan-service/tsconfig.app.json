@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","compilerOptions":{"declaration":false,"outDir":"../../dist/apps/treatment-plan-service"},"include":["src/**/*"],"exclude":["**/*spec.ts"]}

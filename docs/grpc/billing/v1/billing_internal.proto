@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+package maternal.billing.v1;
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.billing.v1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Internal only. Every call requires service JWT metadata, x-request-id and
+// x-correlation-id. Commands additionally require x-idempotency-key.
+service BillingInternalService {
+  rpc CreateOrGetBaseInvoice(CreateOrGetBaseInvoiceRequest) returns (CreateOrGetBaseInvoiceResponse);
+  rpc GetInvoice(GetInvoiceRequest) returns (GetInvoiceResponse);
+  rpc GetInvoiceByAppointment(GetInvoiceByAppointmentRequest) returns (GetInvoiceResponse);
+  rpc GetAdmissionPaymentCondition(GetAdmissionPaymentConditionRequest) returns (GetAdmissionPaymentConditionResponse);
+  rpc AddPerformedServiceCharge(AddPerformedServiceChargeRequest) returns (AddPerformedServiceChargeResponse);
+  rpc FinalizeSupplementaryInvoice(FinalizeSupplementaryInvoiceRequest) returns (FinalizeSupplementaryInvoiceResponse);
+}
+
+enum InvoiceType {
+  INVOICE_TYPE_UNSPECIFIED = 0;
+  INVOICE_TYPE_BASE = 1;
+  INVOICE_TYPE_SUPPLEMENTARY = 2;
+}
+
+enum InvoiceStatus {
+  INVOICE_STATUS_UNSPECIFIED = 0;
+  INVOICE_STATUS_OPEN = 1;
+  INVOICE_STATUS_PAYMENT_PENDING_VERIFICATION = 2;
+  INVOICE_STATUS_PAID = 3;
+  INVOICE_STATUS_CREDIT_APPROVED = 4;
+  INVOICE_STATUS_OUTSTANDING = 5;
+  INVOICE_STATUS_CANCELLED = 6;
+}
+
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_CASH = 1;
+  PAYMENT_METHOD_MANUAL_BANK_TRANSFER = 2;
+}
+
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_RECORDED = 1;
+  PAYMENT_STATUS_VERIFIED = 2;
+  PAYMENT_STATUS_REJECTED = 3;
+}
+
+enum AdmissionPaymentCondition {
+  ADMISSION_PAYMENT_CONDITION_UNSPECIFIED = 0;
+  ADMISSION_PAYMENT_CONDITION_PAID = 1;
+  ADMISSION_PAYMENT_CONDITION_APPROVED_CREDIT = 2;
+  ADMISSION_PAYMENT_CONDITION_NOT_SATISFIED = 3;
+}
+
+enum ClinicalServiceState {
+  CLINICAL_SERVICE_STATE_UNSPECIFIED = 0;
+  CLINICAL_SERVICE_STATE_ORDERED = 1;
+  CLINICAL_SERVICE_STATE_PERFORMED = 2;
+  CLINICAL_SERVICE_STATE_CANCELLED = 3;
+}
+
+enum ChargeItemKind {
+  CHARGE_ITEM_KIND_UNSPECIFIED = 0;
+  CHARGE_ITEM_KIND_SERVICE = 1;
+  CHARGE_ITEM_KIND_MEDICINE = 2;
+}
+
+enum LineSource {
+  LINE_SOURCE_UNSPECIFIED = 0;
+  LINE_SOURCE_APPOINTMENT_SNAPSHOT = 1;
+  LINE_SOURCE_PERFORMED_SERVICE = 2;
+}
+
+message InvoiceLineView {
+  string line_id = 1;
+  int32 line_no = 2;
+  LineSource source = 3;
+  string source_reference_id = 4;
+  string service_id = 5;
+  string description_snapshot = 6;
+  int64 quantity = 7;
+  maternal.common.v1.Money unit_amount = 8;
+  maternal.common.v1.Money line_amount = 9;
+  string price_reference_id = 10;
+  google.protobuf.Timestamp performed_at = 11;
+}
+
+message PaymentView {
+  string payment_id = 1;
+  string invoice_id = 2;
+  PaymentMethod method = 3;
+  PaymentStatus status = 4;
+  maternal.common.v1.Money amount = 5;
+  google.protobuf.Timestamp received_at = 6;
+  google.protobuf.Timestamp verified_at = 7;
+}
+
+message InvoiceView {
+  string invoice_id = 1;
+  string invoice_number = 2;
+  string patient_id = 3;
+  string appointment_id = 4;
+  string encounter_id = 5;
+  InvoiceType type = 6;
+  InvoiceStatus status = 7;
+  maternal.common.v1.Money subtotal = 8;
+  maternal.common.v1.Money total = 9;
+  maternal.common.v1.Money paid = 10;
+  maternal.common.v1.Money balance = 11;
+  int64 source_version = 12;
+  repeated InvoiceLineView lines = 13;
+  PaymentView payment = 14;
+  string credit_approval_id = 15;
+  google.protobuf.Timestamp due_at = 16;
+  google.protobuf.Timestamp paid_at = 17;
+  int64 version = 18;
+  google.protobuf.Timestamp created_at = 19;
+  google.protobuf.Timestamp updated_at = 20;
+}
+
+message BasePricingSnapshot {
+  string service_id = 1;
+  string service_name = 2;
+  int64 service_version = 3;
+  string assigned_rank_code = 4;
+  string base_price_id = 5;
+  maternal.common.v1.Money base_amount = 6;
+  string rank_surcharge_price_id = 7;
+  maternal.common.v1.Money rank_surcharge_amount = 8;
+  maternal.common.v1.Money estimated_total = 9;
+}
+
+message CreateOrGetBaseInvoiceRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string patient_id = 3;
+  BasePricingSnapshot pricing = 4;
+  int64 appointment_version = 5;
+  string reception_case_id = 6;
+}
+
+message CreateOrGetBaseInvoiceResponse {
+  InvoiceView invoice = 1;
+  bool created = 2;
+  bool idempotent_replay = 3;
+}
+
+message GetInvoiceRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string invoice_id = 2;
+}
+
+message GetInvoiceByAppointmentRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  InvoiceType type = 3;
+}
+
+message GetInvoiceResponse {
+  InvoiceView invoice = 1;
+}
+
+message GetAdmissionPaymentConditionRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string invoice_id = 2;
+  string appointment_id = 3;
+}
+
+message GetAdmissionPaymentConditionResponse {
+  string invoice_id = 1;
+  string appointment_id = 2;
+  AdmissionPaymentCondition condition = 3;
+  InvoiceStatus invoice_status = 4;
+  maternal.common.v1.Money balance = 5;
+  int64 invoice_version = 6;
+}
+
+message AddPerformedServiceChargeRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string patient_id = 3;
+  string encounter_id = 4;
+  string performed_service_id = 5;
+  string order_id = 6;
+  string service_id = 7;
+  string description_snapshot = 8;
+  int64 quantity = 9;
+  maternal.common.v1.Money unit_amount = 10;
+  string price_reference_id = 11;
+  ClinicalServiceState service_state = 12;
+  ChargeItemKind item_kind = 13;
+  google.protobuf.Timestamp performed_at = 14;
+  int64 medical_record_version = 15;
+}
+
+message AddPerformedServiceChargeResponse {
+  InvoiceView invoice = 1;
+  InvoiceLineView line = 2;
+  bool created = 3;
+  bool idempotent_replay = 4;
+}
+
+message FinalizeSupplementaryInvoiceRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string encounter_id = 3;
+  int64 medical_record_version = 4;
+  google.protobuf.Timestamp finalized_at = 5;
+  optional google.protobuf.Timestamp due_at = 6;
+}
+
+message FinalizeSupplementaryInvoiceResponse {
+  InvoiceView invoice = 1;
+  maternal.common.v1.Money outstanding_balance = 2;
+  bool clinical_completion_allowed = 3;
+  bool idempotent_replay = 4;
+}

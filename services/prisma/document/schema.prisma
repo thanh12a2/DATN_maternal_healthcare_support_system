@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/document-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DOCUMENT_DATABASE_URL")
+}
+
+enum DocumentStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  SCANNING
+  CLEAN
+  REJECTED
+  ARCHIVED
+}
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  FAILED
+}
+
+enum UploadStatus {
+  OPEN
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+model Document {
+  id                 String            @id @default(uuid()) @db.Uuid
+  ownerType          String            @map("owner_type") @db.VarChar(50)
+  ownerId            String            @map("owner_id") @db.Uuid
+  patientId          String            @map("patient_id") @db.Uuid
+  purpose            String            @db.VarChar(80)
+  status             DocumentStatus    @default(PENDING_UPLOAD)
+  visibility         String            @default("CLINICAL_TEAM") @db.VarChar(30)
+  currentVersion     Int               @default(1) @map("current_version")
+  createdByAccountId String            @map("created_by_account_id") @db.Uuid
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  versions           DocumentVersion[]
+  uploads            UploadSession[]
+
+  @@index([ownerType, ownerId])
+  @@index([patientId, status])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id         String     @id @default(uuid()) @db.Uuid
+  documentId String     @map("document_id") @db.Uuid
+  version    Int
+  storageKey String     @unique @map("storage_key") @db.VarChar(500)
+  fileName   String     @map("file_name") @db.VarChar(255)
+  mediaType  String     @map("media_type") @db.VarChar(100)
+  sizeBytes  BigInt     @map("size_bytes")
+  sha256     String     @db.Char(64)
+  scanStatus ScanStatus @default(PENDING) @map("scan_status")
+  uploadedAt DateTime?  @map("uploaded_at") @db.Timestamptz(6)
+  scannedAt  DateTime?  @map("scanned_at") @db.Timestamptz(6)
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+  @@map("document_versions")
+}
+
+model UploadSession {
+  id                String       @id @default(uuid()) @db.Uuid
+  documentId        String       @map("document_id") @db.Uuid
+  version           Int
+  expectedMediaType String       @map("expected_media_type") @db.VarChar(100)
+  maxBytes          BigInt       @map("max_bytes")
+  expiresAt         DateTime     @map("expires_at") @db.Timestamptz(6)
+  status            UploadStatus @default(OPEN)
+  idempotencyKey    String       @unique @map("idempotency_key") @db.VarChar(128)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  document          Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
+  @@map("upload_sessions")
+}
+
+model DocumentOutbox {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(120)
+  aggregateId String   @map("aggregate_id") @db.Uuid
+  payload     Json
+  status      String   @default("PENDING") @db.VarChar(20)
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@index([status, occurredAt])
+  @@map("document_outbox")
+}

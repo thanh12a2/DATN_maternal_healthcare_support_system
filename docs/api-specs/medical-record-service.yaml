@@ -1,0 +1,183 @@
+openapi: 3.0.3
+info:
+  title: Medical Record Service API
+  version: 1.0.0
+  description: ClinicalEncounter, pregnancy episode, structured clinical records and multi-room order/result lifecycle.
+servers:
+  - url: http://localhost:8080/api/medical-records
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get: { operationId: medicalHealth, security: [], responses: { '200': { description: Alive } } }
+  /ready:
+    get: { operationId: medicalReady, security: [], responses: { '200': { description: Ready }, '503': { $ref: '#/components/responses/Error' } } }
+  /encounters:
+    get:
+      operationId: listEncounters
+      parameters:
+        - { name: patientId, in: query, schema: { type: string, format: uuid } }
+        - { name: state, in: query, schema: { $ref: '#/components/schemas/EncounterState' } }
+      responses:
+        '200': { description: Own or assigned encounters, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: '#/components/schemas/Encounter' } } } } } } }
+  /encounters/{encounterId}:
+    get:
+      operationId: getEncounter
+      parameters: [ { $ref: '#/components/parameters/EncounterId' } ]
+      responses: { '200': { description: Authorized aggregate view, content: { application/json: { schema: { $ref: '#/components/schemas/EncounterEnvelope' } } } }, '404': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/start:
+    post:
+      operationId: startEncounter
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Started, content: { application/json: { schema: { $ref: '#/components/schemas/EncounterEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/vital-signs:
+    post:
+      operationId: recordVitalSigns
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VitalSignsRequest' } } } }
+      responses: { '201': { description: Recorded }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/notes:
+    post:
+      operationId: addClinicalNote
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ClinicalTextRequest' } } } }
+      responses: { '201': { description: Note added }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/diagnoses:
+    post:
+      operationId: addDiagnosis
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DiagnosisRequest' } } } }
+      responses: { '201': { description: Diagnosis added }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/orders:
+    post:
+      operationId: createServiceOrder
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateOrderRequest' } } } }
+      responses: { '201': { description: Order created, content: { application/json: { schema: { $ref: '#/components/schemas/OrderEnvelope' } } } }, '422': { $ref: '#/components/responses/Error' } }
+  /orders/{orderId}/start:
+    post:
+      operationId: startServiceOrder
+      parameters: [ { $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      responses: { '200': { description: Order in progress }, '409': { $ref: '#/components/responses/Error' } }
+  /orders/{orderId}/performed:
+    post:
+      operationId: markServiceOrderPerformed
+      parameters: [ { $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      responses: { '200': { description: Performed and billable signal emitted }, '409': { $ref: '#/components/responses/Error' } }
+  /orders/{orderId}/results:
+    post:
+      operationId: addServiceResult
+      parameters: [ { $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ResultRequest' } } } }
+      responses: { '201': { description: Result linked }, '422': { $ref: '#/components/responses/Error' } }
+  /orders/{orderId}/verify:
+    post:
+      operationId: verifyServiceResult
+      parameters: [ { $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      responses: { '200': { description: Result verified }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/ready-for-review:
+    post:
+      operationId: markEncounterReadyForReview
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Ready for review, content: { application/json: { schema: { $ref: '#/components/schemas/EncounterEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/finalize:
+    post:
+      operationId: finalizeEncounter
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Finalized, content: { application/json: { schema: { $ref: '#/components/schemas/EncounterEnvelope' } } } }, '422': { $ref: '#/components/responses/Error' } }
+  /encounters/{encounterId}/amendments:
+    post:
+      operationId: createEncounterAmendment
+      parameters: [ { $ref: '#/components/parameters/EncounterId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AmendmentRequest' } } } }
+      responses: { '201': { description: Append-only amendment created }, '409': { $ref: '#/components/responses/Error' } }
+  /pregnancy-episodes:
+    post:
+      operationId: createPregnancyEpisode
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PregnancyEpisodeRequest' } } } }
+      responses: { '201': { description: Episode created }, '409': { $ref: '#/components/responses/Error' } }
+    get:
+      operationId: listPregnancyEpisodes
+      parameters: [ { name: patientId, in: query, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '200': { description: Authorized episodes } }
+  /pregnancy-episodes/{episodeId}:
+    patch:
+      operationId: updatePregnancyEpisode
+      parameters: [ { name: episodeId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PregnancyEpisodeRequest' } } } }
+      responses: { '200': { description: Updated }, '409': { $ref: '#/components/responses/Error' } }
+components:
+  securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    EncounterId: { name: encounterId, in: path, required: true, schema: { type: string, format: uuid } }
+    OrderId: { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+  schemas:
+    EncounterState: { type: string, enum: [DRAFT, IN_PROGRESS, AWAITING_RESULTS, READY_FOR_REVIEW, FINALIZED] }
+    VersionRequest: { type: object, additionalProperties: false, required: [expectedVersion], properties: { expectedVersion: { type: integer, minimum: 1 } } }
+    Encounter:
+      type: object
+      required: [id, appointmentId, patientId, primaryDoctorId, state, version]
+      properties:
+        id: { type: string, format: uuid }
+        appointmentId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        pregnancyEpisodeId: { type: string, format: uuid, nullable: true }
+        primaryDoctorId: { type: string, format: uuid }
+        state: { $ref: '#/components/schemas/EncounterState' }
+        version: { type: integer, minimum: 1 }
+        documentIds: { type: array, items: { type: string, format: uuid } }
+        prescriptionIds: { type: array, items: { type: string, format: uuid } }
+        treatmentPlanIds: { type: array, items: { type: string, format: uuid } }
+    EncounterEnvelope: { type: object, properties: { data: { $ref: '#/components/schemas/Encounter' } } }
+    VitalSignsRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        systolicBloodPressure: { type: integer, nullable: true }
+        diastolicBloodPressure: { type: integer, nullable: true }
+        heartRate: { type: integer, nullable: true }
+        temperatureCelsius: { type: number, nullable: true }
+        weightKg: { type: number, nullable: true }
+    ClinicalTextRequest: { type: object, additionalProperties: false, required: [expectedVersion, text], properties: { expectedVersion: { type: integer }, text: { type: string, minLength: 1, maxLength: 10000 } } }
+    DiagnosisRequest: { type: object, additionalProperties: false, required: [expectedVersion, code, description], properties: { expectedVersion: { type: integer }, code: { type: string, maxLength: 50 }, description: { type: string, maxLength: 2000 } } }
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, catalogServiceId, stageCode, requiredResult, billableSnapshot]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        catalogServiceId: { type: string, format: uuid }
+        stageCode: { type: string, maxLength: 50 }
+        requiredResult: { type: boolean }
+        billableSnapshot: { type: boolean }
+    Order:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        encounterId: { type: string, format: uuid }
+        status: { type: string, enum: [ORDERED, IN_PROGRESS, PERFORMED, RESULT_AVAILABLE, VERIFIED, CANCELLED] }
+        catalogServiceId: { type: string, format: uuid }
+        stageCode: { type: string }
+    OrderEnvelope: { type: object, properties: { data: { $ref: '#/components/schemas/Order' } } }
+    ResultRequest: { type: object, additionalProperties: false, required: [structuredResult], properties: { structuredResult: { type: object }, documentIds: { type: array, items: { type: string, format: uuid } } } }
+    AmendmentRequest: { type: object, additionalProperties: false, required: [reason, section, patch], properties: { reason: { type: string, minLength: 10, maxLength: 500 }, section: { type: string, maxLength: 80 }, patch: { type: object } } }
+    PregnancyEpisodeRequest:
+      type: object
+      additionalProperties: false
+      required: [patientId]
+      properties:
+        patientId: { type: string, format: uuid }
+        estimatedDueDate: { type: string, format: date, nullable: true }
+        lastMenstrualPeriod: { type: string, format: date, nullable: true }
+        riskLevel: { type: string, enum: [LOW, MODERATE, HIGH, UNKNOWN] }
+        expectedVersion: { type: integer, minimum: 1, nullable: true }
+    Error: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string }, requestId: { type: string } } } } }
+  responses:
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

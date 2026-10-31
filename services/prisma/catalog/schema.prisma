@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/catalog-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CATALOG_DATABASE_URL")
+}
+
+enum CatalogStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum MedicalServiceKind {
+  CONSULTATION
+  DIAGNOSTIC
+  PROCEDURE
+  PACKAGE
+  VACCINATION
+  OTHER
+}
+
+enum TagGroup {
+  AGE
+  GENDER
+  AUDIENCE
+  FEATURE
+  LABEL
+}
+
+enum PriceStatus {
+  SCHEDULED
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum DoctorRankSelectionPolicy {
+  NOT_REQUIRED
+  BASIC_INCLUDED
+  RANK_UPGRADE_ALLOWED
+}
+
+model MedicalService {
+  id                        String                    @id @default(uuid()) @db.Uuid
+  code                      String                    @unique @db.VarChar(50)
+  slug                      String                    @unique @db.VarChar(160)
+  name                      String                    @db.VarChar(200)
+  summary                   String?                   @db.VarChar(500)
+  description               String?                   @db.Text
+  kind                      MedicalServiceKind
+  specialtyId               String?                   @map("specialty_id") @db.Uuid
+  thumbnailUrl              String?                   @map("thumbnail_url") @db.VarChar(2048)
+  durationMinutes           Int?                      @map("duration_minutes")
+  bookingEnabled            Boolean                   @default(true) @map("booking_enabled")
+  doctorRankSelectionPolicy DoctorRankSelectionPolicy @default(NOT_REQUIRED) @map("doctor_rank_selection_policy")
+  status                    CatalogStatus             @default(DRAFT)
+  version                   Int                       @default(1)
+  publishedAt               DateTime?                 @map("published_at") @db.Timestamptz(6)
+  createdAt                 DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  categories                MedicalServiceCategory[]
+  tags                      MedicalServiceTag[]
+  basePrices                BasePrice[]
+
+  @@index([status, bookingEnabled], map: "medical_services_status_booking_idx")
+  @@index([kind, status], map: "medical_services_kind_status_idx")
+  @@index([specialtyId], map: "medical_services_specialty_id_idx")
+  @@map("medical_services")
+}
+
+model ServiceCategory {
+  id          String                    @id @default(uuid()) @db.Uuid
+  code        String                    @unique @db.VarChar(50)
+  slug        String                    @unique @db.VarChar(160)
+  name        String                    @db.VarChar(160)
+  description String?                   @db.VarChar(1000)
+  parentId    String?                   @map("parent_id") @db.Uuid
+  status      CatalogStatus             @default(DRAFT)
+  sortOrder   Int                       @default(0) @map("sort_order")
+  createdAt   DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  parent      ServiceCategory?          @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    ServiceCategory[]         @relation("CategoryTree")
+  services    MedicalServiceCategory[]
+
+  @@index([status, sortOrder], map: "service_categories_status_sort_idx")
+  @@index([parentId], map: "service_categories_parent_id_idx")
+  @@map("service_categories")
+}
+
+model CatalogTag {
+  id          String              @id @default(uuid()) @db.Uuid
+  code        String              @unique @db.VarChar(50)
+  slug        String              @unique @db.VarChar(160)
+  name        String              @db.VarChar(120)
+  group       TagGroup
+  description String?             @db.VarChar(500)
+  status      CatalogStatus       @default(DRAFT)
+  sortOrder   Int                 @default(0) @map("sort_order")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  services    MedicalServiceTag[]
+
+  @@index([status, group, sortOrder], map: "catalog_tags_status_group_sort_idx")
+  @@map("catalog_tags")
+}
+
+model MedicalServiceCategory {
+  medicalServiceId String          @map("medical_service_id") @db.Uuid
+  categoryId       String          @map("category_id") @db.Uuid
+  isPrimary        Boolean         @default(false) @map("is_primary")
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  medicalService   MedicalService  @relation(fields: [medicalServiceId], references: [id], onDelete: Cascade)
+  category         ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([medicalServiceId, categoryId])
+  @@index([categoryId], map: "medical_service_categories_category_id_idx")
+  @@map("medical_service_categories")
+}
+
+model MedicalServiceTag {
+  medicalServiceId String         @map("medical_service_id") @db.Uuid
+  tagId            String         @map("tag_id") @db.Uuid
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  medicalService   MedicalService @relation(fields: [medicalServiceId], references: [id], onDelete: Cascade)
+  tag              CatalogTag     @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([medicalServiceId, tagId])
+  @@index([tagId], map: "medical_service_tags_tag_id_idx")
+  @@map("medical_service_tags")
+}
+
+model BasePrice {
+  id               String         @id @default(uuid()) @db.Uuid
+  medicalServiceId String         @map("medical_service_id") @db.Uuid
+  amountMinor      BigInt         @map("amount_minor")
+  currency         String         @default("VND") @db.Char(3)
+  effectiveFrom    DateTime       @map("effective_from") @db.Timestamptz(6)
+  effectiveTo      DateTime?      @map("effective_to") @db.Timestamptz(6)
+  status           PriceStatus    @default(SCHEDULED)
+  version          Int            @default(1)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  medicalService   MedicalService @relation(fields: [medicalServiceId], references: [id], onDelete: Cascade)
+
+  @@index([medicalServiceId, currency, status, effectiveFrom, effectiveTo], map: "base_prices_lookup_idx")
+  @@map("base_prices")
+}
+
+model DoctorRankSurcharge {
+  id            String      @id @default(uuid()) @db.Uuid
+  rankCode      String      @map("rank_code") @db.VarChar(50)
+  amountMinor   BigInt      @map("amount_minor")
+  currency      String      @default("VND") @db.Char(3)
+  effectiveFrom DateTime    @map("effective_from") @db.Timestamptz(6)
+  effectiveTo   DateTime?   @map("effective_to") @db.Timestamptz(6)
+  status        PriceStatus @default(SCHEDULED)
+  version       Int         @default(1)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([rankCode, currency, status, effectiveFrom, effectiveTo], map: "doctor_rank_surcharges_lookup_idx")
+  @@map("doctor_rank_surcharges")
+}

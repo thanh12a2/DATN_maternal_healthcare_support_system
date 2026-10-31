@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/audit-log-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AUDIT_LOG_DATABASE_URL")
+}
+
+model AuditEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  eventId       String   @unique @map("event_id") @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(120)
+  eventVersion  Int      @map("event_version")
+  sourceService String   @map("source_service") @db.VarChar(80)
+  aggregateType String   @map("aggregate_type") @db.VarChar(80)
+  aggregateId   String   @map("aggregate_id") @db.VarChar(100)
+  actorId       String?  @map("actor_id") @db.Uuid
+  actorType     String   @map("actor_type") @db.VarChar(30)
+  action        String   @db.VarChar(100)
+  result        String   @db.VarChar(30)
+  patientId     String?  @map("patient_id") @db.Uuid
+  changedFields String[] @default([]) @map("changed_fields")
+  sensitivity   String   @default("STANDARD") @db.VarChar(30)
+  metadata      Json?
+  payloadHash   String   @map("payload_hash") @db.Char(64)
+  occurredAt    DateTime @map("occurred_at") @db.Timestamptz(6)
+  ingestedAt    DateTime @default(now()) @map("ingested_at") @db.Timestamptz(6)
+
+  @@index([aggregateType, aggregateId, occurredAt])
+  @@index([actorId, occurredAt])
+  @@index([patientId, occurredAt])
+  @@map("audit_entries")
+}

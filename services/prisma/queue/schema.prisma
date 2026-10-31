@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../../generated/queue-client"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("QUEUE_DATABASE_URL")
+}
+enum JourneyState {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+enum TicketState {
+  WAITING
+  CALLED
+  IN_SERVICE
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+enum BasePriority {
+  ROUTINE
+  URGENT
+}
+model QueueJourney {
+  id String @id @default(uuid()) @db.Uuid
+  appointmentId String @unique @map("appointment_id") @db.Uuid
+  patientId String @map("patient_id") @db.Uuid
+  encounterId String @map("encounter_id") @db.Uuid
+  businessDate DateTime @map("business_date") @db.Date
+  lateMinutes Int @default(0) @map("late_minutes")
+  lateDemoted Boolean @default(false) @map("late_demoted")
+  state JourneyState @default(ACTIVE)
+  version Int @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tickets StageTicket[]
+  @@index([patientId,createdAt])
+  @@map("queue_journeys")
+}
+model QueueStage {
+  id String @id @default(uuid()) @db.Uuid
+  code String @unique @db.VarChar(50)
+  name String @db.VarChar(120)
+  active Boolean @default(true)
+  roomCode String? @map("room_code") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tickets StageTicket[]
+  @@map("queue_stages")
+}
+model StageTicket {
+  id String @id @default(uuid()) @db.Uuid
+  journeyId String @map("journey_id") @db.Uuid
+  stageId String @map("stage_id") @db.Uuid
+  sourceOrderId String? @unique @map("source_order_id") @db.Uuid
+  roomCode String? @map("room_code") @db.VarChar(50)
+  businessDate DateTime @map("business_date") @db.Date
+  ordinal Int
+  ticketCode String @map("ticket_code") @db.VarChar(30)
+  state TicketState @default(WAITING)
+  basePriority BasePriority @default(ROUTINE) @map("base_priority")
+  lateDemotion Boolean @default(false) @map("late_demotion")
+  enqueueSequence BigInt @map("enqueue_sequence")
+  callCount Int @default(0) @map("call_count")
+  calledAt DateTime? @map("called_at") @db.Timestamptz(6)
+  callExpiresAt DateTime? @map("call_expires_at") @db.Timestamptz(6)
+  serviceStartedAt DateTime? @map("service_started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  version Int @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  journey QueueJourney @relation(fields:[journeyId],references:[id],onDelete:Cascade)
+  stage QueueStage @relation(fields:[stageId],references:[id],onDelete:Restrict)
+  calls CallAttempt[]
+  @@unique([stageId,businessDate,ordinal])
+  @@unique([stageId,businessDate,ticketCode])
+  @@index([stageId,state,basePriority,lateDemotion,enqueueSequence])
+  @@map("stage_tickets")
+}
+model CallAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  ticketId String @map("ticket_id") @db.Uuid
+  attemptNumber Int @map("attempt_number")
+  calledAt DateTime @default(now()) @map("called_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  outcome String? @db.VarChar(30)
+  callerAccountId String @map("caller_account_id") @db.Uuid
+  roomCode String? @map("room_code") @db.VarChar(50)
+  ticket StageTicket @relation(fields:[ticketId],references:[id],onDelete:Cascade)
+  @@unique([ticketId,attemptNumber])
+  @@map("call_attempts")
+}
+model QueueIdempotency {
+  id String @id @default(uuid()) @db.Uuid
+  scope String @db.VarChar(100)
+  key String @db.VarChar(128)
+  requestHash String @map("request_hash") @db.Char(64)
+  response Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  @@unique([scope,key])
+  @@map("queue_idempotency")
+}
+model QueueAudit {
+  id String @id @default(uuid()) @db.Uuid
+  eventType String @map("event_type") @db.VarChar(120)
+  actorId String? @map("actor_id") @db.Uuid
+  ticketId String? @map("ticket_id") @db.Uuid
+  reason String? @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  @@index([ticketId,createdAt])
+  @@map("queue_audit")
+}
+model QueueOutbox {
+  id String @id @default(uuid()) @db.Uuid
+  eventType String @map("event_type") @db.VarChar(120)
+  aggregateId String @map("aggregate_id") @db.Uuid
+  aggregateVersion Int @map("aggregate_version")
+  payload Json
+  status String @default("PENDING") @db.VarChar(20)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  @@index([status,occurredAt])
+  @@map("queue_outbox")
+}

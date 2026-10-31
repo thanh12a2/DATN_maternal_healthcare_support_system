@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package maternal.patient.v1;
+
+import "google/protobuf/timestamp.proto";
+import "common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.patient.v1";
+
+service PatientInternalService {
+  rpc GetPatientEligibility(GetPatientEligibilityRequest) returns (GetPatientEligibilityResponse);
+  rpc GetPatientIdentity(GetPatientIdentityRequest) returns (GetPatientIdentityResponse);
+  rpc SearchPatients(SearchPatientsRequest) returns (SearchPatientsResponse);
+}
+
+message GetPatientEligibilityRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string patient_id = 2;
+}
+
+message GetPatientEligibilityResponse {
+  string patient_id = 1;
+  bool active = 2;
+  bool profile_complete = 3;
+  int64 profile_version = 4;
+  bool caller_owns_patient = 5;
+  bool eligible_for_booking = 6;
+}
+
+message GetPatientIdentityRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string patient_id = 2;
+  string purpose = 3;
+}
+
+message GetPatientIdentityResponse {
+  PatientIdentityView patient = 1;
+}
+
+message SearchPatientsRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string normalized_phone = 2;
+  string national_id_last4 = 3;
+  string appointment_code = 4;
+  maternal.common.v1.PageRequest page = 5;
+}
+
+message SearchPatientsResponse {
+  repeated PatientIdentityView patients = 1;
+  maternal.common.v1.PageInfo page = 2;
+}
+
+// View giảm thiểu PII dành cho admission; owner quyết định masking theo caller/purpose.
+message PatientIdentityView {
+  string patient_id = 1;
+  string full_name = 2;
+  google.protobuf.Timestamp date_of_birth = 3;
+  string masked_phone = 4;
+  string national_id_last4 = 5;
+  bool active = 6;
+  int64 profile_version = 7;
+}

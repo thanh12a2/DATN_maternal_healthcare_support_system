@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package maternal.appointment.v1;
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.appointment.v1";
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Internal only. Every call requires service JWT metadata, x-request-id and
+// x-correlation-id. Commands additionally require x-idempotency-key.
+service AppointmentInternalService {
+  rpc GetAppointment(GetAppointmentRequest) returns (GetAppointmentResponse);
+  rpc ValidateForAdmission(ValidateForAdmissionRequest) returns (ValidateForAdmissionResponse);
+  rpc CheckInAppointment(CheckInAppointmentRequest) returns (AppointmentCommandResponse);
+  rpc MarkClinicalStarted(MarkClinicalStartedRequest) returns (AppointmentCommandResponse);
+  rpc MarkClinicalCompleted(MarkClinicalCompletedRequest) returns (AppointmentCommandResponse);
+  rpc MarkNoShow(MarkNoShowRequest) returns (AppointmentCommandResponse);
+}
+
+enum BookingChannel {
+  BOOKING_CHANNEL_UNSPECIFIED = 0;
+  BOOKING_CHANNEL_ONLINE = 1;
+  BOOKING_CHANNEL_RECEPTION = 2;
+  BOOKING_CHANNEL_WALK_IN = 3;
+}
+
+enum SelectionMode {
+  SELECTION_MODE_UNSPECIFIED = 0;
+  SELECTION_MODE_DOCTOR = 1;
+  SELECTION_MODE_RANK = 2;
+}
+
+enum AppointmentStatus {
+  APPOINTMENT_STATUS_UNSPECIFIED = 0;
+  APPOINTMENT_STATUS_BOOKED = 1;
+  APPOINTMENT_STATUS_REASSIGNMENT_REQUIRED = 2;
+  APPOINTMENT_STATUS_CHECKED_IN = 3;
+  APPOINTMENT_STATUS_IN_CLINICAL_CARE = 4;
+  APPOINTMENT_STATUS_COMPLETED = 5;
+  APPOINTMENT_STATUS_CANCELLED = 6;
+  APPOINTMENT_STATUS_NO_SHOW = 7;
+}
+
+enum AdmissionPaymentCondition {
+  ADMISSION_PAYMENT_CONDITION_UNSPECIFIED = 0;
+  ADMISSION_PAYMENT_CONDITION_PAID = 1;
+  ADMISSION_PAYMENT_CONDITION_APPROVED_CREDIT = 2;
+  ADMISSION_PAYMENT_CONDITION_NOT_SATISFIED = 3;
+}
+
+message AppointmentPricingSnapshot {
+  string service_name = 1;
+  int64 service_version = 2;
+  string base_price_id = 3;
+  maternal.common.v1.Money base_amount = 4;
+  string rank_surcharge_price_id = 5;
+  maternal.common.v1.Money rank_surcharge_amount = 6;
+  maternal.common.v1.Money estimated_total = 7;
+}
+
+message AppointmentView {
+  string appointment_id = 1;
+  string appointment_code = 2;
+  string patient_id = 3;
+  string service_id = 4;
+  BookingChannel channel = 5;
+  SelectionMode selection_mode = 6;
+  string requested_doctor_id = 7;
+  string requested_rank_code = 8;
+  string assigned_doctor_id = 9;
+  string assigned_rank_code = 10;
+  string specialty_id = 11;
+  google.protobuf.Timestamp start_at = 12;
+  google.protobuf.Timestamp end_at = 13;
+  AppointmentStatus status = 14;
+  AppointmentPricingSnapshot pricing = 15;
+  int64 availability_version = 16;
+  optional int32 queue_estimate_minutes = 17;
+  string reception_case_id = 18;
+  string encounter_id = 19;
+  google.protobuf.Timestamp checked_in_at = 20;
+  google.protobuf.Timestamp clinical_started_at = 21;
+  google.protobuf.Timestamp completed_at = 22;
+  int64 version = 23;
+  string room_id = 24;
+  string room_code = 25;
+  string room_name = 26;
+}
+
+message GetAppointmentRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+}
+
+message GetAppointmentResponse {
+  AppointmentView appointment = 1;
+}
+
+message ValidateForAdmissionRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string patient_id = 3;
+  string reception_case_id = 4;
+}
+
+message ValidateForAdmissionResponse {
+  bool valid = 1;
+  string failure_code = 2;
+  string appointment_id = 3;
+  string patient_id = 4;
+  string service_id = 5;
+  string assigned_doctor_id = 6;
+  string assigned_rank_code = 7;
+  google.protobuf.Timestamp start_at = 8;
+  google.protobuf.Timestamp end_at = 9;
+  AppointmentStatus status = 10;
+  bool late = 11;
+  int32 late_minutes = 12;
+  int64 appointment_version = 13;
+  string room_id = 14;
+  string room_code = 15;
+  string room_name = 16;
+}
+
+message CheckInAppointmentRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string reception_case_id = 3;
+  string invoice_id = 4;
+  AdmissionPaymentCondition payment_condition = 5;
+  string encounter_id = 6;
+  google.protobuf.Timestamp checked_in_at = 7;
+  int64 expected_version = 8;
+}
+
+message MarkClinicalStartedRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string encounter_id = 3;
+  google.protobuf.Timestamp started_at = 4;
+  int64 medical_record_version = 5;
+  int64 expected_version = 6;
+}
+
+message MarkClinicalCompletedRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  string encounter_id = 3;
+  google.protobuf.Timestamp completed_at = 4;
+  int64 medical_record_version = 5;
+  int64 expected_version = 6;
+}
+
+message MarkNoShowRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string appointment_id = 2;
+  google.protobuf.Timestamp evaluated_at = 3;
+  string reason_code = 4;
+  int64 expected_version = 5;
+}
+
+message AppointmentCommandResponse {
+  AppointmentView appointment = 1;
+  bool late = 2;
+  int32 late_minutes = 3;
+  bool idempotent_replay = 4;
+}

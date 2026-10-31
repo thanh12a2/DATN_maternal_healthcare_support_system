@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package maternal.reporting.v1;
+
+import "common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.maternal.reporting.v1";
+
+// Internal synchronous access to asynchronously maintained reporting projections.
+service ReportingInternalService {
+  rpc GetOverview(GetOverviewRequest) returns (GetOverviewResponse);
+  rpc GetAppointmentReport(GetAppointmentReportRequest) returns (GetAppointmentReportResponse);
+  rpc GetRevenueReport(GetRevenueReportRequest) returns (GetRevenueReportResponse);
+  rpc ExportAppointmentsCsv(ExportAppointmentsCsvRequest) returns (ExportCsvResponse);
+  rpc ExportRevenueCsv(ExportRevenueCsvRequest) returns (ExportCsvResponse);
+}
+
+message DateRange {
+  string from_date = 1; // ISO 8601 calendar date, inclusive.
+  string to_date = 2;   // ISO 8601 calendar date, inclusive.
+}
+
+message ProjectionMetadata {
+  google.protobuf.Timestamp projected_at = 1;
+  google.protobuf.Timestamp data_through = 2;
+}
+
+message GetOverviewRequest {
+  DateRange period = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetOverviewResponse {
+  DateRange period = 1;
+  int64 total_appointments = 2;
+  int64 completed_appointments = 3;
+  int64 cancelled_appointments = 4;
+  int64 total_collected_amount = 5;
+  string currency = 6;
+  ProjectionMetadata projection = 7;
+}
+
+message AppointmentReportFilter {
+  DateRange period = 1;
+  string doctor_id = 2;
+  string status = 3;
+}
+
+message GetAppointmentReportRequest {
+  AppointmentReportFilter filter = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetAppointmentReportResponse {
+  DateRange period = 1;
+  AppointmentSummary summary = 2;
+  repeated AppointmentReportRow rows = 3;
+  ProjectionMetadata projection = 4;
+}
+
+message AppointmentSummary {
+  int64 total = 1;
+  int64 scheduled = 2;
+  int64 checked_in = 3;
+  int64 completed = 4;
+  int64 cancelled = 5;
+  int64 no_show = 6;
+}
+
+message AppointmentReportRow {
+  string date = 1;
+  int64 total = 2;
+  int64 scheduled = 3;
+  int64 checked_in = 4;
+  int64 completed = 5;
+  int64 cancelled = 6;
+  int64 no_show = 7;
+}
+
+message RevenueReportFilter {
+  DateRange period = 1;
+  PaymentMethod payment_method = 2;
+}
+
+message GetRevenueReportRequest {
+  RevenueReportFilter filter = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message GetRevenueReportResponse {
+  DateRange period = 1;
+  int64 total_collected_amount = 2;
+  string currency = 3;
+  repeated RevenueReportRow rows = 4;
+  ProjectionMetadata projection = 5;
+}
+
+message RevenueReportRow {
+  string date = 1;
+  PaymentMethod payment_method = 2;
+  int64 payment_count = 3;
+  int64 collected_amount = 4;
+  string currency = 5;
+}
+
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_CASH = 1;
+  PAYMENT_METHOD_MANUAL_TRANSFER = 2;
+}
+
+message ExportAppointmentsCsvRequest {
+  AppointmentReportFilter filter = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message ExportRevenueCsvRequest {
+  RevenueReportFilter filter = 1;
+  maternal.common.v1.RequestContext context = 2;
+}
+
+message ExportCsvResponse {
+  bytes content = 1;
+  string content_type = 2;
+  string filename = 3;
+  google.protobuf.Timestamp generated_at = 4;
+  ProjectionMetadata projection = 5;
+}

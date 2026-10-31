@@ -1,0 +1,268 @@
+openapi: 3.0.3
+info:
+  title: Audit Log Service API
+  version: 1.0.0
+  description: >-
+    Public read-only API for searching immutable audit records. Audit records are
+    appended asynchronously from domain events through RabbitMQ; this API does not
+    expose create, update, or delete operations.
+servers:
+  - url: /api/v1
+tags:
+  - name: Audit Logs
+    description: Read-only access to append-only audit records.
+security:
+  - bearerAuth: []
+paths:
+  /audit-logs:
+    get:
+      tags: [Audit Logs]
+      operationId: listAuditLogs
+      summary: Search audit logs
+      description: Returns audit records in reverse chronological order.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: actorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+        - name: resourceId
+          in: query
+          schema:
+            type: string
+            maxLength: 255
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuditOutcome'
+        - name: from
+          in: query
+          description: Inclusive lower bound for occurrence time.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Inclusive upper bound for occurrence time.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Audit records retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /audit-logs/{auditLogId}:
+    get:
+      tags: [Audit Logs]
+      operationId: getAuditLog
+      summary: Get an audit record
+      parameters:
+        - $ref: '#/components/parameters/AuditLogId'
+      responses:
+        '200':
+          description: Audit record retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    AuditLogId:
+      name: auditLogId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    AuditOutcome:
+      type: string
+      enum: [SUCCESS, FAILURE, DENIED]
+    AuditLog:
+      type: object
+      required: [id, eventId, occurredAt, recordedAt, actor, action, resource, outcome]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          description: Idempotency key of the consumed domain event.
+        correlationId:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        recordedAt:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        action:
+          type: string
+        resource:
+          $ref: '#/components/schemas/AuditResource'
+        outcome:
+          $ref: '#/components/schemas/AuditOutcome'
+        sourceService:
+          type: string
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Non-sensitive contextual values captured with the event.
+    AuditActor:
+      type: object
+      required: [type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        type:
+          type: string
+          enum: [USER, SERVICE, SYSTEM]
+        role:
+          type: string
+          nullable: true
+    AuditResource:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+    AuditLogPage:
+      type: object
+      required: [items, page, pageSize, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    ErrorResponse:
+      type: object
+      required: [error, timestamp]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        timestamp:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorField'
+    ErrorField:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string

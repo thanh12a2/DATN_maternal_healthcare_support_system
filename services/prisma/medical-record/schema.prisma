@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/medical-record-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MEDICAL_RECORD_DATABASE_URL")
+}
+
+enum EncounterState {
+  DRAFT
+  IN_PROGRESS
+  AWAITING_RESULTS
+  READY_FOR_REVIEW
+  FINALIZED
+}
+
+enum AssignmentRole {
+  PRIMARY
+  CONSULTING
+  NURSE
+  TECHNICIAN
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  ENDED
+}
+
+enum PregnancyEpisodeStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum PregnancyRiskLevel {
+  LOW
+  MODERATE
+  HIGH
+  UNKNOWN
+}
+
+enum ServiceOrderStatus {
+  ORDERED
+  IN_PROGRESS
+  PERFORMED
+  RESULT_AVAILABLE
+  VERIFIED
+  CANCELLED
+}
+
+model ClinicalEncounter {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  appointmentId      String                      @unique @map("appointment_id") @db.Uuid
+  patientId          String                      @map("patient_id") @db.Uuid
+  pregnancyEpisodeId String?                     @map("pregnancy_episode_id") @db.Uuid
+  primaryDoctorId    String                      @map("primary_doctor_id") @db.Uuid
+  state              EncounterState              @default(DRAFT)
+  chiefComplaint     String?                     @map("chief_complaint") @db.VarChar(2000)
+  clinicalSummary    String?                     @map("clinical_summary") @db.VarChar(10000)
+  startedAt          DateTime?                   @map("started_at") @db.Timestamptz(6)
+  reviewReadyAt      DateTime?                   @map("review_ready_at") @db.Timestamptz(6)
+  finalizedAt        DateTime?                   @map("finalized_at") @db.Timestamptz(6)
+  version            Int                         @default(1)
+  createdAt          DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  pregnancyEpisode   PregnancyEpisode?           @relation(fields: [pregnancyEpisodeId], references: [id], onDelete: SetNull)
+  assignments        EncounterAssignment[]
+  vitalSigns         VitalSign[]
+  notes              ClinicalNote[]
+  diagnoses          Diagnosis[]
+  orders             ClinicalServiceOrder[]
+  externalReferences ExternalClinicalReference[]
+  amendments         EncounterAmendment[]
+  appointmentSyncJobs EncounterAppointmentSync[]
+
+  @@index([patientId, createdAt])
+  @@index([state, updatedAt])
+  @@map("clinical_encounters")
+}
+
+model EncounterAppointmentSync {
+  id               String @id @default(uuid()) @db.Uuid
+  encounterId      String @map("encounter_id") @db.Uuid
+  appointmentId    String @map("appointment_id") @db.Uuid
+  encounterVersion Int @map("encounter_version")
+  action           String @db.VarChar(20)
+  status           String @default("PENDING") @db.VarChar(20)
+  attempts         Int @default(0)
+  nextAttemptAt    DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError        String? @map("last_error") @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  encounter        ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@unique([encounterId, encounterVersion])
+  @@index([status, nextAttemptAt, createdAt])
+  @@map("encounter_appointment_sync")
+}
+
+model EncounterAssignment {
+  id          String            @id @default(uuid()) @db.Uuid
+  encounterId String            @map("encounter_id") @db.Uuid
+  staffId     String            @map("staff_id") @db.Uuid
+  role        AssignmentRole
+  status      AssignmentStatus  @default(ACTIVE)
+  assignedAt  DateTime          @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedAt     DateTime?         @map("ended_at") @db.Timestamptz(6)
+  encounter   ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@unique([encounterId, staffId, role, status])
+  @@index([staffId, status])
+  @@map("encounter_assignments")
+}
+
+model PregnancyEpisode {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  patientId           String                 @map("patient_id") @db.Uuid
+  status              PregnancyEpisodeStatus @default(ACTIVE)
+  estimatedDueDate    DateTime?              @map("estimated_due_date") @db.Date
+  lastMenstrualPeriod DateTime?              @map("last_menstrual_period") @db.Date
+  riskLevel           PregnancyRiskLevel     @default(UNKNOWN) @map("risk_level")
+  version             Int                    @default(1)
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  encounters          ClinicalEncounter[]
+
+  @@index([patientId, status])
+  @@map("pregnancy_episodes")
+}
+
+model VitalSign {
+  id          String            @id @default(uuid()) @db.Uuid
+  encounterId String            @map("encounter_id") @db.Uuid
+  systolic    Int?
+  diastolic   Int?
+  heartRate   Int?              @map("heart_rate")
+  temperature Decimal?          @db.Decimal(4, 1)
+  weight      Decimal?          @db.Decimal(6, 2)
+  recordedBy  String            @map("recorded_by") @db.Uuid
+  recordedAt  DateTime          @default(now()) @map("recorded_at") @db.Timestamptz(6)
+  encounter   ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@index([encounterId, recordedAt])
+  @@map("vital_signs")
+}
+
+model ClinicalNote {
+  id          String            @id @default(uuid()) @db.Uuid
+  encounterId String            @map("encounter_id") @db.Uuid
+  text        String            @db.VarChar(10000)
+  authorId    String            @map("author_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  encounter   ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@index([encounterId, createdAt])
+  @@map("clinical_notes")
+}
+
+model Diagnosis {
+  id          String            @id @default(uuid()) @db.Uuid
+  encounterId String            @map("encounter_id") @db.Uuid
+  code        String            @db.VarChar(50)
+  description String            @db.VarChar(2000)
+  doctorId    String            @map("doctor_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  encounter   ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@index([encounterId])
+  @@map("diagnoses")
+}
+
+model ClinicalServiceOrder {
+  id                String             @id @default(uuid()) @db.Uuid
+  encounterId       String             @map("encounter_id") @db.Uuid
+  catalogServiceId  String             @map("catalog_service_id") @db.Uuid
+  stageCode         String             @map("stage_code") @db.VarChar(50)
+  orderedByDoctorId String             @map("ordered_by_doctor_id") @db.Uuid
+  requiredResult    Boolean            @default(true) @map("required_result")
+  billableSnapshot  Boolean            @default(true) @map("billable_snapshot")
+  status            ServiceOrderStatus @default(ORDERED)
+  structuredResult  Json?              @map("structured_result")
+  performedAt       DateTime?          @map("performed_at") @db.Timestamptz(6)
+  verifiedAt        DateTime?          @map("verified_at") @db.Timestamptz(6)
+  version           Int                @default(1)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  encounter         ClinicalEncounter  @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@index([encounterId, status])
+  @@map("clinical_service_orders")
+}
+
+model ExternalClinicalReference {
+  id           String            @id @default(uuid()) @db.Uuid
+  encounterId  String            @map("encounter_id") @db.Uuid
+  resourceType String            @map("resource_type") @db.VarChar(50)
+  resourceId   String            @map("resource_id") @db.Uuid
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  encounter    ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, resourceId])
+  @@index([encounterId])
+  @@map("external_clinical_references")
+}
+
+model EncounterAmendment {
+  id             String            @id @default(uuid()) @db.Uuid
+  encounterId    String            @map("encounter_id") @db.Uuid
+  section        String            @db.VarChar(80)
+  reason         String            @db.VarChar(500)
+  patch          Json
+  authorDoctorId String            @map("author_doctor_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  encounter      ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Restrict)
+
+  @@index([encounterId, createdAt])
+  @@map("encounter_amendments")
+}
+
+model MedicalIdempotency {
+  id          String   @id @default(uuid()) @db.Uuid
+  scope       String   @db.VarChar(100)
+  key         String   @db.VarChar(128)
+  requestHash String   @map("request_hash") @db.Char(64)
+  resourceId  String?  @map("resource_id") @db.Uuid
+  response    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([scope, key])
+  @@map("medical_idempotency")
+}
+
+model MedicalAudit {
+  id          String   @id @default(uuid()) @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(120)
+  actorId     String?  @map("actor_id") @db.Uuid
+  encounterId String?  @map("encounter_id") @db.Uuid
+  reason      String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([encounterId, createdAt])
+  @@map("medical_audit")
+}
+
+model MedicalOutbox {
+  id               String    @id @default(uuid()) @db.Uuid
+  eventType        String    @map("event_type") @db.VarChar(120)
+  aggregateId      String    @map("aggregate_id") @db.Uuid
+  aggregateVersion Int       @map("aggregate_version")
+  payload          Json
+  status           String    @default("PENDING") @db.VarChar(20)
+  occurredAt       DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  publishedAt      DateTime? @map("published_at") @db.Timestamptz(6)
+
+  @@index([status, occurredAt])
+  @@map("medical_outbox")
+}

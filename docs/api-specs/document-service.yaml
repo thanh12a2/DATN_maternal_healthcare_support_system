@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Document Service API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/documents
+security:
+  - bearerAuth: []
+paths:
+  /uploads:
+    post:
+      operationId: createUploadSession
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUpload' }
+      responses:
+        '201': { description: Upload session created, content: { application/json: { schema: { $ref: '#/components/schemas/UploadEnvelope' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /uploads/{sessionId}/complete:
+    post:
+      operationId: completeUpload
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CompleteUpload' }
+      responses:
+        '200': { description: Upload accepted for scanning, content: { application/json: { schema: { $ref: '#/components/schemas/DocumentEnvelope' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /{documentId}:
+    get:
+      operationId: getDocument
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200': { description: Authorized metadata, content: { application/json: { schema: { $ref: '#/components/schemas/DocumentEnvelope' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /{documentId}/download:
+    get:
+      operationId: createDownloadUrl
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200': { description: Short-lived URL, content: { application/json: { schema: { $ref: '#/components/schemas/DownloadEnvelope' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /{documentId}/versions:
+    post:
+      operationId: createDocumentVersionUpload
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateVersion' } } }
+      responses:
+        '201': { description: Version upload session, content: { application/json: { schema: { $ref: '#/components/schemas/UploadEnvelope' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /{documentId}/archive:
+    post:
+      operationId: archiveDocument
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Reason' } } }
+      responses:
+        '200': { description: Archived, content: { application/json: { schema: { $ref: '#/components/schemas/DocumentEnvelope' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    DocumentId: { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 128 } }
+  schemas:
+    CreateUpload:
+      type: object
+      additionalProperties: false
+      required: [ownerType, ownerId, patientId, purpose, fileName, mediaType, sizeBytes, sha256]
+      properties:
+        ownerType: { type: string, enum: [CLINICAL_ENCOUNTER, PRESCRIPTION, TREATMENT_PLAN, CONSULTATION] }
+        ownerId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        purpose: { type: string, maxLength: 80 }
+        fileName: { type: string, maxLength: 255 }
+        mediaType: { type: string, maxLength: 100 }
+        sizeBytes: { type: integer, format: int64, minimum: 1 }
+        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+    CreateVersion:
+      allOf:
+        - $ref: '#/components/schemas/CreateUpload'
+        - type: object
+          required: [expectedVersion]
+          properties: { expectedVersion: { type: integer, minimum: 1 } }
+    CompleteUpload:
+      type: object
+      additionalProperties: false
+      required: [sizeBytes, sha256]
+      properties:
+        sizeBytes: { type: integer, format: int64, minimum: 1 }
+        sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+    Reason:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties: { reason: { type: string, minLength: 3, maxLength: 500 } }
+    Document:
+      type: object
+      required: [id, ownerType, ownerId, patientId, status, currentVersion, visibility, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        ownerType: { type: string }
+        ownerId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING_UPLOAD, UPLOADED, SCANNING, CLEAN, REJECTED, ARCHIVED] }
+        currentVersion: { type: integer }
+        visibility: { type: string, enum: [CLINICAL_TEAM, PATIENT_RELEASED] }
+        createdAt: { type: string, format: date-time }
+    UploadSession:
+      type: object
+      properties:
+        sessionId: { type: string, format: uuid }
+        documentId: { type: string, format: uuid }
+        expiresAt: { type: string, format: date-time }
+        uploadUrl: { type: string, format: uri, description: Short-lived private upload URL }
+    DocumentEnvelope: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Document' } } }
+    UploadEnvelope: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/UploadSession' } } }
+    DownloadEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [url, expiresAt]
+          properties: { url: { type: string, format: uri }, expiresAt: { type: string, format: date-time } }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties: { code: { type: string }, message: { type: string }, requestId: { type: string } }
+  responses:
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

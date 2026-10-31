@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package maternal.common.v1;
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.common.v1";
+
+// Metadata nghiệp vụ truyền trong message. Authentication service-to-service
+// nằm ở gRPC metadata, không nằm trong RequestContext.
+message RequestContext {
+  string request_id = 1;
+  string correlation_id = 2;
+  string causation_id = 3;
+  string idempotency_key = 4;
+  string actor_account_id = 5;
+  string actor_role = 6;
+}
+
+// Tiền theo minor unit. MVP chỉ chấp nhận currency_code = VND.
+message Money {
+  int64 amount_minor = 1;
+  string currency_code = 2;
+}
+
+message PageRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message PageInfo {
+  string next_page_token = 1;
+  int64 total_size = 2;
+}

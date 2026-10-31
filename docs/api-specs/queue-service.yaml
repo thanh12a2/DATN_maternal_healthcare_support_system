@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: Queue Service API
+  version: 1.0.0
+  description: Authoritative QueueJourney and per-stage ticket API after financial clearance and Appointment check-in.
+servers:
+  - url: http://localhost:8080/api/queue
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get: { operationId: queueHealth, security: [], responses: { '200': { description: Alive } } }
+  /ready:
+    get: { operationId: queueReady, security: [], responses: { '200': { description: Ready }, '503': { $ref: '#/components/responses/Error' } } }
+  /me/journeys/active:
+    get:
+      operationId: getMyActiveJourney
+      responses: { '200': { description: Own active journey, content: { application/json: { schema: { $ref: '#/components/schemas/JourneyEnvelope' } } } }, '404': { $ref: '#/components/responses/Error' } }
+  /journeys/{journeyId}:
+    get:
+      operationId: getJourney
+      parameters: [ { $ref: '#/components/parameters/JourneyId' } ]
+      responses: { '200': { description: Journey, content: { application/json: { schema: { $ref: '#/components/schemas/JourneyEnvelope' } } } }, '404': { $ref: '#/components/responses/Error' } }
+  /stages:
+    get:
+      operationId: listActiveStages
+      responses: { '200': { description: Active stages } }
+  /stages/{stageId}/tickets:
+    get:
+      operationId: listStageTickets
+      parameters:
+        - { $ref: '#/components/parameters/StageId' }
+        - { name: state, in: query, schema: { $ref: '#/components/schemas/TicketState' } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses: { '200': { description: Stage board, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: '#/components/schemas/StageTicket' } }, nextCursor: { type: string, nullable: true } } } } } } }
+  /stages/{stageId}/call-next:
+    post:
+      operationId: callNextTicket
+      parameters: [ { $ref: '#/components/parameters/StageId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/CallNextRequest' } } } }
+      responses: { '200': { description: Ticket called, content: { application/json: { schema: { $ref: '#/components/schemas/TicketEnvelope' } } } }, '204': { description: No waiting ticket }, '409': { $ref: '#/components/responses/Error' } }
+  /tickets/{ticketId}/start:
+    post:
+      operationId: startTicketService
+      parameters: [ { $ref: '#/components/parameters/TicketId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: In service, content: { application/json: { schema: { $ref: '#/components/schemas/TicketEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /tickets/{ticketId}/complete:
+    post:
+      operationId: completeStageTicket
+      parameters: [ { $ref: '#/components/parameters/TicketId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Completed, content: { application/json: { schema: { $ref: '#/components/schemas/TicketEnvelope' } } } } }
+  /tickets/{ticketId}/requeue:
+    post:
+      operationId: requeueSkippedTicket
+      parameters: [ { $ref: '#/components/parameters/TicketId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonVersionRequest' } } } }
+      responses: { '200': { description: Requeued, content: { application/json: { schema: { $ref: '#/components/schemas/TicketEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /tickets/{ticketId}/cancel:
+    post:
+      operationId: cancelStageTicket
+      parameters: [ { $ref: '#/components/parameters/TicketId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonVersionRequest' } } } }
+      responses: { '200': { description: Cancelled, content: { application/json: { schema: { $ref: '#/components/schemas/TicketEnvelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+components:
+  securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    JourneyId: { name: journeyId, in: path, required: true, schema: { type: string, format: uuid } }
+    StageId: { name: stageId, in: path, required: true, schema: { type: string, format: uuid } }
+    TicketId: { name: ticketId, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+  schemas:
+    JourneyState: { type: string, enum: [ACTIVE, COMPLETED, CANCELLED] }
+    TicketState: { type: string, enum: [WAITING, CALLED, IN_SERVICE, COMPLETED, SKIPPED, CANCELLED] }
+    VersionRequest: { type: object, additionalProperties: false, required: [expectedVersion], properties: { expectedVersion: { type: integer, minimum: 1 } } }
+    ReasonVersionRequest: { type: object, additionalProperties: false, required: [expectedVersion, reason], properties: { expectedVersion: { type: integer, minimum: 1 }, reason: { type: string, minLength: 3, maxLength: 500 } } }
+    CallNextRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        overrideTicketId: { type: string, format: uuid, nullable: true }
+        reason: { type: string, minLength: 3, maxLength: 500, nullable: true }
+    StageTicket:
+      type: object
+      required: [id, journeyId, stageId, stageCode, ordinal, ticketCode, state, basePriority, lateDemotion, callCount, version]
+      properties:
+        id: { type: string, format: uuid }
+        journeyId: { type: string, format: uuid }
+        stageId: { type: string, format: uuid }
+        sourceOrderId: { type: string, format: uuid, nullable: true }
+        stageCode: { type: string }
+        roomCode: { type: string, nullable: true }
+        ordinal: { type: integer, minimum: 1 }
+        ticketCode: { type: string }
+        state: { $ref: '#/components/schemas/TicketState' }
+        basePriority: { type: string, enum: [ROUTINE, URGENT] }
+        lateDemotion: { type: boolean }
+        callCount: { type: integer, minimum: 0, maximum: 2 }
+        callExpiresAt: { type: string, format: date-time, nullable: true }
+        version: { type: integer, minimum: 1 }
+    QueueJourney:
+      type: object
+      required: [id, appointmentId, patientId, encounterId, businessDate, lateMinutes, latenessClass, state, version, tickets]
+      properties:
+        id: { type: string, format: uuid }
+        appointmentId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        encounterId: { type: string, format: uuid }
+        businessDate: { type: string, format: date }
+        lateMinutes: { type: integer, minimum: 0 }
+        latenessClass: { type: string, enum: [ON_TIME, LATE_DEMOTED] }
+        state: { $ref: '#/components/schemas/JourneyState' }
+        version: { type: integer, minimum: 1 }
+        tickets: { type: array, items: { $ref: '#/components/schemas/StageTicket' } }
+    JourneyEnvelope: { type: object, properties: { data: { $ref: '#/components/schemas/QueueJourney' } } }
+    TicketEnvelope: { type: object, properties: { data: { $ref: '#/components/schemas/StageTicket' } } }
+    Error: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string }, requestId: { type: string } } } } }
+  responses:
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

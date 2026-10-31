@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/notification-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("NOTIFICATION_DATABASE_URL")
+}
+
+enum NotificationCategory {
+  BOOKING
+  REMINDER
+  REASSIGNMENT
+  QUEUE
+  PAYMENT
+  RESULT
+}
+
+enum DeliveryChannel {
+  IN_APP
+  PUSH
+  EMAIL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model Notification {
+  id                 String               @id @default(uuid()) @db.Uuid
+  sourceEventId      String               @map("source_event_id") @db.Uuid
+  eventType          String               @map("event_type") @db.VarChar(120)
+  recipientAccountId String               @map("recipient_account_id") @db.Uuid
+  templateCode       String               @map("template_code") @db.VarChar(80)
+  category           NotificationCategory
+  title              String               @db.VarChar(200)
+  body               String               @db.VarChar(2000)
+  resourceType       String?              @map("resource_type") @db.VarChar(50)
+  resourceId         String?              @map("resource_id") @db.Uuid
+  readAt             DateTime?            @map("read_at") @db.Timestamptz(6)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  deliveries         DeliveryAttempt[]
+
+  @@unique([sourceEventId, recipientAccountId, templateCode])
+  @@index([recipientAccountId, createdAt])
+  @@map("notifications")
+}
+
+model DeliveryAttempt {
+  id                String          @id @default(uuid()) @db.Uuid
+  notificationId    String          @map("notification_id") @db.Uuid
+  channel           DeliveryChannel
+  status            DeliveryStatus  @default(PENDING)
+  attempt           Int             @default(1)
+  providerMessageId String?         @map("provider_message_id") @db.VarChar(200)
+  lastErrorCode     String?         @map("last_error_code") @db.VarChar(100)
+  attemptedAt       DateTime        @default(now()) @map("attempted_at") @db.Timestamptz(6)
+  notification      Notification    @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([status, attemptedAt])
+  @@map("delivery_attempts")
+}
+
+model NotificationConsumedEvent {
+  eventId     String   @id @map("event_id") @db.Uuid
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@map("notification_consumed_events")
+}

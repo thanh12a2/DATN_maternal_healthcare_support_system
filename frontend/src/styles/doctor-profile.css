@@ -1,0 +1,57 @@
+.doctor-account { color: #17395e; }
+.doctor-account-hero { position: relative; display: flex; align-items: center; gap: 22px; padding: 26px 28px; overflow: hidden; }
+.doctor-account-hero::before { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, #1b6bb5, #a9d7f2); content: ''; }
+.doctor-account-avatar { display: grid; place-items: center; flex: 0 0 108px; width: 108px; height: 108px; overflow: hidden; border: 5px solid #eff7fe; border-radius: 24px; background: #dceefa; color: #1761a8; font-size: 31px; font-weight: 800; }
+.doctor-account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.doctor-account-identity { flex: 1; min-width: 0; }
+.doctor-account-overline { color: #7893aa; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.doctor-account-identity h2 { margin: 7px 0 6px; color: #173b63; font-size: 24px; font-weight: 800; letter-spacing: -.03em; }
+.doctor-account-identity p { margin: 0; color: #71869b; font-size: 12px; line-height: 1.6; }
+.doctor-account-identity p span { padding: 0 3px; color: #abc0d1; }
+.doctor-account-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.doctor-account-status, .doctor-account-rank { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 7px; background: #edf4f9; color: #617c94; font-size: 10px; font-weight: 750; }
+.doctor-account-status.status-active { background: #e9f6ee; color: #377957; }
+.doctor-account-status i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.doctor-account-rank { background: #edf6ff; color: #286ba8; }
+.doctor-account-photo-button, .doctor-account-link { font: inherit; cursor: pointer; }
+.doctor-account-photo-button { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 10px 13px; border: 1px solid #dbe8f3; border-radius: 9px; background: #fff; color: #2566a3; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.doctor-account-photo-button:hover { border-color: #b9d8ef; background: #edf7ff; }
+.doctor-account-grid { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(0, 1.5fr); align-items: start; gap: 18px; margin-top: 18px; }
+.doctor-account-sidebar { display: grid; gap: 18px; }
+.doctor-account-card { padding: 22px; }
+.doctor-account-card-heading, .doctor-account-editor-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.doctor-account-card-heading > .anticon, .doctor-account-editor-head > .anticon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #edf6ff; color: #4384bc; font-size: 17px; }
+.doctor-account-card h3, .doctor-account-editor h3 { margin: 7px 0 0; color: #1c4064; font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
+.doctor-account-facts { margin: 16px 0 0; }
+.doctor-account-facts div { padding: 12px 0; border-top: 1px solid #edf2f7; }
+.doctor-account-facts dt { color: #8a9bae; font-size: 10px; font-weight: 700; }
+.doctor-account-facts dd { margin: 5px 0 0; color: #31526f; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.doctor-account-specialties { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.doctor-account-specialties > span { display: inline-flex; gap: 6px; align-items: center; padding: 8px 10px; border: 1px solid #dfebf5; border-radius: 8px; background: #f7fbff; color: #376b96; font-size: 11px; font-weight: 700; }
+.doctor-account-specialties small { color: #7899b3; font-size: 9px; }
+.doctor-account-empty { margin: 16px 0 0; color: #8498aa; font-size: 11px; line-height: 1.6; }
+.doctor-account-editor { overflow: hidden; }
+.doctor-account-editor-head { padding: 23px 25px; border-bottom: 1px solid #edf2f7; }
+.doctor-account-editor-head p { margin: 8px 0 0; color: #8496a8; font-size: 11px; line-height: 1.6; }
+.doctor-account-editor-body { display: grid; gap: 20px; padding: 25px; }
+.doctor-account-field { display: grid; gap: 8px; color: #315674; font-size: 12px; font-weight: 750; }
+.doctor-account-field > span { display: flex; align-items: center; gap: 8px; }
+.doctor-account-field > span .anticon { color: #7b9bb7; }
+.doctor-account-field input, .doctor-account-field textarea { box-sizing: border-box; width: 100%; padding: 12px 13px; outline: none; border: 1px solid #dce8f2; border-radius: 9px; background: #fbfdff; color: #244763; font: inherit; font-size: 12px; font-weight: 500; line-height: 1.6; }
+.doctor-account-field textarea { min-height: 148px; resize: vertical; }
+.doctor-account-field input:focus, .doctor-account-field textarea:focus { border-color: #70ace0; box-shadow: 0 0 0 3px #e9f5ff; background: #fff; }
+.doctor-account-field input::placeholder, .doctor-account-field textarea::placeholder { color: #a6b6c4; }
+.doctor-account-field small { color: #8c9eaf; font-size: 10px; font-weight: 500; line-height: 1.5; }
+.doctor-account-photo-editor { display: grid; gap: 10px; padding: 15px; border: 1px solid #dcebf8; border-radius: 11px; background: #f5faff; }
+.doctor-account-photo-error { margin: 0; color: #a15f32; font-size: 11px; line-height: 1.5; }
+.doctor-account-link { justify-self: start; padding: 0; border: 0; background: transparent; color: #236cae; font-size: 11px; font-weight: 750; }
+.doctor-account-link:hover { text-decoration: underline; }
+.doctor-account-note { display: flex; align-items: flex-start; gap: 9px; padding: 13px; border-radius: 9px; background: #f4f8fb; color: #7890a3; font-size: 10px; line-height: 1.6; }
+.doctor-account-note .anticon { margin-top: 2px; color: #85a3ba; }
+.doctor-account-feedback { display: flex; gap: 8px; align-items: center; padding: 11px 13px; border-radius: 8px; background: #eaf7ef; color: #367651; font-size: 11px; line-height: 1.5; }
+.doctor-account-feedback.is-error { background: #fff6ee; color: #95542c; }
+.doctor-account-editor-footer { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 17px 25px; border-top: 1px solid #edf2f7; }
+.doctor-account-editor-footer span { color: #91a1b0; font-size: 10px; }
+.doctor-account-editor-footer button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 860px) { .doctor-account-grid { grid-template-columns: 1fr; } .doctor-account-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+@media (max-width: 600px) { .doctor-account-hero { flex-wrap: wrap; gap: 15px; padding: 22px; } .doctor-account-avatar { flex-basis: 76px; width: 76px; height: 76px; border-radius: 18px; font-size: 23px; } .doctor-account-identity h2 { font-size: 19px; } .doctor-account-photo-button { margin-left: 91px; } .doctor-account-sidebar { grid-template-columns: 1fr; } .doctor-account-editor-head, .doctor-account-editor-body, .doctor-account-editor-footer { padding-left: 18px; padding-right: 18px; } .doctor-account-editor-footer { align-items: stretch; flex-direction: column; } }

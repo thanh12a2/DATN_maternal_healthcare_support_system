@@ -1,0 +1,1 @@
+import { Global,Module } from '@nestjs/common';import { TreatmentPlanPrismaService } from './prisma.service';@Global()@Module({providers:[TreatmentPlanPrismaService],exports:[TreatmentPlanPrismaService]})export class TreatmentPlanDatabaseModule{}

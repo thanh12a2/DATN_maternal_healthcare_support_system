@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info: { title: Prescription Service API, version: 1.0.0 }
+servers: [ { url: 'http://localhost:8080/api/prescriptions' } ]
+security: [ { bearerAuth: [] } ]
+paths:
+  /:
+    post:
+      operationId: createPrescription
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreatePrescription' } } } }
+      responses: { '201': { description: Draft created, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }, '403': { $ref: '#/components/responses/Error' }, '409': { $ref: '#/components/responses/Error' } }
+    get:
+      operationId: listPrescriptions
+      parameters:
+        - { name: encounterId, in: query, schema: { type: string, format: uuid } }
+        - { name: patientId, in: query, schema: { type: string, format: uuid } }
+      responses: { '200': { description: Authorized list, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: '#/components/schemas/Prescription' } } } } } } } }
+  /{prescriptionId}:
+    parameters: [ { $ref: '#/components/parameters/PrescriptionId' } ]
+    get:
+      operationId: getPrescription
+      responses: { '200': { description: Prescription, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }, '404': { $ref: '#/components/responses/Error' } }
+    patch:
+      operationId: updatePrescriptionDraft
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UpdatePrescription' } } } }
+      responses: { '200': { description: Updated draft, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+  /{prescriptionId}/issue:
+    post:
+      operationId: issuePrescription
+      parameters: [ { $ref: '#/components/parameters/PrescriptionId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VersionRequest' } } } }
+      responses: { '200': { description: Issued, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }, '422': { $ref: '#/components/responses/Error' } }
+  /{prescriptionId}/cancel:
+    post:
+      operationId: cancelPrescription
+      parameters: [ { $ref: '#/components/parameters/PrescriptionId' }, { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CancelRequest' } } } }
+      responses: { '200': { description: Cancelled, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }, '409': { $ref: '#/components/responses/Error' } }
+components:
+  securitySchemes: { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    PrescriptionId: { name: prescriptionId, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 128 } }
+  schemas:
+    PrescriptionItem:
+      type: object
+      additionalProperties: false
+      required: [medicationName, route, dose, frequency, instruction]
+      properties:
+        medicationCode: { type: string, nullable: true }
+        medicationName: { type: string, minLength: 1, maxLength: 200 }
+        strength: { type: string, nullable: true }
+        dosageForm: { type: string, nullable: true }
+        route: { type: string, maxLength: 80 }
+        dose: { type: string, maxLength: 80 }
+        frequency: { type: string, maxLength: 120 }
+        durationDays: { type: integer, minimum: 1, nullable: true }
+        instruction: { type: string, maxLength: 1000 }
+    CreatePrescription:
+      type: object
+      additionalProperties: false
+      required: [encounterId, patientId, items]
+      properties:
+        encounterId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        pregnancyEpisodeId: { type: string, format: uuid, nullable: true }
+        items: { type: array, items: { $ref: '#/components/schemas/PrescriptionItem' }, minItems: 1 }
+    UpdatePrescription:
+      type: object
+      additionalProperties: false
+      required: [version, items]
+      properties:
+        version: { type: integer, minimum: 1 }
+        items: { type: array, items: { $ref: '#/components/schemas/PrescriptionItem' }, minItems: 1 }
+    VersionRequest: { type: object, additionalProperties: false, required: [version], properties: { version: { type: integer, minimum: 1 } } }
+    CancelRequest:
+      type: object
+      additionalProperties: false
+      required: [version, reason]
+      properties: { version: { type: integer, minimum: 1 }, reason: { type: string, minLength: 3, maxLength: 500 } }
+    Prescription:
+      type: object
+      required: [id, encounterId, patientId, prescribingDoctorId, status, version, items]
+      properties:
+        id: { type: string, format: uuid }
+        encounterId: { type: string, format: uuid }
+        patientId: { type: string, format: uuid }
+        prescribingDoctorId: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, ISSUED, CANCELLED] }
+        version: { type: integer }
+        items: { type: array, items: { $ref: '#/components/schemas/PrescriptionItem' } }
+        issuedAt: { type: string, format: date-time, nullable: true }
+    Envelope: { type: object, properties: { data: { $ref: '#/components/schemas/Prescription' } } }
+    Error: { type: object, properties: { error: { type: object, properties: { code: { type: string }, message: { type: string }, requestId: { type: string } } } } }
+  responses:
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

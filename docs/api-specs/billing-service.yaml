@@ -1,0 +1,497 @@
+openapi: 3.0.3
+info:
+  title: Maternal Billing Service API
+  version: 1.0.0
+  description: Public REST contract for private-pay invoice reads, one-payment collection, manual transfer decisions, credit approval, and unpaid cancellation. Refunds are deliberately unsupported.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Invoices
+  - name: Payments
+  - name: Credit
+paths:
+  /invoices:
+    get:
+      tags: [Invoices]
+      operationId: listInvoices
+      summary: List invoices visible to the caller
+      parameters:
+        - name: patientId
+          in: query
+          description: Staff filter. A patient caller is restricted to the patient identity mapped from JWT.
+          schema: {type: string, format: uuid}
+        - name: appointmentId
+          in: query
+          schema: {type: string, format: uuid}
+        - name: encounterId
+          in: query
+          schema: {type: string, format: uuid}
+        - name: type
+          in: query
+          schema: {$ref: '#/components/schemas/InvoiceType'}
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/InvoiceStatus'}
+        - name: pageSize
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: pageToken
+          in: query
+          schema: {type: string, maxLength: 500}
+      responses:
+        '200':
+          description: Cursor-paginated invoices.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvoicePage'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /invoices/{id}:
+    get:
+      tags: [Invoices]
+      operationId: getInvoice
+      summary: Get an invoice
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: Invoice details.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Invoice'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+  /invoices/{id}/payments:
+    post:
+      tags: [Payments]
+      operationId: recordPayment
+      summary: Record the sole payment for an invoice
+      description: Amount must equal the invoice total and balance exactly. CASH is verified atomically; MANUAL_BANK_TRANSFER awaits explicit verification. A rejected payment still consumes the sole payment slot.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecordPaymentRequest'}
+      responses:
+        '201':
+          description: Payment recorded.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /payments/{id}/verify:
+    post:
+      tags: [Payments]
+      operationId: verifyManualBankTransfer
+      summary: Verify a recorded manual bank transfer
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PaymentDecisionRequest'}
+      responses:
+        '200':
+          description: Transfer verified and invoice paid.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/PaymentNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /payments/{id}/reject:
+    post:
+      tags: [Payments]
+      operationId: rejectManualBankTransfer
+      summary: Reject a recorded manual bank transfer
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RejectPaymentRequest'}
+      responses:
+        '200':
+          description: Transfer rejected; invoice is outstanding and no second payment may be created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PaymentResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/PaymentNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /invoices/{id}/credit-approvals:
+    post:
+      tags: [Credit]
+      operationId: approveCredit
+      summary: Approve admission credit
+      description: Admin only. The requester cannot approve credit for the same invoice, and an invoice with a payment cannot receive credit.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ApproveCreditRequest'}
+      responses:
+        '201':
+          description: Credit approved; paidMinor remains zero.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CreditResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /invoices/{id}/credit-approvals/{creditId}/revoke:
+    post:
+      tags: [Credit]
+      operationId: revokeCredit
+      summary: Revoke unused credit approval
+      description: Admin only and only before admission use or clinical start.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/CreditId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RevokeCreditRequest'}
+      responses:
+        '200':
+          description: Credit revoked and invoice reopened.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CreditResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /invoices/{id}/cancel:
+    post:
+      tags: [Invoices]
+      operationId: cancelInvoice
+      summary: Cancel an unused unpaid invoice
+      description: Admin only. Paid invoices and invoices with payment, credit, or admission use cannot be cancelled.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CancelInvoiceRequest'}
+      responses:
+        '200':
+          description: Cancelled invoice.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Invoice'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: RS256 access token issued for the public API audience.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 200}
+    InvoiceId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PaymentId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    CreditId:
+      name: creditId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    BadRequest:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: VALIDATION_FAILED, message: Request validation failed, requestId: req-123}
+    Unauthenticated:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: UNAUTHENTICATED, message: Authentication is required, requestId: req-123}
+    Forbidden:
+      description: Permission, ownership, active-shift, or separation-of-duties rule failed.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: FORBIDDEN, message: Access is denied, requestId: req-123}
+    InvoiceNotFound:
+      description: Invoice not found. Wrong-owner patient access is concealed as not found.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: INVOICE_NOT_FOUND, message: Invoice was not found, requestId: req-123}
+    PaymentNotFound:
+      description: Payment not found.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: PAYMENT_NOT_FOUND, message: Payment was not found, requestId: req-123}
+    Conflict:
+      description: Existing payment, reused idempotency key, invalid transition, duplicate performed service, or version conflict.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          examples:
+            paymentExists:
+              value: {code: PAYMENT_ALREADY_EXISTS, message: The invoice already has its sole payment, requestId: req-123}
+            keyReused:
+              value: {code: IDEMPOTENCY_KEY_REUSED, message: The key was already used for a different request, requestId: req-123}
+            state:
+              value: {code: INVALID_STATE_TRANSITION, message: The operation is not valid in the current state, requestId: req-123}
+            performedService:
+              value: {code: PERFORMED_SERVICE_ALREADY_CHARGED, message: The performed service was already charged, requestId: req-123}
+    Unprocessable:
+      description: Amount, method, credit, performed-service, medicine, or admission business rule failed.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          examples:
+            amount:
+              value: {code: AMOUNT_MUST_EQUAL_TOTAL, message: Payment amount must equal invoice total and balance, requestId: req-123}
+            method:
+              value: {code: PAYMENT_METHOD_NOT_SUPPORTED, message: Payment method is not supported, requestId: req-123}
+            credit:
+              value: {code: CREDIT_NOT_ALLOWED, message: Credit cannot be approved for this invoice, requestId: req-123}
+            performed:
+              value: {code: SERVICE_NOT_PERFORMED, message: Only performed services can be charged, requestId: req-123}
+            medicine:
+              value: {code: MEDICINE_NOT_BILLABLE, message: Medicine is not billable by this service, requestId: req-123}
+            admission:
+              value: {code: ADMISSION_CONDITION_NOT_MET, message: Admission payment condition is not met, requestId: req-123}
+    DependencyUnavailable:
+      description: A required downstream dependency is unavailable.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {code: DEPENDENCY_UNAVAILABLE, message: A required dependency is unavailable, requestId: req-123}
+  schemas:
+    InvoiceType:
+      type: string
+      enum: [BASE, SUPPLEMENTARY]
+    InvoiceStatus:
+      type: string
+      enum: [OPEN, PAYMENT_PENDING_VERIFICATION, PAID, CREDIT_APPROVED, OUTSTANDING, CANCELLED]
+    PaymentMethod:
+      type: string
+      enum: [CASH, MANUAL_BANK_TRANSFER]
+    PaymentStatus:
+      type: string
+      enum: [RECORDED, VERIFIED, REJECTED]
+    CreditStatus:
+      type: string
+      enum: [APPROVED, REVOKED]
+    LineSource:
+      type: string
+      enum: [APPOINTMENT_SNAPSHOT, PERFORMED_SERVICE]
+    InvoiceLine:
+      type: object
+      required: [id, lineNo, source, sourceReferenceId, serviceId, descriptionSnapshot, quantity, unitAmountMinor, lineAmountMinor, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        lineNo: {type: integer, minimum: 1}
+        source: {$ref: '#/components/schemas/LineSource'}
+        sourceReferenceId: {type: string, format: uuid}
+        serviceId: {type: string, format: uuid}
+        descriptionSnapshot: {type: string, maxLength: 200}
+        quantity: {type: integer, minimum: 1}
+        unitAmountMinor: {type: integer, format: int64, minimum: 0}
+        lineAmountMinor: {type: integer, format: int64, minimum: 0}
+        priceReferenceId: {type: string, format: uuid, nullable: true}
+        performedAt: {type: string, format: date-time, nullable: true}
+        createdAt: {type: string, format: date-time}
+    Invoice:
+      type: object
+      required: [id, patientId, appointmentId, invoiceNumber, type, status, currency, subtotalMinor, totalMinor, paidMinor, balanceMinor, sourceVersion, lines, version, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        patientId: {type: string, format: uuid}
+        appointmentId: {type: string, format: uuid}
+        encounterId: {type: string, format: uuid, nullable: true}
+        invoiceNumber: {type: string, maxLength: 24, pattern: '^[A-Z0-9]+$'}
+        type: {$ref: '#/components/schemas/InvoiceType'}
+        status: {$ref: '#/components/schemas/InvoiceStatus'}
+        currency: {type: string, enum: [VND]}
+        subtotalMinor: {type: integer, format: int64, minimum: 0}
+        totalMinor: {type: integer, format: int64, minimum: 0}
+        paidMinor: {type: integer, format: int64, minimum: 0}
+        balanceMinor: {type: integer, format: int64, minimum: 0}
+        sourceVersion: {type: integer, format: int64, minimum: 1}
+        dueAt: {type: string, format: date-time, nullable: true}
+        creditApprovalId: {type: string, format: uuid, nullable: true}
+        paymentId: {type: string, format: uuid, nullable: true}
+        lines:
+          type: array
+          items: {$ref: '#/components/schemas/InvoiceLine'}
+        version: {type: integer, format: int64, minimum: 1}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        paidAt: {type: string, format: date-time, nullable: true}
+    InvoicePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Invoice'}
+        nextPageToken: {type: string, nullable: true}
+    Payment:
+      type: object
+      required: [id, invoiceId, method, status, amountMinor, currency, receivedAt, recordedBy, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        invoiceId: {type: string, format: uuid}
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        status: {$ref: '#/components/schemas/PaymentStatus'}
+        amountMinor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string, enum: [VND]}
+        manualTransferReferenceMasked:
+          type: string
+          nullable: true
+          description: Masked value only; raw transfer reference is never returned.
+        receivedAt: {type: string, format: date-time}
+        recordedBy: {type: string, format: uuid}
+        verifiedBy: {type: string, format: uuid, nullable: true}
+        verifiedAt: {type: string, format: date-time, nullable: true}
+        rejectionReason: {type: string, maxLength: 500, nullable: true}
+        createdAt: {type: string, format: date-time}
+    CreditApproval:
+      type: object
+      required: [id, invoiceId, status, reasonCode, reasonText, approvedBy, approvedAt, version]
+      properties:
+        id: {type: string, format: uuid}
+        invoiceId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/CreditStatus'}
+        reasonCode: {type: string, minLength: 1, maxLength: 50}
+        reasonText: {type: string, minLength: 3, maxLength: 500}
+        approvedBy: {type: string, format: uuid}
+        approvedAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        revokedBy: {type: string, format: uuid, nullable: true}
+        revokedAt: {type: string, format: date-time, nullable: true}
+        version: {type: integer, format: int64, minimum: 1}
+    RecordPaymentRequest:
+      type: object
+      required: [method, amountMinor, receivedAt, expectedInvoiceVersion]
+      properties:
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        amountMinor: {type: integer, format: int64, minimum: 0}
+        manualTransferReference:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Required only for MANUAL_BANK_TRANSFER; ignored values are rejected for CASH.
+        receivedAt: {type: string, format: date-time}
+        expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+    PaymentDecisionRequest:
+      type: object
+      required: [expectedInvoiceVersion]
+      properties:
+        expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+    RejectPaymentRequest:
+      type: object
+      required: [reason, expectedInvoiceVersion]
+      properties:
+        reason: {type: string, minLength: 3, maxLength: 500}
+        reasonCode: {type: string, minLength: 1, maxLength: 50}
+        expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+    PaymentResult:
+      type: object
+      required: [invoice, payment]
+      properties:
+        invoice: {$ref: '#/components/schemas/Invoice'}
+        payment: {$ref: '#/components/schemas/Payment'}
+    ApproveCreditRequest:
+      type: object
+      required: [reasonCode, reasonText, expectedInvoiceVersion]
+      properties:
+        reasonCode: {type: string, minLength: 1, maxLength: 50}
+        reasonText: {type: string, minLength: 3, maxLength: 500}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+    RevokeCreditRequest:
+      type: object
+      required: [reason, expectedInvoiceVersion, expectedCreditVersion]
+      properties:
+        reason: {type: string, minLength: 3, maxLength: 500}
+        reasonCode: {type: string, minLength: 1, maxLength: 50}
+        expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+        expectedCreditVersion: {type: integer, format: int64, minimum: 1}
+    CreditResult:
+      type: object
+      required: [invoice, creditApproval]
+      properties:
+        invoice: {$ref: '#/components/schemas/Invoice'}
+        creditApproval: {$ref: '#/components/schemas/CreditApproval'}
+    CancelInvoiceRequest:
+      type: object
+      required: [reason, expectedVersion]
+      properties:
+        reason: {type: string, minLength: 3, maxLength: 500}
+        reasonCode: {type: string, minLength: 1, maxLength: 50}
+        expectedVersion: {type: integer, format: int64, minimum: 1}
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        requestId: {type: string}
+        details:
+          type: array
+          items: {$ref: '#/components/schemas/ErrorDetail'}
+    ErrorDetail:
+      type: object
+      additionalProperties: true
+      properties:
+        field: {type: string}
+        issue: {type: string}

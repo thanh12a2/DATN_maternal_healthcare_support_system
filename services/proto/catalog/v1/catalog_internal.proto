@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package maternal.catalog.v1;
+
+import "google/protobuf/timestamp.proto";
+import "common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.catalog.v1";
+
+service CatalogInternalService {
+  rpc ResolveBookingOffering(ResolveBookingOfferingRequest) returns (ResolveBookingOfferingResponse);
+  rpc BatchResolveServices(BatchResolveServicesRequest) returns (BatchResolveServicesResponse);
+}
+
+message ResolveBookingOfferingRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string service_id = 2;
+  string consultation_rank_code = 3;
+  google.protobuf.Timestamp effective_at = 4;
+}
+
+message ResolveBookingOfferingResponse {
+  BookingOfferingSnapshot offering = 1;
+}
+
+message BatchResolveServicesRequest {
+  maternal.common.v1.RequestContext context = 1;
+  repeated string service_ids = 2;
+  google.protobuf.Timestamp effective_at = 3;
+}
+
+message BatchResolveServicesResponse {
+  repeated ServiceReference services = 1;
+}
+
+// Snapshot DTO có chủ đích; không expose Catalog persistence model.
+message BookingOfferingSnapshot {
+  string service_id = 1;
+  string service_code = 2;
+  string service_name = 3;
+  int64 service_version = 4;
+  bool active = 5;
+  bool bookable = 6;
+  string required_specialty_id = 7;
+  int32 duration_minutes = 8;
+  string consultation_rank_code = 9;
+  maternal.common.v1.Money base_price = 10;
+  maternal.common.v1.Money rank_surcharge = 11;
+  maternal.common.v1.Money total_price = 12;
+  string base_price_id = 13;
+  string rank_surcharge_id = 14;
+  google.protobuf.Timestamp effective_at = 15;
+}
+
+message ServiceReference {
+  string service_id = 1;
+  string service_code = 2;
+  string service_name = 3;
+  int64 service_version = 4;
+  bool active = 5;
+}

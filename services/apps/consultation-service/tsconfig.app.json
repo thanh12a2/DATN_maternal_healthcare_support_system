@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","compilerOptions":{"declaration":false,"outDir":"../../dist/apps/consultation-service"},"include":["src/**/*"],"exclude":["**/*spec.ts"]}

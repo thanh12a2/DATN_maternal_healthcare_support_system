@@ -1,0 +1,6 @@
+import type { Requester } from './catalog';
+export interface Invoice { id?: string; invoiceNumber?: string; status?: string; currency?: string; totalMinor?: number; balanceMinor?: number; dueAt?: string | null; lines?: Array<{descriptionSnapshot?: string; lineAmountMinor?: number}>; [key: string]: unknown; }
+function items(raw: unknown): Invoice[] { if (Array.isArray(raw)) return raw as Invoice[]; const value = raw as {items?: unknown; data?: unknown}; if (Array.isArray(value?.items)) return value.items as Invoice[]; if (Array.isArray(value?.data)) return value.data as Invoice[]; return []; }
+export async function listInvoices(request: Requester, patientId: string): Promise<Invoice[]> { return items(await request<unknown>('/api/billing/invoices?patientId=' + encodeURIComponent(patientId) + '&pageSize=20')); }
+export function getInvoice(request: Requester, id: string) { return request<Invoice>('/api/billing/invoices/' + encodeURIComponent(id)); }
+export function recordPayment(request: Requester, invoiceId: string, body: { method: 'CASH' | 'MANUAL_BANK_TRANSFER'; amountMinor: number; reference?: string; version?: number }) { return request<unknown>('/api/billing/invoices/' + encodeURIComponent(invoiceId) + '/payments', { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify(body) }); }

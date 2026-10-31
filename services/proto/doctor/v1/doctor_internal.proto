@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package maternal.doctor.v1;
+
+import "google/protobuf/timestamp.proto";
+import "common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "vn.maternal.doctor.v1";
+
+service DoctorInternalService {
+  rpc ResolveDoctorByAccount(ResolveDoctorByAccountRequest) returns (ResolveDoctorByAccountResponse);
+  rpc GetDoctorEligibility(GetDoctorEligibilityRequest) returns (GetDoctorEligibilityResponse);
+  rpc ListEligibleDoctors(ListEligibleDoctorsRequest) returns (ListEligibleDoctorsResponse);
+  rpc GetDoctorAvailability(GetDoctorAvailabilityRequest) returns (GetDoctorAvailabilityResponse);
+}
+
+message ResolveDoctorByAccountRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string account_id = 2;
+}
+message ResolveDoctorByAccountResponse {
+  string doctor_id = 1;
+  bool found = 2;
+}
+
+enum DoctorOperationalStatus {
+  DOCTOR_OPERATIONAL_STATUS_UNSPECIFIED = 0;
+  DOCTOR_OPERATIONAL_STATUS_DRAFT = 1;
+  DOCTOR_OPERATIONAL_STATUS_ACTIVE = 2;
+  DOCTOR_OPERATIONAL_STATUS_INACTIVE = 3;
+}
+
+message GetDoctorEligibilityRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string doctor_id = 2;
+  string required_specialty_id = 3;
+  google.protobuf.Timestamp at = 4;
+}
+
+message GetDoctorEligibilityResponse {
+  DoctorEligibility doctor = 1;
+}
+
+message ListEligibleDoctorsRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string specialty_id = 2;
+  string consultation_rank_code = 3;
+  google.protobuf.Timestamp interval_start = 4;
+  google.protobuf.Timestamp interval_end = 5;
+  maternal.common.v1.PageRequest page = 6;
+}
+
+message ListEligibleDoctorsResponse {
+  repeated DoctorEligibility doctors = 1;
+  maternal.common.v1.PageInfo page = 2;
+}
+
+message GetDoctorAvailabilityRequest {
+  maternal.common.v1.RequestContext context = 1;
+  string doctor_id = 2;
+  google.protobuf.Timestamp range_start = 3;
+  google.protobuf.Timestamp range_end = 4;
+}
+
+message GetDoctorAvailabilityResponse {
+  string doctor_id = 1;
+  repeated AvailabilityInterval available_intervals = 2;
+  int64 availability_version = 3;
+}
+
+message DoctorEligibility {
+  string doctor_id = 1;
+  DoctorOperationalStatus status = 2;
+  string display_name = 3;
+  repeated string specialty_ids = 4;
+  string consultation_rank_code = 5;
+  int64 profile_version = 6;
+  int64 availability_version = 7;
+}
+
+message AvailabilityInterval {
+  google.protobuf.Timestamp start_at = 1;
+  google.protobuf.Timestamp end_at = 2;
+  string room_id = 3;
+  string room_code = 4;
+  string room_name = 5;
+  int32 slot_duration_minutes = 6;
+}

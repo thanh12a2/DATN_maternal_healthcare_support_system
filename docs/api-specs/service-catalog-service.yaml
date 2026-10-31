@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Service Catalog Service API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      summary: Liveness
+      responses:
+        '200': { description: OK }
+  /ready:
+    get:
+      summary: Readiness
+      responses:
+        '200': { description: OK }
+  /services:
+    get:
+      summary: Search active medical services
+      responses:
+        '200': { description: OK }
+  /services/{idOrSlug}:
+    get:
+      summary: Get active medical service detail
+      parameters:
+        - in: path
+          name: idOrSlug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /categories:
+    get:
+      summary: List active categories
+      responses:
+        '200': { description: OK }
+  /filters:
+    get:
+      summary: List active category/tag filters
+      responses:
+        '200': { description: OK }

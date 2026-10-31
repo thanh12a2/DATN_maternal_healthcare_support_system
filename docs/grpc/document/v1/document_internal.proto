@@ -1,0 +1,21 @@
+syntax = "proto3";
+package maternal.document.v1;
+import "google/protobuf/timestamp.proto";
+import "common/v1/common.proto";
+service DocumentInternalService {
+  rpc CreateDocumentUpload(CreateDocumentUploadRequest) returns (CreateDocumentUploadResponse);
+  rpc LinkDocument(LinkDocumentRequest) returns (DocumentReference);
+  rpc ListDocumentsByOwner(ListDocumentsByOwnerRequest) returns (ListDocumentsByOwnerResponse);
+  rpc GetDocumentAccess(GetDocumentAccessRequest) returns (GetDocumentAccessResponse);
+  rpc ArchiveDocumentsByOwner(ArchiveDocumentsByOwnerRequest) returns (ArchiveDocumentsByOwnerResponse);
+}
+message CreateDocumentUploadRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string owner_type = 3; string owner_id = 4; string patient_id = 5; string purpose = 6; string file_name = 7; string media_type = 8; int64 size_bytes = 9; string sha256 = 10; }
+message CreateDocumentUploadResponse { string session_id = 1; string document_id = 2; string upload_url = 3; google.protobuf.Timestamp expires_at = 4; }
+message LinkDocumentRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string document_id = 3; string owner_type = 4; string owner_id = 5; string patient_id = 6; }
+message DocumentReference { string document_id = 1; string owner_type = 2; string owner_id = 3; string patient_id = 4; string status = 5; int32 current_version = 6; string media_type = 7; int64 size_bytes = 8; }
+message ListDocumentsByOwnerRequest { maternal.common.v1.RequestContext context = 1; string owner_type = 2; string owner_id = 3; }
+message ListDocumentsByOwnerResponse { repeated DocumentReference documents = 1; }
+message GetDocumentAccessRequest { maternal.common.v1.RequestContext context = 1; string document_id = 2; string purpose = 3; }
+message GetDocumentAccessResponse { DocumentReference document = 1; bool allowed = 2; string denial_code = 3; string download_url = 4; google.protobuf.Timestamp expires_at = 5; }
+message ArchiveDocumentsByOwnerRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string owner_type = 3; string owner_id = 4; string reason = 5; }
+message ArchiveDocumentsByOwnerResponse { int32 archived_count = 1; }

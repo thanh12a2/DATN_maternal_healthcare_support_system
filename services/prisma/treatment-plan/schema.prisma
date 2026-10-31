@@ -1,0 +1,80 @@
+generator client {
+ provider="prisma-client-js"
+ output="../../generated/treatment-plan-client"
+}
+datasource db {
+ provider="postgresql"
+ url=env("TREATMENT_PLAN_DATABASE_URL")
+}
+enum TreatmentPlanStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+enum TreatmentPlanItemStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+model TreatmentPlan {
+  id String @id @default(uuid()) @db.Uuid
+  patientId String @map("patient_id") @db.Uuid
+  pregnancyEpisodeId String? @map("pregnancy_episode_id") @db.Uuid
+  sourceEncounterId String @map("source_encounter_id") @db.Uuid
+  authorDoctorId String @map("author_doctor_id") @db.Uuid
+  status TreatmentPlanStatus @default(DRAFT)
+  title String @db.VarChar(200)
+  summary String @db.VarChar(4000)
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  effectiveTo DateTime? @map("effective_to") @db.Date
+  version Int @default(1)
+  activatedAt DateTime? @map("activated_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason String? @map("cancel_reason") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items TreatmentPlanItem[]
+  versions TreatmentPlanVersion[]
+  @@index([patientId,status])
+  @@index([pregnancyEpisodeId])
+  @@map("treatment_plans")
+}
+model TreatmentPlanItem {
+  id String @id @default(uuid()) @db.Uuid
+  planId String @map("plan_id") @db.Uuid
+  type String @db.VarChar(50)
+  title String @db.VarChar(200)
+  description String @db.VarChar(2000)
+  dueAt DateTime? @map("due_at") @db.Timestamptz(6)
+  status TreatmentPlanItemStatus @default(PENDING)
+  sortOrder Int @default(0) @map("sort_order")
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  plan TreatmentPlan @relation(fields:[planId],references:[id],onDelete:Cascade)
+  @@index([planId,sortOrder])
+  @@map("treatment_plan_items")
+}
+model TreatmentPlanVersion {
+  id String @id @default(uuid()) @db.Uuid
+  planId String @map("plan_id") @db.Uuid
+  version Int
+  snapshot Json
+  changedBy String @map("changed_by") @db.Uuid
+  changeReason String @map("change_reason") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  plan TreatmentPlan @relation(fields:[planId],references:[id],onDelete:Cascade)
+  @@unique([planId,version])
+  @@map("treatment_plan_versions")
+}
+model TreatmentPlanOutbox {
+  id String @id @default(uuid()) @db.Uuid
+  eventType String @map("event_type") @db.VarChar(120)
+  aggregateId String @map("aggregate_id") @db.Uuid
+  payload Json
+  status String @default("PENDING") @db.VarChar(20)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  @@index([status,occurredAt])
+  @@map("treatment_plan_outbox")
+}
