@@ -4,6 +4,7 @@ export interface Encounter { id?: string; patientId?: string; appointmentId?: st
 export interface PregnancyEpisode { id?: string; patientId?: string; status?: string; [key: string]: unknown; }
 export interface Prescription { id?: string; patientId?: string; encounterId?: string; status?: string; [key: string]: unknown; }
 export interface TreatmentPlan { id?: string; patientId?: string; status?: string; title?: string; [key: string]: unknown; }
+export interface Medication { id: string; code: string; name: string; activeIngredient: string; strength: string; dosageForm: string; route: string; defaultDose?: string | null; defaultFrequency?: string | null; defaultInstruction?: string | null; pregnancyCategory: string; pregnancyWarning?: string | null; isActive: boolean; }
 const list = <T,>(raw: unknown): T[] => Array.isArray(raw) ? raw as T[] : Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: T[] }).items : Array.isArray((raw as { data?: unknown })?.data) ? (raw as { data: T[] }).data : [];
 const post = <T>(request: Requester, path: string, body?: unknown) => request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
@@ -30,13 +31,27 @@ export function finalizeEncounter(request: Requester, id: string, body?: unknown
 export async function listPregnancyEpisodes(request: Requester) { return list<PregnancyEpisode>(await request<unknown>('/api/medical-records/pregnancy-episodes')); }
 
 export async function listPrescriptions(request: Requester, query = '') { return list<Prescription>(await request<unknown>(`/api/prescriptions${query ? `?${query}` : ''}`)); }
+export async function listMedications(request: Requester): Promise<Medication[]> {
+  const all: Medication[] = [];
+  for (let page = 1; ; page++) {
+    const result = await request<{ data: Medication[]; meta: { total: number; limit: number } }>(`/api/prescriptions/medications?limit=100&page=${page}`);
+    if (!Array.isArray(result.data) || typeof result.meta?.total !== 'number') throw new Error('Không thể tải danh mục thuốc.');
+    all.push(...result.data);
+    if (all.length >= result.meta.total) return all;
+    if (!result.data.length) throw new Error('Danh mục thuốc chưa được tải đầy đủ.');
+  }
+}
 export function getPrescription(request: Requester, id: string) { return request<Prescription>(`/api/prescriptions/${encodeURIComponent(id)}`); }
 export function createPrescription(request: Requester, body: unknown) { return post<Prescription>(request, '/api/prescriptions', body); }
 export function issuePrescription(request: Requester, id: string, body?: unknown) { return post<Prescription>(request, `/api/prescriptions/${encodeURIComponent(id)}/issue`, body); }
 export function cancelPrescription(request: Requester, id: string, body?: unknown) { return post<Prescription>(request, `/api/prescriptions/${encodeURIComponent(id)}/cancel`, body); }
+export function updatePrescription(request: Requester, id: string, body: unknown) { return request<Prescription>(`/api/prescriptions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }); }
+export function prescriptionAction(request: Requester, id: string, action: string, body: unknown) { return post<Prescription>(request, `/api/prescriptions/${encodeURIComponent(id)}/${encodeURIComponent(action)}`, body); }
 
 export async function listTreatmentPlans(request: Requester, query = '') { return list<TreatmentPlan>(await request<unknown>(`/api/treatment-plans${query ? `?${query}` : ''}`)); }
 export function getTreatmentPlan(request: Requester, id: string) { return request<TreatmentPlan>(`/api/treatment-plans/${encodeURIComponent(id)}`); }
 export function createTreatmentPlan(request: Requester, body: unknown) { return post<TreatmentPlan>(request, '/api/treatment-plans', body); }
 export function activateTreatmentPlan(request: Requester, id: string, body?: unknown) { return post<TreatmentPlan>(request, `/api/treatment-plans/${encodeURIComponent(id)}/activate`, body); }
 export function completeTreatmentPlan(request: Requester, id: string, body?: unknown) { return post<TreatmentPlan>(request, `/api/treatment-plans/${encodeURIComponent(id)}/complete`, body); }
+export function updateTreatmentPlan(request: Requester, id: string, body: unknown) { return request<TreatmentPlan>(`/api/treatment-plans/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }); }
+export function treatmentPlanAction(request: Requester, id: string, action: string, body: unknown, itemId?: string) { return post<TreatmentPlan>(request, `/api/treatment-plans/${encodeURIComponent(id)}${itemId ? `/items/${encodeURIComponent(itemId)}` : ''}/${encodeURIComponent(action)}`, body); }

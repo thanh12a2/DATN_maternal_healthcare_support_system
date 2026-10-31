@@ -1,7 +1,8 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
+  BadRequestException,
+  ConflictException,
   Get,
   Param,
   Patch,
@@ -26,6 +27,22 @@ import { TreatmentService } from './treatment.service';
 export class TreatmentController {
   constructor(private readonly s: TreatmentService, private readonly access: ClinicalDoctorAccess) {}
 
+  private async authorizeWrite(a: PublicAuthContext, encounterId: string, patientId: string, allowFinalized = false) {
+    if (a.role !== 'DOCTOR') return;
+    if (!patientId) throw new BadRequestException('PATIENT_REQUIRED');
+    const encounter = await this.access.assertEncounter(a, encounterId, patientId);
+    const states = ['IN_PROGRESS', 'ENCOUNTER_STATE_IN_PROGRESS', ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : [])];
+    if (!states.includes(encounter.state)) throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
+    return encounter.resolvedDoctorId as string;
+  }
+
+  private async authorizeExisting(a: PublicAuthContext, id: string, b: any) {
+    if (a.role !== 'DOCTOR') return;
+    if (!Number.isInteger(b?.version) || b.version < 1) throw new BadRequestException('VERSION_REQUIRED');
+    const { data } = await this.s.getRest(id);
+    await this.authorizeWrite(a, data.sourceEncounterId, data.patientId, data.status === 'ACTIVE');
+  }
+
   @PublicHttp()
   @Get('health')
   health() {
@@ -36,12 +53,13 @@ export class TreatmentController {
 
   @UseGuards(PublicJwtGuard)
   @Post(['', 'treatment-plans'])
-  createTreatmentPlan(
+  async createTreatmentPlan(
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
-    return this.s.createRest(b, a);
+    if (a.role === 'DOCTOR' && (!String(b.title ?? '').trim() || !Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.title ?? '').trim()))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    const doctorId = await this.authorizeWrite(a, b.sourceEncounterId || b.encounterId, b.patientId);
+    return this.s.createRest(b, a, doctorId);
   }
 
   @UseGuards(PublicJwtGuard)
@@ -61,45 +79,46 @@ export class TreatmentController {
 
   @UseGuards(PublicJwtGuard)
   @Patch([':id', 'treatment-plans/:id'])
-  updateTreatmentPlan(
+  async updateTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
+    if (a.role === 'DOCTOR' && ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.title ?? '').trim()))))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    await this.authorizeExisting(a, id, b);
     return this.s.updateRest(id, b, a);
   }
 
   @UseGuards(PublicJwtGuard)
   @Post([':id/activate', 'treatment-plans/:id/activate'])
-  activateTreatmentPlan(
+  async activateTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
+    await this.authorizeExisting(a, id, b);
     return this.s.commandRest(id, TreatmentPlanStatus.ACTIVE, b);
   }
 
   @UseGuards(PublicJwtGuard)
   @Post([':id/complete', 'treatment-plans/:id/complete'])
-  completeTreatmentPlan(
+  async completeTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
+    await this.authorizeExisting(a, id, b);
     return this.s.commandRest(id, TreatmentPlanStatus.COMPLETED, b);
   }
 
   @UseGuards(PublicJwtGuard)
   @Post([':id/cancel', 'treatment-plans/:id/cancel'])
-  cancelTreatmentPlan(
+  async cancelTreatmentPlan(
     @Param('id') id: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
+    await this.authorizeExisting(a, id, b);
     return this.s.commandRest(id, TreatmentPlanStatus.CANCELLED, b);
   }
 
@@ -110,16 +129,20 @@ export class TreatmentController {
     'items/:itemId/complete',
     'treatment-plans/items/:itemId/complete',
   ])
-  completeTreatmentPlanItem(
+  async completeTreatmentPlanItem(
     @Param('id') planId: string,
     @Param('itemId') itemId: string,
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR') throw new ForbiddenException('CLINICAL_WRITE_NOT_AVAILABLE');
     // If route was items/:itemId/complete, planId param might be undefined or hold itemId
     const actualItemId = itemId || planId;
     const actualPlanId = itemId ? planId : undefined;
+    if (a.role === 'DOCTOR') {
+      const parentId = await this.s.itemPlanId(actualItemId);
+      if (actualPlanId && actualPlanId !== parentId) throw new BadRequestException('ITEM_PLAN_MISMATCH');
+      await this.authorizeExisting(a, parentId, b);
+    }
     return this.s.completeItemRest(actualPlanId, actualItemId, b);
   }
 

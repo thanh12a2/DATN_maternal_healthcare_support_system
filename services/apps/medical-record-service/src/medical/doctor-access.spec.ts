@@ -34,6 +34,24 @@ describe('doctor encounter assignment', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
+  it('does not finalize for a patient or when assignment is revoked before update', async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 0 });
+    findFirst.mockResolvedValue({ staffId: 'doctor-id' });
+    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }) }, $transaction: (fn: any) => fn({ clinicalEncounter: { updateMany } }) } as any, { resolve } as any);
+    await expect(guarded.finalize('encounter-id', 2, 'patient', 'PATIENT')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(guarded.finalize('encounter-id', 2, 'account-id', 'DOCTOR')).rejects.toBeInstanceOf(ConflictException);
+    expect(updateMany.mock.calls[0][0].where.assignments).toEqual({ some: { staffId: 'doctor-id', status: 'ACTIVE' } });
+    expect(updateMany.mock.calls[0][0].where.appointmentSyncJobs).toEqual({ none: { status: 'PENDING' } });
+  });
+
+  it('checks for pending required orders again inside the review transition transaction', async () => {
+    findFirst.mockResolvedValue({ staffId: 'doctor-id' });
+    const txCount = jest.fn().mockResolvedValue(1);
+    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'IN_PROGRESS', version: 2 }) }, clinicalServiceOrder: { count: jest.fn().mockResolvedValue(0) }, $transaction: (fn: any) => fn({ clinicalEncounter: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) }, clinicalServiceOrder: { count: txCount } }) } as any, { resolve } as any);
+    await expect(guarded.ready('encounter-id', 2, 'account-id', 'DOCTOR')).rejects.toThrow('REQUIRED_RESULTS_PENDING');
+    expect(txCount).toHaveBeenCalledTimes(1);
+  });
+
   it('writes a note only after an atomic assignment, state and version check', async () => {
     const updateMany = jest.fn().mockResolvedValue({ count: 1 });
     const create = jest.fn().mockResolvedValue({ id: 'note-id' });

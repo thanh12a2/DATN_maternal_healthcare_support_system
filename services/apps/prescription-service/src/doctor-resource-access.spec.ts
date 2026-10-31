@@ -10,10 +10,30 @@ describe('doctor prescription access', () => {
     expect(listRest).not.toHaveBeenCalled();
   });
 
-  it('blocks doctor writes until clinical write safeguards are implemented', () => {
+  it('denies creation when the doctor is not assigned to the encounter', async () => {
     const createRest = jest.fn();
-    const controller = new PrescriptionController({ createRest } as any, {} as any);
-    expect(() => controller.createPrescription({}, { role: 'DOCTOR', userId: 'a' } as any)).toThrow(ForbiddenException);
+    const controller = new PrescriptionController({ createRest } as any, { assertEncounter: jest.fn().mockRejectedValue(new ForbiddenException()) } as any);
+    await expect(controller.createPrescription({ encounterId: 'other', patientId: 'p', items: [{ medicationName: 'Thuốc', dose: '1 viên', frequency: '1 lần', route: 'Uống' }] }, { role: 'DOCTOR', userId: 'a' } as any)).rejects.toBeInstanceOf(ForbiddenException);
     expect(createRest).not.toHaveBeenCalled();
+  });
+
+  it('creates a draft with the resolved doctor when assigned to an in-progress encounter', async () => {
+    const createRest = jest.fn().mockResolvedValue({ data: {} });
+    const access = { assertEncounter: jest.fn().mockResolvedValue({ state: 'ENCOUNTER_STATE_IN_PROGRESS', resolvedDoctorId: 'doctor-id' }) };
+    const controller = new PrescriptionController({ createRest } as any, access as any);
+    const body = { encounterId: 'e', patientId: 'p', items: [{ medicationName: 'Thuốc', dose: '1 viên', frequency: '1 lần', route: 'Uống' }] };
+    const auth = { role: 'DOCTOR', userId: 'account-id' } as any;
+    await controller.createPrescription(body, auth);
+    expect(access.assertEncounter).toHaveBeenCalledWith(auth, 'e', 'p');
+    expect(createRest).toHaveBeenCalledWith(body, auth, 'doctor-id');
+  });
+
+  it('allows an assigned doctor to cancel an issued prescription after finalization', async () => {
+    const getRest = jest.fn().mockResolvedValue({ data: { encounterId: 'e', patientId: 'p', status: 'ISSUED' } });
+    const cancelRest = jest.fn().mockResolvedValue({ data: {} });
+    const access = { assertEncounter: jest.fn().mockResolvedValue({ state: 'ENCOUNTER_STATE_FINALIZED' }) };
+    const controller = new PrescriptionController({ getRest, cancelRest } as any, access as any);
+    await controller.cancelPrescription('rx', { version: 2, reason: 'Thay đổi điều trị' }, { role: 'DOCTOR', userId: 'a' } as any);
+    expect(cancelRest).toHaveBeenCalledWith('rx', { version: 2, reason: 'Thay đổi điều trị' });
   });
 });
