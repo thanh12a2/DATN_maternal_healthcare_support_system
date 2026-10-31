@@ -2,20 +2,30 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrescriptionStatus } from '../../../generated/prescription-client';
 import { PrescriptionPrismaService } from './database/prisma.service';
 import { randomUUID } from 'node:crypto';
 import type { PublicAuthContext } from '@platform';
+import { MedicationCatalogService } from './medications/medication-catalog.service';
 
 @Injectable()
 export class PrescriptionService {
-  constructor(private readonly db: PrescriptionPrismaService) {}
+  constructor(private readonly db: PrescriptionPrismaService, @Optional() private readonly catalog?: MedicationCatalogService) {}
+
+  private async resolveItems(items: any[]) {
+    if (!items.some((x) => x.medicationCode)) return items;
+    if (!this.catalog) throw new ServiceUnavailableException('MEDICATION_CATALOG_UNAVAILABLE');
+    return this.catalog.resolveActiveMedicationSnapshots(items);
+  }
 
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
-  async createRest(b: any, auth?: PublicAuthContext) {
-    const prescribingDoctorId = auth?.userId || b.prescribingDoctorId || b.doctorId || randomUUID();
+  async createRest(b: any, auth?: PublicAuthContext, assignedDoctorId?: string) {
+    const prescribingDoctorId = assignedDoctorId || auth?.userId || b.prescribingDoctorId || b.doctorId || randomUUID();
+    const items = await this.resolveItems(b.items ?? []);
     const p = await this.db.prescription.create({
       data: {
         encounterId: b.encounterId,
@@ -23,7 +33,7 @@ export class PrescriptionService {
         pregnancyEpisodeId: b.pregnancyEpisodeId || null,
         prescribingDoctorId,
         items: {
-          create: (b.items ?? []).map((x: any, i: number) => ({
+          create: items.map((x: any, i: number) => ({
             medicationCode: x.medicationCode || null,
             medicationName: x.medicationName,
             strength: x.strength || null,
@@ -70,47 +80,27 @@ export class PrescriptionService {
   }
 
   async updateRest(id: string, b: any) {
-    const p = await this.db.prescription.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-    if (!p) throw new NotFoundException('PRESCRIPTION_NOT_FOUND');
-    if (b.version && p.version !== Number(b.version)) {
-      throw new ConflictException('VERSION_CONFLICT');
-    }
-    if (p.status !== PrescriptionStatus.DRAFT) {
-      throw new ConflictException('PRESCRIPTION_NOT_DRAFT');
-    }
-
-    if (b.items && Array.isArray(b.items)) {
-      await this.db.prescriptionItem.deleteMany({
-        where: { prescriptionId: id },
-      });
-      await this.db.prescriptionItem.createMany({
-        data: b.items.map((x: any, i: number) => ({
-          prescriptionId: id,
-          medicationCode: x.medicationCode || null,
-          medicationName: x.medicationName,
-          strength: x.strength || null,
-          dosageForm: x.dosageForm || null,
-          route: x.route || 'Đường uống',
-          dose: x.dose || '1 viên',
-          frequency: x.frequency || '1 lần mỗi ngày',
-          durationDays: x.durationDays ? Number(x.durationDays) : null,
-          instruction: x.instruction || '',
+    const items = Array.isArray(b.items) ? await this.resolveItems(b.items) : undefined;
+    return this.db.$transaction(async (tx) => {
+      const p = await tx.prescription.findUnique({ where: { id } });
+      if (!p) throw new NotFoundException('PRESCRIPTION_NOT_FOUND');
+      if (b.version && p.version !== Number(b.version)) throw new ConflictException('VERSION_CONFLICT');
+      if (p.status !== PrescriptionStatus.DRAFT) throw new ConflictException('PRESCRIPTION_NOT_DRAFT');
+      const changed = await tx.prescription.updateMany({ where: { id, version: p.version, status: PrescriptionStatus.DRAFT }, data: { version: { increment: 1 } } });
+      if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+      if (items) {
+        await tx.prescriptionItem.deleteMany({ where: { prescriptionId: id } });
+        await tx.prescriptionItem.createMany({ data: items.map((x: any, i: number) => ({
+          prescriptionId: id, medicationCode: x.medicationCode || null, medicationName: x.medicationName,
+          strength: x.strength || null, dosageForm: x.dosageForm || null, route: x.route || 'Đường uống',
+          dose: x.dose || '1 viên', frequency: x.frequency || '1 lần mỗi ngày',
+          durationDays: x.durationDays ? Number(x.durationDays) : null, instruction: x.instruction || '',
           sortOrder: x.sortOrder !== undefined ? Number(x.sortOrder) : i + 1,
-        })),
-      });
-    }
-
-    const updated = await this.db.prescription.update({
-      where: { id },
-      data: { version: { increment: 1 } },
-      include: { items: true },
+        })) });
+      }
+      const updated = await tx.prescription.findUniqueOrThrow({ where: { id }, include: { items: true } });
+      return { data: this.view(updated) };
     });
-
-    const res = this.view(updated);
-    return { data: res };
   }
 
   async issueRest(id: string, b?: any) {
@@ -126,15 +116,10 @@ export class PrescriptionService {
       throw new ConflictException('INVALID_STATE');
     }
 
-    const updated = await this.db.prescription.update({
-      where: { id },
-      data: {
-        status: PrescriptionStatus.ISSUED,
-        issuedAt: new Date(),
-        version: { increment: 1 },
-      },
-      include: { items: true },
-    });
+    if (!p.items.length) throw new ConflictException('PRESCRIPTION_ITEMS_REQUIRED');
+    const changed = await this.db.prescription.updateMany({ where: { id, version: p.version, status: PrescriptionStatus.DRAFT }, data: { status: PrescriptionStatus.ISSUED, issuedAt: new Date(), version: { increment: 1 } } });
+    if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+    const updated = await this.db.prescription.findUniqueOrThrow({ where: { id }, include: { items: true } });
 
     const res = this.view(updated);
     return { data: res };
@@ -150,16 +135,10 @@ export class PrescriptionService {
       throw new ConflictException('VERSION_CONFLICT');
     }
 
-    const updated = await this.db.prescription.update({
-      where: { id },
-      data: {
-        status: PrescriptionStatus.CANCELLED,
-        cancelledAt: new Date(),
-        cancelReason: b?.reason || null,
-        version: { increment: 1 },
-      },
-      include: { items: true },
-    });
+    if (p.status === PrescriptionStatus.CANCELLED) throw new ConflictException('INVALID_STATE');
+    const changed = await this.db.prescription.updateMany({ where: { id, version: p.version, status: p.status }, data: { status: PrescriptionStatus.CANCELLED, cancelledAt: new Date(), cancelReason: b?.reason || null, version: { increment: 1 } } });
+    if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+    const updated = await this.db.prescription.findUniqueOrThrow({ where: { id }, include: { items: true } });
 
     const res = this.view(updated);
     return { data: res };

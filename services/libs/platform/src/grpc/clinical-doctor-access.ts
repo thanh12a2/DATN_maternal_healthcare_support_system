@@ -17,7 +17,7 @@ export class ClinicalDoctorAccess {
       const medical = this.grpc.client({ key: 'medical', target: this.config.get<string>('MEDICAL_RECORD_GRPC_TARGET') ?? 'medical-record-service:6011', proto: 'medical_record/v1/medical_record_internal.proto', package: 'maternal.medical_record.v1', service: 'MedicalRecordInternalService' });
       const result = await this.grpc.unary<any, any>(medical, 'validateEncounterAccess', { context, encounterId, doctorId: resolved.doctorId }, this.grpc.metadata('medical-record-service', ['medical:access:validate'], context));
       if (!result.allowed || (patientId && result.encounter?.patientId !== patientId)) throw new ForbiddenException('NOT_ASSIGNED');
-      return result.encounter;
+      return { ...result.encounter, resolvedDoctorId: resolved.doctorId };
     } catch (error) {
       if (error instanceof ForbiddenException) throw error;
       throw new ServiceUnavailableException('CLINICAL_DEPENDENCY_UNAVAILABLE');

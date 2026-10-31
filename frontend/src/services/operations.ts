@@ -1,6 +1,7 @@
 import type { Requester } from './catalog';
+import { idempotencyKey } from './appointment';
 
-export interface ReceptionCase { id?: string; patientId?: string; status?: string; [key: string]: unknown; }
+export interface ReceptionCase { id?: string; appointmentId?: string | null; patientId?: string; status?: string; version?: number; admission?: { status?: string } | null; [key: string]: unknown; }
 export interface Report { [key: string]: unknown; }
 export interface Consultation {
   id?: string;
@@ -29,10 +30,21 @@ const post = <T>(request: Requester, path: string, body?: unknown) => request<T>
 export function getMyReceptionist(request: Requester) { return request<unknown>('/api/receptionists/me'); }
 export function updateMyReceptionist(request: Requester, body: unknown) { return request<unknown>('/api/receptionists/me', { method: 'PATCH', body: JSON.stringify(body) }); }
 const unwrapData = <T,>(value: T | { data: T }): T => value && typeof value === 'object' && 'data' in value ? (value as { data: T }).data : value as T;
-export async function openReceptionCase(request: Requester, body: unknown) { return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, '/api/reception/cases', body)); }
+export async function openReceptionCase(request: Requester, body: unknown) { return unwrapData(await request<ReceptionCase | { data: ReceptionCase }>('/api/reception/cases', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey() }, body: JSON.stringify(body) })); }
 export async function getReceptionCase(request: Requester, id: string) { return unwrapData(await request<ReceptionCase | { data: ReceptionCase }>(`/api/reception/cases/${encodeURIComponent(id)}`)); }
-export async function verifyReceptionIdentity(request: Requester, id: string, body: unknown) { return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, `/api/reception/cases/${encodeURIComponent(id)}/identity-verifications`, body)); }
-export async function admitReceptionCase(request: Requester, id: string) { return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, `/api/reception/cases/${encodeURIComponent(id)}/admit`)); }
+async function getReceptionCaseVersion(request: Requester, id: string) {
+  const receptionCase = await getReceptionCase(request, id);
+  if (!Number.isInteger(receptionCase.version) || Number(receptionCase.version) < 1) throw new Error('Không thể xác định phiên bản hồ sơ tiếp nhận. Vui lòng tải lại và thử lại.');
+  return receptionCase.version;
+}
+export async function verifyReceptionIdentity(request: Requester, id: string, body: Record<string, unknown>) {
+  const expectedVersion = await getReceptionCaseVersion(request, id);
+  return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, `/api/reception/cases/${encodeURIComponent(id)}/identity-verifications`, { ...body, expectedVersion }));
+}
+export async function admitReceptionCase(request: Requester, id: string) {
+  const expectedVersion = await getReceptionCaseVersion(request, id);
+  return unwrapData(await post<ReceptionCase | { data: ReceptionCase }>(request, `/api/reception/cases/${encodeURIComponent(id)}/admit`, { expectedVersion }));
+}
 export interface ReceptionPatient { id: string; fullName?: string; phoneNumber?: string; nationalIdMasked?: string | null; [key: string]: unknown; }
 export async function searchReceptionPatients(request: Requester, body: { fullName?: string; phoneNumber?: string; nationalId?: string }) { const raw = await request<unknown>('/api/patients/search', { method: 'POST', body: JSON.stringify({ ...body, limit: 20, page: 1 }) }); const value = raw as { data?: { items?: ReceptionPatient[] }; items?: ReceptionPatient[] }; return value.data?.items ?? value.items ?? []; }
 export interface ReceptionAppointment { id?: string; appointmentCode?: string; patientId?: string; startAt?: string; endAt?: string; status?: string; pricing?: { serviceName?: string }; [key: string]: unknown; }
