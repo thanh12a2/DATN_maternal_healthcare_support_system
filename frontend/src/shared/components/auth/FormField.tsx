@@ -19,7 +19,9 @@ export function FormField({ id, label, message, state = 'idle', full, icon, chil
         <span className="control-icon">{icon}</span>
         {children}
       </div>
-      <p className="field-message" aria-live="polite">{message}</p>
+      {message ? (
+        <p className="field-message" id={`${id}-message`} aria-live="polite">{message}</p>
+      ) : null}
     </div>
   );
 }

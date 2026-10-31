@@ -34,6 +34,14 @@ services:
         paths: [/.well-known]
         strip_path: false
 
+  - name: doctor-public-service
+    url: http://doctor-service:5005/doctors
+    routes:
+      - name: doctor-public-specialties-route
+        paths: [/api/doctors]
+        methods: [GET]
+        strip_path: true
+
   - name: doctor-service
     url: http://doctor-service:5005/doctors
     routes: [{ name: doctor-service-route, paths: [/api/doctors], strip_path: true }]

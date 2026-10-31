@@ -181,9 +181,11 @@ async function main() {
   await clients.billing.query('TRUNCATE TABLE credit_approvals, payments, invoice_lines, invoices, billing_audit_logs, billing_idempotency_records, billing_outbox_events CASCADE;');
   await clients.appointment.query('TRUNCATE TABLE appointment_assignment_history, appointment_audit_logs, appointment_idempotency_records, appointment_outbox_events, slot_holds, appointments CASCADE;');
   await clients.patient.query('TRUNCATE TABLE emergency_contacts, patient_audit_logs, idempotency_records, patients CASCADE;');
-  await clients.catalog.query('TRUNCATE TABLE medical_service_categories, medical_service_tags, base_prices, medical_services, catalog_tags, service_categories, doctor_rank_surcharges CASCADE;');
-  await clients.catalog.query('ALTER TABLE medical_service_categories ADD COLUMN IF NOT EXISTS is_primary BOOLEAN NOT NULL DEFAULT false;');
+  await clients.catalog.query('ALTER TABLE medical_services ADD COLUMN IF NOT EXISTS content JSONB;');
+  await clients.catalog.query('TRUNCATE TABLE medical_service_tags, base_prices, medical_services, catalog_tags, doctor_rank_surcharges CASCADE;');
   await clients.receptionist.query('TRUNCATE TABLE admission_status_history, admissions, identity_verifications, reception_audit_logs, reception_cases, reception_idempotency_records, receptionist_profiles, receptionists CASCADE;');
+  await clients.doctor.query('ALTER TABLE specialties ADD COLUMN IF NOT EXISTS slug VARCHAR(160) UNIQUE;');
+  await clients.doctor.query('ALTER TABLE specialties ADD COLUMN IF NOT EXISTS overview JSONB;');
   await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties, clinic_rooms CASCADE;');
   await clients.auth.query('TRUNCATE TABLE auth_sessions, password_reset_tokens, credentials, account_roles, accounts, roles CASCADE;');
   await clients.auditLog.query('TRUNCATE TABLE audit_entries CASCADE;');
@@ -247,6 +249,10 @@ async function main() {
   const pendingAccountId = await createAuthAccount('test.pending@antam.local', 'PATIENT', null, 'PENDING_VERIFICATION');
   const disabledAccountId = await createAuthAccount('test.disabled@antam.local', 'DOCTOR', null, 'DISABLED');
 
+  // 3 Tài khoản kiểm thử theo kịch bản người dùng:
+  // Tài khoản 1: Mới tạo tài khoản (Chưa có Profile & Medical Record)
+  const patientNewAccountId = await createAuthAccount('patient.new@taman.hospital', 'PATIENT');
+
   // Token đặt lại mật khẩu mẫu (Password Reset Token)
   const resetTokenHash = sha256('sample-password-reset-token-2026');
   const tokenExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 giờ
@@ -281,36 +287,186 @@ async function main() {
     {
       code: 'OBSTETRICS',
       name: 'Sản khoa',
+      slug: 'san-khoa',
       desc: 'Chăm sóc thai kỳ, quản lý chuyển dạ, đỡ sinh thường và phẫu thuật mổ lấy thai an toàn.',
+      overview: {
+        intro: 'Khoa Sản - Bệnh viện Phụ sản Tâm An quy tụ đội ngũ chuyên gia, bác sĩ đầu ngành Sản phụ khoa giàu kinh nghiệm, tận tâm và chuyên nghiệp. Khoa cung cấp dịch vụ chăm sóc toàn diện cho thai phụ từ những tuần đầu thai kỳ đến khi sinh nở và giai đoạn hậu sản, áp dụng phác đồ điều trị cá thể hóa chuẩn quốc tế nhằm mang lại sự an tâm tuyệt đối cho mẹ và bé.',
+        scopeOfCare: [
+          'Quản lý và theo dõi thai kỳ định kỳ từ tuần thứ 4 đến khi chuyển dạ',
+          'Chăm sóc và can thiệp thai kỳ nguy cơ cao: Dọa sinh non, tiền sản giật, đa thai, rau tiền đạo',
+          'Đỡ sinh thường an toàn và kỹ thuật sinh không đau theo nhu cầu',
+          'Phẫu thuật mổ lấy thai chủ động và mổ lấy thai cấp cứu chuyên khoa',
+          'Chăm sóc toàn diện mẹ và bé sơ sinh giai đoạn hậu sản tại viện'
+        ],
+        standardTitle: 'Chăm sóc Thai kỳ & Đỡ sinh Chuẩn Quốc tế',
+        standardDesc: 'Áp dụng quy trình thăm khám và quản lý thai nghén nghiêm ngặt theo khuyến cáo của Hiệp hội Sản Phụ khoa Hoa Kỳ (ACOG) và Vương quốc Anh (RCOG). Hệ thống phòng sinh gia đình tiện nghi, phòng mổ vô khuẩn một chiều đạt tiêu chuẩn quốc tế cùng kỹ thuật đẻ không đau giúp mẹ vượt cạn nhẹ nhàng, an toàn.',
+        diagnosticTitle: 'Chẩn đoán & Quản lý Thai kỳ',
+        diagnostics: [
+          'Khám và theo dõi định kỳ các mốc phát triển quan trọng của thai nhi',
+          'Đo tim thai và theo dõi cơn co tử cung liên tục bằng hệ thống Monitoring sản khoa (CTG)',
+          'Đánh giá chỉ số sinh hiệu, chiều cao tử cung, vòng bụng và huyết áp thai phụ',
+          'Tư vấn chế độ dinh dưỡng và vận động cá thể hóa theo từng tam cá nguyệt',
+          'Phát hiện sớm các dấu hiệu dọa sinh non, ối vỡ sớm và bất thường bánh rau - dây rốn'
+        ],
+        treatmentTitle: 'Phương pháp Đỡ sinh & Can thiệp Sản khoa',
+        treatments: [
+          'Đỡ sinh thường trọn gói áp dụng kỹ thuật gây tê ngoài màng cứng giảm đau sản khoa',
+          'Phẫu thuật mổ lấy thai chủ động và mổ cấp cứu với kíp mổ chuyên gia giàu kinh nghiệm',
+          'Phương pháp da kề da (Kangaroo Care) ngay sau sinh và kẹp cắt dây rốn chậm',
+          'Chăm sóc mẹ và bé sau sinh toàn diện: Tắm bé, chăm sóc rốn, chiếu plasma vết khâu/vết mổ',
+          'Tư vấn nuôi con bằng sữa mẹ và theo dõi phục hồi sàn chậu sau sinh'
+        ],
+        patientNotes: 'Thai phụ khi đi khám vui lòng mang theo toàn bộ sổ khám, kết quả siêu âm và xét nghiệm của các tuần trước. Thai phụ có dấu hiệu đau bụng từng cơn, ra huyết âm đạo hoặc rỉ ối cần đến ngay Khoa Cấp cứu Sản khoa 24/7.'
+      }
     },
     {
       code: 'GYNECOLOGY',
       name: 'Phụ khoa',
+      slug: 'phu-khoa',
       desc: 'Khám, chẩn đoán và điều trị bệnh phụ khoa, u xơ, u buồng trứng và tầm soát ung thư cổ tử cung.',
+      overview: {
+        intro: 'Khoa Phụ khoa - Bệnh viện Phụ sản Tâm An chuyên sâu khám, chẩn đoán và điều trị toàn diện các bệnh lý phụ khoa từ thông thường đến phức tạp. Với hệ thống trang thiết bị chẩn đoán hình ảnh và xét nghiệm sinh học phân tử hiện đại, chúng tôi cam kết bảo vệ tối đa sức khỏe sinh sản và sự tự tin của phụ nữ ở mọi lứa tuổi.',
+        scopeOfCare: [
+          'Khám và điều trị viêm nhiễm phụ khoa cấp và mạn tính, nấm âm đạo, viêm lộ tuyến',
+          'Tầm soát sớm ung thư cổ tử cung, ung thư nội mạc tử cung và ung thư buồng trứng',
+          'Phẫu thuật nội soi bảo tồn u xơ tử cung, u nang buồng trứng, lạc nội mạc tử cung',
+          'Khám và điều trị rối loạn kinh nguyệt, rong kinh, vô kinh ở tuổi dậy thì và sinh sản',
+          'Tư vấn chăm sóc sức khỏe tiền mãn kinh, mãn kinh và liệu pháp hormone an toàn'
+        ],
+        standardTitle: 'Tầm soát & Điều trị Phụ khoa Tiêu chuẩn Quốc tế',
+        standardDesc: 'Quy trình khám phụ khoa khép kín, đảm bảo tính riêng tư tuyệt đối cho người bệnh. Áp dụng các kỹ thuật phẫu thuật nội soi phụ khoa xâm lấn tối thiểu, bảo tồn tối đa chức năng buồng trứng và tử cung, giảm đau sau mổ và rút ngắn thời gian hồi phục.',
+        diagnosticTitle: 'Chẩn đoán & Tầm soát Phụ khoa',
+        diagnostics: [
+          'Khám phụ khoa tổng quát, soi tươi và nhuộm soi dịch âm đạo vi tính',
+          'Soi cổ tử cung kỹ thuật số độ phóng đại cao phát hiện sớm tổn thương loạn sản',
+          'Tầm soát ung thư cổ tử cung kép: ThinPrep Pap Test & định type HPV Cobas',
+          'Siêu âm đầu dò âm đạo độ phân giải cao đánh giá tử cung, niêm mạc và buồng trứng',
+          'Sinh thiết cổ tử cung, nạo sinh thiết buồng tử cung chẩn đoán mô bệnh học'
+        ],
+        treatmentTitle: 'Điều trị & Phẫu thuật Phụ khoa',
+        treatments: [
+          'Điều trị nội khoa dứt điểm viêm nhiễm phụ khoa tái phát và rối loạn kinh nguyệt',
+          'Phẫu thuật nội soi bóc u xơ tử cung, nang buồng trứng bảo tồn khả năng sinh sản',
+          'Ngoại khoa điều trị lạc nội mạc tử cung và thông tắc vòi trứng vi phẫu',
+          'Can thiệp điều trị tổn thương tiền ung thư cổ tử cung: Áp lạnh, khoét chóp LEEP',
+          'Tư vấn tiền mãn kinh, mãn kinh và liệu pháp hormone thay thế an toàn'
+        ],
+        patientNotes: 'Thời điểm khám phụ khoa tốt nhất là sau khi sạch kinh từ 3 - 5 ngày. Không thụt rửa âm đạo hoặc đặt thuốc phụ khoa trong vòng 48 giờ trước khi thăm khám để đảm bảo kết quả xét nghiệm chính xác.'
+      }
     },
     {
       code: 'PERINATOLOGY',
       name: 'Y học bào thai & Chẩn đoán trước sinh',
+      slug: 'y-hoc-bao-thai-chan-doan-truoc-sinh',
       desc: 'Siêu âm hình thái học thai nhi 4D/5D, sàng lọc dị tật bẩm sinh, can thiệp và theo dõi thai kỳ nguy cơ cao.',
+      overview: {
+        intro: 'Trung tâm Y học Bào thai & Chẩn đoán Trước sinh Tâm An là đơn vị mũi nhọn ứng dụng những tiến bộ công nghệ sinh học phân tử và siêu âm hình thái học tiên tiến nhất thế giới. Chúng tôi giúp phát hiện sớm các dị tật bẩm sinh, bất thường nhiễm sắc thể và theo dõi can thiệp kịp thời các thai kỳ có nguy cơ cao.',
+        scopeOfCare: [
+          'Sàng lọc dị tật bẩm sinh và bất thường nhiễm sắc thể thai nhi giai đoạn sớm',
+          'Siêu âm hình thái học chi tiết tim thai, hệ thần kinh trung ương và hệ xương khớp',
+          'Theo dõi và hội chẩn đa chuyên khoa các trường hợp thai chậm tăng trưởng trong tử cung',
+          'Quản lý song thai, đa thai và hội chứng truyền máu song thai (TTTS)',
+          'Tư vấn di truyền trước sinh chuyên sâu cho các cặp vợ chồng có tiền sử bất thường'
+        ],
+        standardTitle: 'Chẩn đoán Trước sinh & Y học Bào thai Đỉnh cao',
+        standardDesc: 'Hệ thống máy siêu âm Voluson Expert 22 và GE Healthcare với công nghệ Doppler màu và tái tạo HD-Live 5D cho hình ảnh siêu âm rõ nét từng chi tiết giải phẫu thai nhi. Kết hợp xét nghiệm gen sàng lọc NIPT Pro đạt chứng chỉ quốc tế CAP và CLIA.',
+        diagnosticTitle: 'Kỹ thuật Sàng lọc & Thăm dò Hình thái',
+        diagnostics: [
+          'Siêu âm đo độ mờ da gáy (NT) và khảo sát xương mũi thai nhi ở tuần 11 - 13 tuần 6 ngày',
+          'Siêu âm hình thái học 4D/5D chi tiết từng cơ quan: Tim, não, cột sống, chi và mặt thai nhi',
+          'Sàng lọc ADN thai tự do trong máu mẹ (NIPT) phát hiện bất thường 23 cặp NST và vi mất đoạn',
+          'Xét nghiệm sinh hóa Double Test, Triple Test kết hợp phần mềm phân tích nguy cơ FMF',
+          'Siêu âm Doppler màu động mạch rốn, động mạch não giữa đánh giá tuần hoàn thai nhi'
+        ],
+        treatmentTitle: 'Hội chẩn Chuyên sâu & Quản lý Bào thai',
+        treatments: [
+          'Hội chẩn đa chuyên khoa (Sản khoa, Di truyền học, Tim mạch nhi, Phẫu thuật sơ sinh)',
+          'Tư vấn di truyền trước sinh cá thể hóa cho các trường hợp thai kỳ nguy cơ cao',
+          'Theo dõi và quản lý hội chứng truyền máu song thai (TTTS), thai chậm tăng trưởng trong tử cung',
+          'Lập kế hoạch phối hợp hồi sức và phẫu thuật sơ sinh ngay tại phòng sinh',
+          'Định hướng can thiệp bào thai và tư vấn phác đồ thai kỳ an toàn tối ưu'
+        ],
+        patientNotes: 'Các mốc siêu âm hình thái quan trọng không nên bỏ lỡ: 11 - 13 tuần 6 ngày (đo độ mờ da gáy), 20 - 22 tuần (khảo sát dị tật chi tiết), 30 - 32 tuần (đánh giá tăng trưởng và tuần hoàn thai). Xét nghiệm NIPT có thể thực hiện từ tuần thai thứ 9.'
+      }
     },
     {
       code: 'REPRODUCTIVE_ENDOCRINOLOGY',
       name: 'Hiếm muộn & Hỗ trợ sinh sản',
+      slug: 'hiem-muon-ho-tro-sinh-san',
       desc: 'Khám, tư vấn vô sinh - hiếm muộn, kích thích buồng trứng, bơm tinh trùng (IUI) và thụ tinh ống nghiệm (IVF).',
+      overview: {
+        intro: 'Khoa Hiếm muộn & Hỗ trợ Sinh sản Tâm An đồng hành cùng các cặp vợ chồng trên hành trình tìm kiếm con yêu thiêng liêng. Đội ngũ bác sĩ và chuyên viên phôi học giàu kinh nghiệm, hệ thống phòng Labo đạt chuẩn phòng sạch ISO 5 với tỷ lệ thụ thai thành công hàng đầu.',
+        scopeOfCare: [
+          'Thăm khám và chẩn đoán nguyên nhân vô sinh - hiếm muộn ở cả nam và nữ',
+          'Thực hiện kỹ thuật thụ tinh nhân tạo: Bơm tinh trùng vào buồng tử cung (IUI)',
+          'Thụ tinh trong ống nghiệm (IVF) và tiêm tinh trùng vào bào tương noãn (ICSI)',
+          'Trữ đông noãn, tinh trùng và phôi bằng kỹ thuật thủy tinh hóa tiên tiến',
+          'Phẫu thuật vi phẫu tìm tinh trùng (Micro-TESE) cho nam giới không có tinh trùng'
+        ],
+        standardTitle: 'Công nghệ Hỗ trợ Sinh sản Hiện đại',
+        standardDesc: 'Cá thể hóa phác đồ kích thích buồng trứng dựa trên chỉ số AMH và siêu âm đếm nang thứ cấp (AFC). Áp dụng các kỹ thuật hỗ trợ sinh sản hiện đại như bơm tinh trùng vào buồng tử cung (IUI), thụ tinh ống nghiệm (IVF/ICSI) và trữ đông phôi/noãn bằng phương pháp thủy tinh hóa.',
+        diagnosticTitle: 'Thăm dò Chức năng Sinh sản Cặp đôi',
+        diagnostics: [
+          'Xét nghiệm hormone sinh dục nữ: AMH, FSH, LH, E2, Progesterone, Prolactin',
+          'Xét nghiệm Tinh dịch đồ tự động chuẩn WHO 2021 và phân mảnh ADN tinh trùng',
+          'Chụp X-quang tử cung - vòi trứng (HSG) và siêu âm HyCoSy kiểm tra độ thông vòi trứng',
+          'Nội soi buồng tử cung chẩn đoán polyp, dính buồng tử cung hoặc tử cung dị dạng',
+          'Sàng lọc di truyền tiền hôn nhân và nhiễm sắc thể đồ (Karyotype) cặp vợ chồng'
+        ],
+        treatmentTitle: 'Kỹ thuật Can thiệp & Điều trị Hiếm muộn',
+        treatments: [
+          'Bơm tinh trùng đã lọc rửa vào buồng tử cung (IUI) với tỷ lệ đậu thai tối ưu',
+          'Thụ tinh trong ống nghiệm (IVF) kết hợp tiêm tinh trùng vào bào tương noãn (ICSI)',
+          'Nuôi cấy phôi dài ngày lên giai đoạn phôi nang (Blastocyst ngày 5)',
+          'Hỗ trợ phôi thoát màng (AH) bằng laser và trữ đông phôi/noãn bằng kỹ thuật thủy tinh hóa',
+          'Phẫu thuật lấy tinh trùng vi phẫu (Micro-TESE) cho các trường hợp không có tinh trùng'
+        ],
+        patientNotes: 'Cả hai vợ chồng nên cùng đến khám vào lần đầu tiên. Người vợ nên đi khám vào ngày thứ 2 hoặc thứ 3 của chu kỳ kinh nguyệt để làm xét nghiệm nội tiết; người chồng cần kiêng xuất tinh từ 3 - 5 ngày trước khi làm tinh dịch đồ.'
+      }
     },
     {
       code: 'MATERNAL_MEDICINE',
       name: 'Bệnh lý nội khoa thai kỳ',
+      slug: 'benh-ly-noi-khoa-thai-ky',
       desc: 'Quản lý và điều trị bệnh lý nội khoa đi kèm thai kỳ: đái tháo đường thai kỳ, tiền sản giật, tim mạch thai kỳ.',
-    },
+      overview: {
+        intro: 'Khoa Bệnh lý Nội khoa Thai kỳ Tâm An chuyên trách quản lý, theo dõi và điều trị các bệnh lý mạn tính hoặc bệnh lý cấp tính phát sinh trong thai kỳ. Sự kết hợp chặt chẽ giữa bác sĩ Sản khoa và bác sĩ Nội khoa chuyên sâu giúp bảo vệ tối đa tính mạng của mẹ và sự an toàn của thai nhi.',
+        scopeOfCare: [
+          'Tầm soát, quản lý và điều trị đái tháo đường thai kỳ và đái tháo đường trước mang thai',
+          'Dự phòng, kiểm soát tăng huyết áp thai kỳ và điều trị hội chứng tiền sản giật',
+          'Quản lý bệnh lý tim mạch, hẹp hở van tim, rối loạn nhịp tim trong thai kỳ',
+          'Theo dõi và điều trị bệnh lý tuyến giáp: Suy giáp, cường giáp Basedow ở thai phụ',
+          'Xử trí rối loạn đông máu thai kỳ, hội chứng kháng phospholipid (APS) gây sảy thai liên tiếp'
+        ],
+        standardTitle: 'Quản lý Đa Chuyên khoa Bệnh lý Thai kỳ',
+        standardDesc: 'Xây dựng phác đồ phối hợp liên viện và liên chuyên khoa Sản - Tim mạch - Nội tiết. Kiểm soát chặt chẽ đường huyết, huyết áp và các chỉ số sinh hóa máu mẹ, ngăn ngừa nguy cơ biến chứng tiền sản giật, sản giật và sinh non.',
+        diagnosticTitle: 'Tầm soát & Thăm dò Bệnh lý Nội khoa',
+        diagnostics: [
+          'Nghiệm pháp dung nạp Glucose đường uống (OGTT 75g) tầm soát đái tháo đường thai kỳ',
+          'Xét nghiệm sinh hóa máu đánh giá tỷ số sFlt-1/PlGF tiên lượng nguy cơ tiền sản giật sớm',
+          'Siêu âm tim thai phụ, đo Holter điện tim 24h và Holter huyết áp liên tục',
+          'Định lượng chức năng tuyến giáp thai kỳ: TSH, FT3, FT4 và kháng thể kháng giáp',
+          'Đánh giá đông máu toàn bộ, D-Dimer và tầm soát hội chứng kháng phospholipid (APS)'
+        ],
+        treatmentTitle: 'Phác đồ Điều trị & Theo dõi Chuyên biệt',
+        treatments: [
+          'Xây dựng chế độ dinh dưỡng và phác đồ Insulin cá thể hóa cho thai phụ đái tháo đường',
+          'Điều trị hạ áp an toàn cho thai kỳ và dự phòng tiền sản giật bằng Aspirin liều thấp',
+          'Quản lý bệnh lý tim mạch, van tim và rối loạn nhịp tim thai kỳ',
+          'Điều hòa hormone tuyến giáp (suy giáp, cường giáp Basedow) trong suốt 40 tuần thai',
+          'Hội chẩn quyết định thời điểm và phương thức chấm dứt thai kỳ an toàn nhất cho mẹ và bé'
+        ],
+        patientNotes: 'Thai phụ làm nghiệm pháp dung nạp Glucose (OGTT) cần nhịn ăn từ 8 - 10 tiếng qua đêm trước khi làm xét nghiệm buổi sáng. Thai phụ có tiền sử tăng huyết áp cần đo huyết áp đều đặn tại nhà và mang theo sổ theo dõi.'
+      }
+    }
   ];
 
   const specialtyMap = {};
   for (const sp of specialtiesDef) {
     const res = await clients.doctor.query(
-      `INSERT INTO specialties (id, code, name, description, status, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'ACTIVE', NOW(), NOW()) RETURNING id`,
-      [sp.code, sp.name, sp.desc]
+      `INSERT INTO specialties (id, code, name, slug, description, overview, status, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'ACTIVE', NOW(), NOW()) RETURNING id`,
+      [sp.code, sp.name, sp.slug, sp.desc, JSON.stringify(sp.overview)]
     );
     specialtyMap[sp.code] = res.rows[0].id;
   }
@@ -362,40 +518,7 @@ async function main() {
   // 3. DANH MỤC DỊCH VỤ, PHÂN LOẠI & GIÁ DỊCH VỤ (CATALOG SERVICE)
   // ============================================================================
   console.log('\n--- BƯỚC 3: KHỞI TẠO DANH MỤC DỊCH VỤ Y TẾ & BẢNG GIÁ (CATALOG) ---');
-  const categoriesDef = [
-    { code: 'PRENATAL', slug: 'kham-theo-doi-thai-ky', name: 'Khám & Theo dõi Thai kỳ', desc: 'Các gói khám thai định kỳ theo từng mốc phát triển quan trọng của thai nhi.', sort: 1 },
-    { code: 'ULTRASOUND', slug: 'sieu-am-san-phu-khoa', name: 'Siêu âm Sản Phụ khoa Chẩn đoán', desc: 'Siêu âm 2D, Doppler màu, siêu âm 4D/5D hình thái học thai nhi độ phân giải cao.', sort: 2 },
-    { code: 'TESTING', slug: 'xet-nghiem-sang-loc-truoc-sinh', name: 'Xét nghiệm Sàng lọc Trước sinh', desc: 'Sàng lọc dị tật không xâm lấn NIPT, Double test, Triple test, nghiệm pháp tiểu đường thai kỳ.', sort: 3 },
-    { code: 'GYNECOLOGY', slug: 'kham-dieu-tri-phu-khoa', name: 'Khám & Điều trị Phụ khoa', desc: 'Khám phụ khoa tổng quát, soi cổ tử cung, tầm soát ung thư phụ khoa.', sort: 4 },
-    { code: 'PACKAGES', slug: 'goi-thai-san-tron-goi', name: 'Gói Chăm sóc Thai sản Trọn gói', desc: 'Gói chăm sóc toàn diện từ tuần thai đầu tiên đến khi sinh nở và sau sinh.', sort: 5 },
-    { code: 'POSTPARTUM', slug: 'cham-soc-sau-sinh', name: 'Chăm sóc Mẹ & Bé Sau sinh', desc: 'Khám phục hồi sàn chậu, thông tắc tia sữa, tư vấn dinh dưỡng mẹ cho con bú.', sort: 6 },
-  ];
-
-  const categoryMap = {};
-  for (const c of categoriesDef) {
-    const res = await clients.catalog.query(
-      `INSERT INTO service_categories (id, code, slug, name, description, status, sort_order, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'ACTIVE', $5, NOW(), NOW()) RETURNING id`,
-      [c.code, c.slug, c.name, c.desc, c.sort]
-    );
-    categoryMap[c.code] = res.rows[0].id;
-  }
-
-  // Danh mục phân cấp cha - con (Subcategories có parent_id) & Danh mục DRAFT
-  const subCategoriesDef = [
-    { code: 'PRENATAL_ROUTINE_CAT', slug: 'kham-thai-dinh-ky-co-ban', name: 'Khám thai định kỳ cơ bản', parentCode: 'PRENATAL', status: 'ACTIVE', sort: 11 },
-    { code: 'PRENATAL_HIGH_RISK_CAT', slug: 'quan-ly-thai-ky-nguy-co-cao', name: 'Quản lý thai kỳ nguy cơ cao', parentCode: 'PRENATAL', status: 'ACTIVE', sort: 12 },
-    { code: 'PRENATAL_WELLNESS', slug: 'dinh-duong-yoga-tien-san', name: 'Dinh dưỡng & Tiền sản nâng cao', parentCode: null, status: 'DRAFT', sort: 13 },
-  ];
-  for (const sc of subCategoriesDef) {
-    const parentId = sc.parentCode ? categoryMap[sc.parentCode] : null;
-    const res = await clients.catalog.query(
-      `INSERT INTO service_categories (id, code, slug, name, description, parent_id, status, sort_order, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $3, $4, $5, $6, NOW(), NOW()) RETURNING id`,
-      [sc.code, sc.slug, sc.name, parentId, sc.status, sc.sort]
-    );
-    categoryMap[sc.code] = res.rows[0].id;
-  }
+  // Bỏ nhóm dịch vụ (ServiceCategory) theo yêu cầu - dịch vụ gắn trực tiếp vào chuyên khoa
 
   const tagsDef = [
     { code: 'TRIMESTER_1', slug: 'tam-ca-nguyet-1', name: '3 tháng đầu (0-13 tuần)', group: 'AUDIENCE', sort: 1 },
@@ -418,6 +541,23 @@ async function main() {
     tagMap[t.code] = res.rows[0].id;
   }
 
+  // Nạp và validate service_content.json cho medical_services
+  const rawServiceContent = require('./data/service_content.json');
+  const serviceContentMap = {};
+  for (const [key, val] of Object.entries(rawServiceContent)) {
+    if (val.schema_version !== 1) {
+      throw new Error(`[Seed Error] Service ${key} has invalid schema_version: expected 1, got ${val.schema_version}`);
+    }
+    if (typeof val.intro !== 'string' || !val.intro.trim()) {
+      throw new Error(`[Seed Error] Service ${key} missing or invalid intro string`);
+    }
+    if (typeof val.disclaimer !== 'string' || !val.disclaimer.trim()) {
+      throw new Error(`[Seed Error] Service ${key} missing or invalid disclaimer string`);
+    }
+    const mappedKey = key === 'MM_PREECLAMPSIA_SCREENING' ? 'MM_PREECLAMPSIA_SCREEN' : key;
+    serviceContentMap[mappedKey] = val;
+  }
+
   // Danh mục 12 Dịch vụ Y tế Hoàn chỉnh
   const servicesDef = [
     {
@@ -429,10 +569,9 @@ async function main() {
       kind: 'CONSULTATION',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=85',
-      duration: 30,
+      duration: null,
       policy: 'RANK_UPGRADE_ALLOWED',
       price: 300000,
-      categoryCode: 'PRENATAL',
       tagCodes: ['ROUTINE', 'POPULAR', 'TRIMESTER_1', 'TRIMESTER_2', 'TRIMESTER_3'],
     },
     {
@@ -444,10 +583,9 @@ async function main() {
       kind: 'CONSULTATION',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=85',
-      duration: 45,
+      duration: null,
       policy: 'RANK_UPGRADE_ALLOWED',
       price: 500000,
-      categoryCode: 'PRENATAL',
       tagCodes: ['HIGH_RISK', 'POPULAR'],
     },
     {
@@ -459,10 +597,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=85',
-      duration: 20,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 200000,
-      categoryCode: 'ULTRASOUND',
       tagCodes: ['TRIMESTER_1', 'ROUTINE'],
     },
     {
@@ -474,10 +611,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=1200&q=85',
-      duration: 35,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 450000,
-      categoryCode: 'ULTRASOUND',
       tagCodes: ['TRIMESTER_2', 'POPULAR'],
     },
     {
@@ -489,10 +625,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1579684453423-f84349ef60b0?auto=format&fit=crop&w=1200&q=85',
-      duration: 20,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 2500000,
-      categoryCode: 'TESTING',
       tagCodes: ['TRIMESTER_1', 'POPULAR'],
     },
     {
@@ -504,10 +639,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=85',
-      duration: 25,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 5500000,
-      categoryCode: 'TESTING',
       tagCodes: ['TRIMESTER_1', 'HIGH_RISK'],
     },
     {
@@ -519,10 +653,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1516822003754-cca485356ecb?auto=format&fit=crop&w=1200&q=85',
-      duration: 15,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 450000,
-      categoryCode: 'TESTING',
       tagCodes: ['TRIMESTER_1', 'ROUTINE'],
     },
     {
@@ -534,10 +667,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?auto=format&fit=crop&w=1200&q=85',
-      duration: 15,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 500000,
-      categoryCode: 'TESTING',
       tagCodes: ['TRIMESTER_2'],
     },
     {
@@ -549,10 +681,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'MATERNAL_MEDICINE',
       thumbnailUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=85',
-      duration: 120,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 350000,
-      categoryCode: 'TESTING',
       tagCodes: ['TRIMESTER_2', 'ROUTINE'],
     },
     {
@@ -564,10 +695,9 @@ async function main() {
       kind: 'CONSULTATION',
       specialtyCode: 'GYNECOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1200&q=85',
-      duration: 30,
+      duration: null,
       policy: 'RANK_UPGRADE_ALLOWED',
       price: 350000,
-      categoryCode: 'GYNECOLOGY',
       tagCodes: ['ROUTINE'],
     },
     {
@@ -579,10 +709,9 @@ async function main() {
       kind: 'PACKAGE',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=85',
-      duration: 120,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 18000000,
-      categoryCode: 'PACKAGES',
       tagCodes: ['POPULAR'],
     },
     {
@@ -594,10 +723,9 @@ async function main() {
       kind: 'PACKAGE',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=85',
-      duration: 150,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 28000000,
-      categoryCode: 'PACKAGES',
       tagCodes: ['POPULAR'],
     },
     // Thủ thuật y khoa (PROCEDURE) & Chính sách BASIC_INCLUDED
@@ -610,10 +738,9 @@ async function main() {
       kind: 'PROCEDURE',
       specialtyCode: 'REPRODUCTIVE_ENDOCRINOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=85',
-      duration: 45,
+      duration: null,
       policy: 'BASIC_INCLUDED',
       price: 4500000,
-      categoryCode: 'PACKAGES',
       tagCodes: ['POPULAR', 'FEMALE_CARE'],
       status: 'ACTIVE',
     },
@@ -627,10 +754,9 @@ async function main() {
       kind: 'VACCINATION',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=85',
-      duration: 15,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 150000,
-      categoryCode: 'PRENATAL',
       tagCodes: ['ROUTINE', 'TRIMESTER_2', 'TRIMESTER_3'],
       status: 'ACTIVE',
     },
@@ -644,10 +770,9 @@ async function main() {
       kind: 'OTHER',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=85',
-      duration: 45,
+      duration: null,
       policy: 'RANK_UPGRADE_ALLOWED',
       price: 600000,
-      categoryCode: 'TESTING',
       tagCodes: ['HIGH_RISK', 'REPRODUCTIVE_AGE'],
       status: 'ACTIVE',
     },
@@ -661,10 +786,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'PERINATOLOGY',
       thumbnailUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=85',
-      duration: 40,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 650000,
-      categoryCode: 'ULTRASOUND',
       tagCodes: ['HIGH_RISK'],
       status: 'INACTIVE',
       bookingEnabled: false,
@@ -679,13 +803,83 @@ async function main() {
       kind: 'PACKAGE',
       specialtyCode: 'OBSTETRICS',
       thumbnailUrl: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=85',
-      duration: 60,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 35000000,
-      categoryCode: 'PACKAGES',
       tagCodes: ['POPULAR'],
       status: 'DRAFT',
       bookingEnabled: false,
+    },
+    // Dịch vụ bổ sung cho các chuyên khoa Phụ khoa, Hiếm muộn & Nội khoa thai kỳ
+    {
+      code: 'GYN_THINPREP_HPV',
+      slug: 'tam-soat-ung-thu-co-tu-cung-thinprep-hpv',
+      name: 'Tầm soát ung thư cổ tử cung ThinPrep Pap & HPV DNA Cobas',
+      summary: 'Phương pháp tầm soát kép hiện đại nhất phát hiện sớm tổn thương tiền ung thư và 14 chủng HPV nguy cơ cao.',
+      description: 'Quy trình tầm soát kết hợp xét nghiệm tế bào học nhúng dịch ThinPrep Pap test và xét nghiệm sinh học phân tử HPV Cobas định type 16, 18 cùng 12 chủng nguy cơ cao khác. Độ nhạy và độ đặc hiệu trên 98%.',
+      kind: 'DIAGNOSTIC',
+      specialtyCode: 'GYNECOLOGY',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=85',
+      duration: null,
+      policy: 'NOT_REQUIRED',
+      price: 850000,
+      tagCodes: ['POPULAR'],
+    },
+    {
+      code: 'GYN_TRANSVAGINAL_US',
+      slug: 'sieu-am-dau-do-am-dao-tu-cung-buong-trung',
+      name: 'Siêu âm đầu dò âm đạo kiểm tra tử cung & buồng trứng',
+      summary: 'Thăm dò hình ảnh độ phân giải cao đánh giá niêm mạc tử cung, buồng trứng và tầm soát u nang, u xơ.',
+      description: 'Kỹ thuật siêu âm chuyên sâu giúp bác sĩ quan sát chi tiết cấu trúc giải phẫu buồng trứng, nang noãn, polyp lòng tử cung, u xơ cơ tử cung và phát hiện sớm tình trạng ứ dịch vòi trứng.',
+      kind: 'DIAGNOSTIC',
+      specialtyCode: 'GYNECOLOGY',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=85',
+      duration: null,
+      policy: 'NOT_REQUIRED',
+      price: 350000,
+      tagCodes: [],
+    },
+    {
+      code: 'RE_AMH_ASSAY',
+      slug: 'xet-nghiem-amh-danh-gia-du-tru-buong-trung',
+      name: 'Xét nghiệm AMH đánh giá dự trữ buồng trứng & khả năng sinh sản',
+      summary: 'Chỉ số vàng dự báo số lượng trứng còn lại trong buồng trứng, hỗ trợ xây dựng phác đồ thụ thai tự nhiên hoặc IVF.',
+      description: 'Xét nghiệm máu đo nồng độ Anti-Mullerian Hormone (AMH) độc lập với chu kỳ kinh nguyệt, giúp đánh giá chính xác khả năng sinh sản của người phụ nữ và dự đoán đáp ứng buồng trứng trong kích thích rụng trứng.',
+      kind: 'DIAGNOSTIC',
+      specialtyCode: 'REPRODUCTIVE_ENDOCRINOLOGY',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?auto=format&fit=crop&w=1200&q=85',
+      duration: null,
+      policy: 'NOT_REQUIRED',
+      price: 950000,
+      tagCodes: ['POPULAR'],
+    },
+    {
+      code: 'RE_SEMEN_ANALYSIS',
+      slug: 'xet-nghiem-tinh-dich-do-chuan-who',
+      name: 'Xét nghiệm Tinh dịch đồ tự động chuẩn WHO 2021',
+      summary: 'Phân tích số lượng, độ di động, tỷ lệ sống và hình thái tinh trùng bằng hệ thống phân tích tinh dịch vi tính hóa (CASA).',
+      description: 'Quy trình chuẩn mực đánh giá toàn diện sức khỏe sinh sản nam giới, phát hiện các bất thường như tinh trùng ít, yếu, dị dạng hoặc bất động, làm cơ sở tư vấn điều trị hiếm muộn cặp đôi.',
+      kind: 'DIAGNOSTIC',
+      specialtyCode: 'REPRODUCTIVE_ENDOCRINOLOGY',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=85',
+      duration: null,
+      policy: 'NOT_REQUIRED',
+      price: 450000,
+      tagCodes: [],
+    },
+    {
+      code: 'MM_PREECLAMPSIA_SCREEN',
+      slug: 'sang-loc-quan-ly-tien-san-giat-som',
+      name: 'Sàng lọc & Quản lý dự phòng Tiền sản giật sớm (sFlt-1/PlGF)',
+      summary: 'Định lượng các yếu tố sinh mạch trong máu mẹ giúp tiên lượng nguy cơ tiền sản giật trước khi biểu hiện lâm sàng.',
+      description: 'Xét nghiệm kết hợp đo huyết áp động mạch trung bình, Doppler động mạch tử cung và định lượng tỷ số sFlt-1/PlGF để phân tầng nguy cơ cao, từ đó chỉ định phác đồ điều trị dự phòng bằng Aspirin liều thấp hiệu quả.',
+      kind: 'DIAGNOSTIC',
+      specialtyCode: 'MATERNAL_MEDICINE',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=85',
+      duration: null,
+      policy: 'RANK_UPGRADE_ALLOWED',
+      price: 1200000,
+      tagCodes: ['HIGH_RISK', 'POPULAR'],
     },
     // Dịch vụ cũ đã lưu trữ (ARCHIVED)
     {
@@ -697,10 +891,9 @@ async function main() {
       kind: 'DIAGNOSTIC',
       specialtyCode: 'MATERNAL_MEDICINE',
       thumbnailUrl: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=85',
-      duration: 15,
+      duration: null,
       policy: 'NOT_REQUIRED',
       price: 100000,
-      categoryCode: 'TESTING',
       tagCodes: [],
       status: 'ARCHIVED',
       bookingEnabled: false,
@@ -713,59 +906,77 @@ async function main() {
     const svcStatus = s.status || 'ACTIVE';
     const bookingEnabled = s.bookingEnabled !== undefined ? s.bookingEnabled : true;
     const publishedAt = svcStatus === 'DRAFT' ? null : now;
+    const content = serviceContentMap[s.code] || null;
+    const contentJson = content ? JSON.stringify(content) : null;
 
-    const sRes = await clients.catalog.query(
-      `INSERT INTO medical_services (id, code, slug, name, summary, description, kind, specialty_id, thumbnail_url, duration_minutes, booking_enabled, doctor_rank_selection_policy, status, version, published_at, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, NOW(), NOW()) RETURNING id`,
-      [s.code, s.slug, s.name, s.summary, s.description, s.kind, specialtyId, s.thumbnailUrl, s.duration, bookingEnabled, s.policy, svcStatus, publishedAt]
-    );
-    const serviceId = sRes.rows[0].id;
+    // Idempotent: Kiểm tra xem dịch vụ đã tồn tại trong DB chưa
+    const existing = await clients.catalog.query(`SELECT id FROM medical_services WHERE code = $1`, [s.code]);
+    let serviceId;
+    let priceId;
 
-    // Giá cơ bản (BasePrice)
-    const bpRes = await clients.catalog.query(
-      `INSERT INTO base_prices (id, medical_service_id, amount_minor, currency, effective_from, status, version, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, 'VND', NOW(), 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
-      [serviceId, s.price]
-    );
-
-    // Gắn danh mục chính (Primary Category)
-    if (categoryMap[s.categoryCode]) {
+    if (existing.rows.length > 0) {
+      serviceId = existing.rows[0].id;
+      // Với dịch vụ đã tồn tại, chỉ cập nhật content và updated_at, không ghi đè các trường khác
       await clients.catalog.query(
-        `INSERT INTO medical_service_categories (medical_service_id, category_id, is_primary, created_at)
-         VALUES ($1, $2, true, NOW())`,
-        [serviceId, categoryMap[s.categoryCode]]
+        `UPDATE medical_services SET content = $1, duration_minutes = $2, updated_at = NOW() WHERE id = $3`,
+        [contentJson, s.duration, serviceId]
       );
-    }
+      const bp = await clients.catalog.query(
+        `SELECT id FROM base_prices WHERE medical_service_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+        [serviceId]
+      );
+      priceId = bp.rows.length > 0 ? bp.rows[0].id : null;
+    } else {
+      const sRes = await clients.catalog.query(
+        `INSERT INTO medical_services (id, code, slug, name, summary, description, kind, specialty_id, thumbnail_url, duration_minutes, booking_enabled, doctor_rank_selection_policy, content, status, version, published_at, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 1, $14, NOW(), NOW()) RETURNING id`,
+        [s.code, s.slug, s.name, s.summary, s.description, s.kind, specialtyId, s.thumbnailUrl, s.duration, bookingEnabled, s.policy, contentJson, svcStatus, publishedAt]
+      );
+      serviceId = sRes.rows[0].id;
 
-    // Gắn thẻ (tags)
-    for (const tagCode of s.tagCodes) {
-      if (tagMap[tagCode]) {
-        await clients.catalog.query(
-          `INSERT INTO medical_service_tags (medical_service_id, tag_id, created_at)
-           VALUES ($1, $2, NOW())`,
-          [serviceId, tagMap[tagCode]]
-        );
+      // Giá cơ bản (BasePrice)
+      const bpRes = await clients.catalog.query(
+        `INSERT INTO base_prices (id, medical_service_id, amount_minor, currency, effective_from, status, version, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, 'VND', NOW(), 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
+        [serviceId, s.price]
+      );
+      priceId = bpRes.rows[0].id;
+
+      // Gắn thẻ (tags)
+      for (const tagCode of s.tagCodes) {
+        if (tagMap[tagCode]) {
+          await clients.catalog.query(
+            `INSERT INTO medical_service_tags (medical_service_id, tag_id, created_at)
+             VALUES ($1, $2, NOW())`,
+            [serviceId, tagMap[tagCode]]
+          );
+        }
       }
     }
 
-    serviceMap[s.code] = { id: serviceId, priceId: bpRes.rows[0].id, price: s.price, name: s.name, specialtyId };
+    serviceMap[s.code] = { id: serviceId, priceId, price: s.price, name: s.name, specialtyId };
   }
 
-  // Gắn danh mục phụ (Secondary categories: is_primary = false)
-  if (serviceMap['PRENATAL_VIP'] && categoryMap['PACKAGES']) {
-    await clients.catalog.query(
-      `INSERT INTO medical_service_categories (medical_service_id, category_id, is_primary, created_at)
-       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
-      [serviceMap['PRENATAL_VIP'].id, categoryMap['PACKAGES']]
-    );
-  }
-  if (serviceMap['US_4D_5D'] && categoryMap['PRENATAL']) {
-    await clients.catalog.query(
-      `INSERT INTO medical_service_categories (medical_service_id, category_id, is_primary, created_at)
-       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
-      [serviceMap['US_4D_5D'].id, categoryMap['PRENATAL']]
-    );
-  }
+  // Kiểm tra & log sau seed
+  const assignedCountRes = await clients.catalog.query(`SELECT COUNT(*)::int as count FROM medical_services WHERE content IS NOT NULL`);
+  const assignedCount = assignedCountRes.rows[0].count;
+
+  const dbServicesRes = await clients.catalog.query(`SELECT code FROM medical_services`);
+  const dbCodes = new Set(dbServicesRes.rows.map((r) => r.code));
+
+  const jsonCodes = Object.keys(rawServiceContent);
+  const unmappedInDb = jsonCodes.filter((code) => {
+    const mapped = code === 'MM_PREECLAMPSIA_SCREENING' ? 'MM_PREECLAMPSIA_SCREEN' : code;
+    return !dbCodes.has(mapped);
+  });
+
+  const nullContentRes = await clients.catalog.query(`SELECT code FROM medical_services WHERE content IS NULL`);
+  const nullContentCodes = nullContentRes.rows.map((r) => r.code);
+
+  console.log(`\n📊 [Catalog Seed Summary]`);
+  console.log(`   - Số dịch vụ đã gán content: ${assignedCount}/${dbCodes.size}`);
+  console.log(`   - Danh sách code trong JSON không tìm thấy trong DB:`, unmappedInDb);
+  console.log(`   - Danh sách dịch vụ trong DB còn content = null:`, nullContentCodes);
 
   // Bổ sung các bản ghi BasePrice với trạng thái EXPIRED, SCHEDULED, CANCELLED
   const routineServiceId = serviceMap['PRENATAL_ROUTINE'].id;
@@ -1079,7 +1290,7 @@ async function main() {
       title: 'Thạc sĩ Bác sĩ Sản Phụ khoa',
       startYear: 2014,
       specialtyCode: 'OBSTETRICS',
-      photoUrl: 'https://images.unsplash.com/photo-1594824813501-489564c718b9?auto=format&fit=crop&w=800&q=80',
+      photoUrl: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?auto=format&fit=crop&w=800&q=80',
       bio: 'Tốt nghiệp Thạc sĩ Sản phụ khoa loại Xuất sắc tại Đại học Y Hà Nội. Tận tâm, ân cần, được nhiều mẹ bầu tin cậy đồng hành trong suốt thai kỳ và quá trình sinh nở tự nhiên.',
     },
     {
@@ -1194,13 +1405,36 @@ async function main() {
     });
   }
 
-  // Chuyên khoa phụ (Secondary specialty) cho Trưởng khoa BS. Lê Thu Hà: Thêm Phụ khoa
+  // Chuyên khoa phụ (Secondary specialty) cho các bác sĩ để đảm bảo chuyên khoa nào cũng có đội ngũ chuyên gia
   const gynSpecId = specialtyMap['GYNECOLOGY'];
   if (gynSpecId && doctorList.length > 0) {
     await clients.doctor.query(
       `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
        VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
-      [doctorList[0].id, gynSpecId]
+      [doctorList[0].id, gynSpecId] // BS. CKII. Lê Thu Hà
+    );
+  }
+  if (gynSpecId && doctorList.length > 2) {
+    await clients.doctor.query(
+      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
+       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
+      [doctorList[2].id, gynSpecId] // ThS. BS. Trần Thanh Mai
+    );
+  }
+  const reproSpecId = specialtyMap['REPRODUCTIVE_ENDOCRINOLOGY'];
+  if (reproSpecId && doctorList.length > 7) {
+    await clients.doctor.query(
+      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
+       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
+      [doctorList[7].id, reproSpecId] // TS. BS. Đoàn Văn Bắc
+    );
+  }
+  const matSpecId = specialtyMap['MATERNAL_MEDICINE'];
+  if (matSpecId && doctorList.length > 6) {
+    await clients.doctor.query(
+      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
+       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
+      [doctorList[6].id, matSpecId] // BS. Nguyễn Hồng Nhung
     );
   }
 
@@ -1618,6 +1852,36 @@ async function main() {
       gestationalWeeks: 14,
       riskLevel: 'LOW',
     },
+    // Tài khoản 2: Đã có thông tin cá nhân (Chưa khám & Chưa có Medical Record)
+    {
+      email: 'patient.profile@taman.hospital',
+      fullName: 'Lê Hoàng Kim Ngân',
+      phone: '0908888002',
+      dob: '1997-08-20',
+      nationalId: '001197000888',
+      address: '78 Trần Hưng Đạo, Phường Phan Chu Trinh, Quận Hoàn Kiếm, Hà Nội',
+      emergencyName: 'Trần Anh Tuấn',
+      emergencyRel: 'Chồng',
+      emergencyPhone: '0908888009',
+      noMedicalRecord: true,
+    },
+    // Tài khoản 3: Đang theo dõi thai kỳ (Đầy đủ dữ liệu chuyên sâu)
+    {
+      email: 'patient.thaiky@taman.hospital',
+      fullName: 'Trần Diệu Hương',
+      phone: '0908888003',
+      dob: '1994-05-12',
+      nationalId: '001194000999',
+      address: '158 Phố Huế, Phường Hàng Bài, Quận Hai Bà Trưng, Hà Nội',
+      emergencyName: 'Phạm Quốc Huy',
+      emergencyRel: 'Chồng',
+      emergencyPhone: '0908888099',
+      secondaryContacts: [
+        { name: 'Nguyễn Thị Minh Loan', rel: 'Mẹ ruột', phone: '0908888098', priority: 2 },
+      ],
+      gestationalWeeks: 20,
+      riskLevel: 'LOW',
+    },
   ];
 
   const patientList = [];
@@ -1658,18 +1922,21 @@ async function main() {
       }
     }
 
-    // Hồ sơ Thai kỳ (PregnancyEpisode) trong MedicalRecord Service
-    const lmpDate = new Date(now);
-    lmpDate.setDate(lmpDate.getDate() - pat.gestationalWeeks * 7);
-    const eddDate = new Date(lmpDate);
-    eddDate.setDate(eddDate.getDate() + 280);
+    // Hồ sơ Thai kỳ (PregnancyEpisode) trong MedicalRecord Service (chỉ tạo nếu không phải noMedicalRecord)
+    let pregnancyEpisodeId = null;
+    if (!pat.noMedicalRecord && pat.gestationalWeeks) {
+      const lmpDate = new Date(now);
+      lmpDate.setDate(lmpDate.getDate() - pat.gestationalWeeks * 7);
+      const eddDate = new Date(lmpDate);
+      eddDate.setDate(eddDate.getDate() + 280);
 
-    const epRes = await clients.medicalRecord.query(
-      `INSERT INTO pregnancy_episodes (id, patient_id, status, estimated_due_date, last_menstrual_period, risk_level, version, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, 'ACTIVE', $2, $3, $4, 1, NOW(), NOW()) RETURNING id`,
-      [patientId, eddDate, lmpDate, pat.riskLevel]
-    );
-    const pregnancyEpisodeId = epRes.rows[0].id;
+      const epRes = await clients.medicalRecord.query(
+        `INSERT INTO pregnancy_episodes (id, patient_id, status, estimated_due_date, last_menstrual_period, risk_level, version, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, 'ACTIVE', $2, $3, $4, 1, NOW(), NOW()) RETURNING id`,
+        [patientId, eddDate, lmpDate, pat.riskLevel || 'LOW']
+      );
+      pregnancyEpisodeId = epRes.rows[0].id;
+    }
 
     patientList.push({ id: patientId, accountId: accId, pregnancyEpisodeId, ...pat, phone: formattedPhone });
   }
@@ -2001,6 +2268,66 @@ async function main() {
       code: 'AT-2026-0012',
       vitals: null,
       complaint: 'Đăng ký siêu âm 2D nhưng không có mặt tại phòng khám quá thời hạn quy định.',
+      summary: null,
+      diagnosis: null,
+      medications: [],
+    },
+    // =========================================================================
+    // DỮ LIỆU CHUYÊN SÂU CHO TÀI KHOẢN 3: patient.thaiky@taman.hospital (Thai 20 tuần)
+    // =========================================================================
+    // 1. Quá khứ (Mốc 12 tuần - Đã hoàn thành): Siêu âm đo độ mờ da gáy NT
+    {
+      patientIdx: 15,
+      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
+      serviceCode: 'US_4D_5D',
+      dayOffset: -56, // 8 tuần trước
+      startHour: 9,
+      startMinute: 0,
+      channel: 'ONLINE',
+      selectionMode: 'DOCTOR',
+      status: 'COMPLETED',
+      invoiceStatus: 'PAID',
+      code: 'AT-2026-0013',
+      vitals: { sys: 112, dia: 72, hr: 76, temp: 36.6, weight: 54.0 },
+      complaint: 'Khám thai định kỳ mốc 12 tuần, đo độ mờ da gáy NT và tư vấn sàng lọc trước sinh.',
+      summary: 'Thai 12 tuần phát triển tốt, chiều dài đầu mông CRL = 54mm. Độ mờ da gáy NT = 1.2mm (nguy cơ thấp). Xương mũi hiện rõ, tim thai 152 ck/p đều rõ. Bác sĩ tư vấn chế độ dinh dưỡng và kê đơn bổ sung vi chất thai kỳ.',
+      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai nghén con so bình thường tuần thứ 12' },
+      medications: ['MED_FOLIC_400', 'MED_CALCIUM_CORBIERE', 'MED_DHA_PRENATAL'],
+    },
+    // 2. Hôm nay (Mốc 20 tuần - Đã hoàn thành): Siêu âm 4D/5D khảo sát dị tật hình thái học thai nhi chuyên sâu
+    {
+      patientIdx: 15,
+      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
+      serviceCode: 'US_4D_5D',
+      dayOffset: 0, // Hôm nay
+      startHour: 14,
+      startMinute: 30,
+      channel: 'ONLINE',
+      selectionMode: 'DOCTOR',
+      status: 'COMPLETED',
+      invoiceStatus: 'PAID',
+      code: 'AT-2026-0014',
+      vitals: { sys: 115, dia: 75, hr: 78, temp: 36.6, weight: 57.5 },
+      complaint: 'Khám thai mốc 20 tuần, siêu âm khảo sát dị tật hình thái học thai nhi chuyên sâu 4D/5D.',
+      summary: 'Thai 20 tuần phát triển bình thường theo bách phân vị tiêu chuẩn. Cấu trúc tim 4 buồng cân xứng, vòm sọ não liên tục, tứ chi đủ ngón, cử động thai linh hoạt. Nhịp tim thai FHR 146 ck/p đều rõ. Bánh rau bám mặt sau độ 1, nước ối bình thường AFI = 14cm. Doppler động mạch rốn và tử cung chỉ số trở kháng bình thường. Mẹ sức khỏe tốt, huyết áp ổn định.',
+      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai kỳ bình thường tuần thứ 20 - Hình thái học thai nhi phát triển tốt' },
+      medications: ['MED_IRON_FEMAT', 'MED_CALCIUM_CORBIERE', 'MED_DHA_PRENATAL'],
+    },
+    // 3. Tương lai (Mốc 24 tuần - Đã đặt lịch): Nghiệm pháp dung nạp đường huyết thai kỳ OGTT
+    {
+      patientIdx: 15,
+      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
+      serviceCode: 'OGTT_DIABETES',
+      dayOffset: 28, // 4 tuần sau
+      startHour: 8,
+      startMinute: 0,
+      channel: 'ONLINE',
+      selectionMode: 'DOCTOR',
+      status: 'BOOKED',
+      invoiceStatus: 'PAID',
+      code: 'AT-2026-0015',
+      vitals: null,
+      complaint: 'Lịch hẹn nghiệm pháp dung nạp glucose đường uống 75g (OGTT) tầm soát đái tháo đường thai kỳ tuần 24.',
       summary: null,
       diagnosis: null,
       medications: [],
@@ -4009,6 +4336,72 @@ async function main() {
     [plan4Id, JSON.stringify({ title: 'Phác đồ can thiệp đường huyết', cancelled: true }), drDuong.id]
   );
 
+  // --- KẾ HOẠCH ĐIỀU TRỊ CHO TÀI KHOẢN 3: Trần Diệu Hương (patient.thaiky@taman.hospital, Thai 20 tuần) ---
+  const thaikyPat = patientList[15];
+  const drBac = doctorList[7]; // TS. BS. Đoàn Văn Bắc
+  const plan5Id = crypto.randomUUID();
+
+  await clients.treatmentPlan.query(
+    `INSERT INTO treatment_plans (
+      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
+      status, title, summary, effective_from, effective_to, version, activated_at, created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5,
+      'ACTIVE', $6, $7, $8, $9, 1, NOW() - INTERVAL '56 days', NOW() - INTERVAL '56 days', NOW()
+    )`,
+    [
+      plan5Id,
+      thaikyPat.id,
+      thaikyPat.pregnancyEpisodeId,
+      seededAppointments[12]?.encounterId || null,
+      drBac.id,
+      'Phác đồ chăm sóc & quản lý thai kỳ chuyên sâu 40 tuần (TS. BS. Đoàn Văn Bắc)',
+      'Phác đồ quản lý thai kỳ cá thể hóa dành riêng cho thai phụ Trần Diệu Hương: Giám sát siêu âm hình thái học 4D/5D, sàng lọc đái tháo đường thai kỳ, tiêm phòng uốn ván tiền sản và theo dõi tăng trưởng thai nhi.',
+      new Date(now.getTime() - 56 * 24 * 3600000),
+      new Date(now.getFullYear(), now.getMonth() + 5, 1),
+    ]
+  );
+
+  const plan5Items = [
+    { type: 'ULTRASOUND', title: 'Siêu âm đo độ mờ da gáy (NT) & Sàng lọc quý 1 tuần 12', desc: 'Đo khoảng sáng sau gáy và kiểm tra xương mũi.', status: 'DONE', dueAt: new Date(now.getTime() - 56 * 24 * 3600000), completedAt: new Date(now.getTime() - 56 * 24 * 3600000), sort: 1 },
+    { type: 'ULTRASOUND', title: 'Siêu âm 4D/5D khảo sát hình thái học thai nhi tuần 20', desc: 'Khảo sát dị tật chi tiết giải phẫu tim thai, thần kinh sọ não và hệ vận động.', status: 'DONE', dueAt: new Date(), completedAt: new Date(), sort: 2 },
+    { type: 'LAB_TEST', title: 'Nghiệm pháp dung nạp Glucose 75g (OGTT) tuần 24', desc: 'Tầm soát đái tháo đường thai kỳ 3 thời điểm: Lúc đói, sau 1h và sau 2h uống đường.', status: 'PENDING', dueAt: new Date(now.getTime() + 28 * 24 * 3600000), completedAt: null, sort: 3 },
+    { type: 'VACCINATION', title: 'Tiêm phòng vắc xin Uốn ván mũi 1 (VAT 1) tuần 28', desc: 'Phòng ngừa uốn ván sơ sinh cho mẹ và con khi sinh nở.', status: 'PENDING', dueAt: new Date(now.getTime() + 56 * 24 * 3600000), completedAt: null, sort: 4 },
+    { type: 'ULTRASOUND', title: 'Siêu âm Doppler màu đánh giá tăng trưởng thai tuần 32', desc: 'Đo Doppler động mạch rốn và não giữa, kiểm tra thể tích ối và cân nặng ước lượng.', status: 'PENDING', dueAt: new Date(now.getTime() + 84 * 24 * 3600000), completedAt: null, sort: 5 },
+    { type: 'CONSULTATION', title: 'Khám tư vấn làm hồ sơ sinh & giảm đau sản khoa tuần 36', desc: 'Đo Monitoring tim thai NST, khám khung chậu và hướng dẫn quy trình nhập viện.', status: 'PENDING', dueAt: new Date(now.getTime() + 112 * 24 * 3600000), completedAt: null, sort: 6 },
+  ];
+
+  for (const it of plan5Items) {
+    await clients.treatmentPlan.query(
+      `INSERT INTO treatment_plan_items (id, plan_id, type, title, description, due_at, status, sort_order, completed_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)`,
+      [plan5Id, it.type, it.title, it.desc, it.dueAt, it.status, it.sort, it.completedAt]
+    );
+  }
+
+  await clients.treatmentPlan.query(
+    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
+     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW() - INTERVAL '56 days')`,
+    [
+      plan5Id,
+      JSON.stringify({
+        title: 'Phác đồ chăm sóc & quản lý thai kỳ chuyên sâu 40 tuần (TS. BS. Đoàn Văn Bắc)',
+        itemsCount: 6,
+        targetDelivery: 'Tháng 3/2027'
+      }),
+      drBac.id
+    ]
+  );
+
+  if (seededAppointments[13]?.encounterId) {
+    await clients.medicalRecord.query(
+      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
+       VALUES (gen_random_uuid(), $1, 'TREATMENT_PLAN', $2, NOW())
+       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
+      [seededAppointments[13].encounterId, plan5Id]
+    );
+  }
+
   // Sự kiện Outbox của Treatment Plan (TreatmentPlanOutbox)
   const planOutboxEvents = [
     { eventType: 'treatment_plan.created.v1', aggId: plan1Id, payload: { planId: plan1Id, patientId: demoPatient.id, status: 'DRAFT' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 30 * 24 * 3600000) },
@@ -4365,13 +4758,74 @@ async function main() {
     );
   }
 
-  console.log(`✅ Đã khởi tạo đầy đủ hệ thống Tư vấn trực tuyến (Consultation): Tất cả 5 trạng thái Thread (OPEN, ASSIGNED, ANSWERED, CLOSED, REOPENED), 4 trạng thái Escalation (OPEN, ACKNOWLEDGED, RESOLVED, CANCELLED), Phân công bác sĩ đa cấp (ACTIVE, ENDED), Tin nhắn đa vai trò và Outbox events.`);
+  // --- THREAD 6: ANSWERED (Trần Diệu Hương - TS. BS. Đoàn Văn Bắc) ---
+  const thread6Id = crypto.randomUUID();
+  await clients.consultation.query(
+    `INSERT INTO consultation_threads (
+      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
+      last_message_at, created_by_account_id, version, created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, 'ANSWERED', $5, 3,
+      NOW() - INTERVAL '1 hour', $6, 3, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '1 hour'
+    )`,
+    [
+      thread6Id,
+      thaikyPat.id,
+      seededAppointments[13]?.appointmentId || null,
+      'Tư vấn kết quả siêu âm hình thái học tuần 20 và cách uống bổ sung vi chất thai kỳ',
+      drBac.id,
+      thaikyPat.accountId,
+    ]
+  );
+
+  await clients.consultation.query(
+    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
+     VALUES (gen_random_uuid(), $1, $2, 'ACTIVE', $3, NOW() - INTERVAL '4 hours', NULL)`,
+    [thread6Id, drBac.id, receptionistList[0].accountId]
+  );
+
+  const t6Msg1 = 'Chào Bác sĩ Bắc ạ! Hôm nay em vừa làm siêu âm 4D tuần 20 chỗ Bác sĩ về. Kết quả bình thường em rất mừng ạ. Bác sĩ cho em hỏi hiện em đang dùng Canxi Corbiere dạng ống, dạo này uống vào hơi đầy bụng nhẹ thì có cần chuyển sang loại canxi khác không ạ?';
+  const t6Msg2 = 'Chào Diệu Hương! Kết quả siêu âm 20 tuần của em hôm nay rất đẹp, các cấu trúc giải phẫu của thai hoàn toàn bình thường và tim thai rất khỏe nhé. Về canxi, Canxi Corbiere dạng dung dịch hấp thu rất tốt; nếu em thấy hơi đầy bụng thì nên uống ngay sau bữa ăn sáng 30 phút cùng một cốc nước ấm, chia nhỏ ngụm và tránh uống gần cữ uống sắt (uống cách xa sắt ít nhất 2 tiếng). Em theo dõi thêm 3-4 ngày, nếu vẫn còn cảm giác đầy bụng Bác sĩ sẽ đổi sang viên canxi hữu cơ nhé. Cứ an tâm nghỉ ngơi dưỡng thai!';
+  const t6Msg3 = 'Dạ vâng em hiểu rồi ạ, em cảm ơn Bác sĩ Bắc rất nhiều ạ! Hẹn gặp lại Bác sĩ ở mốc khám 24 tuần làm nghiệm pháp đường huyết ạ.';
+
+  await clients.consultation.query(
+    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
+     VALUES 
+      (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '4 hours'),
+      (gen_random_uuid(), $1, 2, $5, 'DOCTOR', gen_random_uuid(), $6, $7, NOW() - INTERVAL '2 hours'),
+      (gen_random_uuid(), $1, 3, $2, 'PATIENT', gen_random_uuid(), $8, $9, NOW() - INTERVAL '1 hour')`,
+    [
+      thread6Id, thaikyPat.accountId, t6Msg1, sha256(t6Msg1),
+      drBac.accountId, t6Msg2, sha256(t6Msg2),
+      t6Msg3, sha256(t6Msg3)
+    ]
+  );
+
+    console.log(`✅ Đã khởi tạo đầy đủ hệ thống Tư vấn trực tuyến (Consultation): Tất cả 5 trạng thái Thread (OPEN, ASSIGNED, ANSWERED, CLOSED, REOPENED), 4 trạng thái Escalation (OPEN, ACKNOWLEDGED, RESOLVED, CANCELLED), Phân công bác sĩ đa cấp (ACTIVE, ENDED), Tin nhắn đa vai trò và Outbox events.`);
 
   // ============================================================================
   // 12. THÔNG BÁO HỆ THỐNG (NOTIFICATIONS)
   // ============================================================================
   console.log('\n--- BƯỚC 12: KHỞI TẠO THÔNG BÁO HỆ THỐNG (NOTIFICATIONS) ---');
   const notificationsDef = [
+    {
+      accId: thaikyPat.accountId,
+      category: 'BOOKING',
+      title: 'Đặt lịch khám thành công',
+      body: 'Lịch khám [Siêu âm thai 4D/5D hình thái học] mã AT-2026-0014 với TS. BS. Đoàn Văn Bắc đã được xác nhận thành công.',
+    },
+    {
+      accId: thaikyPat.accountId,
+      category: 'RESULT',
+      title: 'Đã có kết quả siêu âm hình thái học tuần 20',
+      body: 'Kết quả siêu âm 4D khảo sát hình thái học thai nhi của bạn đã được TS. BS. Đoàn Văn Bắc hoàn tất và lưu vào bệnh án điện tử.',
+    },
+    {
+      accId: thaikyPat.accountId,
+      category: 'REMINDER',
+      title: 'Bác sĩ Đoàn Văn Bắc đã phản hồi tư vấn',
+      body: 'Bác sĩ Đoàn Văn Bắc đã trả lời câu hỏi của bạn về hướng dẫn bổ sung vi chất thai kỳ an toàn.',
+    },
     {
       accId: demoPatient.accountId,
       category: 'BOOKING',
@@ -4410,7 +4864,28 @@ async function main() {
   // 13. NHẬT KÝ KIỂM TOÁN AN TOÀN DỮ LIỆU (AUDIT LOGS)
   // ============================================================================
   console.log('\n--- BƯỚC 13: KHỞI TẠO NHẬT KÝ KIỂM TOÁN HỆ THỐNG (AUDIT LOG) ---');
+  const profilePat = patientList[14];
   const auditEntriesDef = [
+    {
+      service: 'patient-service',
+      type: 'PATIENT_PROFILE',
+      id: profilePat.id,
+      actorId: profilePat.accountId,
+      actorType: 'PATIENT',
+      action: 'UPSERT_PROFILE',
+      res: 'SUCCESS',
+      desc: 'Bệnh nhân hoàn tất điền hồ sơ cá nhân trên ứng dụng.',
+    },
+    {
+      service: 'patient-service',
+      type: 'PATIENT_PROFILE',
+      id: thaikyPat.id,
+      actorId: thaikyPat.accountId,
+      actorType: 'PATIENT',
+      action: 'UPSERT_PROFILE',
+      res: 'SUCCESS',
+      desc: 'Thai phụ hoàn tất hồ sơ và khởi tạo phác đồ theo dõi thai kỳ 20 tuần.',
+    },
     {
       service: 'patient-service',
       type: 'PATIENT_PROFILE',
@@ -4490,6 +4965,11 @@ async function main() {
   console.log('   - Email: demo.patient@antam.local       (Nguyễn Minh Anh - 0901000001 - Thai 22 tuần)');
   console.log('   - Email: patient.thanhhang@gmail.com    (Trần Thị Thanh Hằng - 0901234003 - Thai 12 tuần)');
   console.log('   - Email: patient.quynhchi@gmail.com     (Phạm Quỳnh Chi - 0901234007 - Thai 34 tuần)');
+  console.log('----------------------------------------------------------------');
+  console.log('⭐ 3 TÀI KHOẢN KIỂM THỬ ĐẶC BIỆT THEO YÊU CẦU:');
+  console.log('   1. patient.new@taman.hospital     | Mới tạo tài khoản (Chưa có Profile & Medical Record)');
+  console.log('   2. patient.profile@taman.hospital | Đã có thông tin cá nhân (Chưa khám & Chưa có Medical Record)');
+  console.log('   3. patient.thaiky@taman.hospital  | Đang theo dõi thai kỳ 20 tuần (Đầy đủ dữ liệu chuyên sâu)');
   console.log('----------------------------------------------------------------\n');
 }
 

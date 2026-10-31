@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PatientSidebar } from '../../../shared/components/navigation/PatientSidebar';
+import { UserChip } from '../../../shared/components/navigation/UserChip';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate, usePathname } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
@@ -68,9 +69,7 @@ export function NurseWorkspacePage() {
             <span>Điều dưỡng workspace</span>
             <strong>{section === 'overview' ? 'Tổng quan' : section}</strong>
           </div>
-          <div className="patient-account-chip">
-            <span>{auth.user?.email}</span>
-          </div>
+          <UserChip onLogout={() => void logout()} showWorkspaceLink={false} />
         </header>
         <section className="patient-home-section patient-dashboard-section">
           <div className="patient-page-heading">

@@ -16,6 +16,7 @@ export interface PatientProfile {
   dateOfBirth: string;
   phoneNumber: string;
   nationalIdMasked: string | null;
+  nationalId?: string | null;
   address: string | null;
   profileStatus: 'COMPLETE';
   version: number;

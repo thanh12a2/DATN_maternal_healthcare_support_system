@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Result, Skeleton } from 'antd';
 import { PatientSidebar } from '../../shared/components/navigation/PatientSidebar';
+import { UserChip } from '../../shared/components/navigation/UserChip';
 import { useAuthSession } from '../../app/AuthSessionProvider';
 import { navigate, usePathname } from '../../app/navigation';
 import { AdminThemeProvider } from './AdminThemeProvider';
@@ -66,13 +67,13 @@ export default function AdminWorkspacePage() {
                 <p className="admin-topbar-subtitle">{description}</p>
               </div>
               <div className="admin-topbar-actions">
-                <div className="admin-account">
-                  <span className="patient-avatar" aria-hidden="true">{(auth.user?.email ?? 'A').charAt(0).toUpperCase()}</span>
-                  <div>
-                    <span>{auth.user?.email}</span>
-                    <small>Quản trị viên</small>
-                  </div>
-                </div>
+                <UserChip onLogout={() => void logout()} showWorkspaceLink={false} />
+
+
+
+
+
+
               </div>
             </header>
             <section className="admin-content">

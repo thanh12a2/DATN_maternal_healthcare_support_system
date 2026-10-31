@@ -1,7 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
-*{box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif}html{color-scheme:light;-webkit-text-size-adjust:100%}html{scrollbar-width:thin;scrollbar-color:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%) var(--accent-soft)}
+*{box-sizing:border-box;font-family:'Be Vietnam Pro',sans-serif}
+html{color-scheme:light;-webkit-text-size-adjust:100%;scrollbar-gutter:stable;overflow-y:scroll}
+html{scrollbar-width:thin;scrollbar-color:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%) var(--accent-soft)}
 html::-webkit-scrollbar{width:12px;height:12px}
 html::-webkit-scrollbar-track{background:var(--accent-soft)}
 html::-webkit-scrollbar-thumb{border:3px solid var(--accent-soft);border-radius:999px;background:color-mix(in oklch,var(--accent-soft) 80%,var(--deep) 20%)}
 html::-webkit-scrollbar-thumb:hover{background:color-mix(in oklch,var(--accent-soft) 68%,var(--deep) 32%)}
 body{margin:0;min-width:320px;min-height:100vh;overflow-x:hidden;background:var(--bg);color:var(--fg);font:16px/1.5 var(--font-body);-webkit-font-smoothing:antialiased}button,input,select,textarea{font:inherit}button{cursor:pointer}svg{display:block}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--font-display);text-wrap:balance}p{text-wrap:pretty}:focus-visible{outline:3px solid color-mix(in oklch,var(--accent) 32%,transparent);outline-offset:3px}.app-loading{display:grid;place-content:center;gap:12px;min-height:100vh;padding:24px;text-align:center}.app-loading button{justify-self:center;min-height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700}
+
+
+:root {
+  --portal-container-max: 1340px;
+}
+
+.portal-container {
+  width: 100%;
+  max-width: var(--portal-container-max, 1340px);
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}

@@ -1,0 +1,3520 @@
+{
+  "VAC_TETANUS": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Uốn ván sơ sinh là bệnh nhiễm trùng nặng, có thể xảy ra khi vi khuẩn Clostridium tetani xâm nhập qua vết cắt rốn hoặc dụng cụ đỡ sinh không vô khuẩn. Kháng thể của mẹ sau khi tiêm vắc xin uốn ván hấp phụ (VAT) được truyền qua nhau thai, giúp bảo vệ trẻ trong những tuần đầu đời và bảo vệ cả người mẹ khi sinh nở. Tại Tâm An, thai phụ được khám sàng lọc trước tiêm, tiêm bắp sâu theo đúng quy trình và theo dõi phản ứng sau tiêm 30 phút.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tiêm",
+        "value": "Từ tuần thai 20 trở đi (bác sĩ có thể điều chỉnh theo tiền sử tiêm chủng)"
+      },
+      {
+        "icon": "syringe",
+        "label": "Số mũi",
+        "value": "Thường 2 mũi cách nhau tối thiểu 1 tháng nếu chưa từng tiêm; chỉ cần mũi nhắc lại nếu đã tiêm trước đây"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình thực hiện",
+        "value": "Khám sàng lọc, tiêm và theo dõi chu đáo theo phác đồ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "shield-check",
+        "title": "Bảo vệ cả mẹ và bé",
+        "desc": "Kháng thể truyền qua nhau thai giúp phòng uốn ván sơ sinh và uốn ván sản khoa."
+      },
+      {
+        "icon": "clipboard-check",
+        "title": "Khám sàng lọc trước tiêm",
+        "desc": "Bác sĩ kiểm tra sổ tiêm, tiền sử dị ứng, tình trạng sức khỏe để quyết định số mũi phù hợp."
+      },
+      {
+        "icon": "eye",
+        "title": "Theo dõi sau tiêm 30 phút",
+        "desc": "Phát hiện và xử trí kịp thời các phản ứng bất thường ngay tại cơ sở."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Nhắc lịch mũi tiếp theo",
+        "desc": "Ghi nhận vào sổ tiêm chủng và hẹn lịch đảm bảo mũi cuối cách ngày dự sinh đủ xa."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ chưa từng tiêm hoặc chưa tiêm đủ mũi vắc xin uốn ván",
+      "Thai phụ không nhớ hoặc không có sổ ghi nhận tiền sử tiêm chủng",
+      "Thai phụ mang thai lần đầu hoặc lần mang thai sau đã lâu chưa tiêm nhắc lại",
+      "Thai phụ có kế hoạch sinh ở môi trường cần tăng cường phòng ngừa nhiễm khuẩn"
+    ],
+    "not_suitable_for": [
+      "Đang sốt hoặc mắc bệnh cấp tính (cần hoãn tiêm đến khi hồi phục)",
+      "Từng có phản ứng dị ứng nặng (sốc phản vệ) sau mũi tiêm trước hoặc với thành phần của vắc xin",
+      "Từng bị hội chứng Guillain-Barré trong vòng 6 tuần sau một mũi vắc xin chứa uốn ván (cần bác sĩ đánh giá trước)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và kiểm tra sổ tiêm",
+        "desc": "Đối chiếu sổ tiêm chủng, sổ khám thai và xác nhận số mũi đã tiêm trước đây.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám sàng lọc trước tiêm",
+        "desc": "Đo nhiệt độ, huyết áp, hỏi tiền sử dị ứng, bệnh lý và thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tiêm bắp sâu",
+        "desc": "Tiêm vắc xin VAT vào bắp cánh tay, thao tác nhẹ nhàng, vô khuẩn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi sau tiêm",
+        "desc": "Nghỉ tại khu theo dõi để nhân viên y tế quan sát phản ứng sớm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Ghi nhận và hẹn mũi tiếp theo",
+        "desc": "Cập nhật sổ tiêm chủng, hướng dẫn chăm sóc tại nhà và hẹn lịch mũi sau nếu cần.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ tiêm chủng (nếu có), sổ khám thai và giấy tờ tùy thân",
+      "Ăn nhẹ trước khi đến, không cần nhịn ăn",
+      "Mặc áo rộng tay hoặc dễ xắn tay lên",
+      "Báo cho bác sĩ nếu gần đây bị sốt, ho, tiêu chảy hoặc đang dùng thuốc điều trị"
+    ],
+    "aftercare": [
+      "Đau, sưng, đỏ nhẹ tại chỗ tiêm trong 1–2 ngày là thường gặp, có thể chườm mát",
+      "Sốt nhẹ, mệt mỏi, đau nhức cơ có thể xuất hiện; uống đủ nước và nghỉ ngơi",
+      "Chỉ dùng thuốc hạ sốt, giảm đau khi có chỉ định của bác sĩ",
+      "Giữ lại sổ tiêm chủng, tiêm đúng lịch mũi tiếp theo"
+    ],
+    "warning_signs": [
+      "Khó thở, nổi mề đay toàn thân, sưng môi hoặc mặt, chóng mặt, ngất",
+      "Sốt trên 39°C hoặc sốt kéo dài quá 48 giờ",
+      "Chỗ tiêm sưng đỏ lan rộng, đau tăng, có mủ",
+      "Thấy thai máy giảm rõ rệt sau tiêm"
+    ],
+    "accuracy_note": "Vắc xin VAT có hiệu quả bảo vệ cao khi tiêm đủ liều và đúng thời điểm trước sinh. Mức độ bảo vệ phụ thuộc vào việc hoàn thành lịch tiêm theo chỉ định của bác sĩ.",
+    "faqs": [
+      {
+        "q": "Tiêm vắc xin uốn ván khi mang thai có an toàn cho thai nhi không?",
+        "a": "VAT là vắc xin giải độc tố, không chứa vi khuẩn sống và được WHO khuyến cáo cho phụ nữ mang thai. Bác sĩ vẫn sẽ khám sàng lọc trước khi tiêm để đảm bảo an toàn."
+      },
+      {
+        "q": "Tôi đã tiêm uốn ván trước khi mang thai, có cần tiêm lại không?",
+        "a": "Tùy số mũi đã tiêm và thời gian từ mũi cuối. Bác sĩ sẽ xem sổ tiêm chủng và quyết định cần tiêm nhắc lại hay không."
+      },
+      {
+        "q": "Nếu quên mang sổ tiêm thì sao?",
+        "a": "Bạn vẫn được khám và tư vấn. Khi không xác định được tiền sử, bác sĩ sẽ cân nhắc xử trí như chưa từng tiêm."
+      }
+    ],
+    "performed_by": "Bác sĩ và điều dưỡng tiêm chủng được đào tạo",
+    "references": [
+      {
+        "title": "Tetanus vaccines: WHO position paper (2017)",
+        "org": "WHO"
+      },
+      {
+        "title": "Chương trình Tiêm chủng mở rộng",
+        "org": "Bộ Y tế Việt Nam"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "IUI_PROCEDURE": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Bơm tinh trùng vào buồng tử cung (IUI) là kỹ thuật hỗ trợ sinh sản đơn giản, ít xâm lấn: tinh trùng của người chồng được lọc rửa để chọn lọc những tinh trùng khỏe, sau đó đưa trực tiếp vào buồng tử cung vào đúng thời điểm rụng trứng. Phương pháp rút ngắn quãng đường tinh trùng phải đi, tăng khả năng gặp noãn, thường là lựa chọn đầu tay cho nhiều cặp vợ chồng hiếm muộn trước khi cân nhắc IVF. Quy trình thực hiện không cần gây mê, người vợ có thể ra về ngay sau khi nghỉ ngắn.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thủ thuật",
+        "value": "Thực hiện và ra về trong ngày theo chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Chuẩn bị trước",
+        "value": "Theo dõi nang noãn vài ngày trước đó; bác sĩ chọn ngày bơm theo thời điểm rụng trứng"
+      },
+      {
+        "icon": "bed",
+        "label": "Nằm viện",
+        "value": "Không cần, ra về trong ngày"
+      },
+      {
+        "icon": "baby",
+        "label": "Thử thai",
+        "value": "Khoảng 14 ngày sau thủ thuật"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Lọc rửa tinh trùng trong phòng Lab",
+        "desc": "Chọn lọc tinh trùng di động tốt, loại bỏ tạp chất và dịch tinh để tăng hiệu quả và an toàn."
+      },
+      {
+        "icon": "activity",
+        "title": "Theo dõi rụng trứng sát bằng siêu âm",
+        "desc": "Xác định nang noãn trưởng thành để bơm đúng thời điểm."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "Ít xâm lấn, không gây mê",
+        "desc": "Dùng ống thông mềm nhỏ, cảm giác tương tự khi khám phụ khoa."
+      },
+      {
+        "icon": "user-check",
+        "title": "Bác sĩ chuyên khoa hiếm muộn",
+        "desc": "Hạng bác sĩ cơ bản đã được bao gồm trong giá dịch vụ."
+      }
+    ],
+    "suitable_for": [
+      "Hiếm muộn không rõ nguyên nhân",
+      "Tinh trùng yếu hoặc ít ở mức nhẹ đến vừa",
+      "Rối loạn phóng noãn, cần kích thích buồng trứng nhẹ",
+      "Lạc nội mạc tử cung mức độ nhẹ",
+      "Yếu tố cổ tử cung (chất nhầy cổ tử cung bất lợi cho tinh trùng)",
+      "Khó giao hợp hoặc rối loạn xuất tinh nhưng vẫn lấy được mẫu tinh trùng"
+    ],
+    "not_suitable_for": [
+      "Cả hai vòi tử cung bị tắc hoặc đã cắt",
+      "Chất lượng tinh trùng quá thấp (sau lọc rửa còn rất ít tinh trùng di động)",
+      "Buồng trứng suy giảm nặng hoặc tuổi vợ cao, cần cân nhắc IVF sớm",
+      "Lạc nội mạc tử cung nặng, dính vùng chậu, viêm nhiễm vùng chậu đang tiến triển",
+      "Có bất thường buồng tử cung chưa được xử trí"
+    ],
+    "process_steps": [
+      {
+        "title": "Khám và đánh giá trước chu kỳ",
+        "desc": "Siêu âm, hormone, tinh dịch đồ và kiểm tra thông vòi tử cung nếu chưa có (thực hiện trước ngày bơm).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi nang noãn và kích rụng trứng",
+        "desc": "Siêu âm đầu dò, có thể dùng thuốc kích thích nhẹ và tiêm thuốc kích rụng trứng khi nang đủ kích thước (thực hiện trước ngày bơm).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tinh dịch",
+        "desc": "Người chồng lấy mẫu tại phòng riêng, vô khuẩn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lọc rửa và chọn lọc tinh trùng",
+        "desc": "Kỹ thuật viên phôi học xử lý mẫu để thu tinh trùng di động tốt.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Bơm tinh trùng vào buồng tử cung",
+        "desc": "Bác sĩ đặt mỏ vịt, đưa ống thông mềm qua cổ tử cung và bơm nhẹ nhàng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nghỉ ngơi sau thủ thuật",
+        "desc": "Nằm nghỉ ngắn, nhận hướng dẫn hỗ trợ nội mạc và lịch thử thai.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Người chồng kiêng xuất tinh khoảng 2–5 ngày trước ngày bơm (theo hướng dẫn bác sĩ)",
+      "Thực hiện đầy đủ các xét nghiệm và siêu âm theo kế hoạch điều trị",
+      "Tuân thủ lịch tiêm thuốc kích thích và kích rụng trứng đúng giờ",
+      "Mang theo kết quả xét nghiệm, đơn thuốc và giấy tờ tùy thân của cả hai vợ chồng",
+      "Giữ tâm lý thoải mái, mặc trang phục rộng rãi"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt nhẹ nhàng, tránh vận động mạnh hoặc mang vác nặng trong vài ngày",
+      "Dùng thuốc hỗ trợ nội mạc tử cung (ví dụ progesterone) nếu được kê đơn",
+      "Có thể xuất hiện đau bụng nhẹ hoặc ra ít dịch hồng trong 1–2 ngày",
+      "Thử thai và tái khám theo lịch hẹn, khoảng 14 ngày sau thủ thuật"
+    ],
+    "warning_signs": [
+      "Đau bụng dữ dội hoặc tăng dần, bụng chướng nhanh, khó thở (nghi quá kích buồng trứng)",
+      "Ra máu âm đạo nhiều hơn kinh nguyệt",
+      "Sốt trên 38°C, dịch âm đạo có mùi hôi",
+      "Đau bụng một bên kèm chóng mặt, ngất (cần loại trừ thai ngoài tử cung nếu có thai)"
+    ],
+    "accuracy_note": "Tỷ lệ thành công mỗi chu kỳ IUI phụ thuộc chủ yếu vào tuổi người vợ, nguyên nhân hiếm muộn, chất lượng tinh trùng và số nang noãn. Bác sĩ sẽ trao đổi tiên lượng riêng cho từng cặp vợ chồng. Nếu sau một số chu kỳ (thường 3–4 chu kỳ) chưa có thai, bác sĩ sẽ tư vấn chuyển sang phương pháp khác như IVF.",
+    "faqs": [
+      {
+        "q": "IUI có đau không?",
+        "a": "Đa số cảm thấy khó chịu nhẹ, tương tự khi khám phụ khoa hoặc đặt mỏ vịt. Thủ thuật diễn ra vài phút và không cần gây mê."
+      },
+      {
+        "q": "Sau khi bơm có phải nằm bất động không?",
+        "a": "Không cần nằm lâu. Bạn nghỉ ngắn tại phòng theo hướng dẫn, sau đó có thể sinh hoạt nhẹ nhàng."
+      },
+      {
+        "q": "Giá dịch vụ đã gồm thuốc kích trứng và xét nghiệm chưa?",
+        "a": "Giá niêm yết là chi phí thủ thuật. Thuốc kích thích buồng trứng và các xét nghiệm đánh giá trước có thể được tính riêng, vui lòng xác nhận khi đặt lịch."
+      },
+      {
+        "q": "IUI có thể gây đa thai không?",
+        "a": "Có, nhất là khi dùng thuốc kích thích buồng trứng và có nhiều nang noãn. Bác sĩ sẽ theo dõi sát để hạn chế nguy cơ này."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Hiếm muộn & Hỗ trợ sinh sản cùng kỹ thuật viên phôi học",
+    "references": [
+      {
+        "title": "ESHRE guideline: Unexplained infertility (2023)",
+        "org": "ESHRE"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PRENATAL_VIP": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Buổi khám và tư vấn chuyên sâu trực tiếp với Trưởng khoa hoặc Phó khoa Sản, dành cho thai phụ muốn được theo dõi sát sao và có lộ trình riêng cho cả thai kỳ. Bác sĩ rà soát toàn bộ hồ sơ, đánh giá nguy cơ, sau đó xây dựng phác đồ dinh dưỡng, bổ sung vi chất và kế hoạch vận động phù hợp với thể trạng, tuần thai và bệnh lý nền của bạn. Đây là buổi tư vấn 45 phút, đủ thời gian để bạn hỏi mọi điều còn băn khoăn.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "user-check",
+        "label": "Bác sĩ thực hiện",
+        "value": "Trưởng khoa hoặc Phó khoa Sản"
+      },
+      {
+        "icon": "file-text",
+        "label": "Bạn nhận được",
+        "value": "Phác đồ dinh dưỡng, vận động và lịch khám thai cá nhân hóa"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "stethoscope",
+        "title": "Bác sĩ đầu ngành trực tiếp khám",
+        "desc": "Được chuyên gia nhiều kinh nghiệm đánh giá toàn diện, không chuyển tiếp qua nhiều tầng."
+      },
+      {
+        "icon": "salad",
+        "title": "Phác đồ dinh dưỡng cá thể hóa",
+        "desc": "Dựa trên BMI trước mang thai, tuần thai, xét nghiệm và bệnh lý đi kèm."
+      },
+      {
+        "icon": "dumbbell",
+        "title": "Kế hoạch vận động riêng",
+        "desc": "Bài tập, cường độ và các lưu ý an toàn theo từng giai đoạn thai kỳ."
+      },
+      {
+        "icon": "route",
+        "title": "Lộ trình khám thai toàn thai kỳ",
+        "desc": "Lên sẵn các mốc sàng lọc, xét nghiệm và siêu âm quan trọng cần thực hiện."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn được theo dõi bởi chuyên gia đầu ngành ngay từ đầu",
+      "Thai kỳ có yếu tố nguy cơ: lớn tuổi, thừa cân hoặc thiếu cân, tiền sử sảy thai, sinh non, tiền sản giật, đái tháo đường thai kỳ",
+      "Thai phụ có bệnh nền (tăng huyết áp, tuyến giáp, thiếu máu, bệnh tự miễn)",
+      "Thai phụ muốn tư vấn chế độ ăn, vận động hoặc kế hoạch sinh một cách chi tiết",
+      "Thai phụ cần ý kiến thứ hai cho một thai kỳ có vấn đề"
+    ],
+    "not_suitable_for": [
+      "Tình huống cấp cứu (đau bụng dữ dội, ra máu nhiều, vỡ ối): vui lòng đến ngay khoa cấp cứu",
+      "Cần thực hiện xét nghiệm hoặc siêu âm chuyên sâu: bác sĩ sẽ chỉ định và tính theo dịch vụ riêng"
+    ],
+    "parameters": [
+      {
+        "name": "Mức tăng cân khuyến nghị cả thai kỳ (thai đơn)",
+        "desc": "Tham chiếu theo BMI trước mang thai, bác sĩ điều chỉnh theo thể trạng người châu Á.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vi chất thiết yếu",
+        "desc": "Bác sĩ cá nhân hóa loại và liều theo xét nghiệm và chế độ ăn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vận động",
+        "desc": "Nếu không có chống chỉ định sản khoa, thai phụ nên duy trì vận động nhẹ đến vừa.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và đo chỉ số",
+        "desc": "Đo huyết áp, cân nặng, nhịp tim, ghi nhận lý do khám và mong muốn của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Rà soát hồ sơ và tiền sử",
+        "desc": "Xem kết quả xét nghiệm, siêu âm, tiền sử sản khoa, bệnh nền, thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám lâm sàng",
+        "desc": "Khám sản khoa, nghe tim thai, đánh giá phát triển thai và các dấu hiệu cần theo dõi.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn dinh dưỡng và vận động",
+        "desc": "Xây dựng thực đơn gợi ý, kế hoạch bổ sung vi chất và chương trình vận động an toàn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lập lộ trình theo dõi",
+        "desc": "Tóm tắt các mốc khám, xét nghiệm, siêu âm tiếp theo và dấu hiệu cần đến viện sớm.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ khám thai, kết quả xét nghiệm, siêu âm và đơn thuốc đang dùng",
+      "Liệt kê sẵn các câu hỏi và mối lo ngại để tận dụng tối đa thời gian tư vấn",
+      "Ghi lại cân nặng trước mang thai, chiều cao và thói quen ăn uống thường ngày",
+      "Có thể đi cùng người thân để cùng nghe tư vấn"
+    ],
+    "aftercare": [
+      "Thực hiện theo phác đồ dinh dưỡng, vận động và bổ sung vi chất đã được tư vấn",
+      "Ghi lại cân nặng, huyết áp tại nhà nếu bác sĩ dặn",
+      "Đặt lịch các mốc khám tiếp theo theo lộ trình",
+      "Liên hệ bệnh viện nếu có thắc mắc hoặc thay đổi sức khỏe"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn đều đặn",
+      "Đau đầu dữ dội, nhìn mờ, phù nhanh ở mặt và tay, đau thượng vị",
+      "Giảm hoặc mất cử động thai",
+      "Sốt cao, nôn nhiều không ăn uống được"
+    ],
+    "faqs": [
+      {
+        "q": "Khám VIP khác gì khám thai thường?",
+        "a": "Bạn được bác sĩ đầu ngành trực tiếp thăm khám trong thời gian dài hơn, kèm phác đồ dinh dưỡng, vận động và lộ trình theo dõi cá nhân hóa."
+      },
+      {
+        "q": "Buổi tư vấn đã gồm siêu âm và xét nghiệm chưa?",
+        "a": "Buổi tư vấn tập trung vào khám, đánh giá và lập kế hoạch. Siêu âm, xét nghiệm nếu cần sẽ được chỉ định và tính theo dịch vụ riêng."
+      },
+      {
+        "q": "Tôi có thể chọn bác sĩ cụ thể không?",
+        "a": "Có. Dịch vụ cho phép nâng hạng bác sĩ, phụ thu (nếu có) được hiển thị theo bảng giá khi đặt lịch."
+      }
+    ],
+    "performed_by": "Trưởng khoa hoặc Phó khoa Sản",
+    "references": [
+      {
+        "title": "Weight Gain During Pregnancy: Reexamining the Guidelines (2009)",
+        "org": "Institute of Medicine (USA)"
+      },
+      {
+        "title": "WHO recommendations on antenatal care for a positive pregnancy experience (2016)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_TRANSVAGINAL_US": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm đầu dò âm đạo đặt đầu dò nhỏ vào âm đạo, đến sát tử cung và buồng trứng nên cho hình ảnh độ phân giải cao hơn nhiều so với siêu âm qua thành bụng. Kỹ thuật cho phép bác sĩ đánh giá chính xác niêm mạc tử cung, kích thước và cấu trúc buồng trứng, phát hiện u xơ, polyp, u nang và các bất thường khác. Thủ thuật diễn ra khoảng 25 phút, không cần nhịn ăn và không cần nhịn tiểu.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau khi sạch kinh (khoảng ngày 7–12 của chu kỳ); có thể làm bất kỳ lúc nào khi có triệu chứng cấp"
+      },
+      {
+        "icon": "droplet",
+        "label": "Bàng quang",
+        "value": "Nên đi tiểu trước khi siêu âm"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "scan-line",
+        "title": "Hình ảnh độ phân giải cao",
+        "desc": "Quan sát rõ niêm mạc tử cung, nang noãn, cấu trúc buồng trứng và các khối u nhỏ."
+      },
+      {
+        "icon": "search",
+        "title": "Phát hiện sớm nhiều bệnh lý",
+        "desc": "U xơ tử cung, polyp, u nang buồng trứng, lạc nội mạc tử cung, dày niêm mạc."
+      },
+      {
+        "icon": "timer",
+        "title": "Nhanh, không đau nhiều",
+        "desc": "Đầu dò được bọc vỏ vô khuẩn, thao tác nhẹ nhàng, kết quả có ngay trong buổi khám."
+      },
+      {
+        "icon": "baby",
+        "title": "Hỗ trợ theo dõi hiếm muộn và thai sớm",
+        "desc": "Theo dõi nang noãn, đánh giá túi thai và loại trừ thai ngoài tử cung ở giai đoạn đầu."
+      }
+    ],
+    "suitable_for": [
+      "Rong kinh, rối loạn kinh nguyệt, ra máu bất thường ngoài kỳ kinh",
+      "Đau bụng dưới, đau vùng chậu kéo dài hoặc đau khi quan hệ",
+      "Nghi ngờ u xơ, polyp, u nang buồng trứng hoặc lạc nội mạc tử cung",
+      "Theo dõi nang noãn và niêm mạc trong điều trị hiếm muộn",
+      "Kiểm tra sau sảy thai, nạo hút hoặc đặt dụng cụ tử cung",
+      "Chậm kinh, nghi có thai giai đoạn rất sớm"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục (bác sĩ sẽ chỉ định siêu âm qua thành bụng hoặc đường khác)",
+      "Dị ứng với latex (cần báo trước để dùng vỏ bọc đầu dò không latex)",
+      "Đang chảy máu âm đạo rất nhiều hoặc đau quá mức không chịu đựng được",
+      "Hẹp âm đạo hoặc từng phẫu thuật vùng chậu gây khó đưa đầu dò (cần báo bác sĩ)"
+    ],
+    "parameters": [
+      {
+        "name": "Tử cung",
+        "desc": "Kích thước, tư thế, cấu trúc cơ tử cung, u xơ, bất thường bẩm sinh.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Niêm mạc tử cung",
+        "desc": "Độ dày, hình thái, polyp, dày niêm mạc bất thường.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Buồng trứng",
+        "desc": "Kích thước, số nang thứ cấp, u nang, hình thái nang noãn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vùng chậu",
+        "desc": "Dịch tự do, khối bất thường, giãn vòi tử cung.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận chu kỳ kinh, triệu chứng, tiền sử phụ khoa và phẫu thuật.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chuẩn bị",
+        "desc": "Đi tiểu, thay trang phục, nằm tư thế khám phụ khoa trên giường siêu âm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm đầu dò âm đạo",
+        "desc": "Bác sĩ đưa đầu dò bọc vỏ vô khuẩn nhẹ nhàng vào âm đạo và quan sát tử cung, buồng trứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đọc kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích hình ảnh, kết luận và hướng xử trí hoặc xét nghiệm tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Đi tiểu hết trước khi siêu âm, không cần nhịn tiểu",
+      "Không cần nhịn ăn",
+      "Nếu theo dõi nang noãn hoặc niêm mạc, đến đúng ngày chu kỳ bác sĩ hẹn",
+      "Mặc váy hoặc quần dễ cởi, mang theo kết quả siêu âm, xét nghiệm trước đây",
+      "Báo bác sĩ nếu đang mang thai, dị ứng latex hoặc chưa quan hệ tình dục"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường ngay sau khi siêu âm",
+      "Có thể ra ít dịch hồng nhẹ trong ngày, thường tự hết",
+      "Mang kết quả đến bác sĩ điều trị để được tư vấn tiếp"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài sau khi siêu âm",
+      "Đau bụng dưới tăng dần, sốt trên 38°C"
+    ],
+    "accuracy_note": "Siêu âm cho hình ảnh về cấu trúc, không thể kết luận bản chất khối u (lành hay ác tính). Khi phát hiện bất thường, bác sĩ có thể chỉ định thêm xét nghiệm, MRI hoặc nội soi để chẩn đoán xác định.",
+    "faqs": [
+      {
+        "q": "Siêu âm đầu dò âm đạo có đau không?",
+        "a": "Thường chỉ gây cảm giác khó chịu nhẹ. Đầu dò nhỏ, được bọc vỏ vô khuẩn và bôi gel. Hãy thư giãn và báo bác sĩ nếu thấy đau."
+      },
+      {
+        "q": "Đang có kinh có siêu âm được không?",
+        "a": "Có thể làm nếu cần, nhưng để đánh giá niêm mạc và nang noãn chính xác nhất, nên làm sau khi sạch kinh trừ khi có triệu chứng cấp."
+      },
+      {
+        "q": "Mang thai có được siêu âm đầu dò không?",
+        "a": "Có. Đây là kỹ thuật an toàn, thường được dùng trong thai kỳ đầu để xác định túi thai và tim thai."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản phụ khoa có chứng chỉ siêu âm",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of first-trimester fetal ultrasound scan (2013)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "RE_SEMEN_ANALYSIS": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tinh dịch đồ là xét nghiệm nền tảng để đánh giá khả năng sinh sản của nam giới. Tại Tâm An, mẫu tinh dịch được phân tích theo quy trình chuẩn WHO 2021 (ấn bản lần 6) bằng hệ thống phân tích tinh trùng vi tính hóa (CASA), cho số liệu khách quan về số lượng, độ di động, tỷ lệ sống và hình thái tinh trùng. Kết quả giúp bác sĩ xác định nguyên nhân hiếm muộn nam, phát hiện các bất thường như tinh trùng ít, yếu, dị dạng và định hướng điều trị phù hợp.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Kiêng xuất tinh",
+        "value": "2–7 ngày trước khi lấy mẫu"
+      },
+      {
+        "icon": "flask-conical",
+        "label": "Tiêu chuẩn",
+        "value": "WHO 2021 (ấn bản lần 6) và hệ thống CASA"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "badge-check",
+        "title": "Chuẩn WHO 2021",
+        "desc": "Áp dụng các giá trị tham chiếu và quy trình mới nhất của Tổ chức Y tế Thế giới."
+      },
+      {
+        "icon": "cpu",
+        "title": "Phân tích vi tính hóa CASA",
+        "desc": "Giảm sai số chủ quan, đo chính xác nồng độ, vận tốc và quỹ đạo di chuyển của tinh trùng."
+      },
+      {
+        "icon": "lock",
+        "title": "Phòng lấy mẫu riêng tư",
+        "desc": "Không gian kín đáo, vô khuẩn, đảm bảo bảo mật thông tin."
+      },
+      {
+        "icon": "file-check",
+        "title": "Kết quả rõ ràng, dễ hiểu",
+        "desc": "Kèm giải thích và tư vấn hướng xử trí khi có bất thường."
+      }
+    ],
+    "suitable_for": [
+      "Cặp vợ chồng chưa có con sau 12 tháng quan hệ đều đặn không dùng biện pháp tránh thai",
+      "Nam giới có tiền sử quai bị biến chứng viêm tinh hoàn, giãn tĩnh mạch thừng tinh, chấn thương hoặc phẫu thuật vùng bìu",
+      "Nam giới có bệnh lý hoặc đang dùng thuốc có thể ảnh hưởng sinh tinh",
+      "Đánh giá trước khi làm IUI, IVF hoặc ICSI",
+      "Kiểm tra sau triệt sản nam để xác nhận không còn tinh trùng",
+      "Nam giới muốn kiểm tra sức khỏe sinh sản chủ động"
+    ],
+    "not_suitable_for": [
+      "Đang sốt hoặc bị bệnh cấp tính trong vài tuần gần đây (nên hoãn để kết quả phản ánh đúng)",
+      "Chưa kiêng xuất tinh đủ thời gian hoặc kiêng quá dài (trên 7 ngày)",
+      "Không lấy được trọn vẹn mẫu (cần báo kỹ thuật viên)"
+    ],
+    "parameters": [
+      {
+        "name": "Thể tích tinh dịch",
+        "desc": "Lượng tinh dịch trong một lần xuất tinh.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nồng độ tinh trùng",
+        "desc": "Số tinh trùng trong mỗi ml tinh dịch.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tổng số tinh trùng",
+        "desc": "Số tinh trùng trong toàn bộ mẫu.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Di động tổng số",
+        "desc": "Tỷ lệ tinh trùng di chuyển (cả tiến tới và tại chỗ).",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Di động tiến tới",
+        "desc": "Tỷ lệ tinh trùng bơi tiến về phía trước, quan trọng với khả năng thụ thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tỷ lệ sống",
+        "desc": "Tỷ lệ tinh trùng còn sống.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Hình thái bình thường",
+        "desc": "Tỷ lệ tinh trùng có hình dạng chuẩn theo tiêu chí nghiêm ngặt.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và khai thông tin",
+        "desc": "Ghi nhận số ngày kiêng, thuốc đang dùng, bệnh lý, sốt gần đây.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tại phòng riêng",
+        "desc": "Lấy toàn bộ mẫu vào lọ chuyên dụng vô khuẩn, ghi giờ lấy mẫu.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hóa lỏng và đánh giá đại thể",
+        "desc": "Kỹ thuật viên theo dõi thời gian hóa lỏng, đo thể tích, độ nhớt, pH.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích CASA và hình thái",
+        "desc": "Đo nồng độ, độ di động, tỷ lệ sống và nhuộm đánh giá hình thái.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Kiêng xuất tinh 2–7 ngày trước khi lấy mẫu, khoảng 3–5 ngày thường cho kết quả đại diện nhất",
+      "Tránh rượu bia, thuốc lá, chất kích thích trong 3 ngày trước đó",
+      "Vệ sinh tay và vùng sinh dục sạch sẽ trước khi lấy mẫu",
+      "Không dùng bao cao su thông thường hoặc chất bôi trơn khi lấy mẫu",
+      "Lấy trọn vẹn mẫu; nếu bị rơi mất một phần (nhất là phần đầu), hãy báo kỹ thuật viên",
+      "Báo bác sĩ nếu gần đây bị sốt cao, ốm nặng hoặc đang dùng thuốc, thực phẩm chức năng, testosterone"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt và làm việc bình thường ngay sau khi lấy mẫu",
+      "Nếu kết quả bất thường, đừng vội kết luận; bác sĩ thường hẹn xét nghiệm lại vì chất lượng tinh trùng có thể dao động giữa các lần",
+      "Duy trì lối sống lành mạnh: ngủ đủ, tập thể dục vừa phải, hạn chế rượu bia, thuốc lá, tránh nhiệt độ cao vùng bìu",
+      "Mang kết quả khi đi khám tại khoa Hiếm muộn để được tư vấn điều trị"
+    ],
+    "accuracy_note": "Chất lượng tinh trùng dao động theo thời gian, stress, sốt và số ngày kiêng. Một kết quả bất thường chưa đủ để kết luận vô sinh nam; cần được bác sĩ đánh giá và thường phải lặp lại xét nghiệm. Chu kỳ sinh tinh kéo dài khoảng 2,5–3 tháng nên tác động của thay đổi lối sống hoặc điều trị cần thời gian để thấy rõ. Các giá trị tham chiếu của WHO là ngưỡng thấp của nhóm nam giới đã có con, không phải ngưỡng quyết định khả năng sinh sản.",
+    "faqs": [
+      {
+        "q": "Có thể lấy mẫu ở nhà rồi mang đến không?",
+        "a": "Nên lấy mẫu tại phòng riêng của bệnh viện để đảm bảo chất lượng. Nếu bắt buộc lấy ở nhà, bạn cần làm theo hướng dẫn về lọ đựng, giữ ấm mẫu ở nhiệt độ cơ thể và giao đến phòng xét nghiệm trong vòng 1 giờ."
+      },
+      {
+        "q": "Kết quả bất thường thì phải làm gì?",
+        "a": "Bác sĩ sẽ hẹn xét nghiệm lại, khám nam khoa và có thể chỉ định thêm xét nghiệm hormone, siêu âm bìu, phân mảnh DNA tinh trùng tùy trường hợp."
+      },
+      {
+        "q": "Có cần cả hai vợ chồng đi cùng không?",
+        "a": "Chỉ người chồng cần có mặt để lấy mẫu. Nên đi cùng vợ nếu muốn được tư vấn hướng điều trị ngay."
+      },
+      {
+        "q": "Dịch vụ này khác gì xét nghiệm phân mảnh DNA tinh trùng?",
+        "a": "Tinh dịch đồ đánh giá số lượng, di động và hình thái. Phân mảnh DNA là xét nghiệm chuyên sâu riêng, thường chỉ định khi sảy thai liên tiếp hoặc thất bại làm IVF."
+      }
+    ],
+    "performed_by": "Kỹ thuật viên xét nghiệm nam học và bác sĩ chuyên khoa Hiếm muộn",
+    "references": [
+      {
+        "title": "WHO Laboratory Manual for the Examination and Processing of Human Semen, 6th edition (2021)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "OLD_COVID_SCREENING": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Dịch vụ xét nghiệm nhanh kháng nguyên SARS-CoV-2 tiền phẫu từng được triển khai trong giai đoạn dịch bệnh để sàng lọc dịch tễ trước các thủ thuật, phẫu thuật và nhập viện. Hiện dịch vụ đã ngừng cung cấp và chỉ được lưu trữ hồ sơ tham khảo.",
+    "notice": {
+      "type": "DISCONTINUED",
+      "title": "Dịch vụ đã ngừng cung cấp",
+      "body": "Xét nghiệm nhanh kháng nguyên SARS-CoV-2 tiền phẫu không còn nhận đặt lịch. Nếu cần xét nghiệm vì có triệu chứng hô hấp hoặc theo yêu cầu của bác sĩ điều trị, vui lòng liên hệ bệnh viện để được hướng dẫn."
+    },
+    "key_facts": [
+      {
+        "icon": "archive",
+        "label": "Trạng thái",
+        "value": "Đã ngừng cung cấp, lưu trữ"
+      },
+      {
+        "icon": "calendar-x",
+        "label": "Đặt lịch online",
+        "value": "Không áp dụng"
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Tôi có triệu chứng ho, sốt, sắp sinh hoặc sắp phẫu thuật thì cần làm gì?",
+        "a": "Hãy báo ngay cho bác sĩ điều trị hoặc liên hệ tổng đài bệnh viện. Bác sĩ sẽ đánh giá và chỉ định xét nghiệm phù hợp nếu cần."
+      }
+    ],
+    "seo": {
+      "noindex": true
+    },
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PRENATAL_ROUTINE": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Khám thai định kỳ là nền tảng của một thai kỳ an toàn. Mỗi lần khám, bác sĩ theo dõi sức khỏe người mẹ (huyết áp, cân nặng, phù), sự phát triển của thai nhi (chiều cao tử cung, tim thai, cử động thai) và phát hiện sớm các dấu hiệu bất thường như tiền sản giật, đái tháo đường thai kỳ, thai chậm tăng trưởng hay dọa sinh non. Gói khám định kỳ chuẩn y khoa tại Tâm An được thiết kế để bạn yên tâm theo dõi đủ các mốc quan trọng.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Tần suất tham khảo",
+        "value": "Mỗi 4 tuần (đến tuần 28), mỗi 2 tuần (tuần 28–36), hằng tuần (từ tuần 36); bác sĩ điều chỉnh theo từng người"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "heart-pulse",
+        "title": "Theo dõi sinh hiệu người mẹ",
+        "desc": "Đo huyết áp, nhịp tim, cân nặng và theo dõi phù để phát hiện sớm tiền sản giật."
+      },
+      {
+        "icon": "baby",
+        "title": "Đánh giá sự phát triển của thai",
+        "desc": "Đo chiều cao tử cung, vòng bụng, nghe tim thai, đánh giá cử động thai."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Nhắc các mốc sàng lọc quan trọng",
+        "desc": "Double test, siêu âm hình thái, OGTT, tiêm phòng uốn ván và các mốc khác đúng thời điểm."
+      },
+      {
+        "icon": "message-circle",
+        "title": "Tư vấn theo từng giai đoạn",
+        "desc": "Dinh dưỡng, vận động, dấu hiệu nguy hiểm và chuẩn bị cho cuộc sinh."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ từ khi biết có thai đến khi sinh",
+      "Thai phụ cần lập hồ sơ quản lý thai nghén tại bệnh viện dự kiến sinh",
+      "Thai phụ cần theo dõi định kỳ sau khi đã khám các dịch vụ chuyên sâu",
+      "Thai kỳ nguy cơ cao cần lịch khám dày hơn theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Tình huống cấp cứu sản khoa (ra máu nhiều, vỡ ối, đau bụng dữ dội, thai ngừng máy): vui lòng đến khoa cấp cứu ngay",
+      "Cần siêu âm hoặc xét nghiệm chuyên sâu: sẽ được chỉ định riêng ngoài gói khám định kỳ"
+    ],
+    "parameters": [
+      {
+        "name": "Huyết áp",
+        "desc": "Phát hiện tăng huyết áp thai kỳ và tiền sản giật.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Cân nặng",
+        "desc": "Theo dõi mức tăng cân phù hợp với BMI trước mang thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chiều cao tử cung và vòng bụng",
+        "desc": "Ước lượng sự phát triển của thai và lượng nước ối.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tim thai",
+        "desc": "Nghe nhịp tim thai bằng Doppler, đánh giá nhịp tim thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Protein niệu và phù",
+        "desc": "Phát hiện dấu hiệu bệnh lý thai kỳ khi có chỉ định.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và đo sinh hiệu",
+        "desc": "Đo huyết áp, nhịp tim, cân nặng, chiều cao và ghi nhận triệu chứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hỏi bệnh và rà soát hồ sơ",
+        "desc": "Cập nhật tình trạng thai kỳ, cử động thai, thuốc đang dùng, kết quả xét nghiệm mới.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám sản khoa",
+        "desc": "Đo chiều cao tử cung, vòng bụng, xác định ngôi thai, nghe tim thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn và chỉ định",
+        "desc": "Chỉ định xét nghiệm hoặc siêu âm theo mốc tuần thai, hướng dẫn dinh dưỡng, vận động.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hẹn lịch khám tiếp theo",
+        "desc": "Ghi vào sổ khám thai và đặt lịch lần sau.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ khám thai, kết quả xét nghiệm, siêu âm đã có và đơn thuốc đang dùng",
+      "Ăn uống bình thường, không cần nhịn ăn trừ khi được dặn xét nghiệm đặc biệt",
+      "Ghi lại các triệu chứng bất thường, cử động thai và câu hỏi cần hỏi bác sĩ",
+      "Mặc trang phục thoải mái, dễ vén áo để khám bụng"
+    ],
+    "aftercare": [
+      "Thực hiện đầy đủ các chỉ định xét nghiệm, siêu âm và dùng thuốc, vi chất theo đơn",
+      "Theo dõi cử động thai hằng ngày từ tuần 28 hoặc theo hướng dẫn",
+      "Đặt lịch lần khám tiếp theo đúng hẹn, không bỏ các mốc sàng lọc quan trọng"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn đều đặn trước tuần 37",
+      "Đau đầu dữ dội, nhìn mờ, phù nhanh mặt và tay, đau thượng vị (nghi tiền sản giật)",
+      "Giảm hoặc mất cử động thai",
+      "Sốt cao, nôn nhiều không ăn uống được, tiểu buốt, tiểu ra máu"
+    ],
+    "faqs": [
+      {
+        "q": "Một thai kỳ cần khám bao nhiêu lần?",
+        "a": "Tối thiểu theo khuyến cáo quốc gia là 4 lần, nhưng WHO khuyến cáo thường xuyên hơn (tối thiểu 8 lần tiếp xúc). Lịch cụ thể do bác sĩ quyết định theo nguy cơ của từng thai phụ."
+      },
+      {
+        "q": "Khám định kỳ đã bao gồm siêu âm không?",
+        "a": "Gói tập trung vào thăm khám, đo các chỉ số và tư vấn. Các siêu âm, xét nghiệm theo mốc tuần thai sẽ được chỉ định và tính theo từng dịch vụ riêng."
+      },
+      {
+        "q": "Tôi có thể khám với cùng một bác sĩ các lần sau không?",
+        "a": "Có. Bạn có thể chọn lại bác sĩ khi đặt lịch để được theo dõi liên tục."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "WHO recommendations on antenatal care for a positive pregnancy experience (2016)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "OGTT_DIABETES": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Nghiệm pháp dung nạp đường (OGTT) 75g là tiêu chuẩn vàng để chẩn đoán sớm đái tháo đường thai kỳ, theo hướng dẫn quốc tế của IADPSG và WHO. Đái tháo đường thai kỳ thường không có triệu chứng rõ rệt nhưng có thể làm tăng nguy cơ thai to, sinh khó, hạ đường huyết sơ sinh và tiền sản giật. Xét nghiệm gồm uống 75g glucose và lấy máu 3 lần (lúc đói, sau 1 giờ, sau 2 giờ), thực hiện ở tuần thai 24–28 để phát hiện kịp thời và can thiệp sớm.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 24–28"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình xét nghiệm",
+        "value": "Lấy mẫu 3 thời điểm (đói, 1h, 2h) theo phác đồ"
+      },
+      {
+        "icon": "utensils-crossed",
+        "label": "Nhịn ăn",
+        "value": "Nhịn ăn tối thiểu 8 giờ, tối đa khoảng 14 giờ (được uống nước lọc)"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường có trong ngày, bác sĩ tư vấn ngay khi có kết quả"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "badge-check",
+        "title": "Chuẩn chẩn đoán quốc tế",
+        "desc": "Áp dụng tiêu chuẩn IADPSG/WHO với nghiệm pháp 75g và 3 mốc thời gian."
+      },
+      {
+        "icon": "droplets",
+        "title": "3 mẫu máu chính xác",
+        "desc": "Đo đường huyết lúc đói, sau 1 giờ và sau 2 giờ để đánh giá toàn diện khả năng dung nạp đường."
+      },
+      {
+        "icon": "armchair",
+        "title": "Phòng chờ yên tĩnh",
+        "desc": "Không gian nghỉ ngơi thoải mái trong 2 giờ chờ lấy máu."
+      },
+      {
+        "icon": "stethoscope",
+        "title": "Tư vấn sau kết quả",
+        "desc": "Nếu phát hiện bất thường, bác sĩ hướng dẫn chế độ ăn, theo dõi đường huyết và chuyển tư vấn nội tiết."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ chưa được chẩn đoán đái tháo đường, ở tuần thai 24–28",
+      "Thai phụ có yếu tố nguy cơ: thừa cân, béo phì, tiền sử gia đình đái tháo đường, từng sinh con trên 4 kg, tiền sử đái tháo đường thai kỳ, hội chứng buồng trứng đa nang",
+      "Thai phụ từ 35 tuổi trở lên",
+      "Thai phụ có đường niệu dương tính hoặc thai to, đa ối trên siêu âm"
+    ],
+    "not_suitable_for": [
+      "Đã được chẩn đoán đái tháo đường trước mang thai hoặc đã chẩn đoán đái tháo đường thai kỳ",
+      "Đang nôn nghén nặng, không thể uống dung dịch glucose hoặc nhịn ăn an toàn",
+      "Đã phẫu thuật cắt dạ dày hoặc phẫu thuật giảm cân (có thể gặp hội chứng dumping, cần bác sĩ chỉ định phương pháp khác)",
+      "Đang sốt, ốm cấp tính hoặc nghỉ ngơi tại giường kéo dài (nên hoãn và hỏi bác sĩ)"
+    ],
+    "parameters": [
+      {
+        "name": "Đường huyết lúc đói",
+        "desc": "Mẫu máu đầu tiên trước khi uống glucose.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Đường huyết sau 1 giờ",
+        "desc": "Mẫu thứ hai sau khi uống 75g glucose.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Đường huyết sau 2 giờ",
+        "desc": "Mẫu thứ ba, đánh giá khả năng đưa đường về mức bình thường.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận nhịn ăn",
+        "desc": "Kiểm tra thời gian nhịn ăn, tuần thai, thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 1 (lúc đói)",
+        "desc": "Xét nghiệm đường huyết nền trước khi uống glucose.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Uống 75g glucose",
+        "desc": "Uống dung dịch glucose pha trong khoảng 250–300 ml nước, uống hết trong vòng 5 phút.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 2 (sau 1 giờ)",
+        "desc": "Ngồi nghỉ yên tĩnh, không ăn uống, không đi lại nhiều.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 3 (sau 2 giờ)",
+        "desc": "Hoàn tất mẫu cuối, sau đó có thể ăn uống bình thường.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ đọc kết quả, hướng dẫn tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Ăn uống bình thường 3 ngày trước, không kiêng tinh bột (khoảng từ 150 g carbohydrate mỗi ngày) để kết quả không sai lệch",
+      "Nhịn ăn tối thiểu 8 giờ trước xét nghiệm; chỉ uống nước lọc, không uống nước ngọt, cà phê, trà",
+      "Nên đặt lịch buổi sáng để dễ nhịn ăn",
+      "Không hút thuốc (nếu có) và hạn chế vận động mạnh trong buổi xét nghiệm",
+      "Mang theo sổ khám thai, đồ ăn nhẹ để ăn sau khi lấy máu xong",
+      "Báo bác sĩ về thuốc đang dùng, đặc biệt corticoid, thuốc giảm cân hoặc thuốc ảnh hưởng đường huyết"
+    ],
+    "aftercare": [
+      "Ăn nhẹ ngay sau khi lấy máu mẫu cuối cùng",
+      "Nếu chóng mặt, buồn nôn do dung dịch glucose, hãy ngồi nghỉ và báo nhân viên y tế",
+      "Nếu chẩn đoán đái tháo đường thai kỳ: thực hiện chế độ ăn, vận động, tự theo dõi đường huyết và tái khám theo hẹn",
+      "Nếu kết quả bình thường: tiếp tục khám thai định kỳ"
+    ],
+    "warning_signs": [
+      "Khát nhiều, tiểu nhiều bất thường, mệt lả, nhìn mờ",
+      "Chóng mặt, run tay, vã mồ hôi, tim đập nhanh (nghi hạ đường huyết)",
+      "Nôn nhiều, không giữ được dung dịch glucose"
+    ],
+    "accuracy_note": "Chẩn đoán đái tháo đường thai kỳ khi có ít nhất một trong ba chỉ số đạt hoặc vượt ngưỡng. Một số trường hợp nguy cơ cao có thể được bác sĩ chỉ định làm sớm hơn tuần 24. Kết quả có thể bị ảnh hưởng nếu bạn không nhịn ăn đủ, ăn kiêng tinh bột quá mức trước đó hoặc đang dùng một số thuốc.",
+    "faqs": [
+      {
+        "q": "Dung dịch glucose có khó uống không?",
+        "a": "Vị rất ngọt, có thể gây buồn nôn ở một số người. Bạn có thể uống từng ngụm liên tục trong 5 phút, và có thể làm lạnh dung dịch hoặc thêm vài giọt chanh theo hướng dẫn nhân viên y tế."
+      },
+      {
+        "q": "Tôi có được uống nước trong lúc chờ không?",
+        "a": "Bạn được uống nước lọc khi nhịn ăn và trong thời gian chờ nhưng chỉ với lượng vừa phải, không uống nước có đường, cà phê hay trà."
+      },
+      {
+        "q": "Nếu bị đái tháo đường thai kỳ thì có nguy hiểm không?",
+        "a": "Nếu được phát hiện sớm và kiểm soát tốt bằng chế độ ăn, vận động và (nếu cần) thuốc, phần lớn thai phụ vẫn sinh nở an toàn. Bác sĩ sẽ theo dõi sát hơn trong thai kỳ."
+      },
+      {
+        "q": "Sau sinh tôi có cần kiểm tra lại không?",
+        "a": "Có. Thường nên làm lại nghiệm pháp dung nạp đường sau sinh 6–12 tuần để đảm bảo đường huyết trở về bình thường, vì nguy cơ đái tháo đường type 2 về sau cao hơn."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "International Association of Diabetes and Pregnancy Study Groups Recommendations on the Diagnosis and Classification of Hyperglycemia in Pregnancy (2010)",
+        "org": "IADPSG"
+      },
+      {
+        "title": "Gestational Diabetes Mellitus, Practice Bulletin No. 190 (2018)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "NIPT_PRO": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "NIPT Pro là gói sàng lọc di truyền trước sinh không xâm lấn toàn diện nhất tại Tâm An. Từ một mẫu máu của mẹ, công nghệ giải trình tự gen thế hệ mới (NGS) phân tích DNA tự do của thai nhi lưu hành trong máu mẹ để khảo sát toàn bộ 23 cặp nhiễm sắc thể (NST), đột biến số lượng NST giới tính và 86 hội chứng vi mất đoạn. Gói còn đi kèm chính sách bảo hiểm kết quả và hỗ trợ chi phí chọc ối theo điều khoản của bệnh viện, giúp mẹ bầu yên tâm hơn khi đưa ra quyết định.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Từ tuần 9–10 trở đi (theo yêu cầu của đơn vị xét nghiệm)"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ, không ảnh hưởng đến thai"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "dna",
+        "title": "Khảo sát toàn bộ 23 cặp NST",
+        "desc": "Phát hiện lệch bội trên mọi cặp nhiễm sắc thể, không chỉ ba cặp phổ biến 21, 18, 13."
+      },
+      {
+        "icon": "scan-search",
+        "title": "86 hội chứng vi mất đoạn",
+        "desc": "Sàng lọc các hội chứng do mất đoạn nhỏ trên NST như DiGeorge (22q11.2), Cri-du-chat, Prader-Willi/Angelman, Wolf-Hirschhorn."
+      },
+      {
+        "icon": "venus-and-mars",
+        "title": "Phân tích NST giới tính",
+        "desc": "Phát hiện các bất thường như Turner, Klinefelter và các dạng lệch bội NST giới tính khác."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Bảo hiểm kết quả đến 500 triệu đồng",
+        "desc": "Theo điều khoản bảo hiểm của gói; kèm hỗ trợ chi phí chọc ối và miễn phí xét nghiệm lại theo chính sách. Vui lòng xem điều khoản chi tiết."
+      },
+      {
+        "icon": "syringe",
+        "title": "An toàn tuyệt đối cho thai",
+        "desc": "Chỉ cần lấy máu mẹ, không có nguy cơ sảy thai do thủ thuật."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn sàng lọc di truyền ở mức toàn diện nhất",
+      "Thai phụ từ 35 tuổi hoặc có nguy cơ cao qua Double test, Triple test",
+      "Thai phụ có tiền sử sảy thai liên tiếp, thai lưu hoặc sinh con dị tật",
+      "Siêu âm nghi ngờ bất thường (ví dụ độ mờ da gáy tăng) và muốn sàng lọc không xâm lấn trước khi quyết định chọc ối",
+      "Thai phụ mang thai từ IVF hoặc có gia đình có tiền sử bệnh lý di truyền"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 9–10 tuần (tỷ lệ DNA thai trong máu mẹ chưa đủ để phân tích)",
+      "Mẹ đã truyền máu, ghép tạng, ghép tế bào gốc hoặc điều trị miễn dịch gần đây (cần tư vấn trước)",
+      "Mẹ đang mắc ung thư hoặc có khối u (có thể gây dương tính giả)",
+      "Đa thai từ 3 thai trở lên hoặc còn dấu hiệu thai biến mất (vanishing twin) chưa được xác định",
+      "Cần chẩn đoán xác định (NIPT là xét nghiệm sàng lọc, không thay thế chọc ối)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tư vấn trước xét nghiệm",
+        "desc": "Bác sĩ giải thích mục đích, phạm vi phát hiện, giới hạn của NIPT Pro và ký cam kết đồng ý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm xác định tuổi thai",
+        "desc": "Xác định tuổi thai, số thai và nhịp tim thai (nếu chưa có kết quả gần đây).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu mẹ",
+        "desc": "Lấy khoảng 7–10 ml máu tĩnh mạch vào ống chuyên dụng để bảo quản DNA tự do.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích NGS",
+        "desc": "Mẫu được chuyển đến phòng xét nghiệm di truyền để giải trình tự và phân tích sinh tin học.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn sau xét nghiệm",
+        "desc": "Bác sĩ giải thích kết quả. Nếu nguy cơ cao, tư vấn chọc ối hoặc sinh thiết gai nhau để chẩn đoán xác định.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn, ăn uống bình thường",
+      "Mang theo kết quả siêu âm, ngày kinh cuối hoặc hồ sơ IVF để xác định tuổi thai",
+      "Báo bác sĩ nếu từng truyền máu, ghép tạng, điều trị miễn dịch, mắc bệnh ung thư hoặc đang dùng heparin",
+      "Báo cho bác sĩ nếu có thai đôi, từng bị mất một thai trong thai kỳ này hoặc mang thai nhờ trứng hiến"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường ngay sau khi lấy máu",
+      "Nếu kết quả nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái theo lịch",
+      "Nếu kết quả nguy cơ cao hoặc không kết luận được: đặt lịch tư vấn với bác sĩ, có thể cần chọc ối hoặc lấy mẫu lại",
+      "Giữ lại kết quả để tư vấn di truyền khi cần"
+    ],
+    "warning_signs": [
+      "Kết quả nguy cơ cao: không nên tự quyết định mà cần gặp bác sĩ để tư vấn và chẩn đoán xác định",
+      "Ra máu âm đạo, đau bụng, ra nước ối trong thai kỳ: đến cơ sở y tế ngay"
+    ],
+    "accuracy_note": "NIPT là xét nghiệm sàng lọc, không phải chẩn đoán xác định. Độ nhạy với hội chứng Down (T21) rất cao, thường trên 99%, với T18 và T13 thấp hơn một chút. Với các bất thường hiếm trên toàn bộ NST và vi mất đoạn, độ nhạy và giá trị tiên đoán dương thấp hơn đáng kể. Kết quả nguy cơ cao cần được xác nhận bằng chọc ối hoặc sinh thiết gai nhau. Một số trường hợp có thể không kết luận được (do nồng độ DNA thai thấp) và cần lấy mẫu lại. Kết quả bình thường không loại trừ hoàn toàn mọi dị tật hay bệnh lý di truyền.",
+    "faqs": [
+      {
+        "q": "NIPT Pro khác NIPT Basic ở điểm nào?",
+        "a": "NIPT Basic chỉ sàng lọc 3 cặp NST phổ biến (21, 18, 13). NIPT Pro mở rộng sang toàn bộ 23 cặp NST, NST giới tính và 86 hội chứng vi mất đoạn."
+      },
+      {
+        "q": "NIPT có thay thế được siêu âm hình thái không?",
+        "a": "Không. NIPT chỉ phát hiện bất thường di truyền về số lượng, không phát hiện dị tật cấu trúc. Bạn vẫn cần siêu âm hình thái ở tuần 20–24."
+      },
+      {
+        "q": "Kết quả nguy cơ cao có chắc chắn thai bị bất thường không?",
+        "a": "Không. Cần xác nhận bằng chọc ối hoặc sinh thiết gai nhau. Bác sĩ sẽ tư vấn chi tiết và các lựa chọn."
+      },
+      {
+        "q": "NIPT có cho biết giới tính thai nhi không?",
+        "a": "Xét nghiệm có thể xác định NST giới tính, nhưng việc thông báo giới tính tuân theo quy định pháp luật và chính sách của bệnh viện."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa, chuyên gia di truyền và phòng xét nghiệm đối tác",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Position Statement on prenatal cell-free DNA screening",
+        "org": "ISPD"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "MM_PREECLAMPSIA_SCREENING": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tiền sản giật là biến chứng nguy hiểm của thai kỳ, có thể gây ảnh hưởng nghiêm trọng đến mẹ và thai, đặc biệt thể khởi phát sớm. Gói dịch vụ này gồm hai phần: (1) sàng lọc kết hợp ở tuần 11–13 tuần 6 ngày dựa trên huyết áp động mạch trung bình, Doppler động mạch tử cung và định lượng các yếu tố sinh mạch trong máu mẹ (như PlGF); (2) quản lý dự phòng cho thai phụ nguy cơ cao, trong đó bác sĩ có thể chỉ định aspirin liều thấp. Từ giữa thai kỳ, tỷ số sFlt-1/PlGF còn hỗ trợ bác sĩ đánh giá và theo dõi thai phụ nghi ngờ tiền sản giật.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Sàng lọc quý 1",
+        "value": "Tuần 11 đến 13 tuần 6 ngày"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "file-text",
+        "label": "Kết quả",
+        "value": "Nguy cơ tiền sản giật sớm (thường dưới 34 tuần) cùng kế hoạch theo dõi và dự phòng"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "calculator",
+        "title": "Tính nguy cơ cá thể hóa",
+        "desc": "Kết hợp tiền sử, huyết áp, Doppler và xét nghiệm máu để cho ra nguy cơ riêng cho từng thai phụ."
+      },
+      {
+        "icon": "activity",
+        "title": "Doppler động mạch tử cung",
+        "desc": "Đánh giá sức cản của dòng máu nuôi tử cung, một yếu tố quan trọng của nguy cơ tiền sản giật sớm."
+      },
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng yếu tố sinh mạch",
+        "desc": "Đo PlGF (và PAPP-A theo phác đồ) trong máu mẹ; sFlt-1/PlGF dùng hỗ trợ đánh giá giai đoạn sau."
+      },
+      {
+        "icon": "pill",
+        "title": "Dự phòng khi nguy cơ cao",
+        "desc": "Bác sĩ cân nhắc aspirin liều thấp và lên kế hoạch theo dõi sát suốt thai kỳ."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ ở tuần 11–13 tuần 6 ngày (sàng lọc phổ quát theo khuyến cáo của FMF)",
+      "Thai phụ mang thai lần đầu, từ 35 tuổi trở lên, béo phì",
+      "Tiền sử tiền sản giật ở lần mang thai trước hoặc mẹ/chị em ruột từng bị",
+      "Tăng huyết áp mạn tính, đái tháo đường, bệnh thận, lupus ban đỏ, hội chứng kháng phospholipid",
+      "Đa thai, thai từ hỗ trợ sinh sản (IVF), khoảng cách giữa hai lần sinh quá xa",
+      "Từ khoảng tuần 20 trở đi: thai phụ có biểu hiện nghi ngờ tiền sản giật cần đánh giá thêm theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Thai đã quá 13 tuần 6 ngày (mô hình sàng lọc quý 1 không còn áp dụng, bác sĩ sẽ tư vấn phương pháp khác)",
+      "Thai chưa xác định được tuổi thai hoặc không có tim thai",
+      "Chống chỉ định aspirin: dị ứng aspirin/NSAID, loét dạ dày tá tràng đang hoạt động, rối loạn đông máu, bệnh gan nặng (bác sĩ sẽ đánh giá khi cần dự phòng)",
+      "Cần xử trí cấp cứu vì huyết áp cao, đau đầu dữ dội, nhìn mờ: đến cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Huyết áp động mạch trung bình (MAP)",
+        "desc": "Đo bằng máy chuẩn, hai tay, ở tư thế ngồi nghỉ, lấy giá trị trung bình.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chỉ số xung động mạch tử cung (UtA-PI)",
+        "desc": "Đo bằng Doppler qua đường bụng hoặc âm đạo, phản ánh sức cản dòng máu nuôi nhau thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PlGF (placental growth factor)",
+        "desc": "Yếu tố sinh mạch thường thấp hơn ở thai phụ có nguy cơ tiền sản giật.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PAPP-A",
+        "desc": "Protein huyết tương liên quan thai kỳ, tham gia vào mô hình tính nguy cơ theo phác đồ.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tỷ số sFlt-1/PlGF",
+        "desc": "Dùng hỗ trợ đánh giá, tiên lượng ngắn hạn ở thai phụ nghi ngờ tiền sản giật từ khoảng tuần 20.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Hỏi tiền sử và đánh giá yếu tố nguy cơ",
+        "desc": "Tiền sử sản khoa, bệnh nền, gia đình, cân nặng, chiều cao, chủng tộc, thai tự nhiên hay IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đo huyết áp động mạch trung bình",
+        "desc": "Đo 2 tay, 2 lần bằng máy tự động đã chuẩn hóa.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm Doppler động mạch tử cung",
+        "desc": "Đo chỉ số xung (PI) hai bên động mạch tử cung và xác nhận tuổi thai qua chiều dài đầu mông (CRL).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu xét nghiệm",
+        "desc": "Định lượng PlGF (và PAPP-A tùy phác đồ) trong máu mẹ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tính nguy cơ và tư vấn",
+        "desc": "Bác sĩ tính nguy cơ, giải thích kết quả, quyết định có chỉ định aspirin và lịch theo dõi.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Nghỉ ngơi 5–10 phút trước khi đo huyết áp, không dùng cà phê hoặc thuốc lá ngay trước đó",
+      "Mang theo kết quả siêu âm, xét nghiệm trước đây, ngày kinh cuối hoặc hồ sơ IVF",
+      "Báo cho bác sĩ các bệnh nền, thuốc đang dùng và tiền sử tiền sản giật của gia đình"
+    ],
+    "aftercare": [
+      "Nếu nguy cơ cao: dùng aspirin liều thấp đúng liều, đúng giờ theo đơn (thường bắt đầu trước tuần 16 và duy trì đến khoảng tuần 36 nếu không có chống chỉ định)",
+      "Đo huyết áp tại nhà và ghi chép nếu bác sĩ dặn",
+      "Tuân thủ lịch khám thai dày hơn, siêu âm theo dõi tăng trưởng thai và Doppler khi cần",
+      "Nếu nguy cơ thấp: tiếp tục khám thai định kỳ, vẫn cần đi khám ngay khi có dấu hiệu bất thường"
+    ],
+    "warning_signs": [
+      "Đau đầu dữ dội không đỡ, nhìn mờ, chớp sáng, đau thượng vị hoặc hạ sườn phải",
+      "Phù nhanh ở mặt, tay, tăng cân đột ngột",
+      "Huyết áp từ 140/90 mmHg",
+      "Giảm cử động thai, ra máu âm đạo, đau bụng"
+    ],
+    "accuracy_note": "Đây là xét nghiệm sàng lọc nguy cơ, không phải chẩn đoán. Kết quả nguy cơ cao không có nghĩa chắc chắn sẽ bị tiền sản giật, và nguy cơ thấp không loại trừ hoàn toàn khả năng xảy ra. Hiệu quả của aspirin liều thấp phụ thuộc vào việc bắt đầu sớm, liều lượng và sự tuân thủ; phác đồ do bác sĩ chỉ định riêng cho từng người.",
+    "faqs": [
+      {
+        "q": "Tôi khỏe mạnh, huyết áp bình thường, có cần sàng lọc không?",
+        "a": "Có. Nhiều trường hợp tiền sản giật xảy ra ở thai phụ không có yếu tố nguy cơ rõ ràng. Sàng lọc ở quý 1 giúp phát hiện nhóm nguy cơ cao sớm để dự phòng."
+      },
+      {
+        "q": "Aspirin liều thấp có an toàn không?",
+        "a": "Ở thai phụ nguy cơ cao và không có chống chỉ định, aspirin liều thấp được các hiệp hội sản phụ khoa khuyến cáo. Tuy nhiên bạn chỉ nên dùng khi có chỉ định và hướng dẫn của bác sĩ."
+      },
+      {
+        "q": "Gói này khác Double test như thế nào?",
+        "a": "Double test sàng lọc hội chứng Down, Edwards, Patau. Gói này sàng lọc nguy cơ tiền sản giật; hai dịch vụ có thể thực hiện trong cùng đợt khám quý 1 nếu bác sĩ chỉ định."
+      },
+      {
+        "q": "Tôi đã quá tuần 14 thì còn làm được không?",
+        "a": "Mô hình sàng lọc quý 1 tối ưu ở tuần 11–13 tuần 6 ngày. Nếu đã muộn hơn, bác sĩ sẽ đánh giá yếu tố nguy cơ và tư vấn hướng theo dõi phù hợp."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản, chẩn đoán trước sinh (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "Low-Dose Aspirin Use During Pregnancy, Committee Opinion No. 743 (2018)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Aspirin versus Placebo in Pregnancies at High Risk for Preterm Preeclampsia (ASPRE trial, 2017)",
+        "org": "N Engl J Med"
+      },
+      {
+        "title": "First-trimester screening for pre-eclampsia",
+        "org": "Fetal Medicine Foundation"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "US_DOPPLER_TWINS": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Thai đôi và đa thai có nguy cơ biến chứng cao hơn thai đơn như sinh non, chậm tăng trưởng trong tử cung và các bệnh lý đặc thù của thai chung nhau. Dịch vụ siêu âm Doppler thai đôi chuyên sâu đánh giá chi tiết từng thai: xác định số màng đệm, số buồng ối, biometry từng bé, lượng nước ối, dòng chảy động mạch rốn, động mạch não giữa và đánh giá sàng lọc hội chứng truyền máu song thai (TTTS), thai chậm tăng trưởng chọn lọc và thiếu máu - đa hồng cầu song thai (TAPS).",
+    "notice": {
+      "type": "TEMP_SUSPENDED",
+      "title": "Tạm ngưng nhận lịch hẹn trực tuyến",
+      "body": "Dịch vụ tạm dừng tiếp nhận lịch hẹn mới do thiết bị siêu âm đang trong kỳ hiệu chuẩn y tế định kỳ. Nếu bạn đang mang song thai và cần được theo dõi gấp, vui lòng liên hệ khoa Sản hoặc tổng đài của bệnh viện để được sắp xếp."
+    },
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Tần suất tham khảo",
+        "value": "Thai khác màng đệm: khoảng 4 tuần/lần; thai chung màng đệm: khoảng 2 tuần/lần từ tuần 16 (bác sĩ quyết định)"
+      },
+      {
+        "icon": "droplet",
+        "label": "Bàng quang",
+        "value": "Không cần nhịn tiểu"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "layers",
+        "title": "Xác định màng đệm và buồng ối",
+        "desc": "Yếu tố quyết định nguy cơ và lịch theo dõi, cần xác định tốt nhất trong quý 1."
+      },
+      {
+        "icon": "activity",
+        "title": "Doppler đa mạch",
+        "desc": "Động mạch rốn, động mạch não giữa, ống tĩnh mạch khi có chỉ định."
+      },
+      {
+        "icon": "scale",
+        "title": "So sánh tăng trưởng hai thai",
+        "desc": "Ước tính cân nặng từng bé và phát hiện chênh lệch cân nặng đáng kể."
+      },
+      {
+        "icon": "ruler",
+        "title": "Đo chiều dài cổ tử cung",
+        "desc": "Hỗ trợ đánh giá nguy cơ sinh non, vốn cao hơn ở song thai."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ mang song thai hoặc đa thai",
+      "Nghi ngờ hoặc đã chẩn đoán thai chung nhau (một bánh nhau, một màng đệm)",
+      "Chênh lệch kích thước, lượng nước ối hoặc cân nặng giữa hai bé",
+      "Theo dõi sau can thiệp hoặc điều trị thai kỳ nguy cơ cao theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Tình huống cấp cứu (ra máu nhiều, vỡ ối, đau bụng dữ dội, giảm cử động thai): đến cấp cứu ngay",
+      "Cần can thiệp thai (laser, chọc hút ối) sẽ được chuyển tuyến chuyên sâu"
+    ],
+    "parameters": [
+      {
+        "name": "Số màng đệm và buồng ối",
+        "desc": "Thai khác màng đệm (2 bánh nhau) hay chung màng đệm (1 bánh nhau).",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Biometry từng thai",
+        "desc": "Đo BPD, HC, AC, FL và ước tính cân nặng từng bé.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Lượng nước ối",
+        "desc": "Đánh giá túi ối sâu nhất mỗi bé, phát hiện đa ối/thiểu ối gợi ý TTTS.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Doppler động mạch rốn",
+        "desc": "Đánh giá sức cản dòng máu qua bánh nhau từng thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Doppler động mạch não giữa",
+        "desc": "Hỗ trợ phát hiện thiếu máu thai, nghi ngờ TAPS.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chiều dài cổ tử cung",
+        "desc": "Đo qua đường âm đạo để đánh giá nguy cơ sinh non.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và rà soát hồ sơ",
+        "desc": "Xem kết quả siêu âm trước, loại màng đệm, tuổi thai và triệu chứng hiện tại.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm hình thái và biometry từng thai",
+        "desc": "Đo các chỉ số tăng trưởng, đánh giá hình thái cơ bản, nhịp tim từng thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đánh giá nước ối và nhau thai",
+        "desc": "Đo túi ối, vị trí nhau, màng ngăn hai buồng ối.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Doppler các mạch máu",
+        "desc": "Động mạch rốn từng thai, động mạch não giữa, ống tĩnh mạch nếu có chỉ định.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn kết quả",
+        "desc": "Bác sĩ giải thích, lập kế hoạch theo dõi và hẹn lịch tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ khám thai và toàn bộ kết quả siêu âm trước đây, đặc biệt siêu âm quý 1 ghi loại màng đệm",
+      "Ăn uống bình thường, mặc trang phục rộng, dễ vén bụng",
+      "Có thể cần siêu âm đầu dò âm đạo để đo cổ tử cung; chuẩn bị tinh thần và báo bác sĩ nếu có băn khoăn",
+      "Dành khoảng 40–60 phút vì siêu âm hai thai thường lâu hơn thai đơn"
+    ],
+    "aftercare": [
+      "Tuân thủ lịch tái khám siêu âm theo hẹn của bác sĩ",
+      "Theo dõi cử động của từng bé, nghỉ ngơi hợp lý, tránh làm việc nặng",
+      "Bổ sung sắt, canxi và dinh dưỡng đầy đủ theo hướng dẫn",
+      "Chuẩn bị kế hoạch sinh sớm với bác sĩ, vì song thai thường sinh sớm hơn thai đơn"
+    ],
+    "warning_signs": [
+      "Bụng to nhanh bất thường trong vài ngày, khó thở, đau tức bụng",
+      "Co thắt tử cung đều, ra máu hoặc ra nước âm đạo",
+      "Một bé giảm hoặc mất cử động",
+      "Đau đầu dữ dội, nhìn mờ, phù nhanh (nghi tiền sản giật, nguy cơ cao ở song thai)"
+    ],
+    "accuracy_note": "Siêu âm là phương pháp chẩn đoán hình ảnh phụ thuộc vào tư thế thai, lượng nước ối và thể trạng mẹ. Xác định màng đệm chính xác nhất khi thực hiện trong quý 1; sau đó khó hơn. Một lần siêu âm không loại trừ hoàn toàn mọi bất thường, nên cần theo dõi định kỳ.",
+    "faqs": [
+      {
+        "q": "Vì sao thai chung màng đệm cần siêu âm nhiều hơn?",
+        "a": "Hai bé chung một bánh nhau nên có nguy cơ mất cân bằng tuần hoàn (TTTS, TAPS) và chênh lệch tăng trưởng, cần được phát hiện sớm."
+      },
+      {
+        "q": "Dịch vụ hiện có đặt lịch được không?",
+        "a": "Dịch vụ đang tạm ngưng nhận lịch hẹn trực tuyến. Vui lòng liên hệ bệnh viện để được hỗ trợ."
+      },
+      {
+        "q": "Siêu âm Doppler có an toàn cho thai không?",
+        "a": "Siêu âm Doppler được dùng rộng rãi và được xem là an toàn khi thực hiện bởi nhân viên được đào tạo, theo nguyên tắc ALARA (dùng mức năng lượng thấp nhất có thể)."
+      }
+    ],
+    "performed_by": "Bác sĩ Y học bào thai và Chẩn đoán trước sinh",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: role of ultrasound in twin pregnancy (2016)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "NIPT_BASIC": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "NIPT Basic là xét nghiệm sàng lọc không xâm lấn tập trung vào ba hội chứng lệch bội NST phổ biến nhất và nghiêm trọng nhất: hội chứng Down (tam bội thể 21), Edwards (tam bội thể 18) và Patau (tam bội thể 13). Chỉ cần một mẫu máu của mẹ từ tuần thai thứ 9, xét nghiệm phân tích DNA tự do của thai nhi trong máu mẹ với độ chính xác cao trong phát hiện nguy cơ, giúp mẹ bầu sàng lọc sớm, an toàn và không ảnh hưởng đến thai.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Từ tuần thứ 9 của thai kỳ (theo yêu cầu của đơn vị xét nghiệm)"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "target",
+        "label": "Phát hiện",
+        "value": "3 cặp NST: 21, 18 và 13"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "shield-check",
+        "title": "Độ chính xác cao",
+        "desc": "Phát hiện hội chứng Down, Edwards, Patau với độ chính xác trên 99,9% theo công bố của đơn vị xét nghiệm."
+      },
+      {
+        "icon": "baby",
+        "title": "Sàng lọc sớm từ tuần 9",
+        "desc": "Cho kết quả trong quý 1, giúp mẹ chủ động hơn trong quản lý thai kỳ."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "An toàn cho mẹ và bé",
+        "desc": "Chỉ lấy máu mẹ, không có nguy cơ sảy thai do thủ thuật."
+      },
+      {
+        "icon": "zap",
+        "title": "Nhanh, tiện lợi",
+        "desc": "Lấy máu chỉ vài phút, không cần nhịn ăn."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn sàng lọc 3 hội chứng phổ biến nhất bằng phương pháp không xâm lấn",
+      "Thai phụ từ 35 tuổi hoặc có nguy cơ trung bình đến cao qua Double test",
+      "Thai phụ đã bỏ lỡ cửa sổ làm Double test (quý 1) và muốn sàng lọc sớm",
+      "Thai phụ có tiền sử mang thai bất thường nhiễm sắc thể",
+      "Thai phụ muốn sàng lọc an toàn thay vì thủ thuật xâm lấn"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 9 tuần",
+      "Mẹ đã truyền máu, ghép tạng, điều trị tế bào gốc hoặc miễn dịch gần đây (cần tư vấn trước)",
+      "Mẹ đang mắc ung thư hoặc có khối u",
+      "Đa thai từ 3 thai trở lên, hoặc có thai biến mất chưa xác định",
+      "Cần chẩn đoán xác định hoặc nghi ngờ dị tật cấu trúc trên siêu âm (cần chọc ối, xét nghiệm chuyên sâu hơn)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tư vấn trước xét nghiệm",
+        "desc": "Giải thích mục đích, giới hạn của NIPT Basic và ký phiếu đồng ý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xác nhận tuổi thai",
+        "desc": "Kiểm tra ngày kinh cuối, kết quả siêu âm hoặc hồ sơ IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu mẹ",
+        "desc": "Lấy khoảng 7–10 ml máu tĩnh mạch vào ống chuyên dụng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Giải trình tự DNA tự do và phân tích nguy cơ ba cặp NST 21, 18, 13.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Mang theo kết quả siêu âm và giấy tờ tùy thân",
+      "Báo bác sĩ nếu từng truyền máu, ghép tạng, mắc ung thư, mang song thai hoặc thai IVF/trứng hiến"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Nguy cơ thấp: tiếp tục khám thai định kỳ và siêu âm hình thái",
+      "Nguy cơ cao: gặp bác sĩ để tư vấn chọc ối hoặc sinh thiết gai nhau chẩn đoán xác định",
+      "Kết quả không kết luận được: có thể cần lấy mẫu lại"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: cần gặp bác sĩ sớm, không nên tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối: đến cơ sở y tế ngay"
+    ],
+    "accuracy_note": "NIPT Basic là xét nghiệm sàng lọc, không phải chẩn đoán xác định. Hiệu suất cao với hội chứng Down, thấp hơn một chút với Edwards và Patau. Xét nghiệm không phát hiện các bất thường nhiễm sắc thể khác, vi mất đoạn, hay dị tật cấu trúc. Kết quả nguy cơ cao cần được xác nhận bằng chọc ối hoặc sinh thiết gai nhau; kết quả bình thường không loại trừ hoàn toàn mọi bệnh lý.",
+    "faqs": [
+      {
+        "q": "Con số 99,9% có nghĩa là gì?",
+        "a": "Đây là độ chính xác công bố cho hội chứng Down trong các nghiên cứu. Với Edwards, Patau và trong thực tế lâm sàng, hiệu suất có thể thấp hơn; bác sĩ sẽ giải thích cụ thể khi trả kết quả."
+      },
+      {
+        "q": "NIPT Basic hay NIPT Pro phù hợp với tôi?",
+        "a": "Nếu bạn chỉ muốn sàng lọc ba hội chứng phổ biến, Basic là đủ. Nếu muốn khảo sát rộng hơn (toàn bộ NST và vi mất đoạn) hoặc thuộc nhóm nguy cơ cao, bác sĩ có thể đề nghị NIPT Pro."
+      },
+      {
+        "q": "Đã làm Double test, có cần làm thêm NIPT không?",
+        "a": "Tùy kết quả Double test. Nếu nguy cơ trung bình hoặc cao, NIPT là bước sàng lọc bổ sung trước khi cân nhắc chọc ối. Bác sĩ sẽ tư vấn riêng."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa và phòng xét nghiệm di truyền đối tác",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_THINPREP_HPV": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Ung thư cổ tử cung là một trong những ung thư phụ khoa có thể phòng ngừa và phát hiện sớm hiệu quả nhất. Gói tầm soát kết hợp hai xét nghiệm: ThinPrep Pap test (tế bào học nhúng dịch, giúp quan sát tế bào cổ tử cung rõ nét hơn Pap thường) và HPV DNA Cobas (phát hiện 14 chủng HPV nguy cơ cao, trong đó định danh riêng HPV 16 và 18). Kết hợp hai xét nghiệm giúp tăng độ nhạy phát hiện tổn thương tiền ung thư và rút ngắn thời gian tầm soát lặp lại khi kết quả âm tính.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau sạch kinh, khoảng ngày 10–20 của chu kỳ; không làm khi đang hành kinh"
+      },
+      {
+        "icon": "flask-conical",
+        "label": "Xét nghiệm gồm",
+        "value": "ThinPrep Pap test và HPV DNA Cobas (14 chủng nguy cơ cao)"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường sau vài ngày làm việc"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "microscope",
+        "title": "ThinPrep Pap test",
+        "desc": "Mẫu tế bào được nhúng dịch, loại bỏ máu, chất nhầy, giúp hình ảnh tế bào rõ ràng và giảm tỷ lệ mẫu không đạt."
+      },
+      {
+        "icon": "dna",
+        "title": "HPV DNA Cobas",
+        "desc": "Phát hiện 14 chủng HPV nguy cơ cao: định danh riêng HPV 16, 18 và nhóm 12 chủng còn lại."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Tầm soát kép",
+        "desc": "Kết hợp tế bào học và xét nghiệm HPV giúp phát hiện tổn thương tiền ung thư chính xác hơn."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Tư vấn sau kết quả",
+        "desc": "Bác sĩ giải thích kết quả, lập kế hoạch theo dõi, soi cổ tử cung hoặc sinh thiết khi cần."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ từ 30 đến 65 tuổi: tầm soát phối hợp ThinPrep và HPV theo khuyến cáo quốc tế",
+      "Phụ nữ từ 21 tuổi đã có quan hệ tình dục muốn tầm soát chủ động",
+      "Phụ nữ có nhiều bạn tình, tiền sử viêm nhiễm phụ khoa kéo dài hoặc đã từng có kết quả Pap bất thường",
+      "Phụ nữ đã tiêm vắc xin HPV vẫn cần tầm soát định kỳ",
+      "Phụ nữ chuẩn bị mang thai muốn kiểm tra sức khỏe cổ tử cung"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục (bác sĩ sẽ tư vấn phương án phù hợp)",
+      "Đang hành kinh hoặc ra máu âm đạo nhiều",
+      "Đang viêm âm đạo, cổ tử cung nặng (nên điều trị trước để kết quả chính xác)",
+      "Đã cắt toàn bộ tử cung và cổ tử cung vì bệnh lý lành tính, không có tiền sử tổn thương nặng (cần bác sĩ tư vấn)",
+      "Đang mang thai (cần báo bác sĩ để lựa chọn kỹ thuật lấy mẫu phù hợp)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận chu kỳ kinh, quan hệ tình dục, tiền sử tiêm HPV, kết quả Pap trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám phụ khoa",
+        "desc": "Đặt mỏ vịt, quan sát âm đạo, cổ tử cung.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tế bào cổ tử cung",
+        "desc": "Dùng cọ mềm lấy tế bào ở cổ ngoài và ống cổ tử cung, nhúng vào lọ dung dịch bảo quản; dùng chung mẫu cho cả hai xét nghiệm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Phòng xét nghiệm xử lý ThinPrep và chạy HPV DNA Cobas.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ đọc kết quả, giải thích và hẹn lịch theo dõi.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không quan hệ tình dục trong 24–48 giờ trước khi lấy mẫu",
+      "Không thụt rửa âm đạo, không đặt thuốc, kem hoặc gel âm đạo trong 48 giờ trước",
+      "Tránh làm xét nghiệm trong kỳ kinh; nên đặt lịch sau khi sạch kinh vài ngày",
+      "Báo bác sĩ về thuốc đang dùng, kết quả tầm soát trước, tiền sử tiêm HPV và nguy cơ mang thai",
+      "Mặc váy hoặc quần dễ cởi"
+    ],
+    "aftercare": [
+      "Có thể ra ít dịch hồng hoặc vài giọt máu trong 1–2 ngày, thường tự hết",
+      "Hạn chế quan hệ tình dục và thụt rửa trong 24 giờ sau lấy mẫu nếu có ra máu nhẹ",
+      "Âm tính cả hai: theo dõi và tầm soát lại theo khuyến cáo (thường sau vài năm tùy độ tuổi và hướng dẫn bác sĩ)",
+      "Dương tính hoặc bất thường: bác sĩ có thể hẹn soi cổ tử cung, sinh thiết hoặc xét nghiệm bổ sung"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài sau lấy mẫu",
+      "Đau bụng dưới tăng dần, sốt, dịch âm đạo có mùi hôi",
+      "Ra máu sau quan hệ hoặc ra máu giữa chu kỳ kinh (cần đi khám phụ khoa)"
+    ],
+    "accuracy_note": "Tầm soát không phải chẩn đoán ung thư. Nhiễm HPV rất phổ biến và phần lớn tự hết; HPV dương tính không có nghĩa là bạn bị ung thư. Kết quả bất thường cần được xác nhận bằng soi cổ tử cung và sinh thiết. Kết quả âm tính giúp yên tâm nhưng vẫn cần tầm soát lại theo khuyến cáo vì không có xét nghiệm nào đạt độ nhạy tuyệt đối.",
+    "faqs": [
+      {
+        "q": "Tôi đã tiêm vắc xin HPV có cần làm không?",
+        "a": "Có. Vắc xin không bao phủ mọi chủng HPV nguy cơ cao, nên phụ nữ đã tiêm vẫn cần tầm soát định kỳ."
+      },
+      {
+        "q": "Kết quả HPV dương tính có nghĩa là bị ung thư không?",
+        "a": "Không. Nhiễm HPV nguy cơ cao chỉ là yếu tố nguy cơ. Bác sĩ sẽ kết hợp với kết quả ThinPrep để quyết định có cần soi cổ tử cung hay chỉ theo dõi."
+      },
+      {
+        "q": "Làm xét nghiệm có đau không?",
+        "a": "Chỉ khó chịu nhẹ khi đặt mỏ vịt và lấy mẫu, thường kéo dài vài phút."
+      },
+      {
+        "q": "Gói này khác khám phụ khoa tổng quát như thế nào?",
+        "a": "Khám phụ khoa tổng quát bao gồm khám lâm sàng và soi cổ tử cung. Gói này tập trung tầm soát ung thư cổ tử cung bằng hai xét nghiệm chuyên biệt."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản phụ khoa và phòng xét nghiệm tế bào, sinh học phân tử",
+    "references": [
+      {
+        "title": "American Cancer Society guideline for the prevention and early detection of cervical cancer (2020)",
+        "org": "ACS"
+      },
+      {
+        "title": "Cervical Cancer: Screening (2018)",
+        "org": "USPSTF"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_STANDARD": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Khám phụ khoa tổng quát là bước đầu tiên để chăm sóc sức khỏe sinh sản của phụ nữ. Bác sĩ kiểm tra cơ quan sinh dục ngoài, âm đạo và cổ tử cung, kết hợp soi cổ tử cung bằng máy kỹ thuật số có độ phóng đại cao để quan sát chi tiết niêm mạc, phát hiện sớm viêm nhiễm, lộ tuyến, polyp và các tổn thương nghi tiền ung thư. Sau khám, bạn được tư vấn phác đồ điều trị an toàn và kế hoạch chăm sóc phù hợp với độ tuổi và nhu cầu.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau sạch kinh; có thể khám sớm hơn khi có triệu chứng cấp"
+      },
+      {
+        "icon": "camera",
+        "label": "Soi cổ tử cung",
+        "value": "Máy soi kỹ thuật số phóng đại cao, lưu hình ảnh"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "scan-eye",
+        "title": "Soi cổ tử cung kỹ thuật số",
+        "desc": "Phóng đại hình ảnh, nhìn rõ mạch máu và niêm mạc bất thường mà mắt thường khó thấy."
+      },
+      {
+        "icon": "search",
+        "title": "Tầm soát nhiều bệnh lý",
+        "desc": "Viêm âm đạo, viêm cổ tử cung, lộ tuyến, polyp, tổn thương nghi tiền ung thư."
+      },
+      {
+        "icon": "image",
+        "title": "Lưu và giải thích hình ảnh",
+        "desc": "Bác sĩ cho bạn xem hình soi, giải thích trực quan tình trạng cổ tử cung."
+      },
+      {
+        "icon": "message-circle",
+        "title": "Tư vấn cá nhân hóa",
+        "desc": "Kế hoạch điều trị, tránh thai, tiêm vắc xin HPV và tầm soát phù hợp độ tuổi."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ cần khám phụ khoa định kỳ hằng năm",
+      "Ra khí hư bất thường, ngứa, rát, đau khi quan hệ, ra máu ngoài kỳ kinh",
+      "Rối loạn kinh nguyệt, đau bụng dưới kéo dài",
+      "Kết quả Pap hoặc HPV bất thường cần soi cổ tử cung kiểm tra",
+      "Chuẩn bị mang thai hoặc cần kiểm tra sức khỏe sinh sản trước kết hôn",
+      "Cần tư vấn biện pháp tránh thai hoặc đặt/tháo dụng cụ tử cung"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục: bác sĩ chỉ khám ngoài và chỉ định siêu âm qua bụng khi cần",
+      "Đang hành kinh ra nhiều máu (nên hẹn sau sạch kinh trừ khi có triệu chứng cấp)",
+      "Đang mang thai: cần báo bác sĩ để lựa chọn kỹ thuật khám phù hợp",
+      "Cần xử trí cấp cứu như ra máu ồ ạt, đau bụng dữ dội, sốt cao: đến cấp cứu ngay"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi bệnh",
+        "desc": "Ghi nhận triệu chứng, chu kỳ kinh, tiền sử sản phụ khoa, thuốc, dị ứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám bên ngoài",
+        "desc": "Quan sát cơ quan sinh dục ngoài, âm hộ, tầng sinh môn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám bằng mỏ vịt và soi cổ tử cung",
+        "desc": "Quan sát âm đạo, cổ tử cung; dùng dung dịch chuyên dụng để làm nổi vùng tổn thương khi cần.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu xét nghiệm nếu cần",
+        "desc": "Soi tươi dịch âm đạo, cấy dịch hoặc lấy mẫu Pap theo chỉ định.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Kết luận và tư vấn điều trị",
+        "desc": "Giải thích hình ảnh, kê đơn hoặc hẹn xét nghiệm, thủ thuật tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không quan hệ tình dục, không thụt rửa, không đặt thuốc âm đạo trong 24–48 giờ trước",
+      "Tránh khám khi đang hành kinh trừ khi có triệu chứng cấp",
+      "Mang theo kết quả xét nghiệm, siêu âm, đơn thuốc phụ khoa trước đây",
+      "Mặc váy hoặc quần dễ cởi, đi tiểu trước khi khám",
+      "Báo bác sĩ nếu đang mang thai hoặc có khả năng mang thai"
+    ],
+    "aftercare": [
+      "Có thể ra ít dịch hồng hoặc vài giọt máu nhẹ trong 1–2 ngày sau soi hoặc lấy mẫu",
+      "Dùng thuốc đúng đơn và đủ liệu trình, không tự ý ngừng",
+      "Giữ vệ sinh vùng kín đúng cách; hạn chế thụt rửa sâu",
+      "Tái khám theo hẹn và nhận kết quả xét nghiệm (nếu có)"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài",
+      "Đau bụng dưới dữ dội, sốt trên 38°C",
+      "Khí hư có mùi hôi nặng, ngứa rát tăng"
+    ],
+    "accuracy_note": "Khám phụ khoa và soi cổ tử cung giúp phát hiện bất thường nhưng chẩn đoán xác định tổn thương nghi ngờ cần sinh thiết hoặc xét nghiệm bổ sung. Khám phụ khoa không thay thế tầm soát ung thư cổ tử cung bằng Pap và HPV theo định kỳ.",
+    "faqs": [
+      {
+        "q": "Bao lâu nên khám phụ khoa một lần?",
+        "a": "Thông thường mỗi năm một lần, hoặc sớm hơn khi có triệu chứng. Bác sĩ sẽ tư vấn lịch phù hợp theo độ tuổi và yếu tố nguy cơ."
+      },
+      {
+        "q": "Soi cổ tử cung có đau không?",
+        "a": "Thường chỉ gây cảm giác khó chịu nhẹ. Có thể cảm thấy hơi châm chích khi bôi dung dịch lên cổ tử cung."
+      },
+      {
+        "q": "Khám phụ khoa đã bao gồm Pap hoặc HPV chưa?",
+        "a": "Gói khám tổng quát không bao gồm xét nghiệm Pap hoặc HPV; nếu cần tầm soát, bác sĩ sẽ tư vấn dịch vụ ThinPrep và HPV riêng."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản phụ khoa (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "2019 ASCCP Risk-Based Management Consensus Guidelines for Abnormal Cervical Cancer Screening Tests",
+        "org": "ASCCP"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "US_4D_5D": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm hình thái thai nhi 4D/5D trên hệ thống GE Voluson Expert với công nghệ HD-Live tái tạo hình ảnh màu thực tế, giúp bạn nhìn thấy rõ gương mặt, tay chân, cột sống và các cơ quan của bé. Ngoài vai trò gắn kết gia đình, đây là buổi khảo sát hình thái học quan trọng: bác sĩ kiểm tra có hệ thống đầu, mặt, cột sống, tim, bụng, thận, tứ chi và đánh giá nhau thai, nước ối để phát hiện sớm các dị tật hình thái.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai khuyến nghị",
+        "value": "Khảo sát hình thái: khoảng tuần 18–24; hình ảnh 4D gương mặt rõ nhất khoảng tuần 26–32"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "scan-line",
+        "label": "Thiết bị",
+        "value": "GE Voluson Expert, công nghệ HD-Live"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "camera",
+        "title": "Hình ảnh HD-Live chân thực",
+        "desc": "Ánh sáng và bóng đổ mô phỏng thực tế, cho hình ảnh gương mặt và bàn tay bé sống động."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Khảo sát tim thai",
+        "desc": "Quan sát các buồng tim, mạch máu lớn và đánh giá dòng chảy bằng Doppler màu."
+      },
+      {
+        "icon": "bone",
+        "title": "Khảo sát hình thái toàn diện",
+        "desc": "Đầu, mặt, cột sống, ngực, bụng, thận, tứ chi và dây rốn."
+      },
+      {
+        "icon": "user-check",
+        "title": "Bác sĩ chẩn đoán hình ảnh chuyên sâu",
+        "desc": "Thực hiện và giải thích kết quả trực tiếp với thai phụ."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ cần siêu âm hình thái học mốc quý 2 (khoảng tuần 18–24)",
+      "Muốn theo dõi chi tiết khuôn mặt, bàn tay và biểu cảm của bé",
+      "Có nguy cơ dị tật cao: tiền sử gia đình, bất thường trên siêu âm trước, kết quả sàng lọc nguy cơ cao",
+      "Thai phụ có bệnh nền (đái tháo đường, bệnh tim) hoặc dùng thuốc có thể ảnh hưởng thai",
+      "Cần đánh giá chi tiết sau khi phát hiện bất thường ở siêu âm thường"
+    ],
+    "not_suitable_for": [
+      "Thai dưới tuần 16 (hình thái chưa đủ rõ để khảo sát chi tiết)",
+      "Cần xử trí cấp cứu như ra máu, đau bụng dữ dội, vỡ ối: đến cấp cứu ngay",
+      "Muốn chỉ chụp ảnh lưu niệm mà không cần khảo sát hình thái: vẫn thực hiện theo quy trình chuẩn của bệnh viện"
+    ],
+    "parameters": [
+      {
+        "name": "Đầu và não",
+        "desc": "Hình dạng hộp sọ, não thất, tiểu não, thể chai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Mặt",
+        "desc": "Môi, hàm, mũi, hốc mắt, khẩu cái (khi quan sát được).",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Cột sống",
+        "desc": "Đánh giá liên tục đốt sống, da phủ phía sau, hở đốt sống.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tim và lồng ngực",
+        "desc": "Bốn buồng tim, đường ra các mạch máu lớn, phổi, cơ hoành.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Bụng và hệ tiết niệu",
+        "desc": "Dạ dày, bàng quang, thận, thành bụng, dây rốn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tứ chi",
+        "desc": "Xương dài, bàn tay, bàn chân, ngón.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nhau thai, nước ối, dây rốn",
+        "desc": "Vị trí nhau, lượng nước ối, số mạch máu dây rốn.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và rà soát hồ sơ",
+        "desc": "Xác nhận tuổi thai, xem kết quả siêu âm, xét nghiệm sàng lọc trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khảo sát hình thái 2D và Doppler",
+        "desc": "Bác sĩ thực hiện lần lượt các mặt cắt tiêu chuẩn của các cơ quan.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Ghi hình 4D/5D",
+        "desc": "Tái tạo hình ảnh khuôn mặt, tay chân bé bằng HD-Live khi tư thế thai thuận lợi.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Giải thích kết quả",
+        "desc": "Bác sĩ giải thích, tư vấn và hẹn tái khám nếu cần khảo sát lại.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Ăn uống bình thường, không cần nhịn ăn hay nhịn tiểu",
+      "Uống đủ nước, ăn nhẹ trước khi đến để thai hoạt động tốt hơn",
+      "Mặc đồ rộng thoải mái, dễ vén bụng",
+      "Mang theo sổ khám thai, kết quả siêu âm và xét nghiệm trước đây",
+      "Có thể đi cùng người thân để cùng xem và nghe tư vấn"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường sau siêu âm",
+      "Nếu có vấn đề cần theo dõi, bác sĩ sẽ hẹn siêu âm lại hoặc chỉ định xét nghiệm bổ sung",
+      "Tiếp tục khám thai định kỳ và mang kết quả đến bác sĩ điều trị"
+    ],
+    "warning_signs": [
+      "Giảm hoặc mất cử động thai",
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn",
+      "Phù nhanh, đau đầu dữ dội, nhìn mờ"
+    ],
+    "technology": {
+      "title": "GE Voluson Expert với HD-Live",
+      "desc": "Hệ thống siêu âm chẩn đoán sản phụ khoa cao cấp, tái tạo hình ảnh 3D/4D với nguồn sáng ảo cho hình ảnh bề mặt và độ sâu chân thực, kết hợp Doppler màu để khảo sát tuần hoàn.",
+      "items": [
+        "Hình ảnh 4D thời gian thực",
+        "HD-Live với nguồn sáng ảo",
+        "Doppler màu và năng lượng",
+        "Độ phân giải cao cho khảo sát tim thai"
+      ]
+    },
+    "accuracy_note": "Siêu âm hình thái phát hiện được phần lớn nhưng không phải mọi dị tật. Chất lượng hình ảnh phụ thuộc vào tư thế thai, lượng nước ối, độ dày thành bụng và tuổi thai. Có những trường hợp cần siêu âm lại hoặc khảo sát bổ sung. Hình ảnh 4D/5D đẹp không đồng nghĩa với kết luận hình thái hoàn toàn bình thường.",
+    "faqs": [
+      {
+        "q": "Siêu âm 4D/5D có an toàn cho thai không?",
+        "a": "Siêu âm được xem là an toàn khi thực hiện bởi người được đào tạo, tuân thủ nguyên tắc dùng mức năng lượng thấp nhất cần thiết và thời gian ngắn nhất cần thiết."
+      },
+      {
+        "q": "Làm vào tuần nào để thấy mặt bé rõ nhất?",
+        "a": "Thông thường khoảng tuần 26–32 khi bé có lớp mỡ dưới da, nhưng còn tùy tư thế và lượng nước ối. Khảo sát hình thái chuẩn nên làm vào khoảng tuần 18–24."
+      },
+      {
+        "q": "Bé quay lưng, che mặt thì sao?",
+        "a": "Bác sĩ sẽ chờ bé đổi tư thế hoặc hướng dẫn bạn vận động nhẹ. Nếu không thành công, có thể hẹn lại để chụp lại hình ảnh."
+      },
+      {
+        "q": "Gói có kèm ảnh và video cho gia đình không?",
+        "a": "Việc lưu trữ ảnh, video tuân theo chính sách của bệnh viện; vui lòng hỏi nhân viên khi đặt lịch hoặc tại phòng siêu âm."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Chẩn đoán hình ảnh sản phụ khoa hoặc Y học bào thai",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of routine mid-trimester fetal ultrasound scanning (2011)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "RE_AMH_ASSAY": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "AMH (Anti-Müllerian Hormone) do các nang noãn nhỏ trong buồng trứng tiết ra, nên nồng độ trong máu phản ánh dự trữ buồng trứng, tức số lượng trứng còn lại. Khác với nhiều hormone sinh dục khác, AMH ít thay đổi theo chu kỳ kinh nên có thể xét nghiệm vào bất kỳ ngày nào. Kết quả giúp bác sĩ tiên lượng đáp ứng với kích thích buồng trứng, chọn phác đồ thụ thai tự nhiên hoặc IVF, và hỗ trợ đánh giá nguy cơ suy buồng trứng sớm hoặc hội chứng buồng trứng đa nang.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm lấy máu",
+        "value": "Bất kỳ ngày nào của chu kỳ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường sau vài ngày làm việc"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "gauge",
+        "title": "Chỉ số dự trữ buồng trứng",
+        "desc": "Phản ánh số lượng nang noãn nhỏ còn lại, nền tảng để lập kế hoạch sinh con."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Làm bất kỳ ngày nào",
+        "desc": "Không phụ thuộc ngày kinh, thuận tiện cho người có kinh không đều."
+      },
+      {
+        "icon": "git-branch",
+        "title": "Định hướng phác đồ",
+        "desc": "Giúp bác sĩ chọn liều thuốc kích thích và dự đoán số trứng thu được khi làm IVF."
+      },
+      {
+        "icon": "user-check",
+        "title": "Tư vấn bởi bác sĩ hiếm muộn",
+        "desc": "Giải thích kết quả trong bối cảnh tuổi, siêu âm và tiền sử của bạn."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ muốn đánh giá khả năng sinh sản hoặc có kế hoạch trì hoãn sinh con",
+      "Phụ nữ trên 35 tuổi đang chuẩn bị mang thai",
+      "Hiếm muộn, chuẩn bị làm IUI hoặc IVF",
+      "Kinh nguyệt thưa, mất kinh hoặc nghi ngờ suy buồng trứng sớm",
+      "Nghi ngờ hội chứng buồng trứng đa nang",
+      "Tiền sử phẫu thuật buồng trứng, xạ trị, hóa trị hoặc u buồng trứng"
+    ],
+    "not_suitable_for": [
+      "Đang mang thai (nồng độ AMH có thể thay đổi, kết quả khó diễn giải)",
+      "Đang dùng thuốc nội tiết hoặc ngừa thai kéo dài (nên báo bác sĩ vì có thể làm AMH thấp hơn tạm thời)",
+      "Đang dùng biotin (vitamin B7) liều cao (có thể gây sai số ở một số phương pháp xét nghiệm)"
+    ],
+    "parameters": [
+      {
+        "name": "AMH thấp",
+        "desc": "Gợi ý dự trữ buồng trứng giảm. Cần kết hợp tuổi, FSH, số nang thứ cấp trên siêu âm.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "AMH trung bình",
+        "desc": "Thường phù hợp với dự trữ buồng trứng bình thường theo độ tuổi.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "AMH cao",
+        "desc": "Có thể gặp ở buồng trứng đa nang và nguy cơ đáp ứng quá mức với thuốc kích thích.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận tuổi, chu kỳ kinh, thuốc nội tiết, tiền sử phẫu thuật buồng trứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu tĩnh mạch",
+        "desc": "Lấy một mẫu máu nhỏ tại phòng xét nghiệm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Định lượng AMH bằng phương pháp miễn dịch tự động.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích chỉ số trong bối cảnh của bạn và hướng xử trí.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn, có thể làm bất kỳ ngày nào trong chu kỳ",
+      "Báo bác sĩ nếu đang dùng thuốc tránh thai, thuốc nội tiết hoặc biotin liều cao (có thể cần ngưng theo hướng dẫn trước xét nghiệm)",
+      "Mang theo kết quả siêu âm, xét nghiệm hormone trước đây (nếu có)"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường ngay sau lấy máu",
+      "Mang kết quả đến khám với bác sĩ hiếm muộn để được tư vấn đầy đủ",
+      "Kết hợp siêu âm đếm nang thứ cấp, FSH, estradiol để đánh giá toàn diện dự trữ buồng trứng"
+    ],
+    "accuracy_note": "AMH phản ánh số lượng chứ không phản ánh chất lượng trứng. Chỉ số thấp không có nghĩa là không thể có thai, và chỉ số cao không đảm bảo khả năng thụ thai. Ngưỡng tham chiếu thay đổi theo phương pháp xét nghiệm và độ tuổi nên cần được bác sĩ diễn giải. Nên kết hợp với siêu âm, các hormone khác và tuổi để đánh giá toàn diện.",
+    "faqs": [
+      {
+        "q": "AMH thấp có nghĩa là tôi khó có con?",
+        "a": "Không hoàn toàn. AMH thấp cho thấy số lượng trứng còn ít, nhưng nhiều phụ nữ vẫn có thai tự nhiên. Tuy nhiên, bạn nên được tư vấn sớm để không bỏ lỡ cơ hội."
+      },
+      {
+        "q": "Có thể tăng AMH bằng thuốc hoặc thực phẩm không?",
+        "a": "Hiện chưa có phương pháp nào được chứng minh rõ ràng giúp tăng AMH hoặc tăng số lượng trứng. Lối sống lành mạnh giúp sức khỏe sinh sản nói chung."
+      },
+      {
+        "q": "Bao lâu nên xét nghiệm lại AMH?",
+        "a": "Tùy trường hợp, thường sau 6–12 tháng hoặc khi bác sĩ cần đánh giá lại trước khi điều trị."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Hiếm muộn & Hỗ trợ sinh sản",
+    "references": [
+      {
+        "title": "ESHRE guideline: ovarian stimulation for IVF/ICSI (2020)",
+        "org": "ESHRE"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "TRIPLE_TEST": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Triple test là xét nghiệm máu sàng lọc quý 2 định lượng ba chất trong máu mẹ: AFP (alpha-fetoprotein), hCG và uE3 (estriol không liên hợp). Kết hợp với tuổi mẹ và tuổi thai, kết quả cho nguy cơ thai mắc hội chứng Down (T21), Edwards (T18) và dị tật ống thần kinh hở như nứt đốt sống, vô sọ. Xét nghiệm thực hiện từ tuần 15 đến 20, là lựa chọn cho thai phụ chưa kịp làm Double test ở quý 1.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 15–20 (thường tối ưu 16–18)"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng AFP, hCG, uE3",
+        "desc": "Ba chỉ số sinh hóa cùng được tính nguy cơ bằng phần mềm chuyên dụng."
+      },
+      {
+        "icon": "brain",
+        "title": "Phát hiện dị tật ống thần kinh",
+        "desc": "AFP tăng cao là dấu hiệu gợi ý dị tật hở ống thần kinh."
+      },
+      {
+        "icon": "syringe",
+        "title": "An toàn, không xâm lấn",
+        "desc": "Chỉ cần một mẫu máu của mẹ, không ảnh hưởng đến thai."
+      },
+      {
+        "icon": "route",
+        "title": "Lựa chọn khi lỡ mốc quý 1",
+        "desc": "Phù hợp thai phụ bắt đầu khám thai muộn hoặc không làm Double test."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ ở tuần 15–20 muốn sàng lọc hội chứng Down, Edwards và dị tật ống thần kinh",
+      "Thai phụ chưa thực hiện Double test ở quý 1",
+      "Thai phụ có tiền sử gia đình có dị tật ống thần kinh",
+      "Thai phụ đái tháo đường type 1 hoặc dùng một số thuốc chống động kinh (nguy cơ dị tật ống thần kinh cao hơn)",
+      "Thai phụ muốn sàng lọc bổ sung kết hợp với siêu âm"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 15 tuần hoặc trên 20 tuần (kết quả kém tin cậy)",
+      "Đa thai (cách tính nguy cơ khác và độ chính xác thấp hơn)",
+      "Cần chẩn đoán xác định hoặc nghi ngờ dị tật rõ trên siêu âm (cần chọc ối hoặc xét nghiệm chuyên sâu)",
+      "Chưa xác định chính xác tuổi thai (cần siêu âm xác nhận trước)"
+    ],
+    "parameters": [
+      {
+        "name": "AFP",
+        "desc": "Protein do thai nhi sản xuất. Tăng gợi ý dị tật ống thần kinh, thành bụng; giảm có thể gợi ý hội chứng Down.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "hCG (tự do β hoặc tổng)",
+        "desc": "Hormone do nhau thai tiết ra. Tăng thường gặp trong hội chứng Down; giảm gợi ý hội chứng Edwards.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "uE3 (estriol không liên hợp)",
+        "desc": "Hormone liên quan chức năng thai và nhau. Giảm trong hội chứng Down và Edwards.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận tuổi thai",
+        "desc": "Kiểm tra siêu âm, ngày kinh cuối, cân nặng, tiền sử đái tháo đường, hút thuốc, IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu",
+        "desc": "Lấy một mẫu máu tĩnh mạch nhỏ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích và tính nguy cơ",
+        "desc": "Định lượng AFP, hCG, uE3 và tính nguy cơ bằng phần mềm kết hợp tuổi mẹ, tuổi thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả, tư vấn bước tiếp theo nếu nguy cơ cao.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Mang theo kết quả siêu âm gần nhất có ghi tuổi thai",
+      "Cung cấp thông tin cân nặng, hút thuốc, đái tháo đường, mang thai IVF, thuốc đang dùng",
+      "Báo bác sĩ nếu thai phụ đã làm các xét nghiệm sàng lọc khác"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Kết quả nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái ở tuần 18–24",
+      "Kết quả nguy cơ cao: đặt lịch gặp bác sĩ để tư vấn, có thể cần siêu âm chi tiết, NIPT hoặc chọc ối",
+      "Nếu AFP tăng: có thể cần siêu âm chuyên sâu để loại trừ dị tật ống thần kinh"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: nên gặp bác sĩ sớm, không tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối hoặc giảm cử động thai"
+    ],
+    "accuracy_note": "Triple test là xét nghiệm sàng lọc, không phải chẩn đoán. Khả năng phát hiện hội chứng Down của Triple test xấp xỉ 60–70% với tỷ lệ dương tính giả khoảng 5%, thấp hơn so với Double test kết hợp siêu âm độ mờ da gáy ở quý 1 và thấp hơn NIPT. Kết quả nguy cơ cao cần xác nhận bằng chọc ối hoặc các xét nghiệm chuyên sâu; kết quả nguy cơ thấp không loại trừ hoàn toàn bất thường.",
+    "faqs": [
+      {
+        "q": "Triple test khác Double test như thế nào?",
+        "a": "Double test làm ở tuần 11–13 tuần 6 ngày, kết hợp với đo độ mờ da gáy. Triple test làm ở quý 2 (tuần 15–20) với ba chỉ số AFP, hCG, uE3. Bạn thường chỉ cần làm một trong hai."
+      },
+      {
+        "q": "Đã làm Double test, có cần làm Triple test không?",
+        "a": "Thường không cần. Bác sĩ có thể chỉ định thêm AFP riêng để sàng lọc dị tật ống thần kinh trong một số trường hợp."
+      },
+      {
+        "q": "Kết quả nguy cơ cao thì phải làm gì?",
+        "a": "Bạn sẽ được tư vấn các bước tiếp theo như siêu âm chi tiết, NIPT hoặc chọc ối để chẩn đoán xác định. Nguy cơ cao không đồng nghĩa với thai chắc chắn bất thường."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "US_2D": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm thai 2D tiêu chuẩn là phương pháp nền tảng và an toàn nhất để theo dõi thai kỳ. Ở giai đoạn đầu, siêu âm xác định thai làm tổ trong buồng tử cung, tuổi thai và dấu hiệu tim thai (từ khoảng tuần 6). Ở các giai đoạn sau, siêu âm kiểm tra vị trí, ngôi thai, nhịp tim thai, lượng nước ối, nhau thai và ước tính cân nặng, giúp bác sĩ theo dõi sự phát triển của bé và phát hiện sớm bất thường.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm thực hiện",
+        "value": "Mọi giai đoạn của thai kỳ, theo mốc và chỉ định của bác sĩ"
+      },
+      {
+        "icon": "droplet",
+        "label": "Nhịn tiểu",
+        "value": "Có thể cần nhịn tiểu ở thai rất sớm; bác sĩ hướng dẫn khi đặt lịch"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "map-pin",
+        "title": "Xác định thai trong tử cung",
+        "desc": "Loại trừ thai ngoài tử cung ở giai đoạn sớm."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Nghe tim thai và đo nhịp tim",
+        "desc": "Dấu hiệu quan trọng xác nhận thai còn sống và phát triển."
+      },
+      {
+        "icon": "ruler",
+        "title": "Đo tuổi thai và cân nặng",
+        "desc": "Chiều dài đầu mông (CRL) ở quý 1; các chỉ số BPD, HC, AC, FL ở quý 2, 3."
+      },
+      {
+        "icon": "waves",
+        "title": "Đánh giá nước ối và nhau thai",
+        "desc": "Phát hiện đa ối, thiểu ối, nhau tiền đạo, nhau bong non."
+      }
+    ],
+    "suitable_for": [
+      "Chậm kinh, nghi có thai, cần xác định thai trong tử cung",
+      "Đau bụng, ra máu âm đạo trong thai kỳ đầu",
+      "Xác định tuổi thai và ngày dự sinh",
+      "Kiểm tra định kỳ vị trí thai, ngôi thai, nước ối, nhau thai",
+      "Ước tính cân nặng thai nhi ở quý 3",
+      "Theo dõi các thai kỳ nguy cơ cao theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Cần khảo sát hình thái chi tiết (nên chọn siêu âm hình thái 4D/5D)",
+      "Cần đánh giá Doppler chuyên sâu hoặc song thai nguy cơ (có dịch vụ riêng)",
+      "Tình huống cấp cứu sản khoa: vui lòng đến khoa cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Túi thai, tim thai",
+        "desc": "Xác định vị trí, số lượng thai, hoạt động tim thai ở quý 1.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chiều dài đầu mông (CRL)",
+        "desc": "Dùng tính tuổi thai chính xác nhất ở quý 1.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "BPD, HC, AC, FL",
+        "desc": "Đường kính lưỡng đỉnh, chu vi đầu, chu vi bụng, chiều dài xương đùi để ước tính cân nặng.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nước ối (AFI hoặc túi ối sâu nhất)",
+        "desc": "Đánh giá lượng nước ối.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nhau thai và dây rốn",
+        "desc": "Vị trí nhau, độ trưởng thành nhau, số mạch dây rốn.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và rà soát hồ sơ",
+        "desc": "Xác nhận tuổi thai, lý do siêu âm, kết quả siêu âm trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm qua thành bụng",
+        "desc": "Bác sĩ bôi gel và quét đầu dò trên bụng. Thai rất sớm có thể cần thêm siêu âm đầu dò âm đạo.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đo và đánh giá các chỉ số",
+        "desc": "Đo các chỉ số tuổi thai, tim thai, nước ối, nhau thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Giải thích kết quả",
+        "desc": "Bác sĩ thông báo kết quả, tư vấn và hẹn lịch tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Thai dưới khoảng 8–10 tuần có thể cần nhịn tiểu nhẹ; từ quý 2 không cần",
+      "Không cần nhịn ăn",
+      "Mặc đồ rộng, dễ vén bụng",
+      "Mang theo sổ khám thai và kết quả siêu âm trước đây"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau siêu âm, lau sạch gel trên bụng",
+      "Mang kết quả đến bác sĩ điều trị để được tư vấn tiếp",
+      "Theo dõi cử động thai và đi khám ngay khi có dấu hiệu bất thường"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, đau bụng dữ dội, đau vai (nghi thai ngoài tử cung)",
+      "Giảm hoặc mất cử động thai",
+      "Ra nước ối, co thắt đều đặn"
+    ],
+    "accuracy_note": "Siêu âm 2D là công cụ chẩn đoán hình ảnh phụ thuộc kinh nghiệm người thực hiện và điều kiện thăm khám (tư thế thai, thể trạng mẹ, lượng nước ối). Ước tính cân nặng thai có thể sai lệch vài trăm gram, nhất là ở quý 3. Siêu âm 2D tiêu chuẩn không thay thế khảo sát hình thái chuyên sâu.",
+    "faqs": [
+      {
+        "q": "Siêu âm có hại cho thai không?",
+        "a": "Siêu âm chẩn đoán được xem là an toàn khi dùng đúng chỉ định và đúng kỹ thuật, không sử dụng bức xạ ion hóa như X-quang."
+      },
+      {
+        "q": "Từ tuần mấy thì nhìn thấy tim thai?",
+        "a": "Thường từ khoảng tuần 6 có thể thấy hoạt động tim thai trên siêu âm, tùy thiết bị và tuổi thai chính xác."
+      },
+      {
+        "q": "Siêu âm 2D khác 4D/5D thế nào?",
+        "a": "2D là chuẩn để theo dõi và đo đạc. 4D/5D chủ yếu dùng khảo sát hình thái chi tiết và hình ảnh khuôn mặt, tay chân chân thực hơn."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản phụ khoa có chứng chỉ siêu âm",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of first-trimester fetal ultrasound scan (2013)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PACKAGE_BIRTH_SURGERY": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Gói sinh mổ chủ động trọn gói Bình An dành cho các trường hợp có chỉ định mổ lấy thai hoặc mổ chủ động theo nguyện vọng sau khi được bác sĩ tư vấn và đánh giá an toàn. Gói mang đến kíp mổ chuyên gia, phòng mổ vô khuẩn một chiều, giảm đau đa tầng và lưu viện 4 ngày tại phòng riêng cao cấp. Kỹ thuật mổ ưu tiên đường rạch nhỏ, thẩm mỹ, giúp mẹ hồi phục thoải mái và an tâm trong cuộc vượt cạn.",
+    "key_facts": [
+      {
+        "icon": "bed",
+        "label": "Lưu viện",
+        "value": "Chăm sóc toàn diện mẹ và bé tại viện theo phác đồ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm mổ chủ động",
+        "value": "Thường từ tuần 39 nếu không có chỉ định sớm hơn; bác sĩ quyết định ngày mổ"
+      },
+      {
+        "icon": "users",
+        "label": "Kíp mổ",
+        "value": "Phẫu thuật viên chính, phụ mổ, bác sĩ gây mê hồi sức, bác sĩ sơ sinh, nữ hộ sinh/điều dưỡng"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình đăng ký",
+        "value": "Thăm khám, tư vấn và lập kế hoạch sinh chu đáo"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "users",
+        "title": "Kíp mổ chuyên gia",
+        "desc": "Phẫu thuật viên, bác sĩ gây mê hồi sức và bác sĩ sơ sinh giàu kinh nghiệm cùng phối hợp."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Phòng mổ vô khuẩn một chiều",
+        "desc": "Quy trình kiểm soát nhiễm khuẩn nghiêm ngặt, giảm nguy cơ nhiễm trùng vết mổ."
+      },
+      {
+        "icon": "pill",
+        "title": "Giảm đau đa tầng",
+        "desc": "Phối hợp nhiều phương pháp giảm đau trong và sau mổ để mẹ vận động và chăm bé sớm."
+      },
+      {
+        "icon": "sparkles",
+        "title": "Đường rạch nhỏ, thẩm mỹ",
+        "desc": "Kỹ thuật khâu thẩm mỹ giúp vết mổ liền gọn, hạn chế sẹo."
+      },
+      {
+        "icon": "bed",
+        "title": "Phòng riêng cao cấp 4 ngày",
+        "desc": "Không gian yên tĩnh, tiện nghi cho mẹ nghỉ ngơi và gắn kết với bé."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ có chỉ định mổ lấy thai: ngôi bất thường, nhau tiền đạo, tiền sử mổ lấy thai, khung chậu hẹp, thai quá to và các chỉ định khác",
+      "Thai phụ muốn chủ động lên lịch mổ sau khi bác sĩ tư vấn đầy đủ lợi ích và nguy cơ",
+      "Thai phụ muốn có kế hoạch rõ ràng, chi phí minh bạch trước ngày sinh",
+      "Thai phụ cần môi trường phòng riêng, yên tĩnh sau mổ"
+    ],
+    "not_suitable_for": [
+      "Chuyển dạ đã bắt đầu hoặc có biến chứng cấp cứu (sẽ được xử trí theo quy trình cấp cứu)",
+      "Thai phụ có chống chỉ định gây tê hoặc bệnh lý nặng cần theo dõi ở đơn vị hồi sức (bác sĩ sẽ tư vấn phương án phù hợp)",
+      "Thai phụ không đủ điều kiện sức khỏe để mổ chủ động tại cơ sở (sẽ được tư vấn chuyển tuyến)"
+    ],
+    "package": {
+      "included_groups": [
+        {
+          "group": "Kíp phẫu thuật",
+          "items": [
+            {
+              "name": "Phẫu thuật viên chính và phụ mổ"
+            },
+            {
+              "name": "Bác sĩ gây mê hồi sức"
+            },
+            {
+              "name": "Bác sĩ sơ sinh đón bé tại phòng mổ"
+            },
+            {
+              "name": "Nữ hộ sinh, điều dưỡng gây mê và dụng cụ viên"
+            }
+          ]
+        },
+        {
+          "group": "Phòng mổ và kỹ thuật",
+          "items": [
+            {
+              "name": "Phòng mổ vô khuẩn một chiều"
+            },
+            {
+              "name": "Kỹ thuật mổ đường rạch nhỏ, khâu thẩm mỹ"
+            },
+            {
+              "name": "Gây tê tủy sống hoặc ngoài màng cứng theo chỉ định"
+            }
+          ]
+        },
+        {
+          "group": "Giảm đau",
+          "items": [
+            {
+              "name": "Giảm đau đa tầng trong và sau mổ"
+            }
+          ]
+        },
+        {
+          "group": "Lưu viện",
+          "items": [
+            {
+              "name": "Phòng riêng cao cấp",
+              "qty": "4 ngày"
+            },
+            {
+              "name": "Chăm sóc mẹ và bé sau mổ, hướng dẫn cho con bú, chăm sóc rốn"
+            }
+          ]
+        }
+      ],
+      "excluded": [
+        "Biến chứng hoặc can thiệp ngoài dự kiến (mất máu nhiều, truyền máu, cắt tử cung, nằm hồi sức)",
+        "Kéo dài ngày nằm viện quá thời gian trong gói do chỉ định y khoa",
+        "Chăm sóc trẻ sơ sinh cần điều trị đặc biệt (NICU, cấp cứu sơ sinh)",
+        "Thuốc, vật tư đặc biệt hoặc xét nghiệm ngoài danh mục gói",
+        "Chi phí dịch vụ tùy chọn (nâng hạng bác sĩ, thêm giường người nhà nếu có)"
+      ],
+      "conditions": [
+        "Thai phụ cần được bác sĩ khám, đánh giá chỉ định và đủ điều kiện sức khỏe trước khi đăng ký",
+        "Ngày mổ chủ động được bác sĩ xác nhận theo tuổi thai và tình trạng mẹ-bé",
+        "Phạm vi chi tiết, điều kiện hoàn hủy và khoản phát sinh theo hợp đồng gói tại thời điểm đăng ký",
+        "Cần đối chiếu và hoàn thiện danh mục gói với bộ phận dịch vụ trước khi công bố"
+      ],
+      "needs_confirmation": true
+    },
+    "process_steps": [
+      {
+        "title": "Đăng ký gói và khám tiền phẫu",
+        "desc": "Bác sĩ khám, đánh giá chỉ định mổ, tư vấn lợi ích và nguy cơ, lập kế hoạch cùng thai phụ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xét nghiệm và gây mê tiền phẫu",
+        "desc": "Xét nghiệm máu, nước tiểu, tim mạch theo chỉ định; bác sĩ gây mê đánh giá, tư vấn phương pháp gây tê.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chốt lịch mổ",
+        "desc": "Đặt ngày mổ chủ động, thường từ tuần 39 nếu không có chỉ định sớm hơn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nhập viện ngày mổ",
+        "desc": "Làm thủ tục, nhịn ăn theo hướng dẫn (thường 6–8 giờ), chuẩn bị tiền mê, đặt đường truyền.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phẫu thuật và đón bé",
+        "desc": "Gây tê tủy sống hoặc ngoài màng cứng, thực hiện mổ lấy thai, đón bé, da kề da khi đủ điều kiện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hồi tỉnh và chăm sóc hậu phẫu",
+        "desc": "Theo dõi sau mổ, giảm đau đa tầng, vận động sớm, hướng dẫn cho con bú và chăm sóc bé.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xuất viện và hẹn tái khám",
+        "desc": "Sau 4 ngày lưu viện, hướng dẫn chăm sóc vết mổ, dinh dưỡng, hẹn tái khám sau sinh.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Hoàn thành khám thai định kỳ và các xét nghiệm tiền phẫu theo hướng dẫn",
+      "Nhịn ăn thức ăn đặc trước mổ theo hướng dẫn của bác sĩ gây mê (thường 6–8 giờ)",
+      "Chuẩn bị túi đồ nhập viện cho mẹ và bé, giấy tờ tùy thân, sổ khám thai",
+      "Báo bác sĩ về thuốc đang dùng, tiền sử dị ứng, tiền sử phẫu thuật",
+      "Sắp xếp người thân hỗ trợ sau sinh và đưa đón"
+    ],
+    "aftercare": [
+      "Vận động nhẹ sớm theo hướng dẫn để giảm nguy cơ huyết khối và tắc ruột",
+      "Giữ vết mổ khô sạch, tuân thủ thuốc kháng sinh, giảm đau theo đơn",
+      "Cho con bú sớm, nghỉ ngơi đủ, ăn uống đủ chất và uống nhiều nước",
+      "Tái khám vết mổ và sức khỏe sau sinh theo lịch hẹn",
+      "Tránh mang vác nặng và tránh quan hệ vợ chồng cho đến khi bác sĩ cho phép"
+    ],
+    "warning_signs": [
+      "Sốt trên 38°C, vết mổ đỏ, sưng, đau tăng, chảy dịch hoặc mủ",
+      "Ra máu âm đạo nhiều (thấm hơn 1 băng vệ sinh mỗi giờ), có máu cục lớn",
+      "Đau, sưng, đỏ một bên chân; khó thở, đau ngực",
+      "Đau bụng tăng dần, nôn, bí trung đại tiện, tiểu khó",
+      "Cảm giác buồn bã kéo dài, lo âu nặng hoặc có ý nghĩ tự làm hại bản thân (cần được hỗ trợ ngay)"
+    ],
+    "accuracy_note": "Mổ lấy thai là phẫu thuật lớn, có thể có biến chứng như chảy máu, nhiễm trùng, tổn thương cơ quan lân cận, huyết khối và ảnh hưởng đến các lần mang thai sau. Khuyến cáo chung là mổ lấy thai khi có chỉ định y khoa; trường hợp mổ theo nguyện vọng cần được bác sĩ tư vấn đầy đủ trước khi quyết định.",
+    "faqs": [
+      {
+        "q": "Có thể mổ chủ động mà không có chỉ định y khoa không?",
+        "a": "Bác sĩ sẽ tư vấn đầy đủ lợi ích và nguy cơ để bạn đưa ra quyết định có hiểu biết. Việc chấp thuận mổ theo nguyện vọng phụ thuộc đánh giá của bác sĩ và quy định của bệnh viện."
+      },
+      {
+        "q": "Vì sao mổ chủ động thường chọn từ tuần 39?",
+        "a": "Thai đủ tháng giúp giảm nguy cơ vấn đề hô hấp ở trẻ sơ sinh. Nếu có chỉ định y khoa sớm hơn, bác sĩ sẽ quyết định ngày mổ phù hợp."
+      },
+      {
+        "q": "Gói đã bao gồm tất cả chi phí chưa?",
+        "a": "Gói là trọn gói trong phạm vi quy định. Những khoản phát sinh do biến chứng hoặc dịch vụ ngoài danh mục sẽ được thông báo và tính theo bảng giá. Vui lòng xem hợp đồng gói."
+      },
+      {
+        "q": "Sau mổ bao lâu được xuất viện?",
+        "a": "Gói bao gồm 4 ngày lưu viện tại phòng riêng. Nếu mẹ hoặc bé cần theo dõi thêm, bác sĩ sẽ tư vấn."
+      },
+      {
+        "q": "Tôi có phải chọn hạng bác sĩ khi đặt lịch không?",
+        "a": "Không. Gói không yêu cầu chọn hạng bác sĩ khi đặt lịch; kíp mổ được bệnh viện phân công theo quy trình."
+      }
+    ],
+    "performed_by": "Kíp mổ chuyên gia Khoa Sản, bác sĩ gây mê hồi sức và bác sĩ sơ sinh",
+    "references": [
+      {
+        "title": "Cesarean Delivery on Maternal Request, Committee Opinion No. 761 (2019)",
+        "org": "ACOG"
+      },
+      {
+        "title": "WHO recommendations: non-clinical interventions to reduce unnecessary caesarean sections (2018)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "DOUBLE_TEST": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Double test (xét nghiệm sàng lọc quý 1) là phương pháp sàng lọc sinh hóa quy chuẩn của Bộ Y tế nhằm đánh giá nguy cơ thai nhi mắc các hội chứng rối loạn nhiễm sắc thể phổ biến như Down (T21), Edwards (T18) và Patau (T13). Xét nghiệm định lượng β-hCG tự do và PAPP-A trong máu mẹ, kết hợp với đo độ mờ da gáy (NT) trên siêu âm và tuổi mẹ để cho ra nguy cơ cá thể hóa. Thời điểm tối ưu là tuần 11 đến 13 tuần 6 ngày.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 11 đến 13 tuần 6 ngày"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "scan-line",
+        "label": "Kết hợp",
+        "value": "Siêu âm đo độ mờ da gáy (NT) và tuổi mẹ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng β-hCG tự do và PAPP-A",
+        "desc": "Hai chỉ số sinh hóa quan trọng trong sàng lọc quý 1."
+      },
+      {
+        "icon": "ruler",
+        "title": "Kết hợp độ mờ da gáy (NT)",
+        "desc": "Kết hợp siêu âm giúp tăng độ nhạy so với chỉ xét nghiệm máu."
+      },
+      {
+        "icon": "badge-check",
+        "title": "Quy chuẩn Bộ Y tế",
+        "desc": "Phương pháp sàng lọc được áp dụng rộng rãi và được khuyến cáo trong chăm sóc tiền sản."
+      },
+      {
+        "icon": "zap",
+        "title": "Nhanh, an toàn",
+        "desc": "Chỉ cần lấy một mẫu máu mẹ, không ảnh hưởng đến thai."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ ở tuần 11 đến 13 tuần 6 ngày muốn sàng lọc hội chứng Down, Edwards, Patau",
+      "Thai phụ từ 35 tuổi trở lên hoặc có tiền sử thai bất thường",
+      "Thai phụ có siêu âm nghi ngờ tăng độ mờ da gáy",
+      "Thai phụ cần bước sàng lọc đầu tiên trước khi cân nhắc NIPT hoặc chọc ối",
+      "Thai phụ mang thai từ IVF hoặc có bệnh nền (đái tháo đường, bệnh tự miễn)"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 11 tuần hoặc trên 13 tuần 6 ngày (cần chuyển sang Triple test hoặc phương pháp khác)",
+      "Đa thai (cách tính nguy cơ khác, cần tư vấn chuyên sâu)",
+      "Cần chẩn đoán xác định hoặc có dấu hiệu bất thường rõ trên siêu âm (cần chọc ối, sinh thiết gai nhau)",
+      "Không có kết quả đo độ mờ da gáy do người đủ chứng chỉ thực hiện"
+    ],
+    "parameters": [
+      {
+        "name": "β-hCG tự do",
+        "desc": "Hormone do nhau thai tiết ra. Tăng cao thường gặp ở thai mắc hội chứng Down.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PAPP-A",
+        "desc": "Protein huyết tương liên quan thai kỳ. Giảm thấp có thể gặp ở hội chứng Down, Edwards.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Độ mờ da gáy (NT)",
+        "desc": "Khoảng dịch sau gáy thai nhi đo bằng siêu âm. Tăng độ mờ là dấu hiệu nguy cơ bất thường nhiễm sắc thể và một số dị tật tim.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tuổi mẹ và tuổi thai",
+        "desc": "Là các yếu tố nền để tính nguy cơ cá thể hóa.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận tuổi thai",
+        "desc": "Kiểm tra ngày kinh cuối, siêu âm xác định tuổi thai chính xác (CRL).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm đo độ mờ da gáy",
+        "desc": "Do bác sĩ có chứng chỉ thực hiện, cần đúng tuổi thai và đúng kỹ thuật.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu",
+        "desc": "Lấy một mẫu máu tĩnh mạch nhỏ để định lượng β-hCG tự do và PAPP-A.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tính nguy cơ",
+        "desc": "Phần mềm tính nguy cơ kết hợp tuổi mẹ, tuổi thai, NT và kết quả sinh hóa.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Xác định chính xác ngày kinh cuối hoặc mang theo kết quả siêu âm tuổi thai",
+      "Cung cấp thông tin cân nặng, hút thuốc, đái tháo đường, thai IVF, tiền sử thai bất thường",
+      "Hỏi bệnh viện về việc kết quả đo độ mờ da gáy (NT) đã bao gồm trong gói chưa trước khi đặt lịch"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái quý 2",
+      "Nguy cơ cao: gặp bác sĩ để tư vấn NIPT, chọc ối hoặc sinh thiết gai nhau",
+      "Có thể làm thêm sàng lọc tiền sản giật ở cùng thời điểm theo chỉ định bác sĩ"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: nên gặp bác sĩ sớm, không tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối trong thai kỳ"
+    ],
+    "accuracy_note": "Double test kết hợp NT là xét nghiệm sàng lọc, không phải chẩn đoán. Với hội chứng Down, khả năng phát hiện khoảng 85–90% với tỷ lệ dương tính giả khoảng 5% khi kết hợp NT, tuổi mẹ và tuổi thai. Kết quả nguy cơ cao không đồng nghĩa với thai bất thường; nguy cơ thấp cũng không loại trừ hoàn toàn. Chẩn đoán xác định cần chọc ối hoặc sinh thiết gai nhau.",
+    "faqs": [
+      {
+        "q": "Double test có bao gồm siêu âm độ mờ da gáy không?",
+        "a": "Để có kết quả nguy cơ đầy đủ, cần có số đo độ mờ da gáy (NT) do người có chứng chỉ thực hiện. Vui lòng xác nhận phạm vi dịch vụ khi đặt lịch hoặc tại quầy tiếp nhận."
+      },
+      {
+        "q": "Double test có thay thế NIPT không?",
+        "a": "Không. NIPT có độ nhạy cao hơn ở các hội chứng phổ biến, nhưng Double test kết hợp NT vẫn là sàng lọc nền tảng và NT còn giúp phát hiện một số dị tật khác."
+      },
+      {
+        "q": "Nếu lỡ mốc Double test thì làm gì?",
+        "a": "Bạn có thể làm Triple test ở tuần 15–20 hoặc NIPT (từ tuần 9–10). Bác sĩ sẽ tư vấn lựa chọn phù hợp."
+      },
+      {
+        "q": "Tôi mang song thai thì sao?",
+        "a": "Cần tư vấn trực tiếp vì cách tính nguy cơ ở song thai khác. Bác sĩ sẽ chỉ định phương pháp phù hợp."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm, bác sĩ siêu âm đo NT và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      },
+      {
+        "title": "The 11–13 weeks scan",
+        "org": "Fetal Medicine Foundation"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PACKAGE_BIRTH_STANDARD": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Gói sinh con thường trọn gói Hạnh Phúc đồng hành cùng mẹ suốt hành trình chuyển dạ và sinh nở tự nhiên. Chuyển dạ được theo dõi bằng Monitoring tim thai liên tục, mẹ được hỗ trợ giảm đau sản khoa bằng gây tê ngoài màng cứng khi có chỉ định và nguyện vọng, kíp bác sĩ Sản khoa và hộ sinh trực tiếp đỡ đẻ, sau đó mẹ và bé được chăm sóc tại viện 2 ngày trong phòng lưu viện tiêu chuẩn. Mọi chi phí chính được tính trọn gói để mẹ an tâm đón con.",
+    "key_facts": [
+      {
+        "icon": "activity",
+        "label": "Theo dõi chuyển dạ",
+        "value": "Monitoring tim thai liên tục"
+      },
+      {
+        "icon": "syringe",
+        "label": "Giảm đau",
+        "value": "Gây tê ngoài màng cứng giảm đau sản khoa khi có chỉ định và nguyện vọng"
+      },
+      {
+        "icon": "bed",
+        "label": "Lưu viện",
+        "value": "Chăm sóc toàn diện mẹ và bé tại viện theo phác đồ"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình đăng ký",
+        "value": "Thăm khám, tư vấn và lập kế hoạch sinh chu đáo"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "activity",
+        "title": "Monitoring tim thai liên tục",
+        "desc": "Theo dõi sát nhịp tim thai và cơn co tử cung trong suốt quá trình chuyển dạ."
+      },
+      {
+        "icon": "pill",
+        "title": "Giảm đau sản khoa",
+        "desc": "Gây tê ngoài màng cứng giúp giảm đau, giữ sức cho mẹ khi chuyển dạ."
+      },
+      {
+        "icon": "users",
+        "title": "Kíp bác sĩ và hộ sinh đỡ đẻ",
+        "desc": "Bác sĩ Sản khoa cùng nữ hộ sinh đồng hành từ lúc chuyển dạ đến khi sinh."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "Gắn kết mẹ con",
+        "desc": "Da kề da sớm và hỗ trợ cho con bú trong giờ đầu sau sinh khi đủ điều kiện."
+      },
+      {
+        "icon": "baby",
+        "title": "Chăm sóc sơ sinh",
+        "desc": "Bao gồm tiêm vitamin cho bé theo quy trình sơ sinh của bệnh viện."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ mang thai đơn, ngôi đầu, dự kiến sinh thường qua đường âm đạo",
+      "Thai phụ muốn theo dõi chuyển dạ an toàn với thiết bị hiện đại",
+      "Thai phụ muốn giảm đau khi chuyển dạ",
+      "Thai phụ muốn chi phí sinh nở rõ ràng, trọn gói, hạn chế phát sinh"
+    ],
+    "not_suitable_for": [
+      "Thai có chỉ định mổ lấy thai: nhau tiền đạo, ngôi ngang, ngôi mông không đủ điều kiện sinh ngả âm đạo, vết mổ cũ không phù hợp thử sinh ngả âm đạo (bác sĩ tư vấn gói sinh mổ)",
+      "Thai phụ có chống chỉ định gây tê ngoài màng cứng (rối loạn đông máu, nhiễm trùng vùng lưng, dị ứng thuốc tê)",
+      "Thai kỳ nguy cơ cao cần hồi sức hoặc chăm sóc đặc biệt (bác sĩ đánh giá và tư vấn phương án phù hợp)"
+    ],
+    "package": {
+      "included_groups": [
+        {
+          "group": "Kíp đỡ đẻ",
+          "items": [
+            {
+              "name": "Bác sĩ Sản khoa theo dõi và đỡ đẻ"
+            },
+            {
+              "name": "Nữ hộ sinh đỡ đẻ và hỗ trợ mẹ trong chuyển dạ"
+            }
+          ]
+        },
+        {
+          "group": "Theo dõi và giảm đau",
+          "items": [
+            {
+              "name": "Monitoring tim thai liên tục trong chuyển dạ"
+            },
+            {
+              "name": "Gây tê ngoài màng cứng giảm đau sản khoa",
+              "note": "Khi có chỉ định và nguyện vọng của mẹ"
+            }
+          ]
+        },
+        {
+          "group": "Chăm sóc sơ sinh",
+          "items": [
+            {
+              "name": "Tiêm vitamin cho trẻ sơ sinh theo quy trình"
+            },
+            {
+              "name": "Da kề da, hỗ trợ cho con bú sớm và chăm sóc rốn"
+            }
+          ]
+        },
+        {
+          "group": "Lưu viện",
+          "items": [
+            {
+              "name": "Phòng lưu viện tiêu chuẩn",
+              "qty": "2 ngày"
+            },
+            {
+              "name": "Chăm sóc mẹ và bé sau sinh, hướng dẫn chăm sóc tại nhà"
+            }
+          ]
+        }
+      ],
+      "excluded": [
+        "Mổ lấy thai cấp cứu hoặc chuyển sang phẫu thuật",
+        "Can thiệp sản khoa đặc biệt (giác hút, forceps, thủ thuật xử trí băng huyết...) nếu phát sinh ngoài kế hoạch",
+        "Kéo dài ngày nằm viện quá 2 ngày do chỉ định y khoa",
+        "Chăm sóc trẻ sơ sinh cần điều trị đặc biệt (NICU, cấp cứu sơ sinh)",
+        "Thuốc, vật tư đặc biệt, xét nghiệm ngoài danh mục gói",
+        "Dịch vụ tùy chọn như nâng hạng phòng, giường người nhà"
+      ],
+      "conditions": [
+        "Đăng ký và khám thai tại bệnh viện theo hướng dẫn để bác sĩ đánh giá điều kiện sinh thường",
+        "Gây tê ngoài màng cứng được thực hiện khi bác sĩ gây mê đánh giá đủ điều kiện",
+        "Nếu cần chuyển sinh mổ hoặc có biến chứng, chi phí tính theo bảng giá riêng",
+        "Cần đối chiếu và hoàn thiện danh mục gói với bộ phận dịch vụ trước khi công bố"
+      ],
+      "needs_confirmation": true
+    },
+    "process_steps": [
+      {
+        "title": "Đăng ký gói và tư vấn kế hoạch sinh",
+        "desc": "Bác sĩ đánh giá thai kỳ, tư vấn kế hoạch sinh, giảm đau và giải đáp thắc mắc.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám thai định kỳ đến ngày sinh",
+        "desc": "Tiếp tục khám theo lịch, chuẩn bị dấu hiệu chuyển dạ và túi đồ nhập viện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nhập viện khi chuyển dạ",
+        "desc": "Khi có cơn co đều đặn, ra nước ối, ra máu hoặc theo hướng dẫn của bác sĩ, mẹ đến viện làm thủ tục.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi chuyển dạ",
+        "desc": "Monitoring tim thai và cơn co liên tục, khám đánh giá tiến triển cổ tử cung.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Gây tê ngoài màng cứng giảm đau",
+        "desc": "Thực hiện bởi bác sĩ gây mê khi có chỉ định, nguyện vọng và điều kiện phù hợp.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Sinh con",
+        "desc": "Kíp bác sĩ và hộ sinh đỡ đẻ, da kề da và hỗ trợ cho con bú trong giờ đầu khi đủ điều kiện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chăm sóc sau sinh và xuất viện",
+        "desc": "Lưu viện 2 ngày, theo dõi mẹ và bé, hướng dẫn chăm sóc và hẹn tái khám.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Khám thai đủ và thực hiện các xét nghiệm tuần cuối theo hướng dẫn",
+      "Học các dấu hiệu chuyển dạ thật và cách thở, rặn khi sinh",
+      "Chuẩn bị túi đồ nhập viện cho mẹ và bé, giấy tờ tùy thân, sổ khám thai",
+      "Ghi lại số điện thoại liên hệ khẩn của bệnh viện và sắp xếp phương tiện di chuyển",
+      "Trao đổi trước với bác sĩ về mong muốn giảm đau và các lựa chọn khi sinh"
+    ],
+    "aftercare": [
+      "Nghỉ ngơi, ăn uống đủ chất, uống nhiều nước và cho con bú sớm",
+      "Vệ sinh vết khâu tầng sinh môn (nếu có) đúng hướng dẫn",
+      "Theo dõi lượng sản dịch, thân nhiệt và tinh thần",
+      "Tái khám sau sinh theo lịch hẹn của bác sĩ",
+      "Đưa bé đi tiêm chủng và khám sơ sinh đúng lịch"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều (thấm hơn 1 băng vệ sinh mỗi giờ), có máu cục lớn",
+      "Sốt trên 38°C, sản dịch hôi, đau bụng dưới tăng",
+      "Vết khâu sưng, đau, chảy mủ",
+      "Đau, sưng một bên chân, khó thở, đau ngực",
+      "Buồn bã kéo dài, lo âu nặng hoặc có ý nghĩ tự làm hại bản thân (cần được hỗ trợ ngay)"
+    ],
+    "technology": {
+      "title": "Monitoring sản khoa",
+      "desc": "Thiết bị theo dõi tim thai và cơn co tử cung liên tục, giúp phát hiện sớm dấu hiệu suy thai để bác sĩ xử trí kịp thời.",
+      "items": [
+        "Ghi nhịp tim thai liên tục",
+        "Ghi cơn co tử cung",
+        "Cảnh báo bất thường nhịp tim thai"
+      ]
+    },
+    "accuracy_note": "Mỗi cuộc chuyển dạ diễn biến khác nhau. Gây tê ngoài màng cứng giảm đau đáng kể nhưng không phải lúc nào cũng loại bỏ hoàn toàn cảm giác đau, và có thể có tác dụng phụ như hạ huyết áp, tê chân tạm thời, đau lưng nhẹ. Trường hợp cần mổ lấy thai hoặc can thiệp thủ thuật, bác sĩ sẽ giải thích và chi phí theo quy định riêng.",
+    "faqs": [
+      {
+        "q": "Gây tê ngoài màng cứng có ảnh hưởng đến bé không?",
+        "a": "Thuốc tê tác dụng tại chỗ, lượng thuốc vào máu mẹ rất nhỏ nên ít ảnh hưởng đến bé. Bác sĩ gây mê sẽ đánh giá trước và theo dõi trong suốt thời gian giảm đau."
+      },
+      {
+        "q": "Tôi có thể chọn bác sĩ đỡ đẻ không?",
+        "a": "Dịch vụ do kíp bác sĩ và hộ sinh trực tiếp theo dõi và đỡ đẻ. Vui lòng trao đổi với bệnh viện khi đăng ký về nhu cầu chọn bác sĩ."
+      },
+      {
+        "q": "Nếu chuyển dạ rồi phải mổ lấy thai thì sao?",
+        "a": "Sự an toàn của mẹ và bé là ưu tiên hàng đầu. Chi phí mổ lấy thai hoặc can thiệp ngoài kế hoạch sẽ được thông báo và tính theo bảng giá."
+      },
+      {
+        "q": "Lưu viện 2 ngày có đủ không?",
+        "a": "Thông thường 2 ngày đủ để theo dõi mẹ và bé sau sinh thường không biến chứng. Nếu cần theo dõi thêm, bác sĩ sẽ tư vấn."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa, nữ hộ sinh, bác sĩ gây mê hồi sức và bác sĩ sơ sinh",
+    "references": [
+      {
+        "title": "WHO recommendations: intrapartum care for a positive childbirth experience (2018)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PACKAGE_STEM_CELL": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Gói thu thập và lưu trữ tế bào gốc máu cuống rốn dự kiến cung cấp dịch vụ bảo hiểm sinh học tương lai cho trẻ sơ sinh, hợp tác cùng ngân hàng tế bào gốc quốc tế. Sau khi bé chào đời, phần máu còn lại trong cuống rốn và nhau thai có thể được thu thập, xử lý và bảo quản đông lạnh sâu. Dịch vụ hiện đang trong giai đoạn soạn thảo quy trình kỹ thuật và chính sách giá, chuẩn bị ra mắt vào quý tới.",
+    "notice": {
+      "type": "COMING_SOON",
+      "title": "Dịch vụ sắp ra mắt",
+      "body": "Gói thu thập và lưu trữ tế bào gốc máu cuống rốn đang hoàn thiện quy trình kỹ thuật và chính sách giá. Thông tin dưới đây mang tính giới thiệu chung. Vui lòng liên hệ bệnh viện để được thông báo khi dịch vụ mở đăng ký."
+    },
+    "key_facts": [
+      {
+        "icon": "calendar-clock",
+        "label": "Trạng thái",
+        "value": "Đang hoàn thiện, dự kiến ra mắt vào quý tới"
+      },
+      {
+        "icon": "snowflake",
+        "label": "Bảo quản",
+        "value": "Đông lạnh sâu trong nitơ lỏng tại ngân hàng tế bào gốc đối tác"
+      },
+      {
+        "icon": "baby",
+        "label": "Thời điểm thu thập",
+        "value": "Ngay sau khi bé chào đời, không ảnh hưởng đến quá trình sinh"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình tiếp nhận",
+        "value": "Tư vấn trực tiếp cùng chuyên gia thu thập tế bào gốc"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "shield-check",
+        "title": "Thu thập an toàn, không đau",
+        "desc": "Máu được lấy từ cuống rốn sau khi bé đã được cắt rốn, không xâm lấn mẹ và bé."
+      },
+      {
+        "icon": "snowflake",
+        "title": "Bảo quản đông lạnh chuẩn quốc tế",
+        "desc": "Mẫu được xử lý và lưu trữ theo quy trình kiểm soát chất lượng của ngân hàng đối tác."
+      },
+      {
+        "icon": "globe",
+        "title": "Hợp tác ngân hàng tế bào gốc quốc tế",
+        "desc": "Đối tác và điều khoản cụ thể sẽ được công bố khi dịch vụ ra mắt."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Tư vấn trung thực",
+        "desc": "Bác sĩ giải thích rõ chỉ định điều trị hiện có, giới hạn và lựa chọn thay thế như hiến công cộng."
+      }
+    ],
+    "suitable_for": [
+      "Gia đình có tiền sử bệnh lý huyết học, di truyền hoặc có anh chị em cần ghép tế bào gốc",
+      "Gia đình muốn lưu trữ máu cuống rốn cho bé như một lựa chọn dự phòng sau khi đã được tư vấn đầy đủ",
+      "Thai phụ có kế hoạch sinh tại bệnh viện và quan tâm đến lưu trữ tế bào gốc"
+    ],
+    "not_suitable_for": [
+      "Thai phụ nhiễm HIV, viêm gan B, viêm gan C, giang mai hoặc các bệnh nhiễm trùng liên quan (mẫu có thể không đạt điều kiện lưu trữ)",
+      "Sinh non quá sớm hoặc thể tích máu cuống rốn không đủ (mẫu có thể không đạt tiêu chuẩn)",
+      "Khi thu thập có nguy cơ ảnh hưởng đến chăm sóc ưu tiên của mẹ và bé (ví dụ băng huyết, sơ sinh cần hồi sức): thu thập sẽ được hoãn hoặc hủy"
+    ],
+    "process_steps": [
+      {
+        "title": "Tư vấn và đăng ký",
+        "desc": "Bác sĩ giải thích mục đích, lợi ích, giới hạn và ký hợp đồng, phiếu đồng ý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xét nghiệm sàng lọc người mẹ",
+        "desc": "Xét nghiệm các bệnh nhiễm trùng theo yêu cầu của ngân hàng tế bào gốc trước hoặc trong lúc sinh.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Thu thập sau sinh",
+        "desc": "Sau khi bé chào đời và đã cắt rốn, nhân viên được đào tạo lấy máu cuống rốn trong điều kiện vô khuẩn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Vận chuyển và xử lý mẫu",
+        "desc": "Mẫu được đóng gói, vận chuyển trong điều kiện kiểm soát nhiệt độ đến phòng xử lý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lưu trữ và cấp giấy chứng nhận",
+        "desc": "Mẫu được đông lạnh sâu, gia đình nhận thông tin lưu trữ và giấy chứng nhận.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Đăng ký và ký hợp đồng trước ngày dự sinh (thường trước tuần 34–36, theo hướng dẫn khi dịch vụ ra mắt)",
+      "Thông báo cho kíp đỡ đẻ về việc đã đăng ký thu thập máu cuống rốn",
+      "Thực hiện xét nghiệm sàng lọc bệnh nhiễm trùng cho mẹ theo yêu cầu",
+      "Trao đổi với bác sĩ về kẹp rốn muộn (thường 30–60 giây), có thể kết hợp với thu thập khi đủ điều kiện"
+    ],
+    "aftercare": [
+      "Gia đình nhận giấy chứng nhận và thông tin lưu trữ từ ngân hàng đối tác",
+      "Giữ hợp đồng và cập nhật thông tin liên hệ để ngân hàng liên lạc khi cần",
+      "Thanh toán phí lưu trữ hằng năm hoặc theo gói đã chọn"
+    ],
+    "accuracy_note": "Tế bào gốc máu cuống rốn có giá trị điều trị đã được chứng minh trong một số bệnh máu và miễn dịch (ví dụ một số loại bạch cầu, thalassemia nặng, suy tủy). Việc dùng cho chính trẻ (tự thân) trong thực tế còn hạn chế, và dịch vụ không đảm bảo sẽ dùng được hoặc chữa khỏi bệnh trong tương lai. Các hiệp hội nhi khoa và sản khoa khuyến khích hiến công cộng khi có điều kiện và thận trọng với việc quảng bá lưu trữ tư nhân như một 'bảo hiểm' toàn diện.",
+    "faqs": [
+      {
+        "q": "Thu thập máu cuống rốn có ảnh hưởng đến mẹ và bé không?",
+        "a": "Máu được lấy sau khi bé đã được cắt rốn, không đau và không can thiệp vào quá trình sinh. Sự an toàn của mẹ và bé luôn được ưu tiên."
+      },
+      {
+        "q": "Tế bào gốc cuống rốn dùng để chữa những bệnh gì?",
+        "a": "Hiện được dùng trong ghép tế bào gốc điều trị một số bệnh lý huyết học và miễn dịch. Không phải bệnh nào cũng chữa được, và hiệu quả phụ thuộc vào chỉ định y khoa cụ thể."
+      },
+      {
+        "q": "Bao giờ có thể đăng ký?",
+        "a": "Dịch vụ đang hoàn thiện và dự kiến ra mắt vào quý tới. Vui lòng liên hệ bệnh viện để được thông báo."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa, hộ sinh được đào tạo và ngân hàng tế bào gốc đối tác",
+    "references": [
+      {
+        "title": "Umbilical Cord Blood Banking, Committee Opinion No. 771 (2019)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Cord Blood Banking for Potential Future Transplantation, Policy Statement (2017)",
+        "org": "AAP"
+      },
+      {
+        "title": "Delayed Umbilical Cord Clamping After Birth, Committee Opinion No. 814 (2020)",
+        "org": "ACOG"
+      }
+    ],
+    "seo": {
+      "noindex": true
+    },
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GENETIC_COUNSELING": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tư vấn di truyền là buổi trao đổi 1:1 với bác sĩ chuyên gia di truyền để phân tích tiền sử gia đình, đánh giá nguy cơ đột biến gen và bất thường nhiễm sắc thể, giải thích kết quả xét nghiệm di truyền và định hướng các bước tiếp theo. Dịch vụ dành cho các cặp đôi trước hôn nhân hoặc chuẩn bị mang thai, thai phụ có kết quả sàng lọc bất thường, hoặc gia đình có người mắc bệnh di truyền. Buổi tư vấn tôn trọng quyền tự quyết định của bạn và bảo mật thông tin gen.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "users",
+        "label": "Đối tượng",
+        "value": "Cá nhân, cặp đôi, thai phụ và gia đình"
+      },
+      {
+        "icon": "file-text",
+        "label": "Bạn nhận được",
+        "value": "Phả hệ, đánh giá nguy cơ, tóm tắt tư vấn và đề xuất xét nghiệm phù hợp"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "git-fork",
+        "title": "Phân tích phả hệ 3 thế hệ",
+        "desc": "Vẽ cây phả hệ để nhận diện kiểu di truyền và các thành viên có nguy cơ."
+      },
+      {
+        "icon": "dna",
+        "title": "Đánh giá nguy cơ cá thể hóa",
+        "desc": "Nguy cơ mang gen bệnh, nguy cơ tái phát và nguy cơ cho con."
+      },
+      {
+        "icon": "file-search",
+        "title": "Giải thích kết quả xét nghiệm",
+        "desc": "NIPT, Double test, Triple test, kết quả chọc ối, giải trình tự gen và các kết quả di truyền khác."
+      },
+      {
+        "icon": "lock",
+        "title": "Bảo mật và tôn trọng quyết định",
+        "desc": "Tư vấn không áp đặt, thông tin di truyền của bạn được bảo mật."
+      }
+    ],
+    "suitable_for": [
+      "Cặp đôi chuẩn bị kết hôn hoặc mang thai, có người thân mắc bệnh di truyền",
+      "Vợ chồng có tiền sử sảy thai liên tiếp, thai lưu hoặc sinh con dị tật, chậm phát triển",
+      "Thai phụ có kết quả sàng lọc nguy cơ cao hoặc siêu âm gợi ý bất thường",
+      "Gia đình có tiền sử ung thư xuất hiện sớm hoặc nhiều thế hệ",
+      "Người muốn tầm soát mang gen lặn phổ biến (ví dụ thalassemia, thiếu men G6PD, teo cơ tủy sống SMA)",
+      "Thai phụ cần giải thích kết quả xét nghiệm di truyền từ nơi khác"
+    ],
+    "not_suitable_for": [
+      "Cần xét nghiệm di truyền thực tế: buổi tư vấn không bao gồm chi phí xét nghiệm, sẽ được chỉ định và tính riêng",
+      "Tình huống cấp cứu sản khoa: đến khoa cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Phả hệ",
+        "desc": "Ghi nhận bệnh lý, tuổi khởi phát, dị tật và sảy thai trong gia đình ít nhất 3 thế hệ.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nguy cơ mang gen bệnh lặn",
+        "desc": "Đánh giá nguy cơ cả hai vợ chồng cùng mang gen lặn gây bệnh ở con.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nguy cơ lệch bội nhiễm sắc thể",
+        "desc": "Dựa trên tuổi mẹ, kết quả sàng lọc và siêu âm.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chỉ định xét nghiệm",
+        "desc": "Gợi ý xét nghiệm phù hợp: carrier screening, NIPT, chọc ối, giải trình tự gen, PGT.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và ghi nhận lý do tư vấn",
+        "desc": "Làm rõ mối quan tâm, mục tiêu và kỳ vọng của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Thu thập tiền sử và vẽ phả hệ",
+        "desc": "Hỏi tiền sử gia đình, thai kỳ, sảy thai, dị tật, bệnh lý và kết quả xét nghiệm trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đánh giá nguy cơ",
+        "desc": "Phân tích kiểu di truyền, ước tính nguy cơ và xác định xét nghiệm cần thiết.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn các lựa chọn",
+        "desc": "Trình bày xét nghiệm, ưu điểm, giới hạn, và các hướng xử trí. Tôn trọng quyết định của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tóm tắt và hẹn bước tiếp theo",
+        "desc": "Tóm tắt nội dung tư vấn, hẹn lịch xét nghiệm hoặc nhận kết quả.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Chuẩn bị thông tin bệnh lý, dị tật, ung thư, sảy thai của người thân trong 3 thế hệ",
+      "Mang theo kết quả xét nghiệm di truyền, siêu âm, hồ sơ bệnh án có liên quan",
+      "Nếu có thể, mời chồng hoặc vợ cùng tham gia buổi tư vấn",
+      "Liệt kê các câu hỏi và mối lo lắng để buổi tư vấn đúng trọng tâm"
+    ],
+    "aftercare": [
+      "Đọc kỹ bản tóm tắt tư vấn và trao đổi với người thân",
+      "Thực hiện các xét nghiệm đã thống nhất, đặt lịch tư vấn sau xét nghiệm",
+      "Đặt thêm câu hỏi cho bác sĩ nếu có thắc mắc mới",
+      "Cân nhắc chia sẻ kết quả với người thân có liên quan nếu phù hợp"
+    ],
+    "accuracy_note": "Tư vấn di truyền cung cấp thông tin và ước tính nguy cơ dựa trên dữ liệu hiện có, không đảm bảo kết quả cụ thể. Xét nghiệm di truyền có giới hạn: kết quả bình thường không loại trừ mọi bệnh, và có thể có kết quả chưa rõ ý nghĩa. Mọi quyết định thuộc về bạn và gia đình.",
+    "faqs": [
+      {
+        "q": "Tư vấn di truyền khác gì xét nghiệm di truyền?",
+        "a": "Tư vấn là buổi trao đổi để đánh giá nguy cơ và chọn xét nghiệm phù hợp, giải thích kết quả. Xét nghiệm là bước lấy mẫu và phân tích, tính phí riêng."
+      },
+      {
+        "q": "Thalassemia có phổ biến ở Việt Nam không?",
+        "a": "Có. Thalassemia và thiếu men G6PD là các bệnh lý di truyền lặn khá thường gặp ở người Việt, nên tầm soát mang gen trước hoặc sớm trong thai kỳ là cần thiết trong nhiều trường hợp."
+      },
+      {
+        "q": "Thông tin di truyền của tôi có được bảo mật không?",
+        "a": "Thông tin sức khỏe và di truyền được bảo mật theo quy định. Bạn là người quyết định có chia sẻ cho người thân hoặc cơ sở khác hay không."
+      },
+      {
+        "q": "Cần cả hai vợ chồng cùng đi không?",
+        "a": "Không bắt buộc, nhưng nên có cả hai vì nguy cơ di truyền thường liên quan đến cả hai bên gia đình."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên gia di truyền hoặc bác sĩ Sản khoa có chuyên môn tư vấn di truyền",
+    "references": [
+      {
+        "title": "Carrier Screening in the Age of Genomic Medicine, Committee Opinion No. 690 (2017)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Genetic counseling practice resources",
+        "org": "NSGC"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  }
+}

@@ -1,10 +1,18 @@
 import { useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 
 export function navigate(path: string, options?: { replace?: boolean }) {
-  if (window.location.pathname === path) return;
+  const currentPath = window.location.pathname;
+  const hasHashOrSearch = Boolean(window.location.hash || window.location.search);
+
+  // If already at the exact target path with no query or hash, scroll smoothly to top
+  if (currentPath === path && !hasHashOrSearch) {
+    window.scrollTo?.({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
   window.history[options?.replace ? 'replaceState' : 'pushState']({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
-  window.scrollTo?.({ top: 0 });
+  window.scrollTo?.({ top: 0, behavior: 'smooth' });
 }
 
 export function usePathname() {

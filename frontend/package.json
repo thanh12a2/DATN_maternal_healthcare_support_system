@@ -17,6 +17,7 @@
     "@vitejs/plugin-react": "latest",
     "antd": "^6.6.6",
     "dayjs": "^1.11.23",
+    "lucide-react": "^1.66.0",
     "page-mascot": "^0.1.0",
     "react": "latest",
     "react-dom": "latest",

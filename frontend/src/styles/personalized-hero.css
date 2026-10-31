@@ -1,0 +1,979 @@
+/* --------------------------------------------------------------------------
+   BỆNH VIỆN PHỤ SẢN TÂM AN - HERO CÁ NHÂN HÓA (PERSONALIZED HERO)
+   Bảng màu chuẩn:
+   - Navy: #0B4F9C
+   - Azure: #1677FF
+   - CTA Cam: #E67E22
+   - Chữ Ink: #183153
+   - Muted: #5B6F8A
+   - Nền: #F8FAFC
+   - Trạng thái xanh: #10B981 / #0B7A56
+   - Trạng thái đỏ: #D9381E
+   - Đường kẻ: #DCE6F1
+   -------------------------------------------------------------------------- */
+
+.personalized-hero-section {
+  --ph-bg: #F8FAFC;
+  --ph-ink: #183153;
+  --ph-muted: #5B6F8A;
+  --ph-blue: #0B4F9C;
+  --ph-azure: #1677FF;
+  --ph-blue-soft: #E4EFFC;
+  --ph-orange: #E67E22;
+  --ph-peach: #E7F8F1;
+  --ph-green: #10B981;
+  --ph-red: #D9381E;
+  --ph-line: #DCE6F1;
+  --ph-white: #ffffff;
+
+  background: var(--ph-bg);
+  border-bottom: 1px solid var(--ph-line);
+  position: relative;
+  overflow: hidden;
+  padding: 40px 0 52px;
+}
+
+.personalized-hero-inner,
+.portal-container.personalized-hero-inner {
+  max-width: var(--portal-container-max, 1340px);
+  margin: 0 auto;
+  padding: 0 20px !important;
+  display: grid;
+  grid-template-columns: 1fr 470px;
+  gap: 48px;
+  align-items: stretch;
+  height: 524px;
+  min-height: 524px;
+  max-height: 524px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.ph-content-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 524px;
+  max-height: 524px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.ph-hero-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Heading & Subtitle */
+.ph-hero-title {
+  font-size: clamp(32px, 4vw, 46px);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ph-blue);
+  margin: 0;
+}
+
+.ph-hero-sub {
+  font-size: clamp(15.5px, 1.3vw, 17px);
+  color: #3e5066;
+  max-width: 100%;
+  width: 100%;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ph-hero-sub b {
+  color: var(--ph-ink);
+  font-weight: 700;
+}
+
+/* Timeline Hành trình thai kỳ */
+.ph-weeks-wrap {
+  margin: 0;
+  padding: 24px 36px 0;
+  height: 110px;
+  box-sizing: border-box;
+}
+
+.ph-track {
+  position: relative;
+  height: 10px;
+  border-radius: 99px;
+  background: #E3EBF5;
+}
+
+.ph-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--ph-blue), #1677FF);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ph-dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ph-white);
+  border: 3px solid #B9C8DA;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+
+.ph-dot.done {
+  border-color: var(--ph-blue);
+  background: #ffffff;
+}
+
+.ph-dot.now {
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border: 5px solid var(--ph-orange);
+  box-shadow: 0 0 0 6px rgba(230, 126, 34, 0.2);
+  background: #ffffff;
+}
+
+.ph-lbl {
+  position: absolute;
+  top: 26px;
+  transform: translateX(-50%);
+  width: 76px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ph-muted);
+}
+
+.ph-lbl b {
+  display: block;
+  font-size: 13px;
+  color: var(--ph-ink);
+  font-weight: 700;
+}
+
+.ph-lbl.now,
+.ph-lbl.now b {
+  color: var(--ph-orange);
+}
+
+.ph-here-badge {
+  position: absolute;
+  top: -30px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ph-orange);
+  white-space: nowrap;
+  background: #fff6ee;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #fed7aa;
+}
+
+/* Thẻ gợi ý Onboarding khi chưa có hồ sơ thai kỳ */
+.ph-prompt-card {
+  margin-top: 0;
+  background: #f0f7ff;
+  border: 1.5px dashed #b9d5f8;
+  border-radius: 18px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ph-ink);
+}
+
+/* Khối dưới cùng chứa lịch hẹn & phím tắt của Hero cá nhân */
+.ph-bottom-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.ph-bottom-group .ph-appt-card,
+.ph-bottom-group .ph-cta-row {
+  margin-top: 0;
+}
+
+.ph-loading-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.ph-prompt-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ph-prompt-copy strong {
+  font-size: 14.5px;
+  color: var(--ph-blue);
+  font-weight: 700;
+}
+
+.ph-prompt-copy p {
+  font-size: 13px;
+  color: var(--ph-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ph-prompt-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--ph-blue);
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ph-prompt-btn:hover {
+  background: #083c77;
+  transform: translateY(-1px);
+}
+
+/* Thẻ Lịch Hẹn Sắp Tới (Appointment Card) */
+.ph-appt-card {
+  margin-top: 20px;
+  background: var(--ph-white);
+  border: 1px solid var(--ph-line);
+  border-radius: 22px;
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 14px 34px -22px rgba(11, 79, 156, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ph-appt-card:hover {
+  box-shadow: 0 18px 40px -20px rgba(11, 79, 156, 0.5);
+}
+
+.ph-appt-date {
+  width: 72px;
+  text-align: center;
+  border-radius: 16px;
+  background: var(--ph-blue-soft);
+  padding: 10px 0;
+  color: var(--ph-blue);
+  flex-shrink: 0;
+}
+
+.ph-appt-date strong {
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.ph-appt-date span {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ph-appt-info h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ph-ink);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.ph-appt-info p {
+  font-size: 14px;
+  color: var(--ph-muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.ph-chip {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0B7A56;
+  background: var(--ph-peach);
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid #c7f0df;
+}
+
+.ph-chip.highlight {
+  color: var(--ph-orange);
+  background: #fff4e6;
+  border-color: #fed7aa;
+}
+
+.ph-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ph-btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  border: 1.5px solid var(--ph-blue);
+  background: var(--ph-blue);
+  color: #ffffff;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.ph-btn:hover {
+  background: #083c77;
+  border-color: #083c77;
+}
+
+.ph-btn.ghost {
+  background: transparent;
+  color: var(--ph-blue);
+}
+
+.ph-btn.ghost:hover {
+  background: var(--ph-blue-soft);
+}
+
+.ph-btn:focus-visible,
+.ph-quick a:focus-visible,
+.ph-cta:focus-visible {
+  outline: 3px solid var(--ph-orange);
+  outline-offset: 2px;
+}
+
+/* Thẻ mời đặt lịch khi chưa có lịch hẹn */
+.ph-appt-empty-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--ph-blue-soft);
+  color: var(--ph-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-appt-empty-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* CTA Row dưới lịch hẹn */
+.ph-cta-row {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+}
+
+.ph-cta,
+.ph-cta-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff !important;
+  background: var(--ph-orange);
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 26px;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -12px var(--ph-orange);
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ph-cta:hover,
+.ph-cta-btn:hover {
+  background: #d35400;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px -10px var(--ph-orange);
+}
+
+.ph-quick {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.ph-quick a {
+  color: var(--ph-blue);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: #B5CFEF;
+  transition: color 0.18s ease;
+}
+
+.ph-quick a:hover {
+  color: var(--ph-azure);
+  text-decoration-color: var(--ph-azure);
+}
+
+/* Illustration / Cột Ảnh bên phải */
+.ph-art {
+  position: relative;
+  width: 470px;
+  max-width: 470px;
+  height: 524px;
+  min-height: 524px;
+  max-height: 524px;
+  margin-left: auto;
+  margin-right: 0;
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.ph-art svg {
+  display: block;
+  width: 470px;
+  height: 524px;
+  flex-shrink: 0;
+}
+
+.ph-photo {
+  position: absolute;
+  z-index: 1;
+  left: 5.77%;
+  width: 88.46%;
+  top: 5.2%;
+  bottom: 0;
+  object-fit: cover;
+  border-radius: 999px 999px 28px 28px;
+  background: var(--ph-blue-soft);
+}
+
+.ph-trust {
+  position: absolute;
+  right: 4px;
+  top: 34px;
+  background: var(--ph-white);
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ph-ink);
+  border: 1px solid var(--ph-line);
+  box-shadow: 0 12px 24px -18px rgba(20, 48, 79, 0.5);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.ph-trust i {
+  font-style: normal;
+  color: var(--ph-orange);
+  margin-right: 4px;
+}
+
+.ph-fact {
+  position: absolute;
+  z-index: 2;
+  left: -18px;
+  bottom: 96px;
+  max-width: 250px;
+  background: var(--ph-white);
+  border-radius: 18px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--ph-ink);
+  border: 1px solid var(--ph-line);
+  box-shadow: 0 14px 30px -18px rgba(24, 49, 83, 0.5);
+  line-height: 1.45;
+}
+
+/* Skeletons */
+.ph-skeleton {
+  background: linear-gradient(90deg, #eef2f6 25%, #f6f8fb 50%, #eef2f6 75%);
+  background-size: 200% 100%;
+  animation: ph-shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes ph-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ph-skeleton-title {
+  height: 44px;
+  width: 70%;
+  margin-bottom: 12px;
+}
+
+.ph-skeleton-sub {
+  height: 22px;
+  width: 45%;
+  margin-bottom: 24px;
+}
+
+.ph-skeleton-track {
+  height: 90px;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 16px;
+}
+
+.ph-skeleton-card {
+  height: 110px;
+  width: 100%;
+  border-radius: 22px;
+}
+
+/* Error State */
+.ph-error-box {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ph-red);
+}
+
+.ph-error-box span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ph-retry-btn {
+  padding: 7px 16px;
+  background: var(--ph-red);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ph-retry-btn:hover {
+  opacity: 0.9;
+}
+
+/* --------------------------------------------------------------------------
+   PUBLIC HERO (DÀNH CHO KHÁCH CHƯA ĐĂNG NHẬP)
+   -------------------------------------------------------------------------- */
+.ph-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ph-blue);
+  background: var(--ph-blue-soft);
+  padding: 6px 14px;
+  border-radius: 99px;
+  margin-bottom: 16px;
+  border: 1px solid #cce0f5;
+}
+
+.ph-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ph-green);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.ph-title-accent {
+  color: var(--ph-azure);
+  background: linear-gradient(135deg, var(--ph-blue) 0%, var(--ph-azure) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 3 Trụ cột y khoa uy tín */
+.ph-public-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 16px 0;
+  align-items: stretch;
+}
+
+.ph-public-pillar {
+  background: var(--ph-white);
+  border: 1px solid var(--ph-line);
+  border-radius: 18px;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 6px 18px -6px rgba(11, 79, 156, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.ph-public-pillar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -6px rgba(11, 79, 156, 0.16);
+}
+
+.ph-pillar-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ph-pillar-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ph-pillar-icon.blue {
+  background: #E6F4FF;
+  color: #1677FF;
+}
+
+.ph-pillar-icon.green {
+  background: #E6F7ED;
+  color: #10B981;
+}
+
+.ph-pillar-icon.amber {
+  background: #FFF4E6;
+  color: #E67E22;
+}
+
+.ph-pillar-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ph-public-pillar strong {
+  font-size: clamp(14px, 1.1vw, 15px);
+  font-weight: 750;
+  color: var(--ph-ink);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ph-public-pillar span {
+  font-size: 13px;
+  color: #475569; /* Contrast >= 4.5:1 against white */
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Thẻ Dịch vụ & Đặt hẹn Public */
+.ph-public-booking-card {
+  margin-top: 0;
+  padding: 18px 22px;
+}
+
+.ph-appt-date.ph-public-date,
+.ph-date.ph-public-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--ph-blue-soft);
+  color: var(--ph-blue);
+  width: 82px;
+  min-width: 82px;
+  min-height: 82px;
+  border-radius: 16px;
+  padding: 10px 8px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.ph-appt-date.ph-public-date strong,
+.ph-date.ph-public-date strong {
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--ph-blue);
+  white-space: nowrap;
+}
+
+.ph-appt-date.ph-public-date span,
+.ph-date.ph-public-date span {
+  font-size: clamp(9.5px, 1.05vw, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ph-blue);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* Hotline & Phone Styling */
+.ph-hotline-row {
+  margin-top: 6px !important;
+  font-size: 13.5px !important;
+  color: #183153 !important;
+}
+
+.ph-hotline-link {
+  color: #D9381E !important;
+  font-weight: 750 !important;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.ph-hotline-link:hover {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.ph-hotline-link:focus-visible {
+  outline: 3px solid #D9381E;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Nút Đặt lịch ngay (CAM) & Xem gói sinh (VIỀN NAVY) */
+.ph-btn-book {
+  background: #E67E22 !important;
+  border-color: #E67E22 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.28);
+}
+
+.ph-btn-book:hover {
+  background: #d35400 !important;
+  border-color: #d35400 !important;
+  box-shadow: 0 6px 16px rgba(230, 126, 34, 0.38);
+}
+
+.ph-btn-book:focus-visible {
+  outline: 3px solid #E67E22;
+  outline-offset: 2px;
+}
+
+.ph-btn-outline {
+  background: #ffffff !important;
+  border: 1.5px solid #0B4F9C !important;
+  color: #0B4F9C !important;
+}
+
+.ph-btn-outline:hover {
+  background: #E4EFFC !important;
+  color: #07376e !important;
+}
+
+.ph-btn-outline:focus-visible {
+  outline: 3px solid #1677FF;
+  outline-offset: 2px;
+}
+
+/* Hàng đợi Live Link */
+.ph-live-queue-row {
+  margin-top: 14px;
+}
+
+.ph-live-queue-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 650;
+  color: #1677FF;
+  text-decoration: none;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.ph-live-queue-link:hover {
+  color: #0B4F9C;
+  text-decoration: underline;
+  transform: translateX(2px);
+}
+
+.ph-live-queue-link:focus-visible {
+  outline: 3px solid #1677FF;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Floating Circular Chatbot Widget */
+.patient-chatbot-circle-btn {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 20px));
+  bottom: max(20px, env(safe-area-inset-bottom, 20px));
+  z-index: 999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0B4F9C;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(11, 79, 156, 0.32);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.patient-chatbot-circle-btn:hover {
+  background: #07376e;
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(11, 79, 156, 0.45);
+}
+
+.patient-chatbot-circle-btn:focus-visible {
+  outline: 3px solid #1677FF;
+  outline-offset: 3px;
+}
+
+.patient-chatbot-circle-btn .chatbot-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.patient-chatbot-circle-btn .chatbot-tooltip {
+  position: absolute;
+  right: 66px;
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+  background: #183153;
+  color: #ffffff;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  box-shadow: 0 4px 12px rgba(24, 49, 83, 0.25);
+}
+
+.patient-chatbot-circle-btn:hover .chatbot-tooltip,
+.patient-chatbot-circle-btn:focus-visible .chatbot-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN (<= 920px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 920px) {
+  .personalized-hero-section {
+    padding: 24px 0 36px;
+  }
+  .ph-content-col {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    gap: 20px;
+    justify-content: flex-start;
+  }
+  .ph-public-pillars {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 0;
+  }
+  .personalized-hero-inner,
+  .portal-container.personalized-hero-inner {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    padding: 0 16px !important;
+    gap: 32px;
+  }
+  .ph-art {
+    order: -1;
+    width: 100%;
+    max-width: 340px;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    margin-inline: auto;
+  }
+  .ph-art svg {
+    width: 100%;
+    height: auto;
+  }
+  .ph-fact {
+    left: -6px;
+    bottom: 40px;
+    font-size: 12.5px;
+    max-width: 220px;
+  }
+  .ph-appt,
+  .ph-appt-card {
+    grid-template-columns: auto 1fr;
+    padding: 16px;
+  }
+  .ph-btns {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    gap: 10px;
+  }
+  .ph-btns .ph-btn {
+    flex: 1;
+    text-align: center;
+  }
+  .ph-weeks-wrap {
+    padding: 26px 20px 0;
+    height: 96px;
+  }
+  .ph-lbl {
+    width: 38px;
+    font-size: 11px;
+  }
+  .ph-lbl b {
+    font-size: 11.5px;
+  }
+  .ph-lbl span {
+    display: none;
+  }
+}
+

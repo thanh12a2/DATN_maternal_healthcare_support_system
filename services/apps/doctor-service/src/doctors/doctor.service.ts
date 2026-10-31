@@ -514,9 +514,19 @@ export class DoctorDomainService {
     return { data: specialty };
   }
 
-  async listSpecialties(query: SpecialtyListQueryDto, actor: Identity) {
+  private generateSpecialtySlug(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[đĐ]/g, 'd')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  async listSpecialties(query: SpecialtyListQueryDto, actor?: Identity) {
     const where =
-      actor.role === 'ADMIN' && query.status
+      actor?.role === 'ADMIN' && query.status
         ? { status: query.status }
         : { status: SpecialtyStatus.ACTIVE };
     const rows = await this.prisma.specialty.findMany({
@@ -524,8 +534,12 @@ export class DoctorDomainService {
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
       take: query.limit ?? 20,
     });
+    const enriched = rows.map((r: any) => ({
+      ...r,
+      slug: r.slug || this.generateSpecialtySlug(r.code || r.name),
+    }));
     return {
-      data: rows,
+      data: enriched,
       meta: {
         nextCursor: null,
         limit: query.limit ?? 20,
