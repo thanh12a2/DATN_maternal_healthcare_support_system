@@ -278,7 +278,13 @@ export function PatientAppointmentsPage() {
       : 'is-upcoming';
 
     return (
-      <article key={apt.id || apt.appointmentCode} className={`pap-card ${cardVariant}`}>
+      <article
+        key={apt.id || apt.appointmentCode}
+        className={`pap-card ${cardVariant}`}
+        onClick={() => setSelectedTicket(apt)}
+        style={{ cursor: 'pointer' }}
+        title="Nhấn để xem chi tiết phiếu hẹn"
+      >
         {/* Cột 1: Lịch tờ */}
         <div className="pap-card-calendar-col">
           <span className="pap-card-month">{formatMonthYear(apt.startAt)}</span>
@@ -329,7 +335,10 @@ export function PatientAppointmentsPage() {
             <button
               type="button"
               className="pap-btn-view-ticket"
-              onClick={() => setSelectedTicket(apt)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTicket(apt);
+              }}
             >
               <FileText size={15} />
               <span>Phiếu hẹn</span>
@@ -339,6 +348,7 @@ export function PatientAppointmentsPage() {
               <AppLink
                 href={`/dat-lich?serviceId=${encodeURIComponent(apt.serviceId || '')}`}
                 className="pap-btn-rebook"
+                onClick={(e: any) => e.stopPropagation()}
               >
                 <ArrowRight size={14} />
                 <span>Đặt lại</span>

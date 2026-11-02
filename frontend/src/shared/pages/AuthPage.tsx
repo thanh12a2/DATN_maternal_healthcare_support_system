@@ -20,8 +20,16 @@ function redirectAfterAuth(user: AuthUser) {
   const searchParams = new URLSearchParams(window.location.search);
   const returnUrl = searchParams.get('returnUrl') || searchParams.get('redirect');
   if (returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')) {
-    navigate(returnUrl, { replace: true });
-    return;
+    if (user.role === 'PATIENT') {
+      navigate(returnUrl, { replace: true });
+      return;
+    }
+    // Đối với nhân viên y tế / lễ tân / quản trị, chỉ chấp nhận returnUrl thuộc đúng workspace của họ
+    const roleWorkspacePrefix = `/workspace/${user.role.toLowerCase()}`;
+    if (returnUrl.startsWith(roleWorkspacePrefix)) {
+      navigate(returnUrl, { replace: true });
+      return;
+    }
   }
   navigate(homeForRole(user.role), { replace: true });
 }

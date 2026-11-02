@@ -9,6 +9,7 @@ interface Props {
   appointments: DeskAppointment[];
   catalog?: DeskCatalog | null;
   busy?: boolean;
+  targetAppointmentId?: string | null;
   onOpen: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -26,6 +27,7 @@ export function SearchResults({
   appointments,
   catalog,
   busy,
+  targetAppointmentId,
   onOpen,
   onCheckIn,
   onCancel,
@@ -64,6 +66,7 @@ export function SearchResults({
             appointments={appointments.filter((a) => a.patientId === p.id)}
             catalog={catalog}
             busy={busy}
+            targetAppointmentId={targetAppointmentId}
             onOpen={onOpen}
             onCheckIn={onCheckIn}
             onCancel={onCancel}
