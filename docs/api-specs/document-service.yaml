@@ -7,6 +7,46 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /clinical-results/{encounterId}:
+    parameters:
+      - { name: encounterId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: listEncounterResultFiles
+      description: List files for a doctor assigned to the encounter. Files are not automatically scanned.
+      responses:
+        '200': { description: File metadata for the encounter }
+        '403': { description: Doctor is not assigned }
+        '503': { description: Access verification unavailable }
+    post:
+      operationId: uploadEncounterResultFile
+      description: Store actual PDF, JPEG, or PNG bytes (maximum 5 MiB) for an encounter in progress. The content is not malware scanned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, mediaType, contentBase64]
+              properties:
+                fileName: { type: string, maxLength: 200 }
+                mediaType: { type: string, enum: [application/pdf, image/jpeg, image/png] }
+                contentBase64: { type: string, format: byte }
+      responses:
+        '201': { description: File stored }
+        '400': { description: Invalid file or size }
+        '403': { description: Not assigned or encounter not in progress }
+        '503': { description: Access verification unavailable }
+  /clinical-results/{encounterId}/{documentId}/content:
+    get:
+      operationId: downloadEncounterResultFile
+      parameters:
+        - { name: encounterId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Actual file bytes returned as an attachment }
+        '403': { description: Doctor is not assigned }
+        '404': { description: File not found in this encounter }
+        '503': { description: Access verification unavailable }
   /uploads:
     post:
       operationId: createUploadSession
