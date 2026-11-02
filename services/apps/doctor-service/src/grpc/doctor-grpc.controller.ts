@@ -10,7 +10,7 @@ export class DoctorGrpcController {
   constructor(private readonly doctors: DoctorDomainService) {}
 
   @GrpcMethod('DoctorInternalService', 'ResolveDoctorByAccount')
-  @ServiceCallers('appointment-service', 'medical-record-service', 'consultation-service', 'prescription-service', 'treatment-plan-service')
+  @ServiceCallers('appointment-service', 'medical-record-service', 'consultation-service', 'prescription-service', 'treatment-plan-service', 'document-service')
   async resolveDoctorByAccount(request: { accountId: string }) {
     const doctorId = await this.doctors.findDoctorIdByAccount(request.accountId);
     return { doctorId: doctorId ?? '', found: Boolean(doctorId) };
