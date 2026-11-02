@@ -186,7 +186,20 @@ async function main() {
   await clients.receptionist.query('TRUNCATE TABLE admission_status_history, admissions, identity_verifications, reception_audit_logs, reception_cases, reception_idempotency_records, receptionist_profiles, receptionists CASCADE;');
   await clients.doctor.query('ALTER TABLE specialties ADD COLUMN IF NOT EXISTS slug VARCHAR(160) UNIQUE;');
   await clients.doctor.query('ALTER TABLE specialties ADD COLUMN IF NOT EXISTS overview JSONB;');
-  await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties, clinic_rooms CASCADE;');
+  await clients.doctor.query(`
+    CREATE TABLE IF NOT EXISTS consultation_ranks (
+      code "DoctorConsultationRank" PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      short_name VARCHAR(50) NOT NULL,
+      experience_years_min INT NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+      created_at TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT NOW()
+    );
+  `);
+  await clients.doctor.query('ALTER TABLE doctor_profiles DROP COLUMN IF EXISTS professional_title;');
+  await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties, clinic_rooms, consultation_ranks CASCADE;');
   await clients.auth.query('TRUNCATE TABLE auth_sessions, password_reset_tokens, credentials, account_roles, accounts, roles CASCADE;');
   await clients.auditLog.query('TRUNCATE TABLE audit_entries CASCADE;');
   console.log('✅ Đã dọn sạch dữ liệu cũ trong tất cả các dịch vụ.');
@@ -473,19 +486,27 @@ async function main() {
 
   // Danh mục Hạng bác sĩ trong Doctor Service
   const ranksDef = [
-    { code: 'BASIC', name: 'Bác sĩ Sản phụ khoa', exp: 3, surcharge: 0, desc: 'Bác sĩ chuyên khoa khám, tư vấn và theo dõi thai kỳ định kỳ.' },
-    { code: 'SPECIALIST_I', name: 'Bác sĩ Chuyên khoa I (CKI)', exp: 6, surcharge: 100000, desc: 'Bác sĩ đào tạo sau đại học CKI, giàu kinh nghiệm khám và xử lý thai kỳ chuyên sâu.' },
-    { code: 'SPECIALIST_II', name: 'Bác sĩ Chuyên khoa II (CKII)', exp: 12, surcharge: 200000, desc: 'Bác sĩ CKI, chuyên gia đầu ngành trong phẫu thuật sản phụ khoa và chẩn đoán trước sinh.' },
-    { code: 'MASTER', name: 'Thạc sĩ Bác sĩ', exp: 8, surcharge: 150000, desc: 'Thạc sĩ Sản phụ khoa, cập nhật các phác đồ y khoa hiện đại chuẩn quốc tế.' },
-    { code: 'ASSOC_PROFESSOR', name: 'Phó Giáo sư, Tiến sĩ Bác sĩ', exp: 18, surcharge: 350000, desc: 'Phó Giáo sư đầu ngành, chuyên gia cố vấn cho các ca thai kỳ phức tạp.' },
-    { code: 'PROFESSOR', name: 'Giáo sư, Tiến sĩ Bác sĩ', exp: 22, surcharge: 500000, desc: 'Giáo sư Sản phụ khoa, hội chẩn liên viện và điều trị bệnh lý nặng.' },
-    { code: 'EXPERT', name: 'Chuyên gia Cố vấn Cao cấp', exp: 20, surcharge: 400000, desc: 'Chuyên gia cố vấn chuyên môn độc lập nhiều năm kinh nghiệm tại các bệnh viện tuyến TW.' },
-    { code: 'HEAD_DOCTOR', name: 'Trưởng khoa / Chuyên gia cao cấp', exp: 15, surcharge: 250000, desc: 'Trưởng khoa lâm sàng, quản lý chuyên môn và trực tiếp phụ trách các ca khó.' },
+    { code: 'BASIC', name: 'Bác sĩ Sản Phụ khoa', shortName: 'Bác sĩ', exp: 3, surcharge: 0, sortOrder: 1, desc: 'Bác sĩ chuyên khoa khám, tư vấn và theo dõi thai kỳ định kỳ.' },
+    { code: 'SPECIALIST_I', name: 'Bác sĩ Chuyên khoa I (CKI)', shortName: 'BS. CKI', exp: 6, surcharge: 100000, sortOrder: 2, desc: 'Bác sĩ đào tạo sau đại học CKI, giàu kinh nghiệm khám và xử lý thai kỳ chuyên sâu.' },
+    { code: 'SPECIALIST_II', name: 'Bác sĩ Chuyên khoa II (CKII)', shortName: 'BS. CKII', exp: 12, surcharge: 200000, sortOrder: 3, desc: 'Bác sĩ CKII, chuyên gia đầu ngành trong phẫu thuật sản phụ khoa và chẩn đoán trước sinh.' },
+    { code: 'MASTER', name: 'Thạc sĩ Bác sĩ', shortName: 'ThS. BS', exp: 8, surcharge: 150000, sortOrder: 4, desc: 'Thạc sĩ Sản phụ khoa, cập nhật các phác đồ y khoa hiện đại chuẩn quốc tế.' },
+    { code: 'HEAD_DOCTOR', name: 'Bác sĩ Trưởng khoa', shortName: 'Trưởng khoa', exp: 15, surcharge: 250000, sortOrder: 5, desc: 'Trưởng khoa lâm sàng, quản lý chuyên môn và trực tiếp phụ trách các ca khó.' },
+    { code: 'ASSOC_PROFESSOR', name: 'Phó Giáo sư, Tiến sĩ Bác sĩ', shortName: 'PGS. TS. BS', exp: 18, surcharge: 350000, sortOrder: 6, desc: 'Phó Giáo sư đầu ngành, chuyên gia cố vấn cho các ca thai kỳ phức tạp.' },
+    { code: 'EXPERT', name: 'Bác sĩ Chuyên gia cao cấp', shortName: 'Chuyên gia', exp: 20, surcharge: 400000, sortOrder: 7, desc: 'Chuyên gia cố vấn chuyên môn độc lập nhiều năm kinh nghiệm tại các bệnh viện tuyến TW.' },
+    { code: 'PROFESSOR', name: 'Giáo sư, Tiến sĩ Bác sĩ', shortName: 'GS. TS. BS', exp: 22, surcharge: 500000, sortOrder: 8, desc: 'Giáo sư Sản phụ khoa, hội chẩn liên viện và điều trị bệnh lý nặng.' },
   ];
 
   const rankSurchargeMap = {};
   for (const r of ranksDef) {
-    // Phụ phí hạng bác sĩ trong Catalog Service
+    // 1. Lưu danh mục Hạng bác sĩ trong Doctor Service
+    await clients.doctor.query(
+      `INSERT INTO consultation_ranks (code, name, short_name, experience_years_min, sort_order, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'ACTIVE', NOW(), NOW())
+       ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, short_name = EXCLUDED.short_name, experience_years_min = EXCLUDED.experience_years_min, sort_order = EXCLUDED.sort_order`,
+      [r.code, r.name, r.shortName, r.exp, r.sortOrder]
+    );
+
+    // 2. Phụ phí hạng bác sĩ trong Catalog Service
     const scRes = await clients.catalog.query(
       `INSERT INTO doctor_rank_surcharges (id, rank_code, amount_minor, currency, effective_from, status, version, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, 'VND', NOW(), 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
@@ -1232,8 +1253,10 @@ async function main() {
   console.log('\n--- BƯỚC 6: KHỞI TẠO PHÒNG KHÁM (CLINIC ROOMS), ĐỘI NGŨ BÁC SĨ & LỊCH KHÁM ---');
   const clinicRoomsDef = [
     { code: 'P.201', name: 'Phòng khám Sản Phụ khoa 201', status: 'ACTIVE' },
+    { code: 'P.202', name: 'Phòng khám Sản Phụ khoa 202', status: 'ACTIVE' },
     { code: 'P.203', name: 'Phòng khám Sản Phụ khoa 203', status: 'ACTIVE' },
     { code: 'P.207', name: 'Phòng khám Sản Phụ khoa 207', status: 'ACTIVE' },
+    { code: 'P.208', name: 'Phòng khám Sản Phụ khoa 208', status: 'ACTIVE' },
   ];
 
   const roomMap = {};
@@ -1255,15 +1278,18 @@ async function main() {
     { roomCode: 'P.207', startTime: '07:30:00', endTime: '12:00:00' }, // 5: BS. CKI. Phạm Thùy Dương (Nội tiết thai kỳ - P.207 Ca sáng)
     { roomCode: 'P.207', startTime: '12:30:00', endTime: '17:00:00' }, // 6: BS. Nguyễn Hồng Nhung (Sản Phụ khoa - P.207 Ca chiều)
     { roomCode: 'P.207', startTime: '17:30:00', endTime: '20:30:00' }, // 7: TS. BS. Đoàn Văn Bắc (Chuyên gia Cố vấn - P.207 Ca tối)
+    { roomCode: 'P.202', startTime: '07:30:00', endTime: '12:00:00' }, // 8: BS. Hoàng Minh Tuấn (BASIC - P.202 Ca sáng)
+    { roomCode: 'P.208', startTime: '07:30:00', endTime: '12:00:00' }, // 9: BS. Trần Mai Anh (BASIC - P.208 Ca sáng)
+    { roomCode: 'P.208', startTime: '12:30:00', endTime: '17:00:00' }, // 10: BS. Lê Văn Đức (BASIC - P.208 Ca chiều)
+    { roomCode: 'P.202', startTime: '12:30:00', endTime: '17:00:00' }, // 11: BS. Bùi Thảo Linh (BASIC - P.202 Ca chiều)
   ];
   const doctorsDef = [
     {
       email: 'dr.lethuha@antam.local',
-      fullName: 'BS. CKII. Lê Thu Hà',
+      fullName: 'BS. Lê Thu Hà',
       phone: '0903112001',
       license: '001234/BYT-CCHN',
       rank: 'HEAD_DOCTOR',
-      title: 'Bác sĩ CKII - Trưởng khoa Sản',
       startYear: 2008,
       specialtyCode: 'OBSTETRICS',
       photoUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80',
@@ -1271,11 +1297,10 @@ async function main() {
     },
     {
       email: 'dr.nguyenquangminh@antam.local',
-      fullName: 'PGS. TS. BS. Nguyễn Quang Minh',
+      fullName: 'PGS. TS. Nguyễn Quang Minh',
       phone: '0903112002',
       license: '002345/BYT-CCHN',
       rank: 'ASSOC_PROFESSOR',
-      title: 'Phó Giáo sư, Tiến sĩ Bác sĩ Chẩn đoán hình ảnh',
       startYear: 2002,
       specialtyCode: 'PERINATOLOGY',
       photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80',
@@ -1287,7 +1312,6 @@ async function main() {
       phone: '0903112003',
       license: '003456/BYT-CCHN',
       rank: 'MASTER',
-      title: 'Thạc sĩ Bác sĩ Sản Phụ khoa',
       startYear: 2014,
       specialtyCode: 'OBSTETRICS',
       photoUrl: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?auto=format&fit=crop&w=800&q=80',
@@ -1299,7 +1323,6 @@ async function main() {
       phone: '0903112004',
       license: '004567/BYT-CCHN',
       rank: 'SPECIALIST_I',
-      title: 'Bác sĩ CKI Y học bào thai',
       startYear: 2016,
       specialtyCode: 'PERINATOLOGY',
       photoUrl: 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?auto=format&fit=crop&w=800&q=80',
@@ -1311,7 +1334,6 @@ async function main() {
       phone: '0903112005',
       license: '005678/BYT-CCHN',
       rank: 'SPECIALIST_II',
-      title: 'Bác sĩ CKII Hiếm muộn & Hỗ trợ sinh sản',
       startYear: 2010,
       specialtyCode: 'REPRODUCTIVE_ENDOCRINOLOGY',
       photoUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=800&q=80',
@@ -1323,7 +1345,6 @@ async function main() {
       phone: '0903112006',
       license: '006789/BYT-CCHN',
       rank: 'SPECIALIST_I',
-      title: 'Bác sĩ CKI Nội tiết & Bệnh lý thai kỳ',
       startYear: 2015,
       specialtyCode: 'MATERNAL_MEDICINE',
       photoUrl: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80',
@@ -1335,7 +1356,6 @@ async function main() {
       phone: '0903112007',
       license: '007890/BYT-CCHN',
       rank: 'BASIC',
-      title: 'Bác sĩ Sản Phụ khoa',
       startYear: 2019,
       specialtyCode: 'OBSTETRICS',
       photoUrl: 'https://images.unsplash.com/photo-1623854767648-e7bb8009f0db?auto=format&fit=crop&w=800&q=80',
@@ -1343,15 +1363,58 @@ async function main() {
     },
     {
       email: 'dr.doanvanbac@antam.local',
-      fullName: 'TS. BS. Đoàn Văn Bắc',
+      fullName: 'BS. Đoàn Văn Bắc',
       phone: '0903112008',
       license: '008901/BYT-CCHN',
       rank: 'EXPERT',
-      title: 'Tiến sĩ Bác sĩ Chuyên gia Cố vấn Sản Phụ khoa',
       startYear: 2004,
       specialtyCode: 'OBSTETRICS',
       photoUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=800&q=80',
       bio: 'Tiến sĩ Y khoa, nguyên Phó khoa Phụ Sản Bệnh viện Phụ sản TW. Hơn 22 năm cống hiến trong ngành, xử lý thành công hàng ngàn ca thai kỳ nguy cơ cao và phẫu thuật phụ khoa phức tạp.',
+    },
+    {
+      email: 'dr.hoangminhtuan@antam.local',
+      fullName: 'BS. Hoàng Minh Tuấn',
+      phone: '0903112009',
+      license: '007891/BYT-CCHN',
+      rank: 'BASIC',
+      startYear: 2020,
+      specialtyCode: 'OBSTETRICS',
+      photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80',
+      bio: 'Bác sĩ Sản Phụ khoa năng động, chu đáo, tốt nghiệp Đại học Y Hà Nội. Chuyên trách khám thai định kỳ, siêu âm cơ bản và quản lý thai kỳ chuẩn y khoa.',
+    },
+    {
+      email: 'dr.tranmaianh@antam.local',
+      fullName: 'BS. Trần Mai Anh',
+      phone: '0903112010',
+      license: '007892/BYT-CCHN',
+      rank: 'BASIC',
+      startYear: 2021,
+      specialtyCode: 'OBSTETRICS',
+      photoUrl: 'https://images.unsplash.com/photo-1594824813589-cf2206780c85?auto=format&fit=crop&w=800&q=80',
+      bio: 'Tốt nghiệp thủ khoa Bác sĩ Nội trú Đại học Y Dược TP.HCM. Tận tâm, ân cần đồng hành cùng mẹ bầu theo dõi thai kỳ và chăm sóc sức khỏe sinh sản.',
+    },
+    {
+      email: 'dr.levanduc@antam.local',
+      fullName: 'BS. Lê Văn Đức',
+      phone: '0903112011',
+      license: '007893/BYT-CCHN',
+      rank: 'BASIC',
+      startYear: 2018,
+      specialtyCode: 'OBSTETRICS',
+      photoUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=800&q=80',
+      bio: 'Hơn 7 năm kinh nghiệm theo dõi thai kỳ định kỳ và tư vấn tiền sản. Chuyên môn vững vàng, được nhiều gia đình sản phụ tin cậy.',
+    },
+    {
+      email: 'dr.buithaolinh@antam.local',
+      fullName: 'BS. Bùi Thảo Linh',
+      phone: '0903112012',
+      license: '007894/BYT-CCHN',
+      rank: 'BASIC',
+      startYear: 2020,
+      specialtyCode: 'GYNECOLOGY',
+      photoUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80',
+      bio: 'Bác sĩ Phụ khoa trẻ đầy nhiệt huyết, chuyên khám và điều trị các bệnh lý phụ khoa thông thường, tư vấn kế hoạch hóa gia đình.',
     },
   ];
 
@@ -1372,9 +1435,9 @@ async function main() {
     const doctorId = docRes.rows[0].id;
 
     await clients.doctor.query(
-      `INSERT INTO doctor_profiles (doctor_id, full_name, professional_title, biography, practice_start_year, languages, photo_url, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, ARRAY['vi', 'en'], $6, NOW(), NOW())`,
-      [doctorId, doc.fullName, doc.title, doc.bio, doc.startYear, doc.photoUrl]
+      `INSERT INTO doctor_profiles (doctor_id, full_name, biography, practice_start_year, languages, photo_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, ARRAY['vi', 'en'], $5, NOW(), NOW())`,
+      [doctorId, doc.fullName, doc.bio, doc.startYear, doc.photoUrl]
     );
 
     const specId = specialtyMap[doc.specialtyCode];
@@ -1437,6 +1500,21 @@ async function main() {
       [doctorList[6].id, matSpecId] // BS. Nguyễn Hồng Nhung
     );
   }
+  if (gynSpecId && doctorList.length > 8) {
+    await clients.doctor.query(
+      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
+       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
+      [doctorList[8].id, gynSpecId] // BS. Hoàng Minh Tuấn
+    );
+  }
+  const obsSpecId = specialtyMap['OBSTETRICS'];
+  if (obsSpecId && doctorList.length > 11) {
+    await clients.doctor.query(
+      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
+       VALUES ($1, $2, false, NOW()) ON CONFLICT DO NOTHING`,
+      [doctorList[11].id, obsSpecId] // BS. Bùi Thảo Linh
+    );
+  }
 
   // Bác sĩ trạng thái INACTIVE (liên kết với test.disabled@antam.local)
   const inactiveDocRes = await clients.doctor.query(
@@ -1446,8 +1524,8 @@ async function main() {
   );
   const inactiveDocId = inactiveDocRes.rows[0].id;
   await clients.doctor.query(
-    `INSERT INTO doctor_profiles (doctor_id, full_name, professional_title, biography, practice_start_year, languages, photo_url, created_at, updated_at)
-     VALUES ($1, 'BS. CKI. Nguyễn Văn Tạm Ngưng', 'Bác sĩ CKI (Tài khoản tạm ngưng)', 'Bác sĩ đang tạm ngưng công tác tại phòng khám để tham gia chương trình nghiên cứu.', 2017, ARRAY['vi'], 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
+    `INSERT INTO doctor_profiles (doctor_id, full_name, biography, practice_start_year, languages, photo_url, created_at, updated_at)
+     VALUES ($1, 'BS. Nguyễn Văn Tạm Ngưng', 'Bác sĩ đang tạm ngưng công tác tại phòng khám để tham gia chương trình nghiên cứu.', 2017, ARRAY['vi'], 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
     [inactiveDocId]
   );
   if (specialtyMap['OBSTETRICS']) {
@@ -1467,8 +1545,8 @@ async function main() {
   );
   const draftDocId = draftDocRes.rows[0].id;
   await clients.doctor.query(
-    `INSERT INTO doctor_profiles (doctor_id, full_name, professional_title, biography, practice_start_year, languages, photo_url, created_at, updated_at)
-     VALUES ($1, 'BS. Hoàng Minh Tuấn', 'Bác sĩ thực hành nội trú', 'Bác sĩ nội trú tốt nghiệp loại Giỏi, đang hoàn thiện hồ sơ đăng ký hành nghề chính thức.', 2023, ARRAY['vi', 'en'], 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
+    `INSERT INTO doctor_profiles (doctor_id, full_name, biography, practice_start_year, languages, photo_url, created_at, updated_at)
+     VALUES ($1, 'BS. Nguyễn Văn Nháp', 'Bác sĩ nội trú tốt nghiệp loại Giỏi, đang hoàn thiện hồ sơ đăng ký hành nghề chính thức.', 2023, ARRAY['vi', 'en'], 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
     [draftDocId]
   );
   if (specialtyMap['OBSTETRICS']) {
@@ -1520,7 +1598,7 @@ async function main() {
   await clients.doctor.query(
     `INSERT INTO audit_records (id, event_type, actor_id, doctor_id, details, created_at)
      VALUES (gen_random_uuid(), 'DOCTOR_PROFILE_UPDATED', $1, $2, $3, NOW())`,
-    [adminAccountId, doctorList[0].id, JSON.stringify({ field: 'professional_title', change: 'Bổ nhiệm Trưởng khoa Sản' })]
+    [adminAccountId, doctorList[0].id, JSON.stringify({ field: 'consultation_rank', change: 'Bổ nhiệm Bác sĩ Trưởng khoa' })]
   );
   await clients.doctor.query(
     `INSERT INTO audit_records (id, event_type, actor_id, doctor_id, details, created_at)
@@ -4952,12 +5030,17 @@ async function main() {
   console.log('1. Quản trị viên (ADMIN):');
   console.log('   - Email: admin@antam.local');
   console.log('2. Bác sĩ chuyên khoa (DOCTOR):');
-  console.log('   - Email: dr.lethuha@antam.local        (BS. CKII. Lê Thu Hà - Trưởng khoa Sản)');
+  console.log('   - Email: dr.lethuha@antam.local        (BS. Lê Thu Hà - Trưởng khoa Sản)');
   console.log('   - Email: dr.nguyenquangminh@antam.local (PGS. TS. BS. Nguyễn Quang Minh - Y học bào thai)');
   console.log('   - Email: dr.tranthanhmai@antam.local    (ThS. BS. Trần Thanh Mai - Sản phụ khoa)');
   console.log('   - Email: dr.dangkimoanh@antam.local     (BS. CKI. Đặng Kim Oanh - Y học bào thai)');
   console.log('   - Email: dr.vuhoanglong@antam.local     (BS. CKII. Vũ Hoàng Long - Hiếm muộn & IVF)');
   console.log('   - Email: dr.phamthuyduong@antam.local   (BS. CKI. Phạm Thùy Dương - Bệnh lý thai kỳ)');
+  console.log('   - Email: dr.nguyenhongnhung@antam.local (BS. Nguyễn Hồng Nhung - BASIC - Ca chiều)');
+  console.log('   - Email: dr.hoangminhtuan@antam.local   (BS. Hoàng Minh Tuấn - BASIC - Ca sáng)');
+  console.log('   - Email: dr.tranmaianh@antam.local      (BS. Trần Mai Anh - BASIC - Ca sáng)');
+  console.log('   - Email: dr.levanduc@antam.local        (BS. Lê Văn Đức - BASIC - Ca chiều)');
+  console.log('   - Email: dr.buithaolinh@antam.local     (BS. Bùi Thảo Linh - BASIC - Ca chiều)');
   console.log('3. Nhân viên Lễ tân (RECEPTIONIST):');
   console.log('   - Email: demo.receptionist@antam.local  (Trần Thu Ngân - Ban Tiếp đón)');
   console.log('   - Email: reception.hoangyen@antam.local (Hoàng Thị Yến - Quầy Tiếp đón T1)');

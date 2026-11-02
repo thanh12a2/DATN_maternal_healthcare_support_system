@@ -6,11 +6,18 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   onSearch: (q: string) => void;
   resetSignal: number;
+  value?: string;
 }
 
-export function PatientSearchBar({ onSearch, resetSignal }: Props) {
+export function PatientSearchBar({ onSearch, resetSignal, value: propValue }: Props) {
   const ref = useRef<InputRef>(null);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(propValue ?? '');
+
+  useEffect(() => {
+    if (propValue !== undefined) {
+      setValue(propValue);
+    }
+  }, [propValue]);
 
   const handleSearch = (val: string) => {
     onSearch(val.trim());

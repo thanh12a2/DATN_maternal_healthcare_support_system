@@ -60,7 +60,7 @@ export function PatientHomePage() {
           <div className="patient-overview-status-grid">
             <article className="patient-overview-status"><span className="patient-overview-status-icon"><StatusIcon type="profile" /></span><div><span className={`patient-overview-badge ${profile ? 'success' : 'warning'}`}>{profile ? 'Đã hoàn tất' : 'Cần hoàn thiện'}</span><h3>Hồ sơ hành chính</h3><p>{profile ? 'Thông tin cơ bản đã sẵn sàng để sử dụng.' : 'Hoàn thiện thông tin để bắt đầu đặt lịch.'}</p></div></article>
             <AppLink className="patient-overview-status" href="/lich-hen"><span className="patient-overview-status-icon"><StatusIcon type="calendar" /></span><div><span className="patient-overview-badge neutral">Theo dõi</span><h3>Lịch hẹn sắp tới</h3><p>Thông tin lịch khám xuất hiện sau khi đặt lịch thành công.</p></div></AppLink>
-            <AppLink className="patient-overview-status" href="/hang-doi"><span className="patient-overview-status-icon"><StatusIcon type="queue" /></span><div><span className="patient-overview-badge neutral">Chưa check-in</span><h3>Hàng đợi hiện tại</h3><p>Bạn sẽ nhận số thứ tự tại quầy lễ tân khi đến khám.</p></div></AppLink>
+
             <AppLink className="patient-overview-status" href="/thong-bao-hoa-don"><span className="patient-overview-status-icon"><StatusIcon type="invoice" /></span><div><span className="patient-overview-badge success">Ổn định</span><h3>Hóa đơn cần chú ý</h3><p>Chưa có khoản thanh toán cần xử lý.</p></div></AppLink>
           </div>
         </div>

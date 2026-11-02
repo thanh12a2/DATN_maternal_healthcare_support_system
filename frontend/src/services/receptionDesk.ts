@@ -327,7 +327,12 @@ function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null
     id: String(raw.id ?? raw.invoiceId),
     number: str(raw.invoiceNumber) ?? '',
     version: num(raw.version) || 1,
-    lines: lines.map((l) => ({ name: str(l.descriptionSnapshot) ?? '', qty: num(l.quantity), unitPrice: num(l.unitAmountMinor), amount: num(l.lineAmountMinor) })),
+    lines: lines.map((l) => ({
+      name: (str(l.descriptionSnapshot) ?? '').replace(': undefined', ': Khám theo yêu cầu'),
+      qty: num(l.quantity),
+      unitPrice: num(l.unitAmountMinor),
+      amount: num(l.lineAmountMinor),
+    })),
     total: num(raw.totalMinor),
     paid: num(raw.paidMinor),
     balance: num(raw.balanceMinor),
@@ -408,8 +413,19 @@ export async function searchDesk(request: Requester, cat: DeskCatalog, query: st
   const compact = q.replace(/[\s.-]/g, '');
   const foundMap = new Map<string, DeskPatient>();
 
-  // 1. Tìm theo Mã lịch hẹn (ví dụ: AT-2026-0014, 2026-0014, 0014, AT-...)
+  // 1. Tìm theo Mã lịch hẹn (ví dụ: APTM..., AT-2026-0014, 2026-0014, 0014, AT-...)
   try {
+    if (compact.length >= 4) {
+      try {
+        const directByCode = await listReceptionAppointments(request, undefined, { appointmentCode: compact, limit: 10 });
+        for (const a of directByCode) {
+          if (a.patientId && !foundMap.has(a.patientId)) {
+            const p = await fetchPatient(request, a.patientId);
+            if (p) foundMap.set(p.id, p);
+          }
+        }
+      } catch {}
+    }
     const appRaws = await listReceptionAppointments(request, undefined, { limit: 100 });
     const matchedApps = appRaws.filter((a) => {
       const code = String(a.appointmentCode ?? '').toLowerCase();

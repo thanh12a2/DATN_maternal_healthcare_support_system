@@ -39,6 +39,9 @@ import {
   emptyEmergencyContact,
   emptyPatientProfile,
   profileProgress,
+  validBirthDate,
+  validNationalId,
+  validPhone,
   validateEmergencyContact,
   validatePatientProfile,
   type EmergencyContactField,
@@ -50,56 +53,13 @@ import {
 } from "../../../schemas/patientProfile";
 import { ApiError } from "../../../services/api";
 import type { EmergencyContact, PatientProfile } from "../../../services/patient";
-import { listAppointments, type Appointment } from "../../../services/appointment";
 import "../../../styles/patient-profile.css";
 
 interface Envelope<T> {
   data: T;
 }
 
-const DRAFT_TTL_MS = 30 * 60 * 1000;
 const MAX_CONTACTS = 3;
-const draftKey = (userId: string) => `an-tam-patient-profile-draft:${userId}`;
-
-interface PatientProfileDraft {
-  version: 2;
-  savedAt: number;
-  values: PatientProfileFormValues;
-}
-
-function readDraft(userId: string): PatientProfileFormValues | null {
-  try {
-    const raw = window.sessionStorage.getItem(draftKey(userId));
-    if (!raw) return null;
-    const draft = JSON.parse(raw) as PatientProfileDraft;
-    if (draft.version !== 2 || Date.now() - draft.savedAt > DRAFT_TTL_MS) {
-      window.sessionStorage.removeItem(draftKey(userId));
-      return null;
-    }
-    return { ...emptyPatientProfile, ...draft.values };
-  } catch {
-    return null;
-  }
-}
-
-function writeDraft(userId: string, values: PatientProfileFormValues) {
-  try {
-    window.sessionStorage.setItem(
-      draftKey(userId),
-      JSON.stringify({ version: 2, savedAt: Date.now(), values }),
-    );
-  } catch {
-    // Ignore unavailable browser storage.
-  }
-}
-
-function clearDraft(userId: string) {
-  try {
-    window.sessionStorage.removeItem(draftKey(userId));
-  } catch {
-    // Ignore unavailable browser storage.
-  }
-}
 
 function sortContacts(items: EmergencyContact[]) {
   return [...items].sort(
@@ -162,7 +122,6 @@ export function PatientProfilePage() {
   const [errors, setErrors] = useState<ValidationMap>({});
   const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [loading, setLoading] = useState(true);
   const [isNewProfile, setIsNewProfile] = useState(false);
@@ -215,6 +174,19 @@ export function PatientProfilePage() {
     if (auth.user?.userId) {
       try {
         localStorage.setItem(`patient_avatar_${auth.user.userId}`, croppedDataUrl);
+        if (auth.user.email) {
+          localStorage.setItem(`patient_avatar_${auth.user.email}`, croppedDataUrl);
+        }
+        localStorage.setItem('patient_avatar', croppedDataUrl);
+      } catch {
+        // ignore
+      }
+      try {
+        window.dispatchEvent(
+          new CustomEvent('patient_avatar_updated', {
+            detail: { avatarUrl: croppedDataUrl },
+          })
+        );
       } catch {
         // ignore
       }
@@ -296,31 +268,32 @@ export function PatientProfilePage() {
           address: data.address || "",
         };
         setProfile(data);
+        if (auth.user?.userId && data.fullName) {
+          try {
+            localStorage.setItem(`patient_name_${auth.user.userId}`, data.fullName);
+            if (auth.user.email) {
+              localStorage.setItem(`patient_name_${auth.user.email}`, data.fullName);
+            }
+            window.dispatchEvent(
+              new CustomEvent('patient_profile_updated', {
+                detail: { fullName: data.fullName },
+              })
+            );
+          } catch {
+            // ignore
+          }
+        }
         setContacts(sortContacts(data.emergencyContacts));
         setValues(next);
         setInitialSnapshot(snapshot(next));
         setIsNewProfile(false);
         setIsEditing(false);
-        if (auth.user?.userId) clearDraft(auth.user.userId);
         setLoading(false);
-
-        // Nạp lịch hẹn nếu không ở môi trường unit test
-        if (import.meta.env.MODE !== "test") {
-          listAppointments(auth.request)
-            .then((page) => {
-              if (active && page.items) {
-                setAppointments(page.items);
-              }
-            })
-            .catch(() => {});
-        }
       })
       .catch((reason: unknown) => {
         if (!active) return;
         if (reason instanceof ApiError && reason.statusCode === 404) {
-          const next =
-            (auth.user?.userId && readDraft(auth.user.userId)) ||
-            emptyPatientProfile;
+          const next = emptyPatientProfile;
           setProfile(null);
           setContacts([]);
           setValues(next);
@@ -341,16 +314,45 @@ export function PatientProfilePage() {
     };
   }, [auth.request, auth.user?.userId]);
 
-  useEffect(() => {
-    if (!loading && isNewProfile && auth.user?.userId) {
-      writeDraft(auth.user.userId, values);
-    }
-  }, [auth.user?.userId, isNewProfile, loading, values]);
-
   const progress = useMemo(
     () => profileProgress(values, hasStoredNationalId),
     [values, hasStoredNationalId],
   );
+
+  const isFormComplete = useMemo(() => {
+    // 1. Họ và tên: ít nhất 2 ký tự
+    const nameValid = values.fullName.trim().length >= 2;
+    // 2. Ngày sinh: không được để trống và phải là ngày hợp lệ trong quá khứ
+    const birthValid = Boolean(values.birthDate) && validBirthDate(values.birthDate);
+    // 3. Số điện thoại: đúng định dạng 10 số VN
+    const phoneValid = Boolean(values.phoneNumber) && validPhone(values.phoneNumber);
+    // 4. CCCD / CMND: 9 hoặc 12 số (nếu hồ sơ đã lưu trước đó thì cho phép giữ nguyên)
+    const nationalIdValid = hasStoredNationalId
+      ? (!values.nationalId || validNationalId(values.nationalId))
+      : Boolean(values.nationalId && validNationalId(values.nationalId));
+    // 5. Địa chỉ: ít nhất 6 ký tự
+    const addressValid = values.address.trim().length >= 6;
+
+    // Không có lỗi validation nào trên form
+    const noErrors =
+      !errors.fullName &&
+      !errors.birthDate &&
+      !errors.phoneNumber &&
+      !errors.nationalId &&
+      !errors.address;
+
+    return nameValid && birthValid && phoneValid && nationalIdValid && addressValid && noErrors;
+  }, [values, errors, hasStoredNationalId]);
+
+  const hasChanges = useMemo(
+    () =>
+      !profile ||
+      snapshot(values) !== initialSnapshot ||
+      Boolean(values.nationalId.trim()),
+    [profile, values, initialSnapshot],
+  );
+
+  const canSaveProfile = isFormComplete && !submitting && hasChanges;
 
   function changeProfile(event: ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
@@ -417,11 +419,25 @@ export function PatientProfilePage() {
         })
       ).data;
       setProfile(saved);
+      if (auth.user?.userId && saved.fullName) {
+        try {
+          localStorage.setItem(`patient_name_${auth.user.userId}`, saved.fullName);
+          if (auth.user.email) {
+            localStorage.setItem(`patient_name_${auth.user.email}`, saved.fullName);
+          }
+          window.dispatchEvent(
+            new CustomEvent('patient_profile_updated', {
+              detail: { fullName: saved.fullName },
+            })
+          );
+        } catch {
+          // ignore
+        }
+      }
       setContacts(sortContacts(saved.emergencyContacts));
       setInitialSnapshot(snapshot(values));
       setIsNewProfile(false);
       setIsEditing(false);
-      if (auth.user?.userId) clearDraft(auth.user.userId);
       setValues((current) => ({ ...current, nationalId: saved.nationalId || current.nationalId }));
       setAlert({
         type: "success",
@@ -620,7 +636,7 @@ export function PatientProfilePage() {
     .map((w) => w[0]?.toUpperCase())
     .join("") || "BN";
   const age = calculateAge(values.birthDate || profile?.dateOfBirth || "");
-  const patientCode = profile ? `PA-${profile.id.slice(0, 8).toUpperCase()}` : "PA-NEW";
+  const patientCode = profile?.id ? `PA-${profile.id.slice(0, 8).toUpperCase()}` : "PA-NEW";
 
   return (
     <PatientPortalLayout
@@ -763,11 +779,11 @@ export function PatientProfilePage() {
                   !isNewProfile && (
                     <button
                       type="button"
-                      className="btn-unified-cancel"
+                      className="btn-unified-cancel btn-header-cancel"
                       onClick={handleCancelEdit}
                     >
                       <X className="w-4 h-4" />
-                      Hủy bỏ
+                      <span>Hủy bỏ</span>
                     </button>
                   )
                 )}
@@ -893,9 +909,11 @@ export function PatientProfilePage() {
                 </div>
 
                 <footer className="profile-unified-footer">
-                  <p className="profile-unified-footer-hint">
-                    Người liên hệ khẩn cấp không bắt buộc và không ảnh hưởng việc lưu hồ sơ.
-                  </p>
+                  {!isFormComplete ? (
+                    <span className="profile-unified-footer-hint" style={{ color: "#d97706", fontSize: "13px" }}>
+                      * Vui lòng điền đầy đủ tất cả các thông tin cá nhân trên để lưu hồ sơ.
+                    </span>
+                  ) : <div />}
                   <div className="profile-unified-footer-btns">
                     {!isNewProfile && (
                       <button
@@ -909,7 +927,8 @@ export function PatientProfilePage() {
                     <button
                       className="btn-unified-save"
                       type="submit"
-                      disabled={submitting}
+                      disabled={!canSaveProfile}
+                      title={!canSaveProfile ? "Vui lòng điền đầy đủ tất cả các thông tin để lưu hồ sơ" : "Lưu hồ sơ"}
                     >
                       {submitting ? "Đang lưu…" : "Lưu hồ sơ"}
                     </button>
@@ -1029,18 +1048,20 @@ export function PatientProfilePage() {
                   noValidate
                   onSubmit={submitContact}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-bold text-slate-800">
+                  <div className="contact-form-header">
+                    <h3 className="contact-form-title">
                       {editingContactId
                         ? "Cập nhật người liên hệ"
                         : "Thêm người liên hệ"}
                     </h3>
                     <button
                       type="button"
-                      className="text-slate-400 hover:text-slate-600 p-1"
+                      className="contact-form-close-btn"
                       onClick={closeContact}
+                      title="Đóng"
+                      aria-label="Đóng"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -1131,121 +1152,7 @@ export function PatientProfilePage() {
           )}
         </section>
 
-        {/* 4. CARD 3: LỊCH HẸN & BỆNH ÁN TẠI VIỆN (CHỈ HIỂN THỊ KHI ĐÃ CÓ HỒ SƠ) */}
-        {profile && (
-          <section className="profile-appointments-panel" aria-labelledby="history-title">
-            <div className="panel-header">
-              <div>
-                <span className="profile-card-eyebrow">Dữ liệu hồ sơ y tế</span>
-                <h2 id="history-title" className="panel-title">
-                  Lịch hẹn & Quá trình theo dõi tại viện
-                </h2>
-                <p className="panel-desc">
-                  Tổng hợp các lượt khám đã thực hiện và lịch hẹn sắp tới tại Bệnh viện Phụ sản Tâm An.
-                </p>
-              </div>
-              <AppLink href="/dat-lich" className="btn-add-booking-pill">
-                <Plus className="w-4 h-4" />
-                Đặt lịch khám mới
-              </AppLink>
-            </div>
 
-            {appointments.length === 0 ? (
-              <div className="appointments-empty-state">
-                <div className="empty-icon-wrap">
-                  <Calendar className="w-8 h-8 text-sky-500 opacity-60" />
-                </div>
-                <h3 className="empty-title">Chưa có lịch khám nào phát sinh</h3>
-                <p className="empty-desc">
-                  Bạn chưa có lịch hẹn khám thai hoặc dịch vụ sản phụ khoa tại viện. Hãy đặt lịch hẹn để được bác sĩ chuyên khoa thăm khám và lập hồ sơ theo dõi sức khỏe chi tiết.
-                </p>
-                <AppLink href="/dat-lich" className="btn-empty-book">
-                  Đặt lịch khám ngay
-                </AppLink>
-              </div>
-            ) : (
-              <div className="appointments-list-wrap">
-                {appointments.map((app) => {
-                  const isCompleted = app.status === "COMPLETED";
-                  const isBooked = app.status === "BOOKED";
-                  const isInCare = app.status === "IN_CLINICAL_CARE" || app.status === "CHECKED_IN";
-                  const statusText =
-                    app.status === "COMPLETED"
-                      ? "Đã hoàn thành"
-                      : app.status === "BOOKED"
-                      ? "Đã đặt lịch"
-                      : app.status === "IN_CLINICAL_CARE"
-                      ? "Đang khám"
-                      : app.status === "CHECKED_IN"
-                      ? "Đã check-in"
-                      : app.status === "CANCELLED"
-                      ? "Đã hủy"
-                      : String(app.status);
-
-                  const statusClass = isCompleted
-                    ? "status-completed"
-                    : isBooked
-                    ? "status-booked"
-                    : isInCare
-                    ? "status-incare"
-                    : "status-other";
-
-                  return (
-                    <div key={app.id || app.appointmentCode} className="appointment-patient-card">
-                      <div className="app-card-top">
-                        <div className="app-code-badge">
-                          <span className="app-code">{app.appointmentCode}</span>
-                          <span className={`app-status-badge ${statusClass}`}>
-                            {statusText}
-                          </span>
-                        </div>
-                        {app.pricing?.estimatedTotalMinor !== undefined && (
-                          <span className="app-price-tag">
-                            {Number(app.pricing.estimatedTotalMinor).toLocaleString("vi-VN")} đ
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="app-service-name">
-                        {app.pricing?.serviceName || "Khám Sản Phụ Khoa Chuyên Sâu"}
-                      </h3>
-
-                      <div className="app-meta-grid">
-                        <div className="app-meta-item">
-                          <Clock className="w-4 h-4 text-sky-600" />
-                          <span>
-                            <strong>Thời gian:</strong> {formatDateTimeVN(app.startAt || "")}
-                          </span>
-                        </div>
-                        {Boolean(app.roomName || app.roomCode) && (
-                          <div className="app-meta-item">
-                            <MapPin className="w-4 h-4 text-amber-600" />
-                            <span>
-                              <strong>Phòng khám:</strong> {String(app.roomName || app.roomCode)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="app-card-footer">
-                        <span className="app-doctor-hint">
-                          Chuyên khoa Bệnh viện Phụ sản Tâm An
-                        </span>
-                        <AppLink
-                          href={`/lich-hen/${app.id || app.appointmentCode}`}
-                          className="btn-app-detail-link"
-                        >
-                          Xem chi tiết phiếu hẹn
-                          <ChevronRight className="w-4 h-4" />
-                        </AppLink>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
       </div>
 
       {/* Modal cắt chỉnh khung ảnh đại diện chuẩn hình tròn */}
