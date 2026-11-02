@@ -7,6 +7,7 @@ import { AppointmentDomainException } from '../common/domain.exception';
 import { AppointmentDependencyGateway } from './dependency.gateway';
 import { presentAppointment, presentHold } from './presenter';
 import type { AppointmentListDto, CreateAppointmentDto, CreateHoldDto, DoctorOccupancyDto, ReassignDto, ReasonVersionDto, RescheduleDto, SlotQueryDto } from './dto';
+import { MATCHING_WEIGHTS } from './matching-weights.config';
 
 type Ctx={requestId?:string;correlationId?:string;idempotencyKey?:string;actorAccountId?:string;actorRole?:string};
 const STAFF=['RECEPTIONIST','CLINIC_MANAGER','ADMIN'];
@@ -26,9 +27,336 @@ export class AppointmentDomainService {
   ]);
   return {data:[...appointments,...holds].map(x=>({startAt:x.startAt,endAt:x.endAt}))};
  }
- async listBookableSlots(q:SlotQueryDto,auth:PublicAuthContext){const from=new Date(q.from),to=new Date(q.to);this.interval(from,to);const targetDoctorId=q.doctorId??q.requestedDoctorId;const targetRankCode=q.rankCode??q.requestedRankCode;const offering=await this.deps.offering(q.serviceId,targetRankCode??'BASIC',from,this.ctx(auth));const specialty=offering.offering.requiredSpecialtyId;let doctors:any[]=[];if(q.selectionMode===SelectionMode.DOCTOR){if(!targetDoctorId)this.fail(400,'VALIDATION_FAILED','doctorId required');const r=await this.deps.doctorEligibility(targetDoctorId,specialty,this.ctx(auth));doctors=[r.doctor];}else{if(!targetRankCode)this.fail(400,'VALIDATION_FAILED','rankCode required');const r=await this.deps.eligibleDoctors(specialty,targetRankCode,from,to,this.ctx(auth));doctors=r.doctors??[];}const rows:any[]=[];for(const d of doctors){const av=await this.deps.doctorAvailability(d.doctorId,from,to,this.ctx(auth));for(const it of av.availableIntervals??[]){const s=this.ts(it.startAt),e=this.ts(it.endAt);if(!s||!e)continue;const occupied=await this.db.appointment.count({where:{assignedDoctorId:d.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:e},endAt:{gt:s}}});const held=await this.db.slotHold.count({where:{doctorId:d.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:e},endAt:{gt:s}}});if(!occupied&&!held)rows.push({serviceId:q.serviceId,selectionMode:q.selectionMode,doctorId:q.selectionMode===SelectionMode.DOCTOR?d.doctorId:null,rankCode:d.consultationRankCode,roomId:it.roomId||null,roomCode:it.roomCode||null,roomName:it.roomName||null,room:it.roomCode?{id:it.roomId||null,code:it.roomCode,name:it.roomName||null}:null,startAt:s,endAt:e,availableCapacity:1});if(rows.length>=(q.limit??20))break;}if(rows.length>=(q.limit??20))break;}return{items:rows,nextPageToken:null};}
- async createHold(dto:CreateHoldDto,auth:PublicAuthContext,key?:string){const idem=this.key(key),patientId=await this.resolvePatientId(dto.patientId,auth);this.selection(dto.selectionMode,dto.requestedDoctorId,dto.requestedRankCode);const start=new Date(dto.startAt),end=new Date(dto.endAt);this.interval(start,end);const ctx=this.ctx(auth,idem);const eligibility=await this.deps.patientEligibility(patientId,ctx);const isEligible=eligibility?.eligibleForBooking??(eligibility?.active&&eligibility?.profileComplete);if(!isEligible)this.fail(422,'PATIENT_NOT_ELIGIBLE','Patient not eligible');if(auth.role==='PATIENT'&&!eligibility.callerOwnsPatient)this.fail(403,'FORBIDDEN','Patient ownership mismatch');let doctor:any,rank=dto.requestedRankCode??'';const firstOffering=await this.deps.offering(dto.serviceId,rank||'BASIC',start,ctx);const specialty=firstOffering.offering.requiredSpecialtyId;if(dto.selectionMode===SelectionMode.DOCTOR){const result=await this.deps.doctorEligibility(dto.requestedDoctorId!,specialty,ctx);doctor=result.doctor;rank=doctor.consultationRankCode;}else{const result=await this.deps.eligibleDoctors(specialty,rank,start,end,ctx);doctor=result.doctors?.[0];}if(!doctor||doctor.status!=='DOCTOR_OPERATIONAL_STATUS_ACTIVE')this.fail(422,'DOCTOR_NOT_ELIGIBLE','No eligible doctor');const av=await this.deps.doctorAvailability(doctor.doctorId,start,end,ctx);const matchedInterval=(av.availableIntervals??[]).find((x:any)=>{const s=this.ts(x.startAt),e=this.ts(x.endAt);return s&&e&&s<=start&&e>=end;});if(!matchedInterval)this.fail(409,'SLOT_NOT_AVAILABLE','Doctor not available');const roomId=matchedInterval.roomId||null,roomCode=matchedInterval.roomCode||null,roomName=matchedInterval.roomName||null;const hash=this.hash(dto);const replay=await this.replay('create-hold',idem,hash);if(replay)return replay;try{return await this.db.$transaction(async tx=>{await tx.slotHold.updateMany({where:{status:SlotHoldStatus.ACTIVE,expiresAt:{lte:new Date()}},data:{status:SlotHoldStatus.EXPIRED}});const overlap=await Promise.all([tx.appointment.count({where:{assignedDoctorId:doctor.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:end},endAt:{gt:start}}}),tx.slotHold.count({where:{doctorId:doctor.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:end},endAt:{gt:start}}})]);if(overlap[0]||overlap[1])this.fail(409,'SLOT_NOT_AVAILABLE','Slot no longer available');const hold=await tx.slotHold.create({data:{patientId,serviceId:dto.serviceId,doctorId:doctor.doctorId,rankCode:rank,selectionMode:dto.selectionMode,roomId,roomCode,roomName,startAt:start,endAt:end,expiresAt:new Date(Date.now()+300000)}});const body=presentHold(hold);await tx.appointmentIdempotencyRecord.create({data:{scope:'create-hold',key:idem,requestHash:hash,resourceId:hold.id,responseStatus:201,responseBody:body as any}});return body;},{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});}catch(e){if(e instanceof AppointmentDomainException)throw e;this.fail(409,'SLOT_NOT_AVAILABLE','Concurrent slot conflict');}}
- async releaseHold(id:string,auth:PublicAuthContext){const hold=await this.db.slotHold.findUnique({where:{id}});if(!hold)this.fail(404,'HOLD_NOT_FOUND','Hold not found');await this.authorizePatient(hold.patientId,auth);if(hold.status===SlotHoldStatus.ACTIVE)await this.db.slotHold.update({where:{id},data:{status:SlotHoldStatus.RELEASED}});}
+ async listBookableSlots(q:SlotQueryDto,auth:PublicAuthContext){
+  const from=new Date(q.from),to=new Date(q.to);
+  this.interval(from,to);
+  const targetDoctorId=q.doctorId??q.requestedDoctorId;
+  const targetRankCode=q.rankCode??q.requestedRankCode;
+  const effectiveRank=q.selectionMode===SelectionMode.RANK?'BASIC':(targetRankCode??'BASIC');
+  const offering=await this.deps.offering(q.serviceId,effectiveRank,from,this.ctx(auth));
+  const specialty=offering.offering.requiredSpecialtyId;
+  let doctors:any[]=[];
+
+  if(q.selectionMode===SelectionMode.DOCTOR){
+    if(!targetDoctorId)this.fail(400,'VALIDATION_FAILED','doctorId required');
+    const r=await this.deps.doctorEligibility(targetDoctorId,specialty,this.ctx(auth));
+    doctors=[r.doctor];
+  }else{
+    // Bắt buộc chỉ lọc bác sĩ ngạch tiêu chuẩn BASIC (Phụ phí = 0đ)
+    const r=await this.deps.eligibleDoctors(specialty,'BASIC',from,to,this.ctx(auth));
+    doctors=(r.doctors??[]).filter((d:any)=>d.status==='DOCTOR_OPERATIONAL_STATUS_ACTIVE');
+  }
+
+  const sliceInterval=(startAt:Date,endAt:Date,slotDurationMinutes:number=30)=>{
+    const slots:{startAt:Date;endAt:Date}[]=[];
+    const durationMs=(slotDurationMinutes||30)*60*1000;
+    let curr=startAt.getTime();
+    const end=endAt.getTime();
+    while(curr+durationMs<=end){
+      slots.push({startAt:new Date(curr),endAt:new Date(curr+durationMs)});
+      curr+=durationMs;
+    }
+    return slots;
+  };
+
+  if(q.selectionMode===SelectionMode.DOCTOR){
+    const rows:any[]=[];
+    for(const d of doctors){
+      const av=await this.deps.doctorAvailability(d.doctorId,from,to,this.ctx(auth));
+      for(const it of av.availableIntervals??[]){
+        const s=this.ts(it.startAt),e=this.ts(it.endAt);
+        if(!s||!e)continue;
+        const slots=sliceInterval(s,e,it.slotDurationMinutes||30);
+        for(const slot of slots){
+          const occupied=await this.db.appointment.count({where:{assignedDoctorId:d.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:slot.endAt},endAt:{gt:slot.startAt}}});
+          const held=await this.db.slotHold.count({where:{doctorId:d.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:slot.endAt},endAt:{gt:slot.startAt}}});
+          const isAvailable = (!occupied && !held);
+          rows.push({
+            serviceId:q.serviceId,
+            selectionMode:q.selectionMode,
+            doctorId:d.doctorId,
+            doctorName:d.displayName||null,
+            rankCode:d.consultationRankCode,
+            roomId:it.roomId||null,
+            roomCode:it.roomCode||null,
+            roomName:it.roomName||null,
+            room:it.roomCode?{id:it.roomId||null,code:it.roomCode,name:it.roomName||null}:null,
+            startAt:slot.startAt,
+            endAt:slot.endAt,
+            availableCapacity:isAvailable?1:0,
+            isAvailable
+          });
+        }
+      }
+    }
+    rows.sort((a,b)=>new Date(a.startAt).getTime()-new Date(b.startAt).getTime());
+    return{items:rows,nextPageToken:null};
+  }
+
+  // THUẬT TOÁN CHO CHẾ ĐỘ "BỆNH VIỆN TỰ ĐỘNG SẮP XẾP"
+  type CandidateSlot={doctor:any;interval:any;startAt:Date;endAt:Date};
+  const slotMap=new Map<string,{startAt:Date;endAt:Date;free:CandidateSlot[];busy:CandidateSlot[]}>();
+
+  let patientId:string|undefined;
+  if(auth.role==='PATIENT'&&auth.userId){
+    try{
+      const eligibility=await this.deps.patientEligibility(undefined,this.ctx(auth));
+      if(eligibility?.patientId)patientId=String(eligibility.patientId);
+    }catch{}
+  }
+
+  for(const d of doctors){
+    const av=await this.deps.doctorAvailability(d.doctorId,from,to,this.ctx(auth));
+    for(const it of av.availableIntervals??[]){
+      const s=this.ts(it.startAt),e=this.ts(it.endAt);
+      if(!s||!e)continue;
+      const slots=sliceInterval(s,e,it.slotDurationMinutes||30);
+
+      for(const slot of slots){
+        const [occupied,held]=await Promise.all([
+          this.db.appointment.count({where:{assignedDoctorId:d.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:slot.endAt},endAt:{gt:slot.startAt}}}),
+          this.db.slotHold.count({where:{doctorId:d.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:slot.endAt},endAt:{gt:slot.startAt}}}),
+        ]);
+
+        const key=`${slot.startAt.toISOString()}_${slot.endAt.toISOString()}`;
+        if(!slotMap.has(key)){
+          slotMap.set(key,{startAt:slot.startAt,endAt:slot.endAt,free:[],busy:[]});
+        }
+        const entry=slotMap.get(key)!;
+        if(occupied===0&&held===0){
+          entry.free.push({doctor:d,interval:it,startAt:slot.startAt,endAt:slot.endAt});
+        }else{
+          entry.busy.push({doctor:d,interval:it,startAt:slot.startAt,endAt:slot.endAt});
+        }
+      }
+    }
+  }
+
+  const finalRows:any[]=[];
+  for(const [_,entry] of slotMap.entries()){
+    const start=entry.startAt;
+    const startOfDay=new Date(start);startOfDay.setHours(0,0,0,0);
+    const endOfDay=new Date(start);endOfDay.setHours(23,59,59,999);
+
+    if(entry.free.length>0){
+      const scored=await Promise.all(entry.free.map(async (c)=>{
+        // Tiêu chí 1: Bác sĩ từng khám cho thai phụ (+50)
+        const priorCount=patientId?await this.db.appointment.count({
+          where:{patientId,assignedDoctorId:c.doctor.doctorId,status:AppointmentStatus.COMPLETED}
+        }):0;
+        const continuityScore=priorCount>0?MATCHING_WEIGHTS.CONTINUITY_OF_CARE_SCORE:0;
+
+        // Tiêu chí 2: Cân bằng tải buồng khám (+30 max)
+        const dayLoad=await this.db.appointment.count({
+          where:{assignedDoctorId:c.doctor.doctorId,startAt:{gte:startOfDay,lte:endOfDay},status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE,AppointmentStatus.COMPLETED]}}
+        });
+        const loadScore=Math.max(0,MATCHING_WEIGHTS.LOAD_BALANCE_MAX_SCORE-dayLoad*MATCHING_WEIGHTS.LOAD_BALANCE_PENALTY_PER_APPOINTMENT);
+        return{
+          ...c,
+          totalScore:continuityScore+loadScore,
+          dayLoad,
+          doctorId:c.doctor.doctorId
+        };
+      }));
+
+      // Sắp xếp: Điểm cao nhất -> Ít ca hơn -> ID nhỏ hơn
+      scored.sort((a,b)=>{
+        if(b.totalScore!==a.totalScore)return b.totalScore-a.totalScore;
+        if(a.dayLoad!==b.dayLoad)return a.dayLoad-b.dayLoad;
+        return String(a.doctorId).localeCompare(String(b.doctorId));
+      });
+
+      const winner=scored[0];
+      const it=winner.interval;
+      finalRows.push({
+        serviceId:q.serviceId,
+        selectionMode:q.selectionMode,
+        doctorId:winner.doctor.doctorId,
+        doctorName:winner.doctor.displayName||null,
+        rankCode:'BASIC',
+        roomId:it.roomId||null,
+        roomCode:it.roomCode||null,
+        roomName:it.roomName||null,
+        room:it.roomCode?{id:it.roomId||null,code:it.roomCode,name:it.roomName||null}:null,
+        startAt:winner.startAt,
+        endAt:winner.endAt,
+        availableCapacity:entry.free.length,
+        isAvailable:true
+      });
+    }else if(entry.busy.length>0){
+      const sample=entry.busy[0];
+      const it=sample.interval;
+      finalRows.push({
+        serviceId:q.serviceId,
+        selectionMode:q.selectionMode,
+        doctorId:sample.doctor.doctorId,
+        doctorName:sample.doctor.displayName||null,
+        rankCode:'BASIC',
+        roomId:it.roomId||null,
+        roomCode:it.roomCode||null,
+        roomName:it.roomName||null,
+        room:it.roomCode?{id:it.roomId||null,code:it.roomCode,name:it.roomName||null}:null,
+        startAt:sample.startAt,
+        endAt:sample.endAt,
+        availableCapacity:0,
+        isAvailable:false
+      });
+    }
+  }
+
+  finalRows.sort((a,b)=>new Date(a.startAt).getTime()-new Date(b.startAt).getTime());
+  return{items:finalRows,nextPageToken:null};
+}
+ async createHold(dto:CreateHoldDto,auth:PublicAuthContext,key?:string){
+  const idem=this.key(key),patientId=await this.resolvePatientId(dto.patientId,auth);
+  if(dto.selectionMode===SelectionMode.DOCTOR){dto.requestedRankCode=undefined;}
+  if(dto.selectionMode===SelectionMode.RANK){dto.requestedDoctorId=undefined;if(!dto.requestedRankCode)dto.requestedRankCode='BASIC';}
+  this.selection(dto.selectionMode,dto.requestedDoctorId,dto.requestedRankCode);
+  const start=new Date(dto.startAt),end=new Date(dto.endAt);
+  this.interval(start,end);
+  const ctx=this.ctx(auth,idem);
+  const eligibility=await this.deps.patientEligibility(patientId,ctx);
+  const isEligible=eligibility?.eligibleForBooking??(eligibility?.active&&eligibility?.profileComplete);
+  if(!isEligible)this.fail(422,'PATIENT_NOT_ELIGIBLE','Patient not eligible');
+  if(auth.role==='PATIENT'&&!eligibility.callerOwnsPatient)this.fail(403,'FORBIDDEN','Patient ownership mismatch');
+
+  let doctor:any,rank=dto.requestedRankCode??'';
+  let roomId:string|null=null,roomCode:string|null=null,roomName:string|null=null;
+  const effectiveRank=dto.selectionMode===SelectionMode.RANK?'BASIC':(rank||'BASIC');
+  const firstOffering=await this.deps.offering(dto.serviceId,effectiveRank,start,ctx);
+  const specialty=firstOffering.offering.requiredSpecialtyId;
+
+  if(dto.selectionMode===SelectionMode.DOCTOR){
+    const result=await this.deps.doctorEligibility(dto.requestedDoctorId!,specialty,ctx);
+    doctor=result.doctor;
+    rank=doctor.consultationRankCode;
+    if(!doctor||doctor.status!=='DOCTOR_OPERATIONAL_STATUS_ACTIVE')this.fail(422,'DOCTOR_NOT_ELIGIBLE','No eligible doctor');
+    const av=await this.deps.doctorAvailability(doctor.doctorId,start,end,ctx);
+    const matchedInterval=(av.availableIntervals??[]).find((x:any)=>{
+      const s=this.ts(x.startAt),e=this.ts(x.endAt);
+      return s&&e&&s<=start&&e>=end;
+    });
+    if(!matchedInterval)this.fail(409,'SLOT_NOT_AVAILABLE','Doctor not available');
+    roomId=matchedInterval.roomId||null;
+    roomCode=matchedInterval.roomCode||null;
+    roomName=matchedInterval.roomName||null;
+  }else{
+    // BẮT BUỘC rank 'BASIC'
+    rank='BASIC';
+    const result=await this.deps.eligibleDoctors(specialty,'BASIC',start,end,ctx);
+    const candidateDocs=(result.doctors??[]).filter((d:any)=>d.status==='DOCTOR_OPERATIONAL_STATUS_ACTIVE');
+    if(!candidateDocs.length){
+      this.fail(409,'SLOT_NOT_AVAILABLE','Không có bác sĩ tiêu chuẩn nào trực vào khung giờ này.');
+    }
+
+    // Bước A: Lọc cứng
+    const validCandidates:any[]=[];
+    for(const d of candidateDocs){
+      const av=await this.deps.doctorAvailability(d.doctorId,start,end,ctx);
+      const matched=(av.availableIntervals??[]).find((x:any)=>{
+        const s=this.ts(x.startAt),e=this.ts(x.endAt);
+        return s&&e&&s<=start&&e>=end;
+      });
+      if(!matched)continue;
+
+      const [occupied,held]=await Promise.all([
+        this.db.appointment.count({
+          where:{assignedDoctorId:d.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:end},endAt:{gt:start}}
+        }),
+        this.db.slotHold.count({
+          where:{doctorId:d.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:end},endAt:{gt:start}}
+        }),
+      ]);
+
+      if(occupied===0&&held===0){
+        validCandidates.push({doc:d,interval:matched});
+      }
+    }
+
+    if(validCandidates.length===0){
+      this.fail(409,'SLOT_NOT_AVAILABLE','Khung giờ này vừa có người giữ chỗ hoặc đã kín lịch. Vui lòng chọn khung giờ khác.');
+    }
+
+    // Bước B: Chấm điểm
+    const startOfDay=new Date(start);startOfDay.setHours(0,0,0,0);
+    const endOfDay=new Date(start);endOfDay.setHours(23,59,59,999);
+
+    const scored=await Promise.all(validCandidates.map(async (c)=>{
+      const priorCount=patientId?await this.db.appointment.count({
+        where:{patientId,assignedDoctorId:c.doc.doctorId,status:AppointmentStatus.COMPLETED}
+      }):0;
+      const continuityScore=priorCount>0?MATCHING_WEIGHTS.CONTINUITY_OF_CARE_SCORE:0;
+
+      const dayLoad=await this.db.appointment.count({
+        where:{assignedDoctorId:c.doc.doctorId,startAt:{gte:startOfDay,lte:endOfDay},status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE,AppointmentStatus.COMPLETED]}}
+      });
+      const loadScore=Math.max(0,MATCHING_WEIGHTS.LOAD_BALANCE_MAX_SCORE-dayLoad*MATCHING_WEIGHTS.LOAD_BALANCE_PENALTY_PER_APPOINTMENT);
+      return{
+        ...c,
+        totalScore:continuityScore+loadScore,
+        dayLoad,
+        doctorId:c.doc.doctorId
+      };
+    }));
+
+    scored.sort((a,b)=>{
+      if(b.totalScore!==a.totalScore)return b.totalScore-a.totalScore;
+      if(a.dayLoad!==b.dayLoad)return a.dayLoad-b.dayLoad;
+      return String(a.doctorId).localeCompare(String(b.doctorId));
+    });
+
+    const winner=scored[0];
+    doctor=winner.doc;
+    roomId=winner.interval.roomId||null;
+    roomCode=winner.interval.roomCode||null;
+    roomName=winner.interval.roomName||null;
+  }
+
+  const hash=this.hash(dto);
+  const replay=await this.replay('create-hold',idem,hash);
+  if(replay)return replay;
+
+  try{
+    return await this.db.$transaction(async tx=>{
+      await tx.slotHold.updateMany({where:{status:SlotHoldStatus.ACTIVE,expiresAt:{lte:new Date()}},data:{status:SlotHoldStatus.EXPIRED}});
+      const overlap=await Promise.all([
+        tx.appointment.count({where:{assignedDoctorId:doctor.doctorId,status:{in:[AppointmentStatus.BOOKED,AppointmentStatus.REASSIGNMENT_REQUIRED,AppointmentStatus.CHECKED_IN,AppointmentStatus.IN_CLINICAL_CARE]},startAt:{lt:end},endAt:{gt:start}}}),
+        tx.slotHold.count({where:{doctorId:doctor.doctorId,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()},startAt:{lt:end},endAt:{gt:start}}})
+      ]);
+      if(overlap[0]||overlap[1])this.fail(409,'SLOT_NOT_AVAILABLE','Slot no longer available');
+
+      const hold=await tx.slotHold.create({
+        data:{
+          patientId,
+          serviceId:dto.serviceId,
+          doctorId:doctor.doctorId,
+          rankCode:rank,
+          selectionMode:dto.selectionMode,
+          roomId,
+          roomCode,
+          roomName,
+          startAt:start,
+          endAt:end,
+          expiresAt:new Date(Date.now()+MATCHING_WEIGHTS.SLOT_HOLD_TTL_MS)
+        }
+      });
+      const body=presentHold(hold);
+      await tx.appointmentIdempotencyRecord.create({data:{scope:'create-hold',key:idem,requestHash:hash,resourceId:hold.id,responseStatus:201,responseBody:body as any}});
+      return body;
+    },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
+  }catch(e){
+    if(e instanceof AppointmentDomainException)throw e;
+    this.fail(409,'SLOT_NOT_AVAILABLE','Concurrent slot conflict');
+  }
+}
+ 
+ async releaseHold(id:string,auth:PublicAuthContext){
+  const hold=await this.db.slotHold.findUnique({where:{id}});
+  if(!hold)this.fail(404,'HOLD_NOT_FOUND','Hold not found');
+  await this.authorizePatient(hold.patientId,auth);
+  if(hold.status===SlotHoldStatus.ACTIVE)await this.db.slotHold.update({where:{id},data:{status:SlotHoldStatus.RELEASED}});
+ }
+
  async createAppointment(dto:CreateAppointmentDto,auth:PublicAuthContext,key?:string){const idem=this.key(key),hash=this.hash(dto),ctx=this.ctx(auth,idem);const replay=await this.replay('create-appointment',idem,hash);if(replay)return replay;const hold=await this.db.slotHold.findUnique({where:{id:dto.holdId}});if(!hold)this.fail(404,'HOLD_NOT_FOUND','Hold not found');await this.authorizePatient(hold.patientId,auth);if(hold.status!==SlotHoldStatus.ACTIVE||hold.expiresAt<=new Date())this.fail(409,'HOLD_EXPIRED','Hold expired');const eligibility=await this.deps.patientEligibility(hold.patientId,ctx);const isEligible=eligibility?.eligibleForBooking??(eligibility?.active&&eligibility?.profileComplete);if(!isEligible)this.fail(422,'PATIENT_NOT_ELIGIBLE','Patient not eligible');const offering=(await this.deps.offering(hold.serviceId,hold.rankCode,hold.startAt,ctx)).offering;if(!offering?.requiredSpecialtyId)this.fail(422,'SERVICE_SPECIALTY_NOT_CONFIGURED','Catalog service specialty is not configured');const doctor=(await this.deps.doctorEligibility(hold.doctorId,offering.requiredSpecialtyId,ctx)).doctor;if(doctor.status!=='DOCTOR_OPERATIONAL_STATUS_ACTIVE'||doctor.consultationRankCode!==hold.rankCode)this.fail(422,'DOCTOR_NOT_ELIGIBLE','Doctor changed');const estimate=await this.deps.queueEstimate(offering.serviceCode||'INITIAL',hold.doctorId,hold.startAt,ctx);return this.db.$transaction(async tx=>{const consumed=await tx.slotHold.updateMany({where:{id:hold.id,status:SlotHoldStatus.ACTIVE,expiresAt:{gt:new Date()}},data:{status:SlotHoldStatus.CONSUMED}});if(consumed.count!==1)this.fail(409,'HOLD_EXPIRED','Hold expired');const appointment=await tx.appointment.create({data:{appointmentCode:this.code(),patientId:hold.patientId,serviceId:hold.serviceId,channel:dto.channel,selectionMode:hold.selectionMode,requestedDoctorId:hold.selectionMode===SelectionMode.DOCTOR?hold.doctorId:null,requestedRankCode:hold.selectionMode===SelectionMode.RANK?hold.rankCode:null,assignedDoctorId:hold.doctorId,assignedRankCode:hold.rankCode,specialtyId:offering.requiredSpecialtyId,roomId:hold.roomId??null,roomCode:hold.roomCode??null,roomNameSnapshot:hold.roomName??null,startAt:hold.startAt,endAt:hold.endAt,serviceNameSnapshot:offering.serviceName,serviceVersion:Number(offering.serviceVersion),basePriceId:offering.basePriceId,baseAmountMinor:BigInt(offering.basePrice.amountMinor),rankSurchargePriceId:offering.rankSurchargeId||null,rankSurchargeAmountMinor:BigInt(offering.rankSurcharge.amountMinor),estimatedTotalMinor:BigInt(offering.totalPrice.amountMinor),availabilityVersion:BigInt(doctor.availabilityVersion),queueEstimateMinutes:estimate?.estimatedWaitMinutes??null}});await tx.slotHold.update({where:{id:hold.id},data:{consumedByAppointmentId:appointment.id}});await this.auditOutbox(tx,appointment,'appointment.booked.v1',auth.userId);const body=presentAppointment(appointment);await tx.appointmentIdempotencyRecord.create({data:{scope:'create-appointment',key:idem,requestHash:hash,resourceId:appointment.id,responseStatus:201,responseBody:body as any}});return body;},{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});}
  async get(id:string,auth?:PublicAuthContext){const x=await this.db.appointment.findUnique({where:{id}});if(!x)this.fail(404,'APPOINTMENT_NOT_FOUND','Appointment not found');if(auth?.role==='DOCTOR'){const resolved=await this.deps.doctorByAccount(auth.userId,this.ctx(auth));if(!resolved.found||resolved.doctorId!==x.assignedDoctorId)this.fail(404,'APPOINTMENT_NOT_FOUND','Not found');}else if(auth)await this.authorizePatient(x.patientId,auth);return presentAppointment(x);}
  async list(q:AppointmentListDto,auth:PublicAuthContext){let patientId=q.patientId;let doctorId=q.doctorId;if(auth.role==='DOCTOR'){const resolved=await this.deps.doctorByAccount(auth.userId,this.ctx(auth));if(!resolved.found||!resolved.doctorId)this.fail(403,'DOCTOR_PROFILE_NOT_FOUND','Doctor profile not found');if(doctorId&&doctorId!==resolved.doctorId)this.fail(403,'FORBIDDEN','Doctor mismatch');doctorId=resolved.doctorId;}if(auth.role==='PATIENT'){patientId=await this.resolvePatientId(undefined,auth);}else if(!STAFF.includes(auth.role)&&auth.role!=='DOCTOR')this.fail(403,'FORBIDDEN','Staff only');const rows=await this.db.appointment.findMany({where:{...(patientId?{patientId}:{}),...(doctorId?{assignedDoctorId:doctorId}:{}),...(q.roomId?{roomId:q.roomId}:{}),...(q.roomCode?{roomCode:q.roomCode}:{}),...(q.status?{status:q.status as AppointmentStatus}:{}),...(q.from||q.to?{startAt:{...(q.from?{gte:new Date(q.from)}:{}),...(q.to?{lte:new Date(q.to)}:{})}}:{})},orderBy:[{startAt:'asc'},{id:'asc'}],take:(q.limit??20)+1,...(q.cursor?{cursor:{id:q.cursor},skip:1}:{})});const items=rows.slice(0,q.limit??20);const names=new Map<string,string>();if(auth.role==='DOCTOR'){const ids=[...new Set(items.map(x=>x.patientId))];await Promise.all(ids.map(async id=>{const result=await this.deps.patientIdentity(id,this.ctx(auth));names.set(id,result.patient?.fullName??'');}));}return{items:items.map(x=>({...presentAppointment(x),...(auth.role==='DOCTOR'?{patientName:names.get(x.patientId)??''}:{})})),nextPageToken:rows.length>(q.limit??20)?items.at(-1)?.id:null};}

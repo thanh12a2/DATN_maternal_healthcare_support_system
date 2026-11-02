@@ -11,12 +11,16 @@
   flex-direction: column;
   font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1e293b;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .pb-main {
   flex: 1;
   padding: 24px 0 60px;
   background-color: #f8fafc;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pb-container {
@@ -132,14 +136,16 @@
   }
 }
 
-/* 3. STEPPER PROGRESS BAR (4 BƯỚC VINMEC STYLE) */
+/* 3. STEPPER PROGRESS BAR (3 BƯỚC CHUẨN Y KHOA - ĐỒNG BỘ 100% CONTAINER 1340PX) */
 .pb-stepper-card {
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   padding: 18px 24px;
+  width: 100%;
   margin-bottom: 32px;
   box-shadow: 0 2px 10px rgba(11, 79, 156, 0.04);
+  box-sizing: border-box;
 }
 
 .pb-stepper-list {
@@ -251,65 +257,323 @@
   }
 }
 
-/* 4. MAIN LAYOUT: 2 CỘT (NỘI DUNG 1FR + SIDEBAR TÓM TẮT 390PX) */
+/* 4. MAIN LAYOUT CHO BƯỚC 1 & BƯỚC 2: 2 CỘT (FORM NỘI DUNG + SIDEBAR TÓM TẮT 390PX) */
 .pb-layout-grid {
   display: grid;
-  grid-template-columns: 1fr 390px;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 28px;
   align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1080px) {
   .pb-layout-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 100%;
+    gap: 24px;
   }
+}
+
+/* 4.1 BỐ CỤC BƯỚC 3: 2 CỘT CÂN ĐỐI (THÔNG TIN NGƯỜI KHÁM TRÁI + CHI TIẾT & CHI PHÍ PHẢI) */
+.pb-step3-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1080px) {
+  .pb-step3-grid {
+    grid-template-columns: 100%;
+    gap: 24px;
+  }
+}
+
+.pb-step-content-col {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* KHỐI NỘI DUNG BƯỚC (STEP CARD) */
 .pb-step-card {
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 18px;
   border: 1px solid #e2e8f0;
-  padding: 32px;
+  padding: 26px 28px;
   box-shadow: 0 4px 20px -2px rgba(11, 79, 156, 0.05);
   margin-bottom: 24px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .pb-step-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f1f5f9;
+}
+
+.pb-step-header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .pb-step-heading {
   font-size: 20px;
   font-weight: 800;
   color: #183153;
-  margin: 0 0 6px;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.pb-step-count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b4f9c;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 .pb-step-subtitle {
-  font-size: 14px;
+  font-size: 13.5px;
   color: #64748b;
   margin: 0;
   line-height: 1.5;
 }
 
 /* BƯỚC 1: BỘ LỌC VÀ LƯỚI DỊCH VỤ */
-.pb-service-filter-row {
+.pb-filter-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(260px, 1.2fr);
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .pb-filter-controls {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.pb-filter-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 7px;
+}
+
+.pb-specialty-dropdown-container {
+  position: relative;
+  width: 100%;
+}
+
+.pb-specialty-dropdown-btn {
+  width: 100%;
+  height: 44px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.pb-specialty-dropdown-btn:hover {
+  border-color: #0b4f9c;
+  background: #f8fafc;
+}
+
+.pb-specialty-dropdown-btn.is-active {
+  border-color: #0b4f9c;
+  box-shadow: 0 0 0 3px rgba(11, 79, 156, 0.12);
+  background: #ffffff;
+}
+
+.pb-dropdown-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pb-dropdown-icon {
+  color: #0b4f9c;
+  flex-shrink: 0;
+}
+
+.pb-dropdown-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-dropdown-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.pb-dropdown-chevron {
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pb-dropdown-chevron.is-open {
+  transform: rotate(180deg);
+  color: #0b4f9c;
+}
+
+.pb-specialty-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.18);
+  padding: 6px;
+  z-index: 50;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pb-specialty-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.pb-specialty-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.pb-specialty-dropdown-item.is-selected {
+  background: #eff6ff;
+}
+
+.pb-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pb-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-specialty-dropdown-item.is-selected .pb-item-name {
+  color: #0b4f9c;
+  font-weight: 750;
+}
+
+.pb-item-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.pb-specialty-dropdown-item.is-selected .pb-item-badge {
+  background: #dbeafe;
+  color: #0b4f9c;
+}
+
+.pb-item-check {
+  color: #0b4f9c;
+  flex-shrink: 0;
+}
+
+.pb-dropdown-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 6px;
+}
+
+.pb-search-container {
+  width: 100%;
+}
+
+.pb-active-spec-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #1e40af;
+  margin-bottom: 16px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
+.pb-clear-spec-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  color: #0b4f9c;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pb-clear-spec-pill:hover {
+  background: #dbeafe;
+}
+
 .pb-search-box {
-  flex: 1;
-  min-width: 260px;
+  width: 100%;
   position: relative;
   display: flex;
   align-items: center;
@@ -319,18 +583,20 @@
   position: absolute;
   left: 14px;
   color: #94a3b8;
+  pointer-events: none;
 }
 
 .pb-search-input {
   width: 100%;
   height: 44px;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #e2e8f0;
   border-radius: 12px;
-  padding: 0 16px 0 42px;
+  padding: 0 40px 0 42px;
   font-size: 14px;
   color: #1e293b;
   background: #ffffff;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .pb-search-input:focus {
@@ -339,80 +605,123 @@
   box-shadow: 0 0 0 3px rgba(11, 79, 156, 0.1);
 }
 
-.pb-specialty-pills {
+.pb-search-clear-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-  margin-bottom: 20px;
-}
-
-.pb-specialty-pill {
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13.5px;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   cursor: pointer;
-  white-space: nowrap;
+  padding: 0;
   transition: all 0.15s ease;
 }
 
-.pb-specialty-pill:hover {
-  border-color: #cbd5e1;
-  color: #0b4f9c;
+.pb-search-clear-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
 }
 
-.pb-specialty-pill.is-active {
+.pb-empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.pb-reset-filter-btn {
+  margin-top: 12px;
   background: #0b4f9c;
   color: #ffffff;
-  border-color: #0b4f9c;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
 
-.pb-service-list {
+.pb-reset-filter-btn:hover {
+  opacity: 0.9;
+}
+
+/* LƯỚI DỊCH VỤ 2 CỘT TỐI GIẢN */
+.pb-service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 680px) {
+  .pb-service-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.pb-service-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: space-between;
+  min-height: 148px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.pb-service-item {
-  border: 1.5px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 18px 20px;
+.pb-service-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 6px 18px rgba(11, 79, 156, 0.07);
+  transform: translateY(-2px);
+  background: #fbfdff;
+}
+
+.pb-service-card.is-selected {
+  border-color: #0b4f9c;
+  background: #f0f7ff;
+  box-shadow: 0 4px 18px rgba(11, 79, 156, 0.12);
+}
+
+.pb-service-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: #ffffff;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.pb-service-item:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 4px 16px rgba(11, 79, 156, 0.06);
-  transform: translateY(-1px);
-}
-
-.pb-service-item.is-selected {
-  border-color: #0b4f9c;
-  background: #f0f7ff;
-  box-shadow: 0 4px 18px rgba(11, 79, 156, 0.08);
-}
-
-.pb-service-item-main {
+.pb-service-badges {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex: 1;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pb-service-spec-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  background: #e6f0f9;
+  color: #0b4f9c;
 }
 
 .pb-service-radio {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 2px solid #cbd5e1;
   display: flex;
@@ -422,14 +731,14 @@
   transition: all 0.2s ease;
 }
 
-.pb-service-item.is-selected .pb-service-radio {
+.pb-service-card.is-selected .pb-service-radio {
   border-color: #0b4f9c;
   background: #0b4f9c;
 }
 
 .pb-service-radio-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #ffffff;
   opacity: 0;
@@ -437,66 +746,142 @@
   transition: all 0.2s ease;
 }
 
-.pb-service-item.is-selected .pb-service-radio-dot {
+.pb-service-card.is-selected .pb-service-radio-dot {
   opacity: 1;
   transform: scale(1);
 }
 
-.pb-service-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.pb-service-card-content {
+  flex: 1;
+  margin-bottom: 12px;
 }
 
-.pb-service-item-name {
-  font-size: 16px;
+.pb-service-card-name {
+  font-size: 14.5px;
   font-weight: 750;
   color: #183153;
-  margin: 0;
-}
-
-.pb-service-item-summary {
-  font-size: 13.5px;
-  color: #64748b;
-  margin: 0;
+  margin: 0 0 5px 0;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5;
 }
 
-.pb-service-item-tags {
+.pb-service-card-desc {
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pb-service-card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: auto;
+}
+
+.pb-service-card.is-selected .pb-service-card-footer {
+  border-top-color: #dbeafe;
+}
+
+.pb-service-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pb-service-price-amount {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0b4f9c;
+  letter-spacing: -0.01em;
+}
+
+.pb-service-price-note {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.pb-service-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0b4f9c;
+  background: #dbeafe;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* PHÂN TRANG */
+.pb-pagination {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.pb-service-tag {
-  font-size: 11.5px;
+.pb-pagination-info {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pb-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-page-btn,
+.pb-page-number {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: #e6f0f9;
-  color: #0f4c81;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
-.pb-service-item-price-col {
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.pb-service-price-val {
-  font-size: 17px;
-  font-weight: 800;
+.pb-page-btn:hover:not(:disabled),
+.pb-page-number:hover:not(.is-active) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
   color: #0b4f9c;
 }
 
-.pb-service-price-label {
-  font-size: 11.5px;
-  color: #64748b;
-  display: block;
+.pb-page-number.is-active {
+  background: #0b4f9c;
+  border-color: #0b4f9c;
+  color: #ffffff;
+  font-weight: 750;
+  box-shadow: 0 2px 8px rgba(11, 79, 156, 0.2);
+}
+
+.pb-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* BƯỚC 2: CHỌN BÁC SĨ & THỜI GIAN KHÁM */
@@ -574,7 +959,7 @@
   padding: 14px 16px;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   background: #ffffff;
   transition: all 0.2s ease;
@@ -592,12 +977,13 @@
 }
 
 .pb-doctor-thumb {
-  width: 54px;
-  height: 64px;
+  width: 58px;
+  height: 68px;
   border-radius: 10px;
   object-fit: cover;
   background: #f1f5f9;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .pb-doctor-info {
@@ -606,32 +992,67 @@
 }
 
 .pb-doctor-name {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 750;
   color: #183153;
   margin: 0 0 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
-.pb-doctor-title {
+/* Hạng bác sĩ hiển thị ngay dưới tên */
+.pb-doctor-rank-label {
   font-size: 12px;
-  color: #64748b;
-  margin: 0 0 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #0284c7;
+  margin: 0 0 6px;
+  line-height: 1.35;
 }
 
-.pb-doctor-spec-tag {
-  display: inline-block;
+/* Danh sách chuyên khoa bác sĩ đảm nhiệm */
+.pb-doctor-specs-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 6px;
+}
+
+.pb-doctor-spec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
-  color: #334155;
+  padding: 2px 7px;
+  border-radius: 6px;
+  line-height: 1.3;
+}
+
+.pb-doctor-spec-chip.is-primary {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05);
+}
+
+.pb-doctor-spec-chip.is-secondary {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+}
+
+/* Phụ phí hạng bác sĩ */
+.pb-doctor-surcharge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: #d97706;
+}
+.pb-doctor-surcharge.is-free {
+  color: #16a34a;
 }
 
 /* CHỌN NGÀY KHÁM (CALENDAR HORIZONTAL RIBBON) */
@@ -728,22 +1149,37 @@
 }
 
 .pb-slot-btn {
-  padding: 12px 10px;
-  border-radius: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  justify-content: center;
   align-items: center;
 }
 
-.pb-slot-btn:hover {
+.pb-slot-btn:hover:not(:disabled):not(.is-disabled) {
   border-color: #93c5fd;
   background: #f0f7ff;
+}
+
+.pb-slot-btn:disabled,
+.pb-slot-btn.is-disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.pb-slot-btn:disabled .pb-slot-time,
+.pb-slot-btn.is-disabled .pb-slot-time {
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .pb-slot-btn.is-active {
@@ -782,64 +1218,215 @@
   font-size: 14px;
 }
 
-/* BƯỚC 3: THÔNG TIN NGƯỜI KHÁM THEO TRẠNG THÁI TÀI KHOẢN */
-/* 1. ĐÃ ĐẦY ĐỦ HỒ SƠ */
+/* BƯỚC 3: THÔNG TIN NGƯỜI KHÁM & XÁC NHẬN LỊCH HẸN */
+.pb-section-subhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15.5px;
+  font-weight: 750;
+  color: #183153;
+  margin: 22px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eff6ff;
+}
+
+/* 1. ĐÃ ĐẦY ĐỦ HỒ SƠ (VERIFIED PATIENT PROFILE CARD) */
 .pb-verified-profile-card {
-  background: #f0fdf4;
-  border: 1.5px solid #bbf7d0;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
   border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
 }
 
 .pb-verified-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #dcfce7;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.pb-verified-badge {
+@media (max-width: 640px) {
+  .pb-verified-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.pb-verified-title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 750;
+  color: #166534;
+}
+
+.pb-verified-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pb-btn-edit-profile {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: #15803d;
-  font-weight: 750;
-  font-size: 14px;
+  gap: 6px;
+  background: #ffffff;
+  color: #0b4f9c;
+  border: 1.5px solid #bfdbfe;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.pb-btn-edit-profile:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(11, 79, 156, 0.08);
+}
+
+.pb-btn-edit-profile:active {
+  transform: translateY(0);
+}
+
+.pb-verified-profile-card.is-editing {
+  border-color: #93c5fd;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(11, 79, 156, 0.08);
+}
+
+.pb-edit-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.pb-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pb-btn-cancel-edit {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pb-btn-cancel-edit:hover {
+  background: #f8fafc;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.pb-btn-save-edit {
+  padding: 8px 22px;
+  border-radius: 8px;
+  border: none;
+  background: #0b4f9c;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(11, 79, 156, 0.2);
+}
+
+.pb-btn-save-edit:hover:not(:disabled) {
+  background: #083870;
+  box-shadow: 0 4px 12px rgba(11, 79, 156, 0.3);
+}
+
+.pb-btn-save-edit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pb-verified-id-badge {
+  font-size: 13px;
+  color: #475569;
+  background: #f8fafc;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+}
+
+.pb-verified-id-badge strong {
+  color: #0b4f9c;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .pb-verified-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 18px 24px;
 }
 
 @media (max-width: 640px) {
   .pb-verified-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
 .pb-verified-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+}
+
+.pb-verified-item.pb-col-full {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .pb-verified-item.pb-col-full {
+    grid-column: span 1;
+  }
 }
 
 .pb-verified-label {
   font-size: 12px;
-  font-weight: 600;
-  color: #166534;
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .pb-verified-val {
   font-size: 15px;
-  font-weight: 700;
-  color: #14532d;
+  font-weight: 800;
+  color: #000000;
 }
 
 /* 2. TÀI KHOẢN MỚI LẬP (FORM ĐIỀN THÔNG TIN HỒ SƠ TRỰC TIẾP) */
@@ -954,19 +1541,20 @@
   border-bottom-color: #0b4f9c;
 }
 
-/* BƯỚC 4: BẢNG XÁC NHẬN LỊCH HẸN CHI TIẾT */
+/* 4. BẢNG XÁC NHẬN LỊCH HẸN CHI TIẾT */
 .pb-confirm-review-table {
   width: 100%;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   background: #ffffff;
 }
 
 .pb-review-row {
   display: flex;
-  padding: 14px 20px;
+  align-items: center;
+  padding: 13px 20px;
   border-bottom: 1px solid #f1f5f9;
   font-size: 14px;
 }
@@ -982,15 +1570,90 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 640px) {
+  .pb-review-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .pb-review-label {
+    width: 100%;
+  }
+}
+
 .pb-review-val {
   flex: 1;
-  color: #183153;
-  font-weight: 700;
+  color: #000000;
+  font-weight: 800;
+  font-size: 14.5px;
 }
 
 .pb-review-val.highlight {
+  color: #000000;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.pb-review-val.is-black-bold {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 14.5px;
+}
+
+/* 5. BẢNG CHI PHÍ & TỔNG TÍNH */
+.pb-price-breakdown-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+
+.pb-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.pb-price-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pb-price-val {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.pb-price-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 10px 0;
+}
+
+.pb-price-total {
+  padding-top: 4px;
+}
+
+.pb-price-total-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #183153;
+}
+
+.pb-price-total-val {
+  font-size: 22px;
+  font-weight: 900;
   color: #0b4f9c;
-  font-size: 15.5px;
+}
+
+.pb-price-subnote {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 8px;
+  font-style: italic;
 }
 
 .pb-terms-notice {
@@ -1002,12 +1665,131 @@
   color: #92400e;
   line-height: 1.55;
   margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-/* 5. CỘT PHẢI: BOOKING SUMMARY SIDEBAR (STICKY 390PX) */
+/* 6. NÚT ĐIỀU HƯỚNG TỪNG BƯỚC (FOOTER ACTIONS) */
+.pb-step-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.pb-footer-btn {
+  width: auto;
+  min-width: 170px;
+  padding: 0 24px;
+}
+
+.pb-footer-summary-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.pb-footer-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: #1e40af;
+}
+
+.pb-footer-price {
+  font-weight: 800;
+  color: #0b4f9c;
+}
+
+.pb-footer-hint {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.pb-btn-confirm-lg {
+  min-width: 240px;
+  height: 48px;
+  font-size: 15.5px;
+}
+
+.pb-bottom-support-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: #64748b;
+  max-width: 980px;
+  margin: 20px auto 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.pb-bottom-support-phone {
+  font-weight: 800;
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 15px;
+}
+
+/* 5. CỘT PHẢI: BOOKING SUMMARY SIDEBAR CHO BƯỚC 1 & 2 (STICKY 390PX) */
 .pb-summary-sidebar {
+  width: 100%;
+  max-width: 390px;
+  min-width: 0;
   position: sticky;
   top: 96px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1080px) {
+  .pb-summary-sidebar {
+    max-width: 100%;
+    position: static;
+  }
+}
+
+/* 6. CÁC NÚT VÀ HOTLINE CHO BƯỚC 3 */
+.pb-step3-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.pb-step3-hotline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.pb-step3-hotline-phone {
+  font-weight: 800;
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 14.5px;
 }
 
 .pb-summary-card {
@@ -1058,6 +1840,17 @@
   font-weight: 700;
   color: #183153;
   line-height: 1.4;
+}
+
+.pb-summary-empty-hint {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .pb-summary-total-box {
@@ -1322,3 +2115,175 @@
   background: #f8fafc;
   color: #1e293b;
 }
+
+/* ==========================================================================
+   BỆNH VIỆN TỰ ĐỘNG SẮP XẾP & ĐỒNG HỒ ĐẾM NGƯỢC GIỮ CHỖ 15 PHÚT
+   ========================================================================== */
+
+.pb-zero-surcharge-badge {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+  border: 1px solid #bbf7d0;
+}
+
+.pb-shift-header {
+  font-size: 13px;
+  font-weight: 750;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-assigned-doctor-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 18px;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.08);
+  animation: pbFadeIn 0.3s ease-out;
+}
+
+.pb-assigned-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pb-assigned-info {
+  flex: 1;
+}
+
+.pb-assigned-title {
+  font-size: 14.5px;
+  font-weight: 750;
+  color: #166534;
+  margin-bottom: 2px;
+}
+
+.pb-assigned-details {
+  font-size: 12.5px;
+  color: #15803d;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-assigned-free-tag {
+  color: #15803d;
+  font-weight: 700;
+  background: #dcfce7;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.pb-hold-countdown-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  font-size: 12.5px;
+  font-weight: 750;
+  padding: 6px 12px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* THÔNG BÁO GIỮ CHỖ TẠM THỜI 5 PHÚT (SIDEBAR & BƯỚC 3) */
+.pb-hold-sidebar-notice,
+.pb-hold-step3-notice {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  background: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
+  animation: pbFadeIn 0.3s ease-out;
+}
+
+.pb-hold-step3-notice {
+  margin-top: 16px;
+  margin-bottom: 18px;
+  background: #f0f9ff;
+  border: 1.5px solid #7dd3fc;
+  padding: 14px 16px;
+}
+
+.pb-hold-icon {
+  color: #0284c7;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pb-hold-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #0369a1;
+}
+
+.pb-hold-step3-notice .pb-hold-text {
+  font-size: 13.5px;
+}
+
+.pb-hold-text strong {
+  color: #0c4a6e;
+  font-weight: 750;
+}
+
+.pb-hold-countdown {
+  display: inline;
+  font-weight: 800;
+  color: #0f172a; /* In đậm màu đen, không có khung viền màu */
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pb-hold-sidebar-expired,
+.pb-hold-step3-expired {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b91c1c;
+  animation: pbFadeIn 0.3s ease-out;
+}
+
+.pb-hold-step3-expired {
+  margin-top: 16px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+}
+
+

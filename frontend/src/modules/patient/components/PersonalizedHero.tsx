@@ -114,7 +114,7 @@ export function PersonalizedHero() {
         const id = d.id ?? d.doctorId;
         if (id) {
           const profileData = d.profile ?? {};
-          const title = (d.professionalTitle ?? profileData.professionalTitle ?? '').trim();
+          const title = ((d as any).consultationRankInfo?.shortName || d.consultationRank || '').trim();
           const name = (d.fullName ?? profileData.fullName ?? d.name ?? '').trim();
           dMap[id] = [title, name].filter(Boolean).join(' ') || 'Bác sĩ phụ trách';
         }

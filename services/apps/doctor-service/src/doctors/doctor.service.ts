@@ -33,6 +33,7 @@ import {
 
 const PUBLIC_INCLUDE = {
   profile: true,
+  rank: true,
   specialties: { include: { specialty: true } },
   schedules: { include: { room: true } },
 } as const;
@@ -342,7 +343,7 @@ export class DoctorDomainService {
     const allowed = admin
       ? [
           'fullName',
-          'professionalTitle',
+    
           'biography',
           'practiceStartYear',
           'languages',
@@ -352,7 +353,7 @@ export class DoctorDomainService {
       : manager
         ? [
             'fullName',
-            'professionalTitle',
+      
             'biography',
             'practiceStartYear',
             'languages',
@@ -371,8 +372,8 @@ export class DoctorDomainService {
       dto.biography ||
       dto.languages ||
       dto.photoUrl ||
-      dto.practiceStartYear ||
-      dto.professionalTitle
+      dto.practiceStartYear
+
     )
       this.validateProfile({
         ...doctor.profile,
@@ -522,6 +523,14 @@ export class DoctorDomainService {
       .replace(/[đĐ]/g, 'd')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  async listConsultationRanks() {
+    const rows = await this.prisma.consultationRank.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+    });
+    return { data: rows };
   }
 
   async listSpecialties(query: SpecialtyListQueryDto, actor?: Identity) {
@@ -1179,9 +1188,15 @@ export class DoctorDomainService {
           intervalStart,
           intervalEnd,
         );
+        const isSingleSlot = (intervalEnd.getTime() - intervalStart.getTime()) <= 4 * 3600 * 1000;
         const covers = availability.intervals.some(
-          (item: any) =>
-            item.startAt <= intervalStart && item.endAt >= intervalEnd,
+          (item: any) => {
+            const s = new Date(item.startAt);
+            const e = new Date(item.endAt);
+            return isSingleSlot
+              ? (s <= intervalStart && e >= intervalEnd)
+              : (s < intervalEnd && e > intervalStart);
+          },
         );
         if (!covers) continue;
       }
@@ -1365,7 +1380,7 @@ export class DoctorDomainService {
   private profileData(p: AnyRecord) {
     return {
       fullName: p.fullName.trim(),
-      professionalTitle: p.professionalTitle?.trim(),
+
       biography: p.biography?.trim(),
       practiceStartYear: p.practiceStartYear,
       languages: (p.languages ?? []).map((x: string) => x.trim().toLowerCase()),
@@ -1376,7 +1391,7 @@ export class DoctorDomainService {
     const x: AnyRecord = {};
     for (const k of [
       'fullName',
-      'professionalTitle',
+
       'biography',
       'practiceStartYear',
       'photoUrl',
@@ -1465,6 +1480,15 @@ export class DoctorDomainService {
       id: x.id,
       status: x.status,
       consultationRank: x.consultationRank,
+      consultationRankInfo: x.rank
+        ? {
+            code: x.rank.code,
+            name: x.rank.name,
+            shortName: x.rank.shortName,
+            experienceYearsMin: x.rank.experienceYearsMin,
+            sortOrder: x.rank.sortOrder,
+          }
+        : null,
       roomId: primaryRoom?.id ?? null,
       roomCode: primaryRoom?.code ?? null,
       roomName: primaryRoom?.name ?? null,

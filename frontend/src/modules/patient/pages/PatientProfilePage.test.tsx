@@ -201,17 +201,8 @@ describe("PatientProfilePage API flow", () => {
   });
 });
 
-describe("Patient profile session draft", () => {
-  it("restores a version 2 profile-only draft", async () => {
-    const draft = {
-      ...emptyPatientProfile,
-      fullName: "Bản nháp Patient",
-      address: "Hà Nội, Việt Nam",
-    };
-    window.sessionStorage.setItem(
-      "an-tam-patient-profile-draft:u1",
-      JSON.stringify({ version: 2, savedAt: Date.now(), values: draft }),
-    );
+describe("Patient profile form completeness & no-draft behavior", () => {
+  it("disables save button when form is incomplete and does not restore unfinished drafts", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -231,7 +222,18 @@ describe("Patient profile session draft", () => {
     );
     render(<AppRouter />);
     expect(
-      await screen.findByDisplayValue("Bản nháp Patient"),
+      await screen.findByRole("heading", {
+        name: /hoàn thiện thông tin bệnh nhân/i,
+      }),
     ).toBeInTheDocument();
+
+    const saveButton = screen.getByRole("button", { name: "Lưu hồ sơ" });
+    // Initially incomplete: button is disabled
+    expect(saveButton).toBeDisabled();
+
+    // Type only name: still incomplete, button remains disabled
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Họ và tên"), "Bản nháp Patient");
+    expect(saveButton).toBeDisabled();
   });
 });

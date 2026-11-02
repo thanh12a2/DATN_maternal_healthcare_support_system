@@ -88,6 +88,12 @@ export class DoctorController {
   ) {
     return this.service.listSpecialties(query, req.identity);
   }
+  @Public()
+  @Get('consultation-ranks')
+  consultationRanks() {
+    return this.service.listConsultationRanks();
+  }
+
   @Post('rooms')
   @Roles('ADMIN', 'CLINIC_MANAGER')
   createRoom(

@@ -10,7 +10,7 @@ import { PatientProfilePage } from '../modules/patient/pages/PatientProfilePage'
 import { PatientBookingPage } from '../modules/patient/pages/PatientBookingPage';
 import { PatientServiceCatalogPage } from '../modules/patient/pages/PatientServiceCatalogPage';
 import { AppointmentDetailPage, PatientAppointmentsPage } from '../modules/patient/pages/PatientAppointmentsPage';
-import { PatientQueuePage } from '../modules/patient/pages/PatientQueuePage';
+
 import { PatientNotificationsBillingPage } from '../modules/patient/pages/PatientNotificationsBillingPage';
 import { PatientServiceDetailPage } from '../modules/patient/pages/PatientServiceDetailPage';
 import { PatientDoctorCatalogPage } from '../modules/patient/pages/PatientDoctorCatalogPage';
@@ -133,7 +133,7 @@ function Routes() {
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
   if (appointmentDetailMatch) return <Protected><PatientProfileRequired><AppointmentDetailPage appointmentId={decodeURIComponent(appointmentDetailMatch[1])} /></PatientProfileRequired></Protected>;
   if (path === '/lich-hen') return <Protected><PatientProfileRequired><PatientAppointmentsPage /></PatientProfileRequired></Protected>;
-  if (path === '/hang-doi') return <Protected><PatientProfileRequired><PatientQueuePage /></PatientProfileRequired></Protected>;
+  if (path === '/hang-doi') return <Redirect to="/lich-hen" />;
   if (path === '/thong-bao-hoa-don') return <Protected><PatientNotificationsBillingPage /></Protected>;
   return <NotFoundPage />;
 }
