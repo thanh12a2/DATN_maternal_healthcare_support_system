@@ -18,7 +18,7 @@ import {
 import viVN from 'antd/locale/vi_VN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
@@ -73,6 +73,8 @@ function Desk() {
   const [search, setSearch] = useState<SearchState | null>(null);
   const [searching, setSearching] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  const [targetAppointmentId, setTargetAppointmentId] = useState<string | null>(null);
+  const skipSearchRef = useRef(false);
   const [room, setRoom] = useState('P.201');
   const [date, setDate] = useState(dayjs());
   const [status, setStatus] = useState<AppointmentStatus | undefined>();
@@ -89,6 +91,23 @@ function Desk() {
   const userEmail = auth.user?.email || 'reception.hoangyen@antam.local';
   const userName = userEmail.split('@')[0];
   const userInitials = userName.slice(0, 2).toUpperCase();
+
+  // Khóa lịch sử trình duyệt khi đang ở Bàn tiếp đón Lễ tân:
+  // Ngăn chặn nút Back trên trình duyệt hoặc thao tác vuốt quay lại trang Cổng bệnh nhân
+  useEffect(() => {
+    const currentUrl = window.location.href;
+    window.history.pushState(null, '', currentUrl);
+
+    const handlePopState = () => {
+      // Giữ nguyên trạng thái ở bàn tiếp đón, ngăn không cho back ra trang bệnh nhân
+      window.history.pushState(null, '', currentUrl);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -131,6 +150,10 @@ function Desk() {
   useEffect(() => {
     if (!catalog || trimmed.length < 2) {
       setSearch(null);
+      return;
+    }
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
       return;
     }
     let live = true;
@@ -211,10 +234,17 @@ function Desk() {
     [patients, search]
   );
 
+  const [openAppointment, setOpenAppointment] = useState<DeskAppointment | null>(null);
+
+  const handleOpenAppointment = (a: DeskAppointment) => {
+    setOpenAppointment(a);
+    setOpenId(a.id);
+  };
+
   const opened = useMemo(
     () =>
-      [...rows, ...(search?.appointments ?? [])].find((a) => a.id === openId) ?? null,
-    [rows, search, openId]
+      [...rows, ...(search?.appointments ?? [])].find((a) => a.id === openId || a.code === openId) ?? openAppointment,
+    [rows, search, openId, openAppointment]
   );
 
   const replace = (n: DeskAppointment) => {
@@ -283,27 +313,46 @@ function Desk() {
   const handleOpenPatientDetail = async (a: DeskAppointment) => {
     if (!catalog) return;
     setSearching(true);
+    setTargetAppointmentId(a.id);
     try {
       const res = await loadPatientWorkspace(request, catalog, a.patientId);
-      if (res.found.length > 0) {
-        setSearch(res);
-        setQuery(res.found[0].phone || res.found[0].fullName);
-      } else {
-        const p = allPatients[a.patientId] || {
-          id: a.patientId,
-          fullName: 'Bệnh nhân',
-          emergencyContacts: [],
-        };
-        setSearch({
-          found: [p],
-          patients: { [p.id]: p },
-          appointments: rows.filter((item) => item.patientId === a.patientId),
-        });
-        setQuery(p.fullName);
-      }
+      const existing = res.appointments ?? [];
+      const hasClicked = existing.some((item) => item.id === a.id || item.code === a.code);
+      const allAppts = hasClicked ? existing : [a, ...existing];
+
+      const patient = res.found[0] || allPatients[a.patientId] || {
+        id: a.patientId,
+        fullName: 'Bệnh nhân',
+        emergencyContacts: [],
+      };
+
+      const finalRes = {
+        found: [patient],
+        patients: { [patient.id]: patient, ...res.patients },
+        appointments: allAppts,
+      };
+
+      skipSearchRef.current = true;
+      setSearch(finalRes);
+      setQuery(patient.phone || patient.fullName);
     } catch (err) {
       console.error('Lỗi khi mở hồ sơ bệnh nhân:', err);
-      message.error('Không thể tải thông tin bệnh nhân');
+      const p = allPatients[a.patientId] || {
+        id: a.patientId,
+        fullName: 'Bệnh nhân',
+        emergencyContacts: [],
+      };
+      const patientApps = rows.filter((item) => item.patientId === a.patientId);
+      const hasClicked = patientApps.some((item) => item.id === a.id);
+      const allAppts = hasClicked ? patientApps : [a, ...patientApps];
+
+      skipSearchRef.current = true;
+      setSearch({
+        found: [p],
+        patients: { [p.id]: p },
+        appointments: allAppts,
+      });
+      setQuery(p.phone || p.fullName);
     } finally {
       setSearching(false);
     }
@@ -311,6 +360,8 @@ function Desk() {
 
   const clear = useCallback(() => {
     setQuery('');
+    setTargetAppointmentId(null);
+    setSearch(null);
     setResetSignal((n) => n + 1);
   }, []);
 
@@ -376,7 +427,7 @@ function Desk() {
 
             {/* Compact Search Bar */}
             <div style={{ maxWidth: 440, width: '100%' }}>
-              <PatientSearchBar onSearch={setQuery} resetSignal={resetSignal} />
+              <PatientSearchBar onSearch={setQuery} resetSignal={resetSignal} value={query} />
             </div>
           </div>
 
@@ -425,7 +476,8 @@ function Desk() {
               appointments={search.appointments}
               catalog={catalog}
               busy={busy}
-              onOpen={(a) => setOpenId(a.id)}
+              targetAppointmentId={targetAppointmentId}
+              onOpen={handleOpenAppointment}
               onCheckIn={checkIn}
               onCancel={cancel}
               onCollect={collect}
@@ -530,6 +582,7 @@ function Desk() {
                   patients={allPatients}
                   loading={loading}
                   onOpen={handleOpenPatientDetail}
+                  onOpenPatient={handleOpenPatientDetail}
                   onCheckIn={checkIn}
                 />
               )}
@@ -558,6 +611,20 @@ function Desk() {
               : prev
           );
         }}
+      />
+
+      <AppointmentDrawer
+        appointment={opened}
+        patient={opened ? allPatients[opened.patientId] : undefined}
+        busy={busy}
+        onClose={() => {
+          setOpenId(null);
+          setOpenAppointment(null);
+        }}
+        onCheckIn={checkIn}
+        onCancel={cancel}
+        onCollect={collect}
+        onPrint={(w) => message.info(`Đang gửi lệnh in ${w}...`)}
       />
     </div>
   );

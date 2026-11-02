@@ -29,6 +29,7 @@ interface Props {
   hidePatientCols?: boolean;
   compact?: boolean;
   onOpen: (a: DeskAppointment) => void;
+  onOpenPatient?: (a: DeskAppointment) => void;
   onCheckIn?: (a: DeskAppointment) => void;
 }
 
@@ -40,6 +41,7 @@ export function AppointmentTable({
   hidePatientCols,
   compact,
   onOpen,
+  onOpenPatient,
   onCheckIn: _onCheckIn,
 }: Props) {
   const today = dayjs().format('YYYY-MM-DD');
@@ -237,8 +239,29 @@ export function AppointmentTable({
             render: (_: unknown, a: DeskAppointment) => {
               const p = patients[a.patientId];
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600, color: '#111827', fontSize: 13 }}>
+                <div
+                  onClick={(e) => {
+                    if (onOpenPatient) {
+                      e.stopPropagation();
+                      onOpenPatient(a);
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    cursor: onOpenPatient ? 'pointer' : 'default',
+                  }}
+                  title={onOpenPatient ? 'Xem thông tin bệnh nhân' : undefined}
+                >
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: onOpenPatient ? '#0B5CAD' : '#111827',
+                      fontSize: 13,
+                      textDecoration: onOpenPatient ? 'underline' : 'none',
+                    }}
+                  >
                     {p?.fullName ?? a.patientId}
                   </span>
                   <span style={{ fontSize: 12, color: '#475569' }}>

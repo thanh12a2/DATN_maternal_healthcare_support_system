@@ -11,6 +11,7 @@ import {
   PrinterOutlined,
   SwapOutlined,
   UserOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -66,6 +67,7 @@ interface Props {
   catalog?: DeskCatalog | null;
   request?: Requester;
   busy?: boolean;
+  targetAppointmentId?: string | null;
   onOpen?: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -81,6 +83,8 @@ export function PatientCard({
   catalog,
   request: propRequest,
   busy,
+  targetAppointmentId,
+  onOpen,
   onCheckIn,
   onCancel,
   onCollect,
@@ -132,9 +136,29 @@ export function PatientCard({
 
   const todayStr = dayjs().format('YYYY-MM-DD');
 
-  // Bộ lọc thời gian: 'TODAY' | 'ALL' | 'CUSTOM' (Mặc định: 'TODAY')
-  const [timeFilter, setTimeFilter] = useState<'TODAY' | 'ALL' | 'CUSTOM'>('TODAY');
+  // Bộ lọc thời gian: 'TODAY' | 'ALL' | 'CUSTOM'
+  // Nếu có targetAppointmentId mà ngày khám khác hôm nay -> tự động chọn 'ALL' để chắc chắn hiển thị lịch được chọn
+  const [timeFilter, setTimeFilter] = useState<'TODAY' | 'ALL' | 'CUSTOM'>(() => {
+    if (targetAppointmentId) {
+      const target = appointments.find((x) => x.id === targetAppointmentId || x.code === targetAppointmentId);
+      if (target && target.date !== todayStr) {
+        return 'ALL';
+      }
+    }
+    return appointments.some((a) => a.date === todayStr) ? 'TODAY' : 'ALL';
+  });
   const [customDate, setCustomDate] = useState<Dayjs>(dayjs());
+
+  useEffect(() => {
+    if (targetAppointmentId) {
+      const target = appointments.find((x) => x.id === targetAppointmentId || x.code === targetAppointmentId);
+      if (target && target.date !== todayStr && timeFilter === 'TODAY') {
+        setTimeFilter('ALL');
+      }
+    } else if (appointments.length > 0 && !appointments.some((a) => a.date === todayStr) && timeFilter === 'TODAY') {
+      setTimeFilter('ALL');
+    }
+  }, [targetAppointmentId, appointments, todayStr]);
 
   const todayApps = useMemo(
     () => appointments.filter((a) => a.date === todayStr),
@@ -152,15 +176,21 @@ export function PatientCard({
     return appointments;
   }, [appointments, timeFilter, todayStr, customDate]);
 
-  // Sắp xếp: Lịch hôm nay luôn ở trên đầu, sau đó sắp xếp theo thời gian mới nhất
+  // Sắp xếp: Nếu có targetAppointmentId thì đưa lên đầu tiên;
+  // tiếp theo lịch hôm nay ở trên đầu, sau đó sắp xếp theo thời gian mới nhất
   const sortedAppointments = useMemo(() => {
     return [...filteredAppointments].sort((a, b) => {
+      if (targetAppointmentId) {
+        const isTargetA = a.id === targetAppointmentId || a.code === targetAppointmentId ? 1 : 0;
+        const isTargetB = b.id === targetAppointmentId || b.code === targetAppointmentId ? 1 : 0;
+        if (isTargetA !== isTargetB) return isTargetB - isTargetA;
+      }
       const isTodayA = a.date === todayStr ? 1 : 0;
       const isTodayB = b.date === todayStr ? 1 : 0;
       if (isTodayA !== isTodayB) return isTodayB - isTodayA;
       return dayjs(b.startAt).valueOf() - dayjs(a.startAt).valueOf();
     });
-  }, [filteredAppointments, todayStr]);
+  }, [filteredAppointments, todayStr, targetAppointmentId]);
 
   const emergency = currentPatient.emergencyContacts?.[0];
   const emergencyDisplay = emergency
@@ -338,21 +368,26 @@ export function PatientCard({
             const appStep = a.completedAt ? 3 : a.startedAt ? 2 : a.checkedInAt ? 1 : 0;
             const payStatus = paymentStatusOf(a);
 
+            const isSelected = Boolean(targetAppointmentId && (a.id === targetAppointmentId || a.code === targetAppointmentId));
+
             return (
               <div
                 key={a.id}
                 style={{
                   background: '#ffffff',
-                  border: isToday ? '1.5px solid #93c5fd' : '1px solid #e2e8f0',
+                  border: isSelected ? '2px solid #0B5CAD' : isToday ? '1.5px solid #93c5fd' : '1px solid #e2e8f0',
                   borderRadius: 12,
                   padding: 16,
-                  boxShadow: isToday
+                  boxShadow: isSelected
+                    ? '0 6px 20px rgba(11, 92, 173, 0.14)'
+                    : isToday
                     ? '0 4px 14px rgba(11, 92, 173, 0.07)'
                     : '0 1px 3px rgba(0, 0, 0, 0.02)',
                 }}
               >
                 {/* Header dải lịch hẹn */}
                 <div
+                  onClick={() => onOpen?.(a)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -362,12 +397,29 @@ export function PatientCard({
                     paddingBottom: 12,
                     marginBottom: 16,
                     borderBottom: '1px solid #f1f5f9',
+                    cursor: onOpen ? 'pointer' : 'default',
                   }}
+                  title={onOpen ? 'Nhấn để xem chi tiết lịch hẹn' : undefined}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 17, fontWeight: 700, color: '#0B5CAD' }}>
                       {a.code}
                     </span>
+
+                    {isSelected && (
+                      <Tag
+                        color="#0B5CAD"
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          margin: 0,
+                        }}
+                      >
+                        Lịch khám đang chọn
+                      </Tag>
+                    )}
 
                     {isToday ? (
                       <Tag
@@ -574,10 +626,24 @@ export function PatientCard({
                         </div>
                       </div>
 
-                      {/* Nút hành động của lịch hẹn (Đã bỏ nút Chi tiết đầy đủ) */}
+                      {/* Nút hành động của lịch hẹn */}
                       <div>
                         <Divider style={{ margin: '10px 0' }} />
                         <Space size={8} wrap>
+                          {onOpen && (
+                            <Button
+                              icon={<FileTextOutlined />}
+                              onClick={() => onOpen(a)}
+                              style={{
+                                borderRadius: 6,
+                                borderColor: '#0B5CAD',
+                                color: '#0B5CAD',
+                                fontWeight: 600,
+                              }}
+                            >
+                              Chi tiết lịch hẹn
+                            </Button>
+                          )}
                           {a.status === 'BOOKED' && (
                             <Button
                               type="primary"
@@ -1160,7 +1226,7 @@ export function PatientCard({
                   margin: '2px 0',
                 }}
               >
-                {printTicketApp.queueCode || 'VIT-001'}
+                {printTicketApp.queueCode || 'Chưa cấp'}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B' }}>
                 Phòng khám: {printTicketApp.roomCode} — {printTicketApp.roomName || 'Phòng khám Sản Phụ khoa'}

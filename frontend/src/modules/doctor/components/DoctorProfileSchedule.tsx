@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { CameraOutlined, CheckCircleOutlined, ClockCircleOutlined, FileTextOutlined, GlobalOutlined, MedicineBoxOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { Requester } from '../../../services/catalog';
 import { getMyDoctor, listMyAvailability, updateMyDoctor, type DoctorInterval, type MyDoctor } from '../../../services/doctor';
@@ -42,7 +42,8 @@ export function DoctorProfileSchedule({ section, request }: { section: string; r
   const [editingPhoto, setEditingPhoto] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
-  useEffect(() => { setImageFailed(false); }, [photoUrl]);
+  const prevPhotoRef = useRef(photoUrl);
+  useEffect(() => { if (prevPhotoRef.current !== photoUrl) { setImageFailed(false); prevPhotoRef.current = photoUrl; } }, [photoUrl]);
 
   useEffect(() => {
     let active = true;

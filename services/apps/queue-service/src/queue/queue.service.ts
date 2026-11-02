@@ -14,6 +14,70 @@ import { QueueRealtimeService } from './queue-realtime.service';
 
 @Injectable()
 export class QueueDomainService {
+    private getRoomPrefix(roomCode?: string | null, stageCode?: string): string {
+    if (roomCode && typeof roomCode === 'string') {
+      const trimmed = roomCode.trim();
+      const pRoomMatch = trimmed.match(/^(?:P\.?|Phòng\s*)?(\d{2,4})$/i);
+      if (pRoomMatch) {
+        return pRoomMatch[1];
+      }
+      const alphaNumMatch = trimmed.match(/^([A-Z]+)[-.\s]?(\d+)?/i);
+      if (alphaNumMatch) {
+        const letters = alphaNumMatch[1].toUpperCase();
+        const num = alphaNumMatch[2];
+        if (letters === 'P' && num) {
+          return num;
+        }
+        return num ? `${letters}${num}` : letters;
+      }
+      const anyNum = trimmed.match(/\d+/);
+      if (anyNum) {
+        return anyNum[0];
+      }
+      const clean = trimmed.replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
+      if (clean.length > 0) return clean;
+    }
+
+    if (stageCode && typeof stageCode === 'string') {
+      const s = stageCode.toUpperCase();
+      if (s.includes('ULTRA') || s.includes('SA')) return 'SA';
+      if (s.includes('LAB') || s.includes('XN')) return 'XN';
+      if (s.includes('PROCEDURE') || s.includes('TT')) return 'TT';
+      if (s.includes('PHARM') || s.includes('NT')) return 'NT';
+      if (s.includes('VIT') || s.includes('SH')) return 'SH';
+    }
+
+    return '201';
+  }
+
+  private async generateTicketCode(
+    tx: any,
+    stageId: string,
+    businessDate: Date,
+    roomCode?: string | null,
+    stageCode?: string,
+  ): Promise<string> {
+    const prefix = this.getRoomPrefix(roomCode, stageCode);
+    const count = await tx.stageTicket.count({
+      where: {
+        stageId,
+        businessDate,
+        ticketCode: { startsWith: `${prefix}-` },
+      },
+    });
+    let roomOrdinal = count + 1;
+    let ticketCode = `${prefix}-${String(roomOrdinal).padStart(2, '0')}`;
+    while (
+      await tx.stageTicket.findFirst({
+        where: { stageId, businessDate, ticketCode },
+      })
+    ) {
+      roomOrdinal++;
+      ticketCode = `${prefix}-${String(roomOrdinal).padStart(2, '0')}`;
+    }
+    return ticketCode;
+  }
+
   constructor(
     private readonly db: QueuePrismaService,
     private readonly realtime: QueueRealtimeService,
@@ -82,6 +146,13 @@ export class QueueDomainService {
         });
         const ordinal = (max._max.ordinal ?? 0) + 1;
         const seq = (max._max.enqueueSequence ?? 0n) + 1n;
+        const ticketCode = await this.generateTicketCode(
+          tx,
+          stage.id,
+          day,
+          ticketRoomCode,
+          stage.code,
+        );
         const journey = await tx.queueJourney.create({
           data: {
             appointmentId: input.appointmentId,
@@ -96,7 +167,7 @@ export class QueueDomainService {
                 roomCode: ticketRoomCode,
                 businessDate: day,
                 ordinal,
-                ticketCode: stage.code + '-' + String(ordinal).padStart(3, '0'),
+                ticketCode,
                 lateDemotion: late > 30,
                 enqueueSequence: seq,
               },
@@ -132,6 +203,13 @@ export class QueueDomainService {
       _max: { ordinal: true, enqueueSequence: true },
     });
     const ticketRoomCode = input.roomCode || stage.roomCode || null;
+    const ticketCode = await this.generateTicketCode(
+      this.db,
+      stage.id,
+      journey.businessDate,
+      ticketRoomCode,
+      stage.code,
+    );
     return this.viewTicket(
       await this.db.stageTicket.create({
         data: {
@@ -141,10 +219,7 @@ export class QueueDomainService {
           sourceOrderId: input.sourceOrderId || null,
           businessDate: journey.businessDate,
           ordinal: (max._max.ordinal ?? 0) + 1,
-          ticketCode:
-            stage.code +
-            '-' +
-            String((max._max.ordinal ?? 0) + 1).padStart(3, '0'),
+          ticketCode,
           basePriority: String(input.priority).includes('URGENT')
             ? BasePriority.URGENT
             : BasePriority.ROUTINE,
@@ -601,6 +676,13 @@ export class QueueDomainService {
     const ord = (max._max.ordinal ?? 0) + 1;
     const seq = (max._max.enqueueSequence ?? 0n) + 1n;
     const ticketRoomCode = b?.roomCode || stage.roomCode || 'P.101';
+    const ticketCode = await this.generateTicketCode(
+      this.db,
+      stage.id,
+      day,
+      ticketRoomCode,
+      stage.code,
+    );
     const j = await this.db.queueJourney.create({
       data: {
         appointmentId,
@@ -615,7 +697,7 @@ export class QueueDomainService {
             roomCode: ticketRoomCode,
             businessDate: day,
             ordinal: ord,
-            ticketCode: stage.code + '-' + String(ord).padStart(3, '0'),
+            ticketCode,
             lateDemotion: false,
             enqueueSequence: seq,
           },

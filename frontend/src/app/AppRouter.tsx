@@ -87,6 +87,32 @@ function Routes() {
   }, []);
 
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
+  // 1. Phân quyền và cách ly Workspace độc lập cho Nhân viên y tế & Lễ tân:
+  // Khi đã đăng nhập với vai trò không phải PATIENT (RECEPTIONIST, DOCTOR, NURSE, CLINIC_MANAGER, ADMIN),
+  // toàn bộ phiên làm việc là độc lập, không cho phép truy cập hoặc quay lại Cổng Bệnh nhân (Portal).
+  // Mọi điều hướng/back về trang bệnh nhân sẽ được chuyển ngay về Workspace tương ứng.
+  if (auth.status === 'authenticated' && auth.user?.role && auth.user.role !== 'PATIENT') {
+    const staffRole = auth.user.role as Role;
+    const staffBase = staffRole === 'ADMIN' ? '/workspace/admin' : `/workspace/${staffRole.toLowerCase()}`;
+    const isStaffRoute = path.startsWith(staffBase);
+    const isAdminSpecial = staffRole === 'ADMIN' && (path.startsWith('/admin') || isAdminPort);
+    const isReceptionistAlias = staffRole === 'RECEPTIONIST' && (path === '/receptionist' || path === '/tiep-don' || path === '/ban-tiep-don');
+
+    if (!isStaffRoute && !isAdminSpecial && !isReceptionistAlias) {
+      return <Redirect to={homeForRole(staffRole)} />;
+    }
+  }
+
+  // Tiện ích alias đường dẫn nhanh cho Bàn tiếp đón Lễ tân
+  if (path === '/receptionist' || path === '/tiep-don' || path === '/ban-tiep-don') {
+    if (auth.status === 'authenticated' && auth.user?.role === 'RECEPTIONIST') {
+      return <Redirect to="/workspace/receptionist/overview" />;
+    }
+    if (auth.status === 'anonymous') {
+      return <Redirect to="/dang-nhap?redirect=/workspace/receptionist/overview" />;
+    }
+  }
+
   if (isAdminPort && path === '/') {
     if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN') return <Redirect to="/workspace/admin/overview" />;
     return <AdminLoginPage />;
