@@ -75,6 +75,7 @@ export function PublicPortalHeader() {
   const isDoctorsPage = currentPath.startsWith('/bac-si');
   const isSpecialtyPage = currentPath.startsWith('/chuyen-khoa');
   const isPregnancyGuidePage = currentPath.startsWith('/cam-nang-thai-ky');
+  const isAppointmentsPage = currentPath.startsWith('/lich-hen');
 
   // Fetch specialties on mount to ensure immediate responsiveness
   useEffect(() => {
@@ -334,6 +335,15 @@ export function PublicPortalHeader() {
             >
               Bảng giá dịch vụ
             </AppLink>
+            {isAuthenticated && auth.user?.role === 'PATIENT' && (
+              <AppLink
+                href="/lich-hen"
+                className={`portal-nav-item ${isAppointmentsPage ? 'active' : ''}`}
+                onClick={handleCloseDropdown}
+              >
+                Lịch hẹn của tôi
+              </AppLink>
+            )}
           </nav>
         </div>
       </div>

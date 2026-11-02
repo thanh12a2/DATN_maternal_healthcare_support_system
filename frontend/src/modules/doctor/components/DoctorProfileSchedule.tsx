@@ -90,7 +90,7 @@ export function DoctorProfileSchedule({ section, request }: { section: string; r
       </div>
       <div className="doctor-account-identity">
         <span className="doctor-account-overline">HỒ SƠ BÁC SĨ</span><h2>{name}</h2>
-        <p>{doctor.profile?.professionalTitle || 'Chưa cập nhật chức danh'} <span aria-hidden="true">·</span> {specialtyNames.join(', ') || 'Chưa cập nhật chuyên khoa'}</p>
+        <p>{(doctor.consultationRank && ranks[doctor.consultationRank]) || (doctor as any).consultationRankInfo?.name || 'Bác sĩ chuyên khoa'} <span aria-hidden="true">·</span> {specialtyNames.join(', ') || 'Chưa cập nhật chuyên khoa'}</p>
         <div className="doctor-account-badges"><span className={'doctor-account-status status-' + doctor.status.toLowerCase()}><i />{statuses[doctor.status] || doctor.status || 'Chưa cập nhật'}</span>{doctor.consultationRank && <span className="doctor-account-rank">Hạng tư vấn: {ranks[doctor.consultationRank] || doctor.consultationRank}</span>}</div>
       </div>
       <button type="button" className="doctor-account-photo-button" onClick={() => setEditingPhoto(true)}><CameraOutlined /> Đổi ảnh đại diện</button>
@@ -101,7 +101,7 @@ export function DoctorProfileSchedule({ section, request }: { section: string; r
           <div className="doctor-account-card-heading"><div><span className="doctor-account-overline">HỒ SƠ CHUYÊN MÔN</span><h3>Thông tin bác sĩ</h3></div><SafetyCertificateOutlined /></div>
           <dl className="doctor-account-facts">
             <div><dt>Số chứng chỉ hành nghề</dt><dd>{doctor.licenseNumber || 'Chưa cập nhật'}</dd></div>
-            <div><dt>Chức danh</dt><dd>{doctor.profile?.professionalTitle || 'Chưa cập nhật'}</dd></div>
+            <div><dt>Hạng tư vấn</dt><dd>{(doctor.consultationRank && ranks[doctor.consultationRank]) || (doctor as any).consultationRankInfo?.name || 'Chưa cập nhật'}</dd></div>
             <div><dt>Bắt đầu hành nghề</dt><dd>{doctor.profile?.practiceStartYear || 'Chưa cập nhật'}</dd></div>
             <div><dt>Phòng khám</dt><dd>{doctor.roomName ? doctor.roomName + (doctor.roomCode ? ' · ' + doctor.roomCode : '') : doctor.roomCode || 'Chưa cập nhật'}</dd></div>
             <div><dt>Ngày tạo hồ sơ</dt><dd>{dateText(doctor.createdAt)}</dd></div>

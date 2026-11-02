@@ -18,6 +18,23 @@ interface DoctorProfileData {
   photoUrl?: string;
 }
 
+const RANK_DISPLAY_MAP: Record<string, string> = {
+  BASIC: 'Bác sĩ Sản Phụ khoa',
+  SPECIALIST_I: 'Bác sĩ Chuyên khoa I (CKI)',
+  SPECIALIST_II: 'Bác sĩ Chuyên khoa II (CKII)',
+  MASTER: 'Thạc sĩ Bác sĩ',
+  ASSOC_PROFESSOR: 'Phó Giáo sư, Tiến sĩ Bác sĩ',
+  PROFESSOR: 'Giáo sư, Tiến sĩ Bác sĩ',
+  EXPERT: 'Bác sĩ Chuyên gia cao cấp',
+  HEAD_DOCTOR: 'Bác sĩ Trưởng khoa',
+};
+
+function getDoctorRankTitle(doc: any): string {
+  if (doc?.consultationRankInfo?.name) return doc.consultationRankInfo.name;
+  if (doc?.consultationRank && RANK_DISPLAY_MAP[doc.consultationRank]) return RANK_DISPLAY_MAP[doc.consultationRank];
+  return 'Bác sĩ Sản Phụ khoa';
+}
+
 interface DoctorSpecialtyData {
   id: string;
   code: string;
@@ -786,7 +803,7 @@ export function PatientDoctorCatalogPage() {
                   {currentDoctors.map((doc) => {
                     const profile = doc.profile;
                     const docName = profile?.fullName || 'Bác sĩ chuyên khoa';
-                    const docTitle = profile?.professionalTitle || 'Bác sĩ Sản Phụ khoa';
+                    const docTitle = getDoctorRankTitle(doc);
                     const docPhoto = profile?.photoUrl;
                     const docExp = getDoctorExperienceText(profile?.practiceStartYear);
 
@@ -1007,7 +1024,7 @@ export function PatientDoctorCatalogPage() {
 
                   <div className="portal-doc-modal-title">
                     <GraduationCapIcon />
-                    <span>{selectedDoctor.profile?.professionalTitle || 'Bác sĩ Sản Phụ khoa'}</span>
+                    <span>{getDoctorRankTitle(selectedDoctor)}</span>
                   </div>
                   <div className="portal-doc-modal-badges">
                     <span className="portal-hospital-tag">

@@ -587,7 +587,7 @@ export function PatientSpecialtyDetailPage({ slug }: PatientSpecialtyDetailPageP
                   {doctors.map((doc) => {
                     const profile = doc.profile;
                     const docName = profile?.fullName || 'Bác sĩ chuyên khoa';
-                    const docTitle = profile?.professionalTitle || 'Bác sĩ Sản Phụ khoa';
+                    const docTitle = (doc as any).consultationRankInfo?.name || getDoctorRankLabel(doc.consultationRank);
                     const docPhoto = profile?.photoUrl;
                     const docExp = getDoctorExperienceText(profile?.practiceStartYear);
                     const rankLabel = getDoctorRankLabel(doc.consultationRank);
@@ -773,7 +773,7 @@ export function PatientSpecialtyDetailPage({ slug }: PatientSpecialtyDetailPageP
 
                   <div className="portal-doc-modal-title">
                     <GraduationCapIcon />
-                    <span>{selectedDoctor.profile?.professionalTitle || 'Bác sĩ Sản Phụ khoa'}</span>
+                    <span>{(selectedDoctor as any).consultationRankInfo?.name || getDoctorRankLabel(selectedDoctor.consultationRank)}</span>
                   </div>
                   <div className="portal-doc-modal-badges">
                     <span className="portal-hospital-tag">

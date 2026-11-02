@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw, Check, Move } from 'lucide-react';
 
 interface AvatarCropModalProps {
@@ -7,6 +7,8 @@ interface AvatarCropModalProps {
   onClose: () => void;
   onSave: (croppedDataUrl: string) => void;
 }
+
+const CROP_SIZE = 220; // Đường kính khung tròn hiển thị trên UI
 
 export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   isOpen,
@@ -18,11 +20,26 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+
   const dragStartRef = useRef({ x: 0, y: 0 });
   const positionStartRef = useRef({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  // Reset khi mở ảnh mới
+  // Lấy kích thước thật của ảnh khi mở modal
+  useEffect(() => {
+    if (!imageSrc || !isOpen) {
+      setNaturalSize(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.src = imageSrc;
+  }, [imageSrc, isOpen]);
+
+  // Reset các thông số về mặc định khi mở modal mới
   useEffect(() => {
     if (isOpen) {
       setScale(1);
@@ -30,6 +47,17 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
       setPosition({ x: 0, y: 0 });
     }
   }, [isOpen, imageSrc]);
+
+  // Tính toán kích thước hiển thị cơ sở để ảnh vừa vặn đẹp mắt với khung tròn (không bị zoom quá to)
+  const { displayBaseWidth, displayBaseHeight } = useMemo(() => {
+    if (!naturalSize) return { displayBaseWidth: CROP_SIZE, displayBaseHeight: CROP_SIZE };
+    // Tỷ lệ bao phủ toàn bộ khung tròn 220px
+    const fitScale = Math.max(CROP_SIZE / naturalSize.width, CROP_SIZE / naturalSize.height);
+    return {
+      displayBaseWidth: Math.round(naturalSize.width * fitScale),
+      displayBaseHeight: Math.round(naturalSize.height * fitScale),
+    };
+  }, [naturalSize]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
@@ -62,47 +90,41 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   };
 
   const handleCrop = useCallback(() => {
-    if (!imageRef.current) return;
+    if (!imageRef.current || !naturalSize) return;
     const img = imageRef.current;
 
-    const outputSize = 256;
+    const outputSize = 320;
     const canvas = document.createElement('canvas');
     canvas.width = outputSize;
     canvas.height = outputSize;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Viewport kích thước 220px khung tròn
-    const viewportDiameter = 220;
-    const scaleFactor = outputSize / viewportDiameter;
+    // Tỷ lệ giữa canvas đầu ra (320px) và khung tròn trên UI (220px)
+    const ratio = outputSize / CROP_SIZE;
 
     ctx.save();
-    // Di chuyển tâm canvas
+    // Tô nền trắng để tránh viền trong suốt nếu người dùng thu nhỏ ảnh
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, outputSize, outputSize);
+    // 1. Di chuyển tâm canvas
     ctx.translate(outputSize / 2, outputSize / 2);
+    // 2. Di chuyển theo tọa độ kéo thả thực tế của người dùng
+    ctx.translate(position.x * ratio, position.y * ratio);
+    // 3. Xoay góc
     ctx.rotate((rotation * Math.PI) / 180);
 
-    // Tính toán tỷ lệ vẽ hình
-    const naturalWidth = img.naturalWidth || img.width;
-    const naturalHeight = img.naturalHeight || img.height;
+    // 4. Kích thước vẽ tương ứng 100% kích thước người dùng nhìn thấy trên màn hình
+    const drawW = displayBaseWidth * scale * ratio;
+    const drawH = displayBaseHeight * scale * ratio;
 
-    // Kích thước hiển thị ban đầu trong 260px container
-    const baseFitScale = Math.min(260 / naturalWidth, 260 / naturalHeight);
-    const drawWidth = naturalWidth * baseFitScale * scale * scaleFactor;
-    const drawHeight = naturalHeight * baseFitScale * scale * scaleFactor;
-
-    ctx.drawImage(
-      img,
-      -drawWidth / 2 + position.x * scaleFactor,
-      -drawHeight / 2 + position.y * scaleFactor,
-      drawWidth,
-      drawHeight
-    );
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
 
-    const croppedDataUrl = canvas.toDataURL('image/png', 0.95);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
     onSave(croppedDataUrl);
     onClose();
-  }, [rotation, scale, position, onSave, onClose]);
+  }, [naturalSize, displayBaseWidth, displayBaseHeight, scale, position, rotation, onSave, onClose]);
 
   if (!isOpen || !imageSrc) return null;
 
@@ -144,6 +166,12 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               alt="Căn chỉnh ảnh"
               draggable={false}
               className="avatar-crop-source-img"
+              style={{
+                width: `${displayBaseWidth}px`,
+                height: `${displayBaseHeight}px`,
+                minWidth: `${displayBaseWidth}px`,
+                minHeight: `${displayBaseHeight}px`,
+              }}
             />
           </div>
 
@@ -164,14 +192,14 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               className="avatar-control-btn"
-              onClick={() => setScale((s) => Math.max(1, +(s - 0.1).toFixed(2)))}
+              onClick={() => setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))}
               title="Thu nhỏ"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <input
               type="range"
-              min={1}
+              min={0.6}
               max={3}
               step={0.05}
               value={scale}
@@ -214,4 +242,3 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     </div>
   );
 };
-

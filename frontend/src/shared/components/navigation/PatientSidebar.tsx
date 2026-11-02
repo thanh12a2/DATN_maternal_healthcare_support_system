@@ -33,7 +33,7 @@ const patientNavItems: NavItem[] = [
   { href: '/ho-so/hoan-thien', label: 'Hồ sơ', icon: 'profile' },
   { href: '/dich-vu', label: 'Dịch vụ khám', icon: 'calendar-plus' },
   { href: '/lich-hen', label: 'Lịch hẹn', icon: 'calendar' },
-  { href: '/hang-doi', label: 'Hàng đợi khám', icon: 'queue' },
+
   { href: '/thong-bao-hoa-don', label: 'Thông báo & hóa đơn', icon: 'bell' },
 ];
 const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
@@ -75,7 +75,7 @@ export function PatientSidebar({ onLogout, profileComplete: profileCompleteProp 
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileComplete, setProfileComplete] = useState<boolean | null>(profileCompleteProp ?? (role !== 'PATIENT' ? true : null));
-  const profileRequiredPaths = new Set(['/dat-lich', '/lich-hen', '/hang-doi']);
+  const profileRequiredPaths = new Set(['/dat-lich', '/lich-hen']);
 
   useEffect(() => {
     if (profileCompleteProp !== undefined) {

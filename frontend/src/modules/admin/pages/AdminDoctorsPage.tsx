@@ -376,7 +376,7 @@ export function AdminDoctorsPage() {
       specialtyId: primarySpecialtyId,
       profile: {
         fullName: currentDoctor.profile?.fullName,
-        professionalTitle: currentDoctor.profile?.professionalTitle ?? '',
+
         biography: currentDoctor.profile?.biography ?? '',
         practiceStartYear: currentDoctor.profile?.practiceStartYear ?? undefined,
         photoUrl: currentDoctor.profile?.photoUrl ?? '',
@@ -455,7 +455,7 @@ export function AdminDoctorsPage() {
         consultationRank: values.consultationRank,
         profile: {
           fullName: values.profile.fullName,
-          professionalTitle: values.profile.professionalTitle || undefined,
+
           biography: values.profile.biography || undefined,
           practiceStartYear: values.profile.practiceStartYear || undefined,
         },
@@ -561,7 +561,7 @@ export function AdminDoctorsPage() {
         licenseNumber: values.licenseNumber,
         profile: {
           fullName: values.profile?.fullName,
-          professionalTitle: values.profile?.professionalTitle || undefined,
+
           biography: values.profile?.biography || undefined,
           practiceStartYear: values.profile?.practiceStartYear || undefined,
           photoUrl: finalPhotoUrl || undefined,
@@ -800,9 +800,11 @@ export function AdminDoctorsPage() {
               >
                 {record.profile?.fullName}
               </span>
-              {record.profile?.professionalTitle && (
+              {record.consultationRank && (
                 <Tag color="blue" variant="filled" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
-                  {record.profile.professionalTitle}
+                  {consultationRanks.find((r) => r.code === record.consultationRank)?.name ||
+                    RANK_LABELS[record.consultationRank] ||
+                    record.consultationRank}
                 </Tag>
               )}
             </div>
@@ -1060,9 +1062,11 @@ export function AdminDoctorsPage() {
                   <Typography.Title level={5} style={{ margin: 0, color: 'var(--fg)', fontSize: 17 }}>
                     {selectedDoctor.profile?.fullName}
                   </Typography.Title>
-                  {selectedDoctor.profile?.professionalTitle && (
+                  {selectedDoctor.consultationRank && (
                     <Tag color="blue" variant="filled" style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>
-                      {selectedDoctor.profile.professionalTitle}
+                      {consultationRanks.find((r) => r.code === selectedDoctor.consultationRank)?.name ||
+                        RANK_LABELS[selectedDoctor.consultationRank] ||
+                        selectedDoctor.consultationRank}
                     </Tag>
                   )}
                 </div>
@@ -1229,7 +1233,7 @@ export function AdminDoctorsPage() {
             </Form.Item>
 
             <Form.Item
-              name={['profile', 'professionalTitle']}
+              hidden name={['profile', 'professionalTitle']}
               label="Học hàm / Học vị"
             >
               <Input placeholder="ví dụ: ThS. BS, PGS. TS" />
@@ -1352,7 +1356,7 @@ export function AdminDoctorsPage() {
               <Input />
             </Form.Item>
 
-            <Form.Item name={['profile', 'professionalTitle']} label="Học hàm / Học vị">
+            <Form.Item hidden name={['profile', 'professionalTitle']} label="Học hàm / Học vị">
               <Input placeholder="ví dụ: BSCKI, ThS.BS..." />
             </Form.Item>
           </div>

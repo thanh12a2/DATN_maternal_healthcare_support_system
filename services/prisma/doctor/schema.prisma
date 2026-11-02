@@ -52,6 +52,20 @@ enum RoomStatus {
   INACTIVE
 }
 
+model ConsultationRank {
+  code               DoctorConsultationRank @id
+  name               String                 @db.VarChar(120)
+  shortName          String                 @map("short_name") @db.VarChar(50)
+  experienceYearsMin Int                    @default(0) @map("experience_years_min")
+  sortOrder          Int                    @default(0) @map("sort_order")
+  status             String                 @default("ACTIVE") @db.VarChar(20)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctors            Doctor[]
+
+  @@map("consultation_ranks")
+}
+
 model ClinicRoom {
   id String @id @default(uuid()) @db.Uuid
   code String @unique @db.VarChar(30)
@@ -75,6 +89,7 @@ model Doctor {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   profile DoctorProfile?
+  rank ConsultationRank? @relation(fields: [consultationRank], references: [code])
   specialties DoctorSpecialty[]
   schedules DoctorSchedule[]
   availabilities DoctorAvailability[]
@@ -87,7 +102,7 @@ model Doctor {
 model DoctorProfile {
   doctorId String @id @map("doctor_id") @db.Uuid
   fullName String @map("full_name") @db.VarChar(150)
-  professionalTitle String? @map("professional_title") @db.VarChar(100)
+
   biography String? @db.VarChar(2000)
   practiceStartYear Int? @map("practice_start_year")
   languages String[] @default([])

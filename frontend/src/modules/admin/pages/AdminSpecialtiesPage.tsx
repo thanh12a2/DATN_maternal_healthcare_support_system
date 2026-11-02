@@ -767,7 +767,7 @@ export function AdminSpecialtiesPage() {
                         </Avatar>
                         <div>
                           <div style={{ fontWeight: 600 }}>{d.profile?.fullName}</div>
-                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{d.profile?.professionalTitle || 'Bác sĩ'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{d.consultationRank || 'Bác sĩ'}</div>
                         </div>
                       </Space>
                     ),

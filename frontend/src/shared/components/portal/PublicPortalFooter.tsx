@@ -57,7 +57,7 @@ export function PublicPortalFooter() {
             <h4 className="portal-footer-heading">Tiện ích Bệnh nhân</h4>
             <ul className="portal-footer-list">
               <li><AppLink href="/dang-nhap?returnUrl=/dat-lich">Đặt lịch khám trực tuyến</AppLink></li>
-              <li><AppLink href="/hang-doi">Theo dõi số thứ tự phòng khám (Live)</AppLink></li>
+              <li><AppLink href="/lich-hen">Tra cứu lịch hẹn khám bệnh</AppLink></li>
               <li><AppLink href="/ho-so/hoan-thien">Cổng hồ sơ sức khỏe thai kỳ</AppLink></li>
               <li><AppLink href="/dich-vu">Bảng giá dịch vụ niêm yết</AppLink></li>
               <li><AppLink href="/bac-si">Danh bạ Chuyên gia &amp; Bác sĩ</AppLink></li>

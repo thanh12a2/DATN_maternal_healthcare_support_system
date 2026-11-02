@@ -4084,7 +4084,7 @@ export function AdminServicesPage() {
                               <Avatar size="small" style={{ backgroundColor: '#0284c7' }}>
                                 {(d.profile?.fullName || 'B')[0].toUpperCase()}
                               </Avatar>
-                              <strong>{d.profile?.professionalTitle ? `${d.profile.professionalTitle} ` : ''}{d.profile?.fullName}</strong>
+                              <strong>{d.profile?.fullName}</strong>
                             </Space>
                           ),
                         },

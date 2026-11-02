@@ -67,6 +67,21 @@
   color: #ffffff;
   letter-spacing: 0.02em;
   box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.user-chip-avatar.has-image,
+.user-chip-dropdown-avatar.has-image {
+  background: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.user-chip-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
 /* Gradient avatar theo Role */
@@ -222,6 +237,7 @@
   font-weight: 800;
   color: #ffffff;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .user-chip-dropdown-user {
