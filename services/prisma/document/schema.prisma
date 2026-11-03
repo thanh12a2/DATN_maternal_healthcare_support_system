@@ -60,6 +60,7 @@ model DocumentVersion {
   mediaType  String     @map("media_type") @db.VarChar(100)
   sizeBytes  BigInt     @map("size_bytes")
   sha256     String     @db.Char(64)
+  content    Bytes?     @db.ByteA
   scanStatus ScanStatus @default(PENDING) @map("scan_status")
   uploadedAt DateTime?  @map("uploaded_at") @db.Timestamptz(6)
   scannedAt  DateTime?  @map("scanned_at") @db.Timestamptz(6)

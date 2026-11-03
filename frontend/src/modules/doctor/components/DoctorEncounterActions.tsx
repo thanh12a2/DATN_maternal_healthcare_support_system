@@ -22,8 +22,7 @@ export function DoctorEncounterActions({ encounter, appointment, request, onSave
   const synced = encounter.appointmentSyncPending === false;
   const appointmentMatches = Boolean(encounter.id && appointment?.encounterId === encounter.id);
   const canStart = versionValid && synced && state === 'DRAFT' && checkedIn && appointmentMatches;
-  const canReview = versionValid && synced && state === 'IN_PROGRESS' && appointment?.status === 'IN_CLINICAL_CARE' && appointmentMatches;
-  const canFinalize = versionValid && synced && state === 'READY_FOR_REVIEW' && appointment?.status === 'IN_CLINICAL_CARE' && appointmentMatches;
+  const canFinalize = versionValid && synced && ['IN_PROGRESS', 'READY_FOR_REVIEW'].includes(state) && appointment?.status === 'IN_CLINICAL_CARE' && appointmentMatches;
   const send = async (path: string, body: Record<string, unknown> = {}) => {
     if (!encounter.id || busy || !versionValid) return;
     setBusy(true); setError('');
@@ -33,6 +32,27 @@ export function DoctorEncounterActions({ encounter, appointment, request, onSave
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể lưu dữ liệu.'); }
     finally { setBusy(false); }
   };
+  const finalize = async () => {
+    if (!encounter.id || busy || !canFinalize) return;
+    setBusy(true); setError('');
+    const base = `/api/medical-records/encounters/${encodeURIComponent(encounter.id)}`;
+    let nextVersion = version;
+    let readyCompleted = false;
+    try {
+      if (state === 'IN_PROGRESS') {
+        const response = await request<{ data?: { state?: string; version?: number | string } }>(`${base}/ready-for-review`, { method: 'POST', body: JSON.stringify({ expectedVersion: version }) });
+        readyCompleted = true;
+        nextVersion = Number(response.data?.version);
+        if (response.data?.state !== 'READY_FOR_REVIEW' || !Number.isInteger(nextVersion) || nextVersion <= version) throw new Error('Không xác định được trạng thái hồ sơ sau khi kiểm tra.');
+      }
+      await request(`${base}/finalize`, { method: 'POST', body: JSON.stringify({ expectedVersion: nextVersion }) });
+      onSaved();
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'Không thể hoàn tất hồ sơ.';
+      setError(message.includes('REQUIRED_RESULTS_PENDING') ? 'Còn kết quả bắt buộc chưa được xác minh.' : readyCompleted ? `Hồ sơ đã sẵn sàng nhưng chưa xác nhận hoàn tất: ${message}` : message);
+      onSaved();
+    } finally { setBusy(false); }
+  };
   const submit = (action: () => void) => (event: FormEvent) => { event.preventDefault(); action(); };
   return <div className="doctor-clinical-actions">
     {error && <p role="alert">{error} Hãy tải lại hồ sơ trước khi thử lại nếu dữ liệu đã thay đổi.</p>}
@@ -41,8 +61,7 @@ export function DoctorEncounterActions({ encounter, appointment, request, onSave
     {!synced && <button className="doctor-secondary-button" type="button" disabled={busy} onClick={onSaved}>Tải lại trạng thái</button>}
     <div className="doctor-shortcuts">
       <button className="doctor-secondary-button" disabled={busy || !canStart} onClick={() => void send('start')}>Bắt đầu khám</button>
-      <button className="doctor-secondary-button" disabled={busy || !canReview} onClick={() => void send('ready-for-review')}>Chuyển duyệt</button>
-      <button className="doctor-primary-button" disabled={busy || !canFinalize} onClick={() => void send('finalize')}>Hoàn tất</button>
+      <button className="doctor-primary-button" disabled={busy || !canFinalize} onClick={() => void finalize()}>Hoàn tất</button>
     </div>
     <p>{!versionValid ? 'Chưa có phiên bản hồ sơ hợp lệ.' : state === 'DRAFT' && !checkedIn ? 'Lịch chưa check-in hoặc chưa có lịch tương ứng.' : state === 'DRAFT' ? 'Bắt đầu khám trước khi ghi thông tin.' : state === 'IN_PROGRESS' ? 'Có thể ghi thông tin khi hồ sơ đang khám.' : state === 'READY_FOR_REVIEW' ? 'Hồ sơ đang chờ xác nhận hoàn tất.' : 'Trạng thái hiện tại không cho phép ghi khám.'}</p>
     {!synced ? <p>{encounter.appointmentSyncPending === true ? 'Cần đợi đồng bộ lịch hẹn trước khi chuyển trạng thái.' : 'Chưa xác định được trạng thái đồng bộ; hãy tải lại hồ sơ.'}</p> : !appointmentMatches ? <p>Lịch hẹn chưa gắn với hồ sơ khám này.</p> : state !== 'DRAFT' && appointment?.status !== 'IN_CLINICAL_CARE' ? <p>Trạng thái lịch hẹn chưa cho phép chuyển bước khám.</p> : null}

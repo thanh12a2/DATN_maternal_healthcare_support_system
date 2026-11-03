@@ -5,12 +5,13 @@ import type { Appointment } from '../../../services/appointment';
 import type { Encounter } from '../../../services/clinical';
 import { DoctorEncounterActions } from './DoctorEncounterActions';
 import { DoctorClinicalResources } from './DoctorClinicalResources';
+import { DoctorClinicalFiles } from './DoctorClinicalFiles';
 import '../../../styles/doctor-encounters.css';
 
 const stateLabels: Record<string, string> = { BOOKED: 'Đã đặt', CHECKED_IN: 'Đã check-in', IN_CLINICAL_CARE: 'Đang khám', COMPLETED: 'Hoàn tất', CANCELLED: 'Đã hủy', NO_SHOW: 'Vắng mặt', REASSIGNMENT_REQUIRED: 'Cần phân công lại', DRAFT: 'Chờ bắt đầu', IN_PROGRESS: 'Đang khám', AWAITING_RESULTS: 'Chờ kết quả', READY_FOR_REVIEW: 'Chờ duyệt', FINALIZED: 'Đã hoàn tất' };
 const stateLabel = (value: unknown) => stateLabels[String(value ?? '')] ?? String(value || 'Chưa cập nhật');
 const dateTime = (value?: string) => value && !Number.isNaN(Date.parse(value)) ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value)) : 'Chưa có thời gian';
-const tabs = [ ['visit', 'Tổng quan'], ['vitalSigns', 'Dấu hiệu sinh tồn'], ['diagnoses', 'Chẩn đoán'], ['notes', 'Ghi chú'], ['prescriptions', 'Đơn thuốc'], ['plans', 'Điều trị'] ] as const;
+const tabs = [ ['visit', 'Tổng quan'], ['vitalSigns', 'Dấu hiệu sinh tồn'], ['diagnoses', 'Chẩn đoán'], ['notes', 'Ghi chú'], ['results', 'File xét nghiệm'], ['prescriptions', 'Đơn thuốc'], ['plans', 'Điều trị'] ] as const;
 type Tab = typeof tabs[number][0];
 type ClinicalRecord = Record<string, unknown>;
 const entries = (value: unknown): ClinicalRecord[] => Array.isArray(value) ? value as ClinicalRecord[] : [];
@@ -51,6 +52,7 @@ export function DoctorEncounterWorkspace({ appointments, encounters, selected, o
         <div className="encounter-content">{tab !== 'prescriptions' && tab !== 'plans' && <div className="encounter-content-heading"><div><span className="encounter-overline">CHI TIẾT LƯỢT KHÁM</span><h3>{title}</h3></div><span className="encounter-content-caption">{appointment?.appointmentCode || 'Hồ sơ được phân công'}</span></div>}
           {tab === 'visit' && <div className="encounter-overview"><section className="encounter-card encounter-complaint"><span>Lý do khám</span><strong>{valueText(chosen.chiefComplaint) === '—' ? 'Chưa có thông tin lý do khám' : valueText(chosen.chiefComplaint)}</strong>{Boolean(chosen.clinicalSummary) && <p>{String(chosen.clinicalSummary)}</p>}</section><div className="encounter-overview-grid"><OverviewCard label="Dấu hiệu sinh tồn" count={vitals.length} onClick={() => setTab('vitalSigns')} /><OverviewCard label="Chẩn đoán" count={diagnoses.length} onClick={() => setTab('diagnoses')} /><OverviewCard label="Ghi chú" count={notes.length} onClick={() => setTab('notes')} /></div><p className="encounter-overview-hint">Chọn từng mục để xem chi tiết hoặc cập nhật trong quá trình khám.</p></div>}
           {(tab === 'vitalSigns' || tab === 'diagnoses' || tab === 'notes') && <><ClinicalEntries kind={tab} value={chosen[tab]} /><div className="encounter-entry-form"><DoctorEncounterActions key={`${chosen.id}-${tab}`} scope={tab} encounter={chosen} appointment={appointment} request={request} onSaved={onReload} />{chosen.state !== 'IN_PROGRESS' && <p className="encounter-form-hint">{chosen.state === 'DRAFT' ? 'Bắt đầu khám để cập nhật nội dung này.' : 'Trạng thái hồ sơ hiện tại không cho phép cập nhật nội dung này.'}</p>}</div></>}
+          {tab === 'results' && chosen.id && <DoctorClinicalFiles key={chosen.id} encounterId={chosen.id} encounterState={String(chosen.state ?? '')} request={request} />}
           {(tab === 'prescriptions' || tab === 'plans') && chosen.id && <DoctorClinicalResources request={request} encounterId={chosen.id} patientId={String(chosen.patientId ?? '')} encounterState={String(chosen.state ?? '')} kind={tab} />}
         </div>
       </>}</main>
