@@ -1,25 +1,42 @@
 /**
  * seed_system_data.js
  *
- * Toàn diện kịch bản Seed Data cho Hệ thống Hỗ trợ Y tế Thai sản & Sản Phụ khoa An Tâm (AnTam Maternal Care)
- * Khớp 100% với toàn bộ Prisma Schemas & Database Tables của tất cả các microservices:
- * 1. Auth Service (accounts, credentials, roles, account_roles)
- * 2. Doctor Service (specialties, consultation_ranks, doctors, doctor_profiles, doctor_specialties, doctor_schedules)
- * 3. Receptionist Service (receptionists, receptionist_profiles)
- * 4. Catalog Service (service_categories, catalog_tags, doctor_rank_surcharges, medical_services, base_prices, links)
- * 5. Patient Service (patients, emergency_contacts với mã hóa AES-256-GCM + HMAC-SHA256 lookup hash)
- * 6. Appointment Service (appointments, slot_holds, appointment_assignment_history)
- * 7. Billing Service (invoices, invoice_lines, payments)
- * 8. Queue Service (queue_stages, queue_journeys, stage_tickets)
- * 9. Medical Record Service (pregnancy_episodes, clinical_encounters, vital_signs, clinical_notes, diagnoses, clinical_service_orders)
- * 10. Prescription Service (medication_catalog, prescriptions, prescription_items)
- * 11. Treatment Plan Service (treatment_plans, treatment_plan_items)
- * 12. Consultation Service (consultation_threads, consultation_messages)
- * 13. Notification Service (notifications)
- * 14. Audit Log Service (audit_entries)
+ * Kịch bản Seed Dữ liệu Nền tảng (Foundational / Master Data) cho Hệ thống Hỗ trợ Y tế Thai sản An Tâm
+ * Chỉ lưu trữ danh mục gốc, cấu hình và dữ liệu nền cần thiết để hệ thống vận hành.
+ * BỎ HOÀN TOÀN: Dữ liệu vận hành/giao dịch (lịch hẹn, hóa đơn, bệnh án, toa thuốc phát sinh,
+ * phác đồ, tư vấn, thông báo, nhật ký kiểm toán, lượt khám, vé hàng đợi, tiếp đón, outbox/idempotency/audit)
+ * và các tài khoản kiểm thử trạng thái đặc biệt.
+ *
+ * DỮ LIỆU NỀN TẢNG ĐƯỢC GIỮ LẠI:
+ * 1. Auth Service: roles, accounts, credentials, account_roles (Admin, Bác sĩ, Lễ tân, Thai phụ thật)
+ * 2. Doctor Service: specialties, consultation_ranks, clinic_rooms, doctors, doctor_profiles, doctor_specialties, doctor_schedules
+ * 3. Receptionist Service: receptionists, receptionist_profiles
+ * 4. Catalog Service: catalog_tags, doctor_rank_surcharges, medical_services (kèm content chuẩn), base_prices, links
+ * 5. Patient Service: patients, emergency_contacts (với mã hóa AES-256-GCM + HMAC-SHA256 lookup hash)
+ * 6. Queue Service: queue_stages (8 chặng điều phối chuẩn)
+ * 7. Prescription Service: medication_catalog (13 thuốc chuẩn thai kỳ FDA)
  */
 
 process.env.TZ = 'Asia/Ho_Chi_Minh';
+const fs = require('fs');
+const path = require('path');
+
+// Tự động nạp .env từ thư mục gốc nếu biến môi trường chưa được set
+const rootEnvPath = path.resolve(__dirname, '..', '.env');
+if (fs.existsSync(rootEnvPath)) {
+  const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+  for (const line of envContent.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const [key, ...rest] = trimmed.split('=');
+      const val = rest.join('=').trim().replace(/^["'](.*)["']$/, '$1');
+      if (process.env[key.trim()] === undefined) {
+        process.env[key.trim()] = val;
+      }
+    }
+  }
+}
+
 const { Client } = require('pg');
 const argon2 = require('argon2');
 const crypto = require('crypto');
@@ -31,15 +48,8 @@ const DB_CONFIGS = {
   receptionist: process.env.RECEPTIONIST_DATABASE_URL || 'postgresql://receptionist:receptionistpass@localhost:5436/receptionist?sslmode=disable',
   catalog: process.env.CATALOG_DATABASE_URL || 'postgresql://catalog:catalogpass@localhost:5437/catalog?sslmode=disable',
   patient: process.env.PATIENT_DATABASE_URL || 'postgresql://patient:patientpass@localhost:5434/patient?sslmode=disable',
-  appointment: process.env.APPOINTMENT_DATABASE_URL || 'postgresql://appointment:appointmentpass@localhost:5438/appointment?sslmode=disable',
-  billing: process.env.BILLING_DATABASE_URL || 'postgresql://billing:billingpass@localhost:5439/billing?sslmode=disable',
   queue: process.env.QUEUE_DATABASE_URL || 'postgresql://queue:queuepass@localhost:5441/queue?sslmode=disable',
-  medicalRecord: process.env.MEDICAL_RECORD_DATABASE_URL || 'postgresql://medical_record:medical_recordpass@localhost:5440/medical_record?sslmode=disable',
   prescription: process.env.PRESCRIPTION_DATABASE_URL || 'postgresql://prescription:prescriptionpass@localhost:5443/prescription?sslmode=disable',
-  treatmentPlan: process.env.TREATMENT_PLAN_DATABASE_URL || 'postgresql://treatment_plan:treatment_planpass@localhost:5444/treatment_plan?sslmode=disable',
-  consultation: process.env.CONSULTATION_DATABASE_URL || 'postgresql://consultation:consultationpass@localhost:5448/consultation?sslmode=disable',
-  notification: process.env.NOTIFICATION_DATABASE_URL || 'postgresql://notification:notificationpass@localhost:5445/notification?sslmode=disable',
-  auditLog: process.env.AUDIT_LOG_DATABASE_URL || 'postgresql://audit_log:audit_logpass@localhost:5446/audit_log?sslmode=disable',
 };
 
 // Cấu hình Mã hóa Căn cước công dân (National ID)
@@ -96,45 +106,32 @@ async function main() {
   console.log('🚀 BẮT ĐẦU QUÁ TRÌNH SEED DỮ LIỆU TOÀN DIỆN CHO TOÀN BỘ HỆ THỐNG');
   console.log('================================================================\n');
 
+  async function createConnectedClient(url, dbName, maxRetries = 8, delayMs = 2000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const client = new Client({ connectionString: url });
+      try {
+        await client.connect();
+        return client;
+      } catch (err) {
+        client.end().catch(() => {});
+        if (attempt === maxRetries) throw err;
+        console.log(`⏳ Đang đợi DB ${dbName} sẵn sàng (lần thử ${attempt}/${maxRetries}): ${err.message}`);
+        await new Promise((res) => setTimeout(res, delayMs));
+      }
+    }
+  }
+
   const clients = {};
   for (const [key, url] of Object.entries(DB_CONFIGS)) {
-    clients[key] = new Client({ connectionString: url });
-    await clients[key].connect();
+    clients[key] = await createConnectedClient(url, key);
   }
-  console.log('✅ Đã kết nối thành công đến tất cả 14 Database Services.');
+  console.log('✅ Đã kết nối thành công đến 7 Database Services nền tảng.');
 
   // ============================================================================
-  // 0. DỌN SẠCH DỮ LIỆU CŨ TRONG TẤT CẢ CÁC DATABASE (IDEMPOTENT TRUNCATE)
+  // 0. DỌN SẠCH DỮ LIỆU CŨ CÁC DỊCH VỤ NỀN TẢNG (IDEMPOTENT TRUNCATE)
+  // Chỉ dọn các bảng nền được seed, KHÔNG xóa dữ liệu vận hành của các service khác
   // ============================================================================
-  console.log('\n--- BƯỚC 0: DỌN SẠCH DỮ LIỆU CŨ THEO THỨ TỰ RÀNG BUỘC KHÓA NGOẠI ---');
-
-  // Đảm bảo các kiểu ENUM và Bảng phát sinh mới luôn tồn tại kể cả khi Docker volume vừa được reset
-  await clients.consultation.query(`
-    DO $$ BEGIN
-      CREATE TYPE "EscalationStatus" AS ENUM ('OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'CANCELLED');
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END $$;
-    CREATE TABLE IF NOT EXISTS consultation_escalations (
-      id UUID NOT NULL PRIMARY KEY,
-      thread_id UUID NOT NULL REFERENCES consultation_threads(id) ON DELETE CASCADE ON UPDATE CASCADE,
-      reason_code VARCHAR(50) NOT NULL,
-      detail VARCHAR(500),
-      status "EscalationStatus" NOT NULL DEFAULT 'OPEN',
-      raised_by_account_id UUID NOT NULL,
-      raised_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      acknowledged_by_account_id UUID,
-      acknowledged_at TIMESTAMPTZ(6),
-      resolved_by_account_id UUID,
-      resolved_at TIMESTAMPTZ(6),
-      resolution_note VARCHAR(500),
-      version INTEGER NOT NULL DEFAULT 1,
-      created_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS consultation_escalations_thread_id_raised_at_idx ON consultation_escalations(thread_id, raised_at);
-    CREATE INDEX IF NOT EXISTS consultation_escalations_status_raised_at_idx ON consultation_escalations(status, raised_at);
-  `);
+  console.log('\n--- BƯỚC 0: DỌN SẠCH DỮ LIỆU CŨ CỦA 7 DỊCH VỤ NỀN TẢNG ---');
 
   // Đảm bảo cấu trúc bảng clinic_rooms và các cột phòng khám luôn tồn tại
   await clients.doctor.query(`
@@ -152,34 +149,8 @@ async function main() {
       updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS clinic_rooms_status_code_idx ON clinic_rooms(status, code);
-    ALTER TABLE doctor_availabilities ADD COLUMN IF NOT EXISTS room_id UUID REFERENCES clinic_rooms(id) ON DELETE SET NULL ON UPDATE CASCADE;
-    CREATE INDEX IF NOT EXISTS doctor_availabilities_room_id_start_at_end_at_idx ON doctor_availabilities(room_id, start_at, end_at);
   `);
 
-  await clients.appointment.query(`
-    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_id UUID;
-    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
-    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS room_name_snapshot VARCHAR(150);
-    CREATE INDEX IF NOT EXISTS appointments_room_id_start_at_idx ON appointments(room_id, start_at);
-    CREATE INDEX IF NOT EXISTS appointments_room_code_start_at_idx ON appointments(room_code, start_at);
-    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_id UUID;
-    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
-    ALTER TABLE slot_holds ADD COLUMN IF NOT EXISTS room_name VARCHAR(150);
-  `);
-
-  await clients.queue.query(`
-    ALTER TABLE stage_tickets ADD COLUMN IF NOT EXISTS room_code VARCHAR(50);
-    CREATE INDEX IF NOT EXISTS stage_tickets_stage_id_room_code_state_idx ON stage_tickets(stage_id, room_code, state);
-  `);
-
-  await clients.consultation.query('TRUNCATE TABLE consultation_escalations, consultation_messages, consultation_assignments, consultation_threads, consultation_outbox CASCADE;');
-  await clients.notification.query('TRUNCATE TABLE delivery_attempts, notification_consumed_events, notifications CASCADE;');
-  await clients.treatmentPlan.query('TRUNCATE TABLE treatment_plan_versions, treatment_plan_items, treatment_plans, treatment_plan_outbox CASCADE;');
-  await clients.prescription.query('TRUNCATE TABLE prescription_items, prescriptions, medication_catalog, prescription_outbox CASCADE;');
-  await clients.queue.query('TRUNCATE TABLE call_attempts, stage_tickets, queue_journeys, queue_stages, queue_audit, queue_idempotency, queue_outbox CASCADE;');
-  await clients.medicalRecord.query('TRUNCATE TABLE encounter_amendments, external_clinical_references, clinical_service_orders, diagnoses, clinical_notes, vital_signs, encounter_assignments, clinical_encounters, pregnancy_episodes, medical_audit, medical_idempotency, medical_outbox CASCADE;');
-  await clients.billing.query('TRUNCATE TABLE credit_approvals, payments, invoice_lines, invoices, billing_audit_logs, billing_idempotency_records, billing_outbox_events CASCADE;');
-  await clients.appointment.query('TRUNCATE TABLE appointment_assignment_history, appointment_audit_logs, appointment_idempotency_records, appointment_outbox_events, slot_holds, appointments CASCADE;');
   await clients.patient.query('TRUNCATE TABLE emergency_contacts, patient_audit_logs, idempotency_records, patients CASCADE;');
   await clients.catalog.query('ALTER TABLE medical_services ADD COLUMN IF NOT EXISTS content JSONB;');
   await clients.catalog.query('TRUNCATE TABLE medical_service_tags, base_prices, medical_services, catalog_tags, doctor_rank_surcharges CASCADE;');
@@ -201,8 +172,9 @@ async function main() {
   await clients.doctor.query('ALTER TABLE doctor_profiles DROP COLUMN IF EXISTS professional_title;');
   await clients.doctor.query('TRUNCATE TABLE outbox_events, idempotency_records, audit_records, doctor_availabilities, doctor_schedules, doctor_specialties, doctor_profiles, doctors, specialties, clinic_rooms, consultation_ranks CASCADE;');
   await clients.auth.query('TRUNCATE TABLE auth_sessions, password_reset_tokens, credentials, account_roles, accounts, roles CASCADE;');
-  await clients.auditLog.query('TRUNCATE TABLE audit_entries CASCADE;');
-  console.log('✅ Đã dọn sạch dữ liệu cũ trong tất cả các dịch vụ.');
+  await clients.queue.query('TRUNCATE TABLE queue_stages CASCADE;');
+  await clients.prescription.query('TRUNCATE TABLE medication_catalog CASCADE;');
+  console.log('✅ Đã dọn sạch dữ liệu cũ của 7 dịch vụ nền tảng (không chạm vào dữ liệu vận hành).');
 
   const passwordHash = await argon2.hash(DEFAULT_PASSWORD);
   const now = new Date();
@@ -256,41 +228,7 @@ async function main() {
   const managerAccountId = await createAuthAccount('manager@antam.local', 'ADMIN');
   const nurseAccountId = await createAuthAccount('nurse.huong@antam.local', 'NURSE');
 
-  // Tài khoản kiểm thử trạng thái đặc biệt cho quản trị viên (Admin User Management)
-  const lockedUntil = new Date(now.getTime() + 60 * 60 * 1000); // Khóa 1 giờ
-  const lockedAccountId = await createAuthAccount('test.locked@antam.local', 'PATIENT', null, 'LOCKED', 5, lockedUntil);
-  const pendingAccountId = await createAuthAccount('test.pending@antam.local', 'PATIENT', null, 'PENDING_VERIFICATION');
-  const disabledAccountId = await createAuthAccount('test.disabled@antam.local', 'DOCTOR', null, 'DISABLED');
-
-  // 3 Tài khoản kiểm thử theo kịch bản người dùng:
-  // Tài khoản 1: Mới tạo tài khoản (Chưa có Profile & Medical Record)
-  const patientNewAccountId = await createAuthAccount('patient.new@taman.hospital', 'PATIENT');
-
-  // Token đặt lại mật khẩu mẫu (Password Reset Token)
-  const resetTokenHash = sha256('sample-password-reset-token-2026');
-  const tokenExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 giờ
-  await clients.auth.query(
-    `INSERT INTO password_reset_tokens (account_id, token_hash, created_at, expires_at)
-     VALUES ($1, $2, NOW(), $3)`,
-    [lockedAccountId, resetTokenHash, tokenExpiresAt]
-  );
-
-  // Phiên đăng nhập mẫu (Auth Sessions: Active & Revoked)
-  const activeSessionTokenHash = sha256('admin-active-session-token');
-  const sessionExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
-  await clients.auth.query(
-    `INSERT INTO auth_sessions (id, account_id, refresh_token_hash, created_at, expires_at, last_used_at)
-     VALUES (gen_random_uuid(), $1, $2, NOW(), $3, NOW())`,
-    [adminAccountId, activeSessionTokenHash, sessionExpiresAt]
-  );
-
-  const revokedSessionTokenHash = sha256('disabled-revoked-session-token');
-  await clients.auth.query(
-    `INSERT INTO auth_sessions (id, account_id, refresh_token_hash, created_at, expires_at, revoked_at, revoked_reason)
-     VALUES (gen_random_uuid(), $1, $2, NOW() - INTERVAL '1 day', NOW() + INTERVAL '6 days', NOW(), 'Tài khoản bị tạm ngưng bởi quản trị viên')`,
-    [disabledAccountId, revokedSessionTokenHash]
-  );
-  console.log(`✅ Đã tạo Roles, Admin, Tài khoản các trạng thái (ACTIVE, LOCKED, PENDING, DISABLED), Token reset mật khẩu và Sessions.`);
+  console.log('✅ Đã tạo Roles và các tài khoản quản trị/nhân sự (admin, manager, nurse).');
 
   // ============================================================================
   // 2. CHUYÊN KHOA BÁC SĨ & HẠNG KHÁM & PHỤ PHÍ
@@ -515,25 +453,7 @@ async function main() {
     rankSurchargeMap[r.code] = { id: scRes.rows[0].id, amount: r.surcharge };
   }
 
-  // Phụ phí hạng bác sĩ đặc biệt: SCHEDULED (dự kiến áp dụng đầu tháng sau), CANCELLED (hủy bỏ) và EXPIRED (hết hạn)
-  const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonthSurchargeDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  await clients.catalog.query(
-    `INSERT INTO doctor_rank_surcharges (id, rank_code, amount_minor, currency, effective_from, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), 'ASSOC_PROFESSOR', 400000, 'VND', $1, 'SCHEDULED', 1, NOW(), NOW())`,
-    [nextMonthSurchargeDate]
-  );
-  await clients.catalog.query(
-    `INSERT INTO doctor_rank_surcharges (id, rank_code, amount_minor, currency, effective_from, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), 'BASIC', 50000, 'VND', NOW(), 'CANCELLED', 1, NOW(), NOW())`
-  );
-  await clients.catalog.query(
-    `INSERT INTO doctor_rank_surcharges (id, rank_code, amount_minor, currency, effective_from, effective_to, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), 'HEAD_DOCTOR', 200000, 'VND', $1, $2, 'EXPIRED', 1, $1, $2)`,
-    [oneYearAgo, startOfThisMonth]
-  );
-  console.log(`✅ Đã khởi tạo 5 Chuyên khoa và 8 Hạng Bác sĩ kèm Biểu phí phụ thu (ACTIVE, SCHEDULED, CANCELLED, EXPIRED).`);
+  console.log('✅ Đã khởi tạo 5 Chuyên khoa và 8 Hạng Bác sĩ kèm Biểu phí phụ thu hiện hành (ACTIVE).');
 
   // ============================================================================
   // 3. DANH MỤC DỊCH VỤ, PHÂN LOẠI & GIÁ DỊCH VỤ (CATALOG SERVICE)
@@ -562,8 +482,3187 @@ async function main() {
     tagMap[t.code] = res.rows[0].id;
   }
 
-  // Nạp và validate service_content.json cho medical_services
-  const rawServiceContent = require('./data/service_content.json');
+  // Nội dung dịch vụ y tế chi tiết (Service Content) nhúng trực tiếp trong file seed
+  const SERVICE_CONTENT = {
+  "VAC_TETANUS": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Uốn ván sơ sinh là bệnh nhiễm trùng nặng, có thể xảy ra khi vi khuẩn Clostridium tetani xâm nhập qua vết cắt rốn hoặc dụng cụ đỡ sinh không vô khuẩn. Kháng thể của mẹ sau khi tiêm vắc xin uốn ván hấp phụ (VAT) được truyền qua nhau thai, giúp bảo vệ trẻ trong những tuần đầu đời và bảo vệ cả người mẹ khi sinh nở. Tại Tâm An, thai phụ được khám sàng lọc trước tiêm, tiêm bắp sâu theo đúng quy trình và theo dõi phản ứng sau tiêm 30 phút.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tiêm",
+        "value": "Từ tuần thai 20 trở đi (bác sĩ có thể điều chỉnh theo tiền sử tiêm chủng)"
+      },
+      {
+        "icon": "syringe",
+        "label": "Số mũi",
+        "value": "Thường 2 mũi cách nhau tối thiểu 1 tháng nếu chưa từng tiêm; chỉ cần mũi nhắc lại nếu đã tiêm trước đây"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình thực hiện",
+        "value": "Khám sàng lọc, tiêm và theo dõi chu đáo theo phác đồ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "shield-check",
+        "title": "Bảo vệ cả mẹ và bé",
+        "desc": "Kháng thể truyền qua nhau thai giúp phòng uốn ván sơ sinh và uốn ván sản khoa."
+      },
+      {
+        "icon": "clipboard-check",
+        "title": "Khám sàng lọc trước tiêm",
+        "desc": "Bác sĩ kiểm tra sổ tiêm, tiền sử dị ứng, tình trạng sức khỏe để quyết định số mũi phù hợp."
+      },
+      {
+        "icon": "eye",
+        "title": "Theo dõi sau tiêm 30 phút",
+        "desc": "Phát hiện và xử trí kịp thời các phản ứng bất thường ngay tại cơ sở."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Nhắc lịch mũi tiếp theo",
+        "desc": "Ghi nhận vào sổ tiêm chủng và hẹn lịch đảm bảo mũi cuối cách ngày dự sinh đủ xa."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ chưa từng tiêm hoặc chưa tiêm đủ mũi vắc xin uốn ván",
+      "Thai phụ không nhớ hoặc không có sổ ghi nhận tiền sử tiêm chủng",
+      "Thai phụ mang thai lần đầu hoặc lần mang thai sau đã lâu chưa tiêm nhắc lại",
+      "Thai phụ có kế hoạch sinh ở môi trường cần tăng cường phòng ngừa nhiễm khuẩn"
+    ],
+    "not_suitable_for": [
+      "Đang sốt hoặc mắc bệnh cấp tính (cần hoãn tiêm đến khi hồi phục)",
+      "Từng có phản ứng dị ứng nặng (sốc phản vệ) sau mũi tiêm trước hoặc với thành phần của vắc xin",
+      "Từng bị hội chứng Guillain-Barré trong vòng 6 tuần sau một mũi vắc xin chứa uốn ván (cần bác sĩ đánh giá trước)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và kiểm tra sổ tiêm",
+        "desc": "Đối chiếu sổ tiêm chủng, sổ khám thai và xác nhận số mũi đã tiêm trước đây.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám sàng lọc trước tiêm",
+        "desc": "Đo nhiệt độ, huyết áp, hỏi tiền sử dị ứng, bệnh lý và thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tiêm bắp sâu",
+        "desc": "Tiêm vắc xin VAT vào bắp cánh tay, thao tác nhẹ nhàng, vô khuẩn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi sau tiêm",
+        "desc": "Nghỉ tại khu theo dõi để nhân viên y tế quan sát phản ứng sớm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Ghi nhận và hẹn mũi tiếp theo",
+        "desc": "Cập nhật sổ tiêm chủng, hướng dẫn chăm sóc tại nhà và hẹn lịch mũi sau nếu cần.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ tiêm chủng (nếu có), sổ khám thai và giấy tờ tùy thân",
+      "Ăn nhẹ trước khi đến, không cần nhịn ăn",
+      "Mặc áo rộng tay hoặc dễ xắn tay lên",
+      "Báo cho bác sĩ nếu gần đây bị sốt, ho, tiêu chảy hoặc đang dùng thuốc điều trị"
+    ],
+    "aftercare": [
+      "Đau, sưng, đỏ nhẹ tại chỗ tiêm trong 1–2 ngày là thường gặp, có thể chườm mát",
+      "Sốt nhẹ, mệt mỏi, đau nhức cơ có thể xuất hiện; uống đủ nước và nghỉ ngơi",
+      "Chỉ dùng thuốc hạ sốt, giảm đau khi có chỉ định của bác sĩ",
+      "Giữ lại sổ tiêm chủng, tiêm đúng lịch mũi tiếp theo"
+    ],
+    "warning_signs": [
+      "Khó thở, nổi mề đay toàn thân, sưng môi hoặc mặt, chóng mặt, ngất",
+      "Sốt trên 39°C hoặc sốt kéo dài quá 48 giờ",
+      "Chỗ tiêm sưng đỏ lan rộng, đau tăng, có mủ",
+      "Thấy thai máy giảm rõ rệt sau tiêm"
+    ],
+    "accuracy_note": "Vắc xin VAT có hiệu quả bảo vệ cao khi tiêm đủ liều và đúng thời điểm trước sinh. Mức độ bảo vệ phụ thuộc vào việc hoàn thành lịch tiêm theo chỉ định của bác sĩ.",
+    "faqs": [
+      {
+        "q": "Tiêm vắc xin uốn ván khi mang thai có an toàn cho thai nhi không?",
+        "a": "VAT là vắc xin giải độc tố, không chứa vi khuẩn sống và được WHO khuyến cáo cho phụ nữ mang thai. Bác sĩ vẫn sẽ khám sàng lọc trước khi tiêm để đảm bảo an toàn."
+      },
+      {
+        "q": "Tôi đã tiêm uốn ván trước khi mang thai, có cần tiêm lại không?",
+        "a": "Tùy số mũi đã tiêm và thời gian từ mũi cuối. Bác sĩ sẽ xem sổ tiêm chủng và quyết định cần tiêm nhắc lại hay không."
+      },
+      {
+        "q": "Nếu quên mang sổ tiêm thì sao?",
+        "a": "Bạn vẫn được khám và tư vấn. Khi không xác định được tiền sử, bác sĩ sẽ cân nhắc xử trí như chưa từng tiêm."
+      }
+    ],
+    "performed_by": "Bác sĩ và điều dưỡng tiêm chủng được đào tạo",
+    "references": [
+      {
+        "title": "Tetanus vaccines: WHO position paper (2017)",
+        "org": "WHO"
+      },
+      {
+        "title": "Chương trình Tiêm chủng mở rộng",
+        "org": "Bộ Y tế Việt Nam"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "IUI_PROCEDURE": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Bơm tinh trùng vào buồng tử cung (IUI) là kỹ thuật hỗ trợ sinh sản đơn giản, ít xâm lấn: tinh trùng của người chồng được lọc rửa để chọn lọc những tinh trùng khỏe, sau đó đưa trực tiếp vào buồng tử cung vào đúng thời điểm rụng trứng. Phương pháp rút ngắn quãng đường tinh trùng phải đi, tăng khả năng gặp noãn, thường là lựa chọn đầu tay cho nhiều cặp vợ chồng hiếm muộn trước khi cân nhắc IVF. Quy trình thực hiện không cần gây mê, người vợ có thể ra về ngay sau khi nghỉ ngắn.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thủ thuật",
+        "value": "Thực hiện và ra về trong ngày theo chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Chuẩn bị trước",
+        "value": "Theo dõi nang noãn vài ngày trước đó; bác sĩ chọn ngày bơm theo thời điểm rụng trứng"
+      },
+      {
+        "icon": "bed",
+        "label": "Nằm viện",
+        "value": "Không cần, ra về trong ngày"
+      },
+      {
+        "icon": "baby",
+        "label": "Thử thai",
+        "value": "Khoảng 14 ngày sau thủ thuật"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Lọc rửa tinh trùng trong phòng Lab",
+        "desc": "Chọn lọc tinh trùng di động tốt, loại bỏ tạp chất và dịch tinh để tăng hiệu quả và an toàn."
+      },
+      {
+        "icon": "activity",
+        "title": "Theo dõi rụng trứng sát bằng siêu âm",
+        "desc": "Xác định nang noãn trưởng thành để bơm đúng thời điểm."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "Ít xâm lấn, không gây mê",
+        "desc": "Dùng ống thông mềm nhỏ, cảm giác tương tự khi khám phụ khoa."
+      },
+      {
+        "icon": "user-check",
+        "title": "Bác sĩ chuyên khoa hiếm muộn",
+        "desc": "Hạng bác sĩ cơ bản đã được bao gồm trong giá dịch vụ."
+      }
+    ],
+    "suitable_for": [
+      "Hiếm muộn không rõ nguyên nhân",
+      "Tinh trùng yếu hoặc ít ở mức nhẹ đến vừa",
+      "Rối loạn phóng noãn, cần kích thích buồng trứng nhẹ",
+      "Lạc nội mạc tử cung mức độ nhẹ",
+      "Yếu tố cổ tử cung (chất nhầy cổ tử cung bất lợi cho tinh trùng)",
+      "Khó giao hợp hoặc rối loạn xuất tinh nhưng vẫn lấy được mẫu tinh trùng"
+    ],
+    "not_suitable_for": [
+      "Cả hai vòi tử cung bị tắc hoặc đã cắt",
+      "Chất lượng tinh trùng quá thấp (sau lọc rửa còn rất ít tinh trùng di động)",
+      "Buồng trứng suy giảm nặng hoặc tuổi vợ cao, cần cân nhắc IVF sớm",
+      "Lạc nội mạc tử cung nặng, dính vùng chậu, viêm nhiễm vùng chậu đang tiến triển",
+      "Có bất thường buồng tử cung chưa được xử trí"
+    ],
+    "process_steps": [
+      {
+        "title": "Khám và đánh giá trước chu kỳ",
+        "desc": "Siêu âm, hormone, tinh dịch đồ và kiểm tra thông vòi tử cung nếu chưa có (thực hiện trước ngày bơm).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi nang noãn và kích rụng trứng",
+        "desc": "Siêu âm đầu dò, có thể dùng thuốc kích thích nhẹ và tiêm thuốc kích rụng trứng khi nang đủ kích thước (thực hiện trước ngày bơm).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tinh dịch",
+        "desc": "Người chồng lấy mẫu tại phòng riêng, vô khuẩn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lọc rửa và chọn lọc tinh trùng",
+        "desc": "Kỹ thuật viên phôi học xử lý mẫu để thu tinh trùng di động tốt.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Bơm tinh trùng vào buồng tử cung",
+        "desc": "Bác sĩ đặt mỏ vịt, đưa ống thông mềm qua cổ tử cung và bơm nhẹ nhàng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nghỉ ngơi sau thủ thuật",
+        "desc": "Nằm nghỉ ngắn, nhận hướng dẫn hỗ trợ nội mạc và lịch thử thai.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Người chồng kiêng xuất tinh khoảng 2–5 ngày trước ngày bơm (theo hướng dẫn bác sĩ)",
+      "Thực hiện đầy đủ các xét nghiệm và siêu âm theo kế hoạch điều trị",
+      "Tuân thủ lịch tiêm thuốc kích thích và kích rụng trứng đúng giờ",
+      "Mang theo kết quả xét nghiệm, đơn thuốc và giấy tờ tùy thân của cả hai vợ chồng",
+      "Giữ tâm lý thoải mái, mặc trang phục rộng rãi"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt nhẹ nhàng, tránh vận động mạnh hoặc mang vác nặng trong vài ngày",
+      "Dùng thuốc hỗ trợ nội mạc tử cung (ví dụ progesterone) nếu được kê đơn",
+      "Có thể xuất hiện đau bụng nhẹ hoặc ra ít dịch hồng trong 1–2 ngày",
+      "Thử thai và tái khám theo lịch hẹn, khoảng 14 ngày sau thủ thuật"
+    ],
+    "warning_signs": [
+      "Đau bụng dữ dội hoặc tăng dần, bụng chướng nhanh, khó thở (nghi quá kích buồng trứng)",
+      "Ra máu âm đạo nhiều hơn kinh nguyệt",
+      "Sốt trên 38°C, dịch âm đạo có mùi hôi",
+      "Đau bụng một bên kèm chóng mặt, ngất (cần loại trừ thai ngoài tử cung nếu có thai)"
+    ],
+    "accuracy_note": "Tỷ lệ thành công mỗi chu kỳ IUI phụ thuộc chủ yếu vào tuổi người vợ, nguyên nhân hiếm muộn, chất lượng tinh trùng và số nang noãn. Bác sĩ sẽ trao đổi tiên lượng riêng cho từng cặp vợ chồng. Nếu sau một số chu kỳ (thường 3–4 chu kỳ) chưa có thai, bác sĩ sẽ tư vấn chuyển sang phương pháp khác như IVF.",
+    "faqs": [
+      {
+        "q": "IUI có đau không?",
+        "a": "Đa số cảm thấy khó chịu nhẹ, tương tự khi khám phụ khoa hoặc đặt mỏ vịt. Thủ thuật diễn ra vài phút và không cần gây mê."
+      },
+      {
+        "q": "Sau khi bơm có phải nằm bất động không?",
+        "a": "Không cần nằm lâu. Bạn nghỉ ngắn tại phòng theo hướng dẫn, sau đó có thể sinh hoạt nhẹ nhàng."
+      },
+      {
+        "q": "Giá dịch vụ đã gồm thuốc kích trứng và xét nghiệm chưa?",
+        "a": "Giá niêm yết là chi phí thủ thuật. Thuốc kích thích buồng trứng và các xét nghiệm đánh giá trước có thể được tính riêng, vui lòng xác nhận khi đặt lịch."
+      },
+      {
+        "q": "IUI có thể gây đa thai không?",
+        "a": "Có, nhất là khi dùng thuốc kích thích buồng trứng và có nhiều nang noãn. Bác sĩ sẽ theo dõi sát để hạn chế nguy cơ này."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Hiếm muộn & Hỗ trợ sinh sản cùng kỹ thuật viên phôi học",
+    "references": [
+      {
+        "title": "ESHRE guideline: Unexplained infertility (2023)",
+        "org": "ESHRE"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PRENATAL_VIP": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Buổi khám và tư vấn chuyên sâu trực tiếp với Trưởng khoa hoặc Phó khoa Sản, dành cho thai phụ muốn được theo dõi sát sao và có lộ trình riêng cho cả thai kỳ. Bác sĩ rà soát toàn bộ hồ sơ, đánh giá nguy cơ, sau đó xây dựng phác đồ dinh dưỡng, bổ sung vi chất và kế hoạch vận động phù hợp với thể trạng, tuần thai và bệnh lý nền của bạn. Đây là buổi tư vấn 45 phút, đủ thời gian để bạn hỏi mọi điều còn băn khoăn.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "user-check",
+        "label": "Bác sĩ thực hiện",
+        "value": "Trưởng khoa hoặc Phó khoa Sản"
+      },
+      {
+        "icon": "file-text",
+        "label": "Bạn nhận được",
+        "value": "Phác đồ dinh dưỡng, vận động và lịch khám thai cá nhân hóa"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "stethoscope",
+        "title": "Bác sĩ đầu ngành trực tiếp khám",
+        "desc": "Được chuyên gia nhiều kinh nghiệm đánh giá toàn diện, không chuyển tiếp qua nhiều tầng."
+      },
+      {
+        "icon": "salad",
+        "title": "Phác đồ dinh dưỡng cá thể hóa",
+        "desc": "Dựa trên BMI trước mang thai, tuần thai, xét nghiệm và bệnh lý đi kèm."
+      },
+      {
+        "icon": "dumbbell",
+        "title": "Kế hoạch vận động riêng",
+        "desc": "Bài tập, cường độ và các lưu ý an toàn theo từng giai đoạn thai kỳ."
+      },
+      {
+        "icon": "route",
+        "title": "Lộ trình khám thai toàn thai kỳ",
+        "desc": "Lên sẵn các mốc sàng lọc, xét nghiệm và siêu âm quan trọng cần thực hiện."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn được theo dõi bởi chuyên gia đầu ngành ngay từ đầu",
+      "Thai kỳ có yếu tố nguy cơ: lớn tuổi, thừa cân hoặc thiếu cân, tiền sử sảy thai, sinh non, tiền sản giật, đái tháo đường thai kỳ",
+      "Thai phụ có bệnh nền (tăng huyết áp, tuyến giáp, thiếu máu, bệnh tự miễn)",
+      "Thai phụ muốn tư vấn chế độ ăn, vận động hoặc kế hoạch sinh một cách chi tiết",
+      "Thai phụ cần ý kiến thứ hai cho một thai kỳ có vấn đề"
+    ],
+    "not_suitable_for": [
+      "Tình huống cấp cứu (đau bụng dữ dội, ra máu nhiều, vỡ ối): vui lòng đến ngay khoa cấp cứu",
+      "Cần thực hiện xét nghiệm hoặc siêu âm chuyên sâu: bác sĩ sẽ chỉ định và tính theo dịch vụ riêng"
+    ],
+    "parameters": [
+      {
+        "name": "Mức tăng cân khuyến nghị cả thai kỳ (thai đơn)",
+        "desc": "Tham chiếu theo BMI trước mang thai, bác sĩ điều chỉnh theo thể trạng người châu Á.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vi chất thiết yếu",
+        "desc": "Bác sĩ cá nhân hóa loại và liều theo xét nghiệm và chế độ ăn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vận động",
+        "desc": "Nếu không có chống chỉ định sản khoa, thai phụ nên duy trì vận động nhẹ đến vừa.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và đo chỉ số",
+        "desc": "Đo huyết áp, cân nặng, nhịp tim, ghi nhận lý do khám và mong muốn của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Rà soát hồ sơ và tiền sử",
+        "desc": "Xem kết quả xét nghiệm, siêu âm, tiền sử sản khoa, bệnh nền, thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám lâm sàng",
+        "desc": "Khám sản khoa, nghe tim thai, đánh giá phát triển thai và các dấu hiệu cần theo dõi.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn dinh dưỡng và vận động",
+        "desc": "Xây dựng thực đơn gợi ý, kế hoạch bổ sung vi chất và chương trình vận động an toàn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lập lộ trình theo dõi",
+        "desc": "Tóm tắt các mốc khám, xét nghiệm, siêu âm tiếp theo và dấu hiệu cần đến viện sớm.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ khám thai, kết quả xét nghiệm, siêu âm và đơn thuốc đang dùng",
+      "Liệt kê sẵn các câu hỏi và mối lo ngại để tận dụng tối đa thời gian tư vấn",
+      "Ghi lại cân nặng trước mang thai, chiều cao và thói quen ăn uống thường ngày",
+      "Có thể đi cùng người thân để cùng nghe tư vấn"
+    ],
+    "aftercare": [
+      "Thực hiện theo phác đồ dinh dưỡng, vận động và bổ sung vi chất đã được tư vấn",
+      "Ghi lại cân nặng, huyết áp tại nhà nếu bác sĩ dặn",
+      "Đặt lịch các mốc khám tiếp theo theo lộ trình",
+      "Liên hệ bệnh viện nếu có thắc mắc hoặc thay đổi sức khỏe"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn đều đặn",
+      "Đau đầu dữ dội, nhìn mờ, phù nhanh ở mặt và tay, đau thượng vị",
+      "Giảm hoặc mất cử động thai",
+      "Sốt cao, nôn nhiều không ăn uống được"
+    ],
+    "faqs": [
+      {
+        "q": "Khám VIP khác gì khám thai thường?",
+        "a": "Bạn được bác sĩ đầu ngành trực tiếp thăm khám trong thời gian dài hơn, kèm phác đồ dinh dưỡng, vận động và lộ trình theo dõi cá nhân hóa."
+      },
+      {
+        "q": "Buổi tư vấn đã gồm siêu âm và xét nghiệm chưa?",
+        "a": "Buổi tư vấn tập trung vào khám, đánh giá và lập kế hoạch. Siêu âm, xét nghiệm nếu cần sẽ được chỉ định và tính theo dịch vụ riêng."
+      },
+      {
+        "q": "Tôi có thể chọn bác sĩ cụ thể không?",
+        "a": "Có. Dịch vụ cho phép nâng hạng bác sĩ, phụ thu (nếu có) được hiển thị theo bảng giá khi đặt lịch."
+      }
+    ],
+    "performed_by": "Trưởng khoa hoặc Phó khoa Sản",
+    "references": [
+      {
+        "title": "Weight Gain During Pregnancy: Reexamining the Guidelines (2009)",
+        "org": "Institute of Medicine (USA)"
+      },
+      {
+        "title": "WHO recommendations on antenatal care for a positive pregnancy experience (2016)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_TRANSVAGINAL_US": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm đầu dò âm đạo đặt đầu dò nhỏ vào âm đạo, đến sát tử cung và buồng trứng nên cho hình ảnh độ phân giải cao hơn nhiều so với siêu âm qua thành bụng. Kỹ thuật cho phép bác sĩ đánh giá chính xác niêm mạc tử cung, kích thước và cấu trúc buồng trứng, phát hiện u xơ, polyp, u nang và các bất thường khác. Thủ thuật diễn ra khoảng 25 phút, không cần nhịn ăn và không cần nhịn tiểu.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau khi sạch kinh (khoảng ngày 7–12 của chu kỳ); có thể làm bất kỳ lúc nào khi có triệu chứng cấp"
+      },
+      {
+        "icon": "droplet",
+        "label": "Bàng quang",
+        "value": "Nên đi tiểu trước khi siêu âm"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "scan-line",
+        "title": "Hình ảnh độ phân giải cao",
+        "desc": "Quan sát rõ niêm mạc tử cung, nang noãn, cấu trúc buồng trứng và các khối u nhỏ."
+      },
+      {
+        "icon": "search",
+        "title": "Phát hiện sớm nhiều bệnh lý",
+        "desc": "U xơ tử cung, polyp, u nang buồng trứng, lạc nội mạc tử cung, dày niêm mạc."
+      },
+      {
+        "icon": "timer",
+        "title": "Nhanh, không đau nhiều",
+        "desc": "Đầu dò được bọc vỏ vô khuẩn, thao tác nhẹ nhàng, kết quả có ngay trong buổi khám."
+      },
+      {
+        "icon": "baby",
+        "title": "Hỗ trợ theo dõi hiếm muộn và thai sớm",
+        "desc": "Theo dõi nang noãn, đánh giá túi thai và loại trừ thai ngoài tử cung ở giai đoạn đầu."
+      }
+    ],
+    "suitable_for": [
+      "Rong kinh, rối loạn kinh nguyệt, ra máu bất thường ngoài kỳ kinh",
+      "Đau bụng dưới, đau vùng chậu kéo dài hoặc đau khi quan hệ",
+      "Nghi ngờ u xơ, polyp, u nang buồng trứng hoặc lạc nội mạc tử cung",
+      "Theo dõi nang noãn và niêm mạc trong điều trị hiếm muộn",
+      "Kiểm tra sau sảy thai, nạo hút hoặc đặt dụng cụ tử cung",
+      "Chậm kinh, nghi có thai giai đoạn rất sớm"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục (bác sĩ sẽ chỉ định siêu âm qua thành bụng hoặc đường khác)",
+      "Dị ứng với latex (cần báo trước để dùng vỏ bọc đầu dò không latex)",
+      "Đang chảy máu âm đạo rất nhiều hoặc đau quá mức không chịu đựng được",
+      "Hẹp âm đạo hoặc từng phẫu thuật vùng chậu gây khó đưa đầu dò (cần báo bác sĩ)"
+    ],
+    "parameters": [
+      {
+        "name": "Tử cung",
+        "desc": "Kích thước, tư thế, cấu trúc cơ tử cung, u xơ, bất thường bẩm sinh.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Niêm mạc tử cung",
+        "desc": "Độ dày, hình thái, polyp, dày niêm mạc bất thường.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Buồng trứng",
+        "desc": "Kích thước, số nang thứ cấp, u nang, hình thái nang noãn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Vùng chậu",
+        "desc": "Dịch tự do, khối bất thường, giãn vòi tử cung.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận chu kỳ kinh, triệu chứng, tiền sử phụ khoa và phẫu thuật.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chuẩn bị",
+        "desc": "Đi tiểu, thay trang phục, nằm tư thế khám phụ khoa trên giường siêu âm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm đầu dò âm đạo",
+        "desc": "Bác sĩ đưa đầu dò bọc vỏ vô khuẩn nhẹ nhàng vào âm đạo và quan sát tử cung, buồng trứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đọc kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích hình ảnh, kết luận và hướng xử trí hoặc xét nghiệm tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Đi tiểu hết trước khi siêu âm, không cần nhịn tiểu",
+      "Không cần nhịn ăn",
+      "Nếu theo dõi nang noãn hoặc niêm mạc, đến đúng ngày chu kỳ bác sĩ hẹn",
+      "Mặc váy hoặc quần dễ cởi, mang theo kết quả siêu âm, xét nghiệm trước đây",
+      "Báo bác sĩ nếu đang mang thai, dị ứng latex hoặc chưa quan hệ tình dục"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường ngay sau khi siêu âm",
+      "Có thể ra ít dịch hồng nhẹ trong ngày, thường tự hết",
+      "Mang kết quả đến bác sĩ điều trị để được tư vấn tiếp"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài sau khi siêu âm",
+      "Đau bụng dưới tăng dần, sốt trên 38°C"
+    ],
+    "accuracy_note": "Siêu âm cho hình ảnh về cấu trúc, không thể kết luận bản chất khối u (lành hay ác tính). Khi phát hiện bất thường, bác sĩ có thể chỉ định thêm xét nghiệm, MRI hoặc nội soi để chẩn đoán xác định.",
+    "faqs": [
+      {
+        "q": "Siêu âm đầu dò âm đạo có đau không?",
+        "a": "Thường chỉ gây cảm giác khó chịu nhẹ. Đầu dò nhỏ, được bọc vỏ vô khuẩn và bôi gel. Hãy thư giãn và báo bác sĩ nếu thấy đau."
+      },
+      {
+        "q": "Đang có kinh có siêu âm được không?",
+        "a": "Có thể làm nếu cần, nhưng để đánh giá niêm mạc và nang noãn chính xác nhất, nên làm sau khi sạch kinh trừ khi có triệu chứng cấp."
+      },
+      {
+        "q": "Mang thai có được siêu âm đầu dò không?",
+        "a": "Có. Đây là kỹ thuật an toàn, thường được dùng trong thai kỳ đầu để xác định túi thai và tim thai."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản phụ khoa có chứng chỉ siêu âm",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of first-trimester fetal ultrasound scan (2013)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "RE_SEMEN_ANALYSIS": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tinh dịch đồ là xét nghiệm nền tảng để đánh giá khả năng sinh sản của nam giới. Tại Tâm An, mẫu tinh dịch được phân tích theo quy trình chuẩn WHO 2021 (ấn bản lần 6) bằng hệ thống phân tích tinh trùng vi tính hóa (CASA), cho số liệu khách quan về số lượng, độ di động, tỷ lệ sống và hình thái tinh trùng. Kết quả giúp bác sĩ xác định nguyên nhân hiếm muộn nam, phát hiện các bất thường như tinh trùng ít, yếu, dị dạng và định hướng điều trị phù hợp.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Kiêng xuất tinh",
+        "value": "2–7 ngày trước khi lấy mẫu"
+      },
+      {
+        "icon": "flask-conical",
+        "label": "Tiêu chuẩn",
+        "value": "WHO 2021 (ấn bản lần 6) và hệ thống CASA"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "badge-check",
+        "title": "Chuẩn WHO 2021",
+        "desc": "Áp dụng các giá trị tham chiếu và quy trình mới nhất của Tổ chức Y tế Thế giới."
+      },
+      {
+        "icon": "cpu",
+        "title": "Phân tích vi tính hóa CASA",
+        "desc": "Giảm sai số chủ quan, đo chính xác nồng độ, vận tốc và quỹ đạo di chuyển của tinh trùng."
+      },
+      {
+        "icon": "lock",
+        "title": "Phòng lấy mẫu riêng tư",
+        "desc": "Không gian kín đáo, vô khuẩn, đảm bảo bảo mật thông tin."
+      },
+      {
+        "icon": "file-check",
+        "title": "Kết quả rõ ràng, dễ hiểu",
+        "desc": "Kèm giải thích và tư vấn hướng xử trí khi có bất thường."
+      }
+    ],
+    "suitable_for": [
+      "Cặp vợ chồng chưa có con sau 12 tháng quan hệ đều đặn không dùng biện pháp tránh thai",
+      "Nam giới có tiền sử quai bị biến chứng viêm tinh hoàn, giãn tĩnh mạch thừng tinh, chấn thương hoặc phẫu thuật vùng bìu",
+      "Nam giới có bệnh lý hoặc đang dùng thuốc có thể ảnh hưởng sinh tinh",
+      "Đánh giá trước khi làm IUI, IVF hoặc ICSI",
+      "Kiểm tra sau triệt sản nam để xác nhận không còn tinh trùng",
+      "Nam giới muốn kiểm tra sức khỏe sinh sản chủ động"
+    ],
+    "not_suitable_for": [
+      "Đang sốt hoặc bị bệnh cấp tính trong vài tuần gần đây (nên hoãn để kết quả phản ánh đúng)",
+      "Chưa kiêng xuất tinh đủ thời gian hoặc kiêng quá dài (trên 7 ngày)",
+      "Không lấy được trọn vẹn mẫu (cần báo kỹ thuật viên)"
+    ],
+    "parameters": [
+      {
+        "name": "Thể tích tinh dịch",
+        "desc": "Lượng tinh dịch trong một lần xuất tinh.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nồng độ tinh trùng",
+        "desc": "Số tinh trùng trong mỗi ml tinh dịch.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tổng số tinh trùng",
+        "desc": "Số tinh trùng trong toàn bộ mẫu.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Di động tổng số",
+        "desc": "Tỷ lệ tinh trùng di chuyển (cả tiến tới và tại chỗ).",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Di động tiến tới",
+        "desc": "Tỷ lệ tinh trùng bơi tiến về phía trước, quan trọng với khả năng thụ thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tỷ lệ sống",
+        "desc": "Tỷ lệ tinh trùng còn sống.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Hình thái bình thường",
+        "desc": "Tỷ lệ tinh trùng có hình dạng chuẩn theo tiêu chí nghiêm ngặt.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và khai thông tin",
+        "desc": "Ghi nhận số ngày kiêng, thuốc đang dùng, bệnh lý, sốt gần đây.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tại phòng riêng",
+        "desc": "Lấy toàn bộ mẫu vào lọ chuyên dụng vô khuẩn, ghi giờ lấy mẫu.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hóa lỏng và đánh giá đại thể",
+        "desc": "Kỹ thuật viên theo dõi thời gian hóa lỏng, đo thể tích, độ nhớt, pH.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích CASA và hình thái",
+        "desc": "Đo nồng độ, độ di động, tỷ lệ sống và nhuộm đánh giá hình thái.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Kiêng xuất tinh 2–7 ngày trước khi lấy mẫu, khoảng 3–5 ngày thường cho kết quả đại diện nhất",
+      "Tránh rượu bia, thuốc lá, chất kích thích trong 3 ngày trước đó",
+      "Vệ sinh tay và vùng sinh dục sạch sẽ trước khi lấy mẫu",
+      "Không dùng bao cao su thông thường hoặc chất bôi trơn khi lấy mẫu",
+      "Lấy trọn vẹn mẫu; nếu bị rơi mất một phần (nhất là phần đầu), hãy báo kỹ thuật viên",
+      "Báo bác sĩ nếu gần đây bị sốt cao, ốm nặng hoặc đang dùng thuốc, thực phẩm chức năng, testosterone"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt và làm việc bình thường ngay sau khi lấy mẫu",
+      "Nếu kết quả bất thường, đừng vội kết luận; bác sĩ thường hẹn xét nghiệm lại vì chất lượng tinh trùng có thể dao động giữa các lần",
+      "Duy trì lối sống lành mạnh: ngủ đủ, tập thể dục vừa phải, hạn chế rượu bia, thuốc lá, tránh nhiệt độ cao vùng bìu",
+      "Mang kết quả khi đi khám tại khoa Hiếm muộn để được tư vấn điều trị"
+    ],
+    "accuracy_note": "Chất lượng tinh trùng dao động theo thời gian, stress, sốt và số ngày kiêng. Một kết quả bất thường chưa đủ để kết luận vô sinh nam; cần được bác sĩ đánh giá và thường phải lặp lại xét nghiệm. Chu kỳ sinh tinh kéo dài khoảng 2,5–3 tháng nên tác động của thay đổi lối sống hoặc điều trị cần thời gian để thấy rõ. Các giá trị tham chiếu của WHO là ngưỡng thấp của nhóm nam giới đã có con, không phải ngưỡng quyết định khả năng sinh sản.",
+    "faqs": [
+      {
+        "q": "Có thể lấy mẫu ở nhà rồi mang đến không?",
+        "a": "Nên lấy mẫu tại phòng riêng của bệnh viện để đảm bảo chất lượng. Nếu bắt buộc lấy ở nhà, bạn cần làm theo hướng dẫn về lọ đựng, giữ ấm mẫu ở nhiệt độ cơ thể và giao đến phòng xét nghiệm trong vòng 1 giờ."
+      },
+      {
+        "q": "Kết quả bất thường thì phải làm gì?",
+        "a": "Bác sĩ sẽ hẹn xét nghiệm lại, khám nam khoa và có thể chỉ định thêm xét nghiệm hormone, siêu âm bìu, phân mảnh DNA tinh trùng tùy trường hợp."
+      },
+      {
+        "q": "Có cần cả hai vợ chồng đi cùng không?",
+        "a": "Chỉ người chồng cần có mặt để lấy mẫu. Nên đi cùng vợ nếu muốn được tư vấn hướng điều trị ngay."
+      },
+      {
+        "q": "Dịch vụ này khác gì xét nghiệm phân mảnh DNA tinh trùng?",
+        "a": "Tinh dịch đồ đánh giá số lượng, di động và hình thái. Phân mảnh DNA là xét nghiệm chuyên sâu riêng, thường chỉ định khi sảy thai liên tiếp hoặc thất bại làm IVF."
+      }
+    ],
+    "performed_by": "Kỹ thuật viên xét nghiệm nam học và bác sĩ chuyên khoa Hiếm muộn",
+    "references": [
+      {
+        "title": "WHO Laboratory Manual for the Examination and Processing of Human Semen, 6th edition (2021)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PRENATAL_ROUTINE": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Khám thai định kỳ là nền tảng của một thai kỳ an toàn. Mỗi lần khám, bác sĩ theo dõi sức khỏe người mẹ (huyết áp, cân nặng, phù), sự phát triển của thai nhi (chiều cao tử cung, tim thai, cử động thai) và phát hiện sớm các dấu hiệu bất thường như tiền sản giật, đái tháo đường thai kỳ, thai chậm tăng trưởng hay dọa sinh non. Gói khám định kỳ chuẩn y khoa tại Tâm An được thiết kế để bạn yên tâm theo dõi đủ các mốc quan trọng.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Tần suất tham khảo",
+        "value": "Mỗi 4 tuần (đến tuần 28), mỗi 2 tuần (tuần 28–36), hằng tuần (từ tuần 36); bác sĩ điều chỉnh theo từng người"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "heart-pulse",
+        "title": "Theo dõi sinh hiệu người mẹ",
+        "desc": "Đo huyết áp, nhịp tim, cân nặng và theo dõi phù để phát hiện sớm tiền sản giật."
+      },
+      {
+        "icon": "baby",
+        "title": "Đánh giá sự phát triển của thai",
+        "desc": "Đo chiều cao tử cung, vòng bụng, nghe tim thai, đánh giá cử động thai."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Nhắc các mốc sàng lọc quan trọng",
+        "desc": "Double test, siêu âm hình thái, OGTT, tiêm phòng uốn ván và các mốc khác đúng thời điểm."
+      },
+      {
+        "icon": "message-circle",
+        "title": "Tư vấn theo từng giai đoạn",
+        "desc": "Dinh dưỡng, vận động, dấu hiệu nguy hiểm và chuẩn bị cho cuộc sinh."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ từ khi biết có thai đến khi sinh",
+      "Thai phụ cần lập hồ sơ quản lý thai nghén tại bệnh viện dự kiến sinh",
+      "Thai phụ cần theo dõi định kỳ sau khi đã khám các dịch vụ chuyên sâu",
+      "Thai kỳ nguy cơ cao cần lịch khám dày hơn theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Tình huống cấp cứu sản khoa (ra máu nhiều, vỡ ối, đau bụng dữ dội, thai ngừng máy): vui lòng đến khoa cấp cứu ngay",
+      "Cần siêu âm hoặc xét nghiệm chuyên sâu: sẽ được chỉ định riêng ngoài gói khám định kỳ"
+    ],
+    "parameters": [
+      {
+        "name": "Huyết áp",
+        "desc": "Phát hiện tăng huyết áp thai kỳ và tiền sản giật.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Cân nặng",
+        "desc": "Theo dõi mức tăng cân phù hợp với BMI trước mang thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chiều cao tử cung và vòng bụng",
+        "desc": "Ước lượng sự phát triển của thai và lượng nước ối.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tim thai",
+        "desc": "Nghe nhịp tim thai bằng Doppler, đánh giá nhịp tim thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Protein niệu và phù",
+        "desc": "Phát hiện dấu hiệu bệnh lý thai kỳ khi có chỉ định.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và đo sinh hiệu",
+        "desc": "Đo huyết áp, nhịp tim, cân nặng, chiều cao và ghi nhận triệu chứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hỏi bệnh và rà soát hồ sơ",
+        "desc": "Cập nhật tình trạng thai kỳ, cử động thai, thuốc đang dùng, kết quả xét nghiệm mới.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám sản khoa",
+        "desc": "Đo chiều cao tử cung, vòng bụng, xác định ngôi thai, nghe tim thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn và chỉ định",
+        "desc": "Chỉ định xét nghiệm hoặc siêu âm theo mốc tuần thai, hướng dẫn dinh dưỡng, vận động.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hẹn lịch khám tiếp theo",
+        "desc": "Ghi vào sổ khám thai và đặt lịch lần sau.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Mang theo sổ khám thai, kết quả xét nghiệm, siêu âm đã có và đơn thuốc đang dùng",
+      "Ăn uống bình thường, không cần nhịn ăn trừ khi được dặn xét nghiệm đặc biệt",
+      "Ghi lại các triệu chứng bất thường, cử động thai và câu hỏi cần hỏi bác sĩ",
+      "Mặc trang phục thoải mái, dễ vén áo để khám bụng"
+    ],
+    "aftercare": [
+      "Thực hiện đầy đủ các chỉ định xét nghiệm, siêu âm và dùng thuốc, vi chất theo đơn",
+      "Theo dõi cử động thai hằng ngày từ tuần 28 hoặc theo hướng dẫn",
+      "Đặt lịch lần khám tiếp theo đúng hẹn, không bỏ các mốc sàng lọc quan trọng"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn đều đặn trước tuần 37",
+      "Đau đầu dữ dội, nhìn mờ, phù nhanh mặt và tay, đau thượng vị (nghi tiền sản giật)",
+      "Giảm hoặc mất cử động thai",
+      "Sốt cao, nôn nhiều không ăn uống được, tiểu buốt, tiểu ra máu"
+    ],
+    "faqs": [
+      {
+        "q": "Một thai kỳ cần khám bao nhiêu lần?",
+        "a": "Tối thiểu theo khuyến cáo quốc gia là 4 lần, nhưng WHO khuyến cáo thường xuyên hơn (tối thiểu 8 lần tiếp xúc). Lịch cụ thể do bác sĩ quyết định theo nguy cơ của từng thai phụ."
+      },
+      {
+        "q": "Khám định kỳ đã bao gồm siêu âm không?",
+        "a": "Gói tập trung vào thăm khám, đo các chỉ số và tư vấn. Các siêu âm, xét nghiệm theo mốc tuần thai sẽ được chỉ định và tính theo từng dịch vụ riêng."
+      },
+      {
+        "q": "Tôi có thể khám với cùng một bác sĩ các lần sau không?",
+        "a": "Có. Bạn có thể chọn lại bác sĩ khi đặt lịch để được theo dõi liên tục."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "WHO recommendations on antenatal care for a positive pregnancy experience (2016)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "OGTT_DIABETES": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Nghiệm pháp dung nạp đường (OGTT) 75g là tiêu chuẩn vàng để chẩn đoán sớm đái tháo đường thai kỳ, theo hướng dẫn quốc tế của IADPSG và WHO. Đái tháo đường thai kỳ thường không có triệu chứng rõ rệt nhưng có thể làm tăng nguy cơ thai to, sinh khó, hạ đường huyết sơ sinh và tiền sản giật. Xét nghiệm gồm uống 75g glucose và lấy máu 3 lần (lúc đói, sau 1 giờ, sau 2 giờ), thực hiện ở tuần thai 24–28 để phát hiện kịp thời và can thiệp sớm.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 24–28"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình xét nghiệm",
+        "value": "Lấy mẫu 3 thời điểm (đói, 1h, 2h) theo phác đồ"
+      },
+      {
+        "icon": "utensils-crossed",
+        "label": "Nhịn ăn",
+        "value": "Nhịn ăn tối thiểu 8 giờ, tối đa khoảng 14 giờ (được uống nước lọc)"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường có trong ngày, bác sĩ tư vấn ngay khi có kết quả"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "badge-check",
+        "title": "Chuẩn chẩn đoán quốc tế",
+        "desc": "Áp dụng tiêu chuẩn IADPSG/WHO với nghiệm pháp 75g và 3 mốc thời gian."
+      },
+      {
+        "icon": "droplets",
+        "title": "3 mẫu máu chính xác",
+        "desc": "Đo đường huyết lúc đói, sau 1 giờ và sau 2 giờ để đánh giá toàn diện khả năng dung nạp đường."
+      },
+      {
+        "icon": "armchair",
+        "title": "Phòng chờ yên tĩnh",
+        "desc": "Không gian nghỉ ngơi thoải mái trong 2 giờ chờ lấy máu."
+      },
+      {
+        "icon": "stethoscope",
+        "title": "Tư vấn sau kết quả",
+        "desc": "Nếu phát hiện bất thường, bác sĩ hướng dẫn chế độ ăn, theo dõi đường huyết và chuyển tư vấn nội tiết."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ chưa được chẩn đoán đái tháo đường, ở tuần thai 24–28",
+      "Thai phụ có yếu tố nguy cơ: thừa cân, béo phì, tiền sử gia đình đái tháo đường, từng sinh con trên 4 kg, tiền sử đái tháo đường thai kỳ, hội chứng buồng trứng đa nang",
+      "Thai phụ từ 35 tuổi trở lên",
+      "Thai phụ có đường niệu dương tính hoặc thai to, đa ối trên siêu âm"
+    ],
+    "not_suitable_for": [
+      "Đã được chẩn đoán đái tháo đường trước mang thai hoặc đã chẩn đoán đái tháo đường thai kỳ",
+      "Đang nôn nghén nặng, không thể uống dung dịch glucose hoặc nhịn ăn an toàn",
+      "Đã phẫu thuật cắt dạ dày hoặc phẫu thuật giảm cân (có thể gặp hội chứng dumping, cần bác sĩ chỉ định phương pháp khác)",
+      "Đang sốt, ốm cấp tính hoặc nghỉ ngơi tại giường kéo dài (nên hoãn và hỏi bác sĩ)"
+    ],
+    "parameters": [
+      {
+        "name": "Đường huyết lúc đói",
+        "desc": "Mẫu máu đầu tiên trước khi uống glucose.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Đường huyết sau 1 giờ",
+        "desc": "Mẫu thứ hai sau khi uống 75g glucose.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Đường huyết sau 2 giờ",
+        "desc": "Mẫu thứ ba, đánh giá khả năng đưa đường về mức bình thường.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận nhịn ăn",
+        "desc": "Kiểm tra thời gian nhịn ăn, tuần thai, thuốc đang dùng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 1 (lúc đói)",
+        "desc": "Xét nghiệm đường huyết nền trước khi uống glucose.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Uống 75g glucose",
+        "desc": "Uống dung dịch glucose pha trong khoảng 250–300 ml nước, uống hết trong vòng 5 phút.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 2 (sau 1 giờ)",
+        "desc": "Ngồi nghỉ yên tĩnh, không ăn uống, không đi lại nhiều.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu lần 3 (sau 2 giờ)",
+        "desc": "Hoàn tất mẫu cuối, sau đó có thể ăn uống bình thường.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ đọc kết quả, hướng dẫn tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Ăn uống bình thường 3 ngày trước, không kiêng tinh bột (khoảng từ 150 g carbohydrate mỗi ngày) để kết quả không sai lệch",
+      "Nhịn ăn tối thiểu 8 giờ trước xét nghiệm; chỉ uống nước lọc, không uống nước ngọt, cà phê, trà",
+      "Nên đặt lịch buổi sáng để dễ nhịn ăn",
+      "Không hút thuốc (nếu có) và hạn chế vận động mạnh trong buổi xét nghiệm",
+      "Mang theo sổ khám thai, đồ ăn nhẹ để ăn sau khi lấy máu xong",
+      "Báo bác sĩ về thuốc đang dùng, đặc biệt corticoid, thuốc giảm cân hoặc thuốc ảnh hưởng đường huyết"
+    ],
+    "aftercare": [
+      "Ăn nhẹ ngay sau khi lấy máu mẫu cuối cùng",
+      "Nếu chóng mặt, buồn nôn do dung dịch glucose, hãy ngồi nghỉ và báo nhân viên y tế",
+      "Nếu chẩn đoán đái tháo đường thai kỳ: thực hiện chế độ ăn, vận động, tự theo dõi đường huyết và tái khám theo hẹn",
+      "Nếu kết quả bình thường: tiếp tục khám thai định kỳ"
+    ],
+    "warning_signs": [
+      "Khát nhiều, tiểu nhiều bất thường, mệt lả, nhìn mờ",
+      "Chóng mặt, run tay, vã mồ hôi, tim đập nhanh (nghi hạ đường huyết)",
+      "Nôn nhiều, không giữ được dung dịch glucose"
+    ],
+    "accuracy_note": "Chẩn đoán đái tháo đường thai kỳ khi có ít nhất một trong ba chỉ số đạt hoặc vượt ngưỡng. Một số trường hợp nguy cơ cao có thể được bác sĩ chỉ định làm sớm hơn tuần 24. Kết quả có thể bị ảnh hưởng nếu bạn không nhịn ăn đủ, ăn kiêng tinh bột quá mức trước đó hoặc đang dùng một số thuốc.",
+    "faqs": [
+      {
+        "q": "Dung dịch glucose có khó uống không?",
+        "a": "Vị rất ngọt, có thể gây buồn nôn ở một số người. Bạn có thể uống từng ngụm liên tục trong 5 phút, và có thể làm lạnh dung dịch hoặc thêm vài giọt chanh theo hướng dẫn nhân viên y tế."
+      },
+      {
+        "q": "Tôi có được uống nước trong lúc chờ không?",
+        "a": "Bạn được uống nước lọc khi nhịn ăn và trong thời gian chờ nhưng chỉ với lượng vừa phải, không uống nước có đường, cà phê hay trà."
+      },
+      {
+        "q": "Nếu bị đái tháo đường thai kỳ thì có nguy hiểm không?",
+        "a": "Nếu được phát hiện sớm và kiểm soát tốt bằng chế độ ăn, vận động và (nếu cần) thuốc, phần lớn thai phụ vẫn sinh nở an toàn. Bác sĩ sẽ theo dõi sát hơn trong thai kỳ."
+      },
+      {
+        "q": "Sau sinh tôi có cần kiểm tra lại không?",
+        "a": "Có. Thường nên làm lại nghiệm pháp dung nạp đường sau sinh 6–12 tuần để đảm bảo đường huyết trở về bình thường, vì nguy cơ đái tháo đường type 2 về sau cao hơn."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "International Association of Diabetes and Pregnancy Study Groups Recommendations on the Diagnosis and Classification of Hyperglycemia in Pregnancy (2010)",
+        "org": "IADPSG"
+      },
+      {
+        "title": "Gestational Diabetes Mellitus, Practice Bulletin No. 190 (2018)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "NIPT_PRO": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "NIPT Pro là gói sàng lọc di truyền trước sinh không xâm lấn toàn diện nhất tại Tâm An. Từ một mẫu máu của mẹ, công nghệ giải trình tự gen thế hệ mới (NGS) phân tích DNA tự do của thai nhi lưu hành trong máu mẹ để khảo sát toàn bộ 23 cặp nhiễm sắc thể (NST), đột biến số lượng NST giới tính và 86 hội chứng vi mất đoạn. Gói còn đi kèm chính sách bảo hiểm kết quả và hỗ trợ chi phí chọc ối theo điều khoản của bệnh viện, giúp mẹ bầu yên tâm hơn khi đưa ra quyết định.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Từ tuần 9–10 trở đi (theo yêu cầu của đơn vị xét nghiệm)"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ, không ảnh hưởng đến thai"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "dna",
+        "title": "Khảo sát toàn bộ 23 cặp NST",
+        "desc": "Phát hiện lệch bội trên mọi cặp nhiễm sắc thể, không chỉ ba cặp phổ biến 21, 18, 13."
+      },
+      {
+        "icon": "scan-search",
+        "title": "86 hội chứng vi mất đoạn",
+        "desc": "Sàng lọc các hội chứng do mất đoạn nhỏ trên NST như DiGeorge (22q11.2), Cri-du-chat, Prader-Willi/Angelman, Wolf-Hirschhorn."
+      },
+      {
+        "icon": "venus-and-mars",
+        "title": "Phân tích NST giới tính",
+        "desc": "Phát hiện các bất thường như Turner, Klinefelter và các dạng lệch bội NST giới tính khác."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Bảo hiểm kết quả đến 500 triệu đồng",
+        "desc": "Theo điều khoản bảo hiểm của gói; kèm hỗ trợ chi phí chọc ối và miễn phí xét nghiệm lại theo chính sách. Vui lòng xem điều khoản chi tiết."
+      },
+      {
+        "icon": "syringe",
+        "title": "An toàn tuyệt đối cho thai",
+        "desc": "Chỉ cần lấy máu mẹ, không có nguy cơ sảy thai do thủ thuật."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn sàng lọc di truyền ở mức toàn diện nhất",
+      "Thai phụ từ 35 tuổi hoặc có nguy cơ cao qua Double test, Triple test",
+      "Thai phụ có tiền sử sảy thai liên tiếp, thai lưu hoặc sinh con dị tật",
+      "Siêu âm nghi ngờ bất thường (ví dụ độ mờ da gáy tăng) và muốn sàng lọc không xâm lấn trước khi quyết định chọc ối",
+      "Thai phụ mang thai từ IVF hoặc có gia đình có tiền sử bệnh lý di truyền"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 9–10 tuần (tỷ lệ DNA thai trong máu mẹ chưa đủ để phân tích)",
+      "Mẹ đã truyền máu, ghép tạng, ghép tế bào gốc hoặc điều trị miễn dịch gần đây (cần tư vấn trước)",
+      "Mẹ đang mắc ung thư hoặc có khối u (có thể gây dương tính giả)",
+      "Đa thai từ 3 thai trở lên hoặc còn dấu hiệu thai biến mất (vanishing twin) chưa được xác định",
+      "Cần chẩn đoán xác định (NIPT là xét nghiệm sàng lọc, không thay thế chọc ối)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tư vấn trước xét nghiệm",
+        "desc": "Bác sĩ giải thích mục đích, phạm vi phát hiện, giới hạn của NIPT Pro và ký cam kết đồng ý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm xác định tuổi thai",
+        "desc": "Xác định tuổi thai, số thai và nhịp tim thai (nếu chưa có kết quả gần đây).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu mẹ",
+        "desc": "Lấy khoảng 7–10 ml máu tĩnh mạch vào ống chuyên dụng để bảo quản DNA tự do.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích NGS",
+        "desc": "Mẫu được chuyển đến phòng xét nghiệm di truyền để giải trình tự và phân tích sinh tin học.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn sau xét nghiệm",
+        "desc": "Bác sĩ giải thích kết quả. Nếu nguy cơ cao, tư vấn chọc ối hoặc sinh thiết gai nhau để chẩn đoán xác định.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn, ăn uống bình thường",
+      "Mang theo kết quả siêu âm, ngày kinh cuối hoặc hồ sơ IVF để xác định tuổi thai",
+      "Báo bác sĩ nếu từng truyền máu, ghép tạng, điều trị miễn dịch, mắc bệnh ung thư hoặc đang dùng heparin",
+      "Báo cho bác sĩ nếu có thai đôi, từng bị mất một thai trong thai kỳ này hoặc mang thai nhờ trứng hiến"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường ngay sau khi lấy máu",
+      "Nếu kết quả nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái theo lịch",
+      "Nếu kết quả nguy cơ cao hoặc không kết luận được: đặt lịch tư vấn với bác sĩ, có thể cần chọc ối hoặc lấy mẫu lại",
+      "Giữ lại kết quả để tư vấn di truyền khi cần"
+    ],
+    "warning_signs": [
+      "Kết quả nguy cơ cao: không nên tự quyết định mà cần gặp bác sĩ để tư vấn và chẩn đoán xác định",
+      "Ra máu âm đạo, đau bụng, ra nước ối trong thai kỳ: đến cơ sở y tế ngay"
+    ],
+    "accuracy_note": "NIPT là xét nghiệm sàng lọc, không phải chẩn đoán xác định. Độ nhạy với hội chứng Down (T21) rất cao, thường trên 99%, với T18 và T13 thấp hơn một chút. Với các bất thường hiếm trên toàn bộ NST và vi mất đoạn, độ nhạy và giá trị tiên đoán dương thấp hơn đáng kể. Kết quả nguy cơ cao cần được xác nhận bằng chọc ối hoặc sinh thiết gai nhau. Một số trường hợp có thể không kết luận được (do nồng độ DNA thai thấp) và cần lấy mẫu lại. Kết quả bình thường không loại trừ hoàn toàn mọi dị tật hay bệnh lý di truyền.",
+    "faqs": [
+      {
+        "q": "NIPT Pro khác NIPT Basic ở điểm nào?",
+        "a": "NIPT Basic chỉ sàng lọc 3 cặp NST phổ biến (21, 18, 13). NIPT Pro mở rộng sang toàn bộ 23 cặp NST, NST giới tính và 86 hội chứng vi mất đoạn."
+      },
+      {
+        "q": "NIPT có thay thế được siêu âm hình thái không?",
+        "a": "Không. NIPT chỉ phát hiện bất thường di truyền về số lượng, không phát hiện dị tật cấu trúc. Bạn vẫn cần siêu âm hình thái ở tuần 20–24."
+      },
+      {
+        "q": "Kết quả nguy cơ cao có chắc chắn thai bị bất thường không?",
+        "a": "Không. Cần xác nhận bằng chọc ối hoặc sinh thiết gai nhau. Bác sĩ sẽ tư vấn chi tiết và các lựa chọn."
+      },
+      {
+        "q": "NIPT có cho biết giới tính thai nhi không?",
+        "a": "Xét nghiệm có thể xác định NST giới tính, nhưng việc thông báo giới tính tuân theo quy định pháp luật và chính sách của bệnh viện."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa, chuyên gia di truyền và phòng xét nghiệm đối tác",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Position Statement on prenatal cell-free DNA screening",
+        "org": "ISPD"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "NIPT_BASIC": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "NIPT Basic là xét nghiệm sàng lọc không xâm lấn tập trung vào ba hội chứng lệch bội NST phổ biến nhất và nghiêm trọng nhất: hội chứng Down (tam bội thể 21), Edwards (tam bội thể 18) và Patau (tam bội thể 13). Chỉ cần một mẫu máu của mẹ từ tuần thai thứ 9, xét nghiệm phân tích DNA tự do của thai nhi trong máu mẹ với độ chính xác cao trong phát hiện nguy cơ, giúp mẹ bầu sàng lọc sớm, an toàn và không ảnh hưởng đến thai.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Từ tuần thứ 9 của thai kỳ (theo yêu cầu của đơn vị xét nghiệm)"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "target",
+        "label": "Phát hiện",
+        "value": "3 cặp NST: 21, 18 và 13"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "shield-check",
+        "title": "Độ chính xác cao",
+        "desc": "Phát hiện hội chứng Down, Edwards, Patau với độ chính xác trên 99,9% theo công bố của đơn vị xét nghiệm."
+      },
+      {
+        "icon": "baby",
+        "title": "Sàng lọc sớm từ tuần 9",
+        "desc": "Cho kết quả trong quý 1, giúp mẹ chủ động hơn trong quản lý thai kỳ."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "An toàn cho mẹ và bé",
+        "desc": "Chỉ lấy máu mẹ, không có nguy cơ sảy thai do thủ thuật."
+      },
+      {
+        "icon": "zap",
+        "title": "Nhanh, tiện lợi",
+        "desc": "Lấy máu chỉ vài phút, không cần nhịn ăn."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ muốn sàng lọc 3 hội chứng phổ biến nhất bằng phương pháp không xâm lấn",
+      "Thai phụ từ 35 tuổi hoặc có nguy cơ trung bình đến cao qua Double test",
+      "Thai phụ đã bỏ lỡ cửa sổ làm Double test (quý 1) và muốn sàng lọc sớm",
+      "Thai phụ có tiền sử mang thai bất thường nhiễm sắc thể",
+      "Thai phụ muốn sàng lọc an toàn thay vì thủ thuật xâm lấn"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 9 tuần",
+      "Mẹ đã truyền máu, ghép tạng, điều trị tế bào gốc hoặc miễn dịch gần đây (cần tư vấn trước)",
+      "Mẹ đang mắc ung thư hoặc có khối u",
+      "Đa thai từ 3 thai trở lên, hoặc có thai biến mất chưa xác định",
+      "Cần chẩn đoán xác định hoặc nghi ngờ dị tật cấu trúc trên siêu âm (cần chọc ối, xét nghiệm chuyên sâu hơn)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tư vấn trước xét nghiệm",
+        "desc": "Giải thích mục đích, giới hạn của NIPT Basic và ký phiếu đồng ý.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xác nhận tuổi thai",
+        "desc": "Kiểm tra ngày kinh cuối, kết quả siêu âm hoặc hồ sơ IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu mẹ",
+        "desc": "Lấy khoảng 7–10 ml máu tĩnh mạch vào ống chuyên dụng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Giải trình tự DNA tự do và phân tích nguy cơ ba cặp NST 21, 18, 13.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Mang theo kết quả siêu âm và giấy tờ tùy thân",
+      "Báo bác sĩ nếu từng truyền máu, ghép tạng, mắc ung thư, mang song thai hoặc thai IVF/trứng hiến"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Nguy cơ thấp: tiếp tục khám thai định kỳ và siêu âm hình thái",
+      "Nguy cơ cao: gặp bác sĩ để tư vấn chọc ối hoặc sinh thiết gai nhau chẩn đoán xác định",
+      "Kết quả không kết luận được: có thể cần lấy mẫu lại"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: cần gặp bác sĩ sớm, không nên tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối: đến cơ sở y tế ngay"
+    ],
+    "accuracy_note": "NIPT Basic là xét nghiệm sàng lọc, không phải chẩn đoán xác định. Hiệu suất cao với hội chứng Down, thấp hơn một chút với Edwards và Patau. Xét nghiệm không phát hiện các bất thường nhiễm sắc thể khác, vi mất đoạn, hay dị tật cấu trúc. Kết quả nguy cơ cao cần được xác nhận bằng chọc ối hoặc sinh thiết gai nhau; kết quả bình thường không loại trừ hoàn toàn mọi bệnh lý.",
+    "faqs": [
+      {
+        "q": "Con số 99,9% có nghĩa là gì?",
+        "a": "Đây là độ chính xác công bố cho hội chứng Down trong các nghiên cứu. Với Edwards, Patau và trong thực tế lâm sàng, hiệu suất có thể thấp hơn; bác sĩ sẽ giải thích cụ thể khi trả kết quả."
+      },
+      {
+        "q": "NIPT Basic hay NIPT Pro phù hợp với tôi?",
+        "a": "Nếu bạn chỉ muốn sàng lọc ba hội chứng phổ biến, Basic là đủ. Nếu muốn khảo sát rộng hơn (toàn bộ NST và vi mất đoạn) hoặc thuộc nhóm nguy cơ cao, bác sĩ có thể đề nghị NIPT Pro."
+      },
+      {
+        "q": "Đã làm Double test, có cần làm thêm NIPT không?",
+        "a": "Tùy kết quả Double test. Nếu nguy cơ trung bình hoặc cao, NIPT là bước sàng lọc bổ sung trước khi cân nhắc chọc ối. Bác sĩ sẽ tư vấn riêng."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa và phòng xét nghiệm di truyền đối tác",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_THINPREP_HPV": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Ung thư cổ tử cung là một trong những ung thư phụ khoa có thể phòng ngừa và phát hiện sớm hiệu quả nhất. Gói tầm soát kết hợp hai xét nghiệm: ThinPrep Pap test (tế bào học nhúng dịch, giúp quan sát tế bào cổ tử cung rõ nét hơn Pap thường) và HPV DNA Cobas (phát hiện 14 chủng HPV nguy cơ cao, trong đó định danh riêng HPV 16 và 18). Kết hợp hai xét nghiệm giúp tăng độ nhạy phát hiện tổn thương tiền ung thư và rút ngắn thời gian tầm soát lặp lại khi kết quả âm tính.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau sạch kinh, khoảng ngày 10–20 của chu kỳ; không làm khi đang hành kinh"
+      },
+      {
+        "icon": "flask-conical",
+        "label": "Xét nghiệm gồm",
+        "value": "ThinPrep Pap test và HPV DNA Cobas (14 chủng nguy cơ cao)"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường sau vài ngày làm việc"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "microscope",
+        "title": "ThinPrep Pap test",
+        "desc": "Mẫu tế bào được nhúng dịch, loại bỏ máu, chất nhầy, giúp hình ảnh tế bào rõ ràng và giảm tỷ lệ mẫu không đạt."
+      },
+      {
+        "icon": "dna",
+        "title": "HPV DNA Cobas",
+        "desc": "Phát hiện 14 chủng HPV nguy cơ cao: định danh riêng HPV 16, 18 và nhóm 12 chủng còn lại."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Tầm soát kép",
+        "desc": "Kết hợp tế bào học và xét nghiệm HPV giúp phát hiện tổn thương tiền ung thư chính xác hơn."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Tư vấn sau kết quả",
+        "desc": "Bác sĩ giải thích kết quả, lập kế hoạch theo dõi, soi cổ tử cung hoặc sinh thiết khi cần."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ từ 30 đến 65 tuổi: tầm soát phối hợp ThinPrep và HPV theo khuyến cáo quốc tế",
+      "Phụ nữ từ 21 tuổi đã có quan hệ tình dục muốn tầm soát chủ động",
+      "Phụ nữ có nhiều bạn tình, tiền sử viêm nhiễm phụ khoa kéo dài hoặc đã từng có kết quả Pap bất thường",
+      "Phụ nữ đã tiêm vắc xin HPV vẫn cần tầm soát định kỳ",
+      "Phụ nữ chuẩn bị mang thai muốn kiểm tra sức khỏe cổ tử cung"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục (bác sĩ sẽ tư vấn phương án phù hợp)",
+      "Đang hành kinh hoặc ra máu âm đạo nhiều",
+      "Đang viêm âm đạo, cổ tử cung nặng (nên điều trị trước để kết quả chính xác)",
+      "Đã cắt toàn bộ tử cung và cổ tử cung vì bệnh lý lành tính, không có tiền sử tổn thương nặng (cần bác sĩ tư vấn)",
+      "Đang mang thai (cần báo bác sĩ để lựa chọn kỹ thuật lấy mẫu phù hợp)"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận chu kỳ kinh, quan hệ tình dục, tiền sử tiêm HPV, kết quả Pap trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám phụ khoa",
+        "desc": "Đặt mỏ vịt, quan sát âm đạo, cổ tử cung.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu tế bào cổ tử cung",
+        "desc": "Dùng cọ mềm lấy tế bào ở cổ ngoài và ống cổ tử cung, nhúng vào lọ dung dịch bảo quản; dùng chung mẫu cho cả hai xét nghiệm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Phòng xét nghiệm xử lý ThinPrep và chạy HPV DNA Cobas.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ đọc kết quả, giải thích và hẹn lịch theo dõi.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không quan hệ tình dục trong 24–48 giờ trước khi lấy mẫu",
+      "Không thụt rửa âm đạo, không đặt thuốc, kem hoặc gel âm đạo trong 48 giờ trước",
+      "Tránh làm xét nghiệm trong kỳ kinh; nên đặt lịch sau khi sạch kinh vài ngày",
+      "Báo bác sĩ về thuốc đang dùng, kết quả tầm soát trước, tiền sử tiêm HPV và nguy cơ mang thai",
+      "Mặc váy hoặc quần dễ cởi"
+    ],
+    "aftercare": [
+      "Có thể ra ít dịch hồng hoặc vài giọt máu trong 1–2 ngày, thường tự hết",
+      "Hạn chế quan hệ tình dục và thụt rửa trong 24 giờ sau lấy mẫu nếu có ra máu nhẹ",
+      "Âm tính cả hai: theo dõi và tầm soát lại theo khuyến cáo (thường sau vài năm tùy độ tuổi và hướng dẫn bác sĩ)",
+      "Dương tính hoặc bất thường: bác sĩ có thể hẹn soi cổ tử cung, sinh thiết hoặc xét nghiệm bổ sung"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài sau lấy mẫu",
+      "Đau bụng dưới tăng dần, sốt, dịch âm đạo có mùi hôi",
+      "Ra máu sau quan hệ hoặc ra máu giữa chu kỳ kinh (cần đi khám phụ khoa)"
+    ],
+    "accuracy_note": "Tầm soát không phải chẩn đoán ung thư. Nhiễm HPV rất phổ biến và phần lớn tự hết; HPV dương tính không có nghĩa là bạn bị ung thư. Kết quả bất thường cần được xác nhận bằng soi cổ tử cung và sinh thiết. Kết quả âm tính giúp yên tâm nhưng vẫn cần tầm soát lại theo khuyến cáo vì không có xét nghiệm nào đạt độ nhạy tuyệt đối.",
+    "faqs": [
+      {
+        "q": "Tôi đã tiêm vắc xin HPV có cần làm không?",
+        "a": "Có. Vắc xin không bao phủ mọi chủng HPV nguy cơ cao, nên phụ nữ đã tiêm vẫn cần tầm soát định kỳ."
+      },
+      {
+        "q": "Kết quả HPV dương tính có nghĩa là bị ung thư không?",
+        "a": "Không. Nhiễm HPV nguy cơ cao chỉ là yếu tố nguy cơ. Bác sĩ sẽ kết hợp với kết quả ThinPrep để quyết định có cần soi cổ tử cung hay chỉ theo dõi."
+      },
+      {
+        "q": "Làm xét nghiệm có đau không?",
+        "a": "Chỉ khó chịu nhẹ khi đặt mỏ vịt và lấy mẫu, thường kéo dài vài phút."
+      },
+      {
+        "q": "Gói này khác khám phụ khoa tổng quát như thế nào?",
+        "a": "Khám phụ khoa tổng quát bao gồm khám lâm sàng và soi cổ tử cung. Gói này tập trung tầm soát ung thư cổ tử cung bằng hai xét nghiệm chuyên biệt."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản phụ khoa và phòng xét nghiệm tế bào, sinh học phân tử",
+    "references": [
+      {
+        "title": "American Cancer Society guideline for the prevention and early detection of cervical cancer (2020)",
+        "org": "ACS"
+      },
+      {
+        "title": "Cervical Cancer: Screening (2018)",
+        "org": "USPSTF"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GYN_STANDARD": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Khám phụ khoa tổng quát là bước đầu tiên để chăm sóc sức khỏe sinh sản của phụ nữ. Bác sĩ kiểm tra cơ quan sinh dục ngoài, âm đạo và cổ tử cung, kết hợp soi cổ tử cung bằng máy kỹ thuật số có độ phóng đại cao để quan sát chi tiết niêm mạc, phát hiện sớm viêm nhiễm, lộ tuyến, polyp và các tổn thương nghi tiền ung thư. Sau khám, bạn được tư vấn phác đồ điều trị an toàn và kế hoạch chăm sóc phù hợp với độ tuổi và nhu cầu.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm tốt nhất",
+        "value": "Sau sạch kinh; có thể khám sớm hơn khi có triệu chứng cấp"
+      },
+      {
+        "icon": "camera",
+        "label": "Soi cổ tử cung",
+        "value": "Máy soi kỹ thuật số phóng đại cao, lưu hình ảnh"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "scan-eye",
+        "title": "Soi cổ tử cung kỹ thuật số",
+        "desc": "Phóng đại hình ảnh, nhìn rõ mạch máu và niêm mạc bất thường mà mắt thường khó thấy."
+      },
+      {
+        "icon": "search",
+        "title": "Tầm soát nhiều bệnh lý",
+        "desc": "Viêm âm đạo, viêm cổ tử cung, lộ tuyến, polyp, tổn thương nghi tiền ung thư."
+      },
+      {
+        "icon": "image",
+        "title": "Lưu và giải thích hình ảnh",
+        "desc": "Bác sĩ cho bạn xem hình soi, giải thích trực quan tình trạng cổ tử cung."
+      },
+      {
+        "icon": "message-circle",
+        "title": "Tư vấn cá nhân hóa",
+        "desc": "Kế hoạch điều trị, tránh thai, tiêm vắc xin HPV và tầm soát phù hợp độ tuổi."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ cần khám phụ khoa định kỳ hằng năm",
+      "Ra khí hư bất thường, ngứa, rát, đau khi quan hệ, ra máu ngoài kỳ kinh",
+      "Rối loạn kinh nguyệt, đau bụng dưới kéo dài",
+      "Kết quả Pap hoặc HPV bất thường cần soi cổ tử cung kiểm tra",
+      "Chuẩn bị mang thai hoặc cần kiểm tra sức khỏe sinh sản trước kết hôn",
+      "Cần tư vấn biện pháp tránh thai hoặc đặt/tháo dụng cụ tử cung"
+    ],
+    "not_suitable_for": [
+      "Chưa quan hệ tình dục: bác sĩ chỉ khám ngoài và chỉ định siêu âm qua bụng khi cần",
+      "Đang hành kinh ra nhiều máu (nên hẹn sau sạch kinh trừ khi có triệu chứng cấp)",
+      "Đang mang thai: cần báo bác sĩ để lựa chọn kỹ thuật khám phù hợp",
+      "Cần xử trí cấp cứu như ra máu ồ ạt, đau bụng dữ dội, sốt cao: đến cấp cứu ngay"
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi bệnh",
+        "desc": "Ghi nhận triệu chứng, chu kỳ kinh, tiền sử sản phụ khoa, thuốc, dị ứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám bên ngoài",
+        "desc": "Quan sát cơ quan sinh dục ngoài, âm hộ, tầng sinh môn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám bằng mỏ vịt và soi cổ tử cung",
+        "desc": "Quan sát âm đạo, cổ tử cung; dùng dung dịch chuyên dụng để làm nổi vùng tổn thương khi cần.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy mẫu xét nghiệm nếu cần",
+        "desc": "Soi tươi dịch âm đạo, cấy dịch hoặc lấy mẫu Pap theo chỉ định.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Kết luận và tư vấn điều trị",
+        "desc": "Giải thích hình ảnh, kê đơn hoặc hẹn xét nghiệm, thủ thuật tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không quan hệ tình dục, không thụt rửa, không đặt thuốc âm đạo trong 24–48 giờ trước",
+      "Tránh khám khi đang hành kinh trừ khi có triệu chứng cấp",
+      "Mang theo kết quả xét nghiệm, siêu âm, đơn thuốc phụ khoa trước đây",
+      "Mặc váy hoặc quần dễ cởi, đi tiểu trước khi khám",
+      "Báo bác sĩ nếu đang mang thai hoặc có khả năng mang thai"
+    ],
+    "aftercare": [
+      "Có thể ra ít dịch hồng hoặc vài giọt máu nhẹ trong 1–2 ngày sau soi hoặc lấy mẫu",
+      "Dùng thuốc đúng đơn và đủ liệu trình, không tự ý ngừng",
+      "Giữ vệ sinh vùng kín đúng cách; hạn chế thụt rửa sâu",
+      "Tái khám theo hẹn và nhận kết quả xét nghiệm (nếu có)"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều hoặc kéo dài",
+      "Đau bụng dưới dữ dội, sốt trên 38°C",
+      "Khí hư có mùi hôi nặng, ngứa rát tăng"
+    ],
+    "accuracy_note": "Khám phụ khoa và soi cổ tử cung giúp phát hiện bất thường nhưng chẩn đoán xác định tổn thương nghi ngờ cần sinh thiết hoặc xét nghiệm bổ sung. Khám phụ khoa không thay thế tầm soát ung thư cổ tử cung bằng Pap và HPV theo định kỳ.",
+    "faqs": [
+      {
+        "q": "Bao lâu nên khám phụ khoa một lần?",
+        "a": "Thông thường mỗi năm một lần, hoặc sớm hơn khi có triệu chứng. Bác sĩ sẽ tư vấn lịch phù hợp theo độ tuổi và yếu tố nguy cơ."
+      },
+      {
+        "q": "Soi cổ tử cung có đau không?",
+        "a": "Thường chỉ gây cảm giác khó chịu nhẹ. Có thể cảm thấy hơi châm chích khi bôi dung dịch lên cổ tử cung."
+      },
+      {
+        "q": "Khám phụ khoa đã bao gồm Pap hoặc HPV chưa?",
+        "a": "Gói khám tổng quát không bao gồm xét nghiệm Pap hoặc HPV; nếu cần tầm soát, bác sĩ sẽ tư vấn dịch vụ ThinPrep và HPV riêng."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản phụ khoa (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "2019 ASCCP Risk-Based Management Consensus Guidelines for Abnormal Cervical Cancer Screening Tests",
+        "org": "ASCCP"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "US_4D_5D": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm hình thái thai nhi 4D/5D trên hệ thống GE Voluson Expert với công nghệ HD-Live tái tạo hình ảnh màu thực tế, giúp bạn nhìn thấy rõ gương mặt, tay chân, cột sống và các cơ quan của bé. Ngoài vai trò gắn kết gia đình, đây là buổi khảo sát hình thái học quan trọng: bác sĩ kiểm tra có hệ thống đầu, mặt, cột sống, tim, bụng, thận, tứ chi và đánh giá nhau thai, nước ối để phát hiện sớm các dị tật hình thái.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai khuyến nghị",
+        "value": "Khảo sát hình thái: khoảng tuần 18–24; hình ảnh 4D gương mặt rõ nhất khoảng tuần 26–32"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "scan-line",
+        "label": "Thiết bị",
+        "value": "GE Voluson Expert, công nghệ HD-Live"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "camera",
+        "title": "Hình ảnh HD-Live chân thực",
+        "desc": "Ánh sáng và bóng đổ mô phỏng thực tế, cho hình ảnh gương mặt và bàn tay bé sống động."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Khảo sát tim thai",
+        "desc": "Quan sát các buồng tim, mạch máu lớn và đánh giá dòng chảy bằng Doppler màu."
+      },
+      {
+        "icon": "bone",
+        "title": "Khảo sát hình thái toàn diện",
+        "desc": "Đầu, mặt, cột sống, ngực, bụng, thận, tứ chi và dây rốn."
+      },
+      {
+        "icon": "user-check",
+        "title": "Bác sĩ chẩn đoán hình ảnh chuyên sâu",
+        "desc": "Thực hiện và giải thích kết quả trực tiếp với thai phụ."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ cần siêu âm hình thái học mốc quý 2 (khoảng tuần 18–24)",
+      "Muốn theo dõi chi tiết khuôn mặt, bàn tay và biểu cảm của bé",
+      "Có nguy cơ dị tật cao: tiền sử gia đình, bất thường trên siêu âm trước, kết quả sàng lọc nguy cơ cao",
+      "Thai phụ có bệnh nền (đái tháo đường, bệnh tim) hoặc dùng thuốc có thể ảnh hưởng thai",
+      "Cần đánh giá chi tiết sau khi phát hiện bất thường ở siêu âm thường"
+    ],
+    "not_suitable_for": [
+      "Thai dưới tuần 16 (hình thái chưa đủ rõ để khảo sát chi tiết)",
+      "Cần xử trí cấp cứu như ra máu, đau bụng dữ dội, vỡ ối: đến cấp cứu ngay",
+      "Muốn chỉ chụp ảnh lưu niệm mà không cần khảo sát hình thái: vẫn thực hiện theo quy trình chuẩn của bệnh viện"
+    ],
+    "parameters": [
+      {
+        "name": "Đầu và não",
+        "desc": "Hình dạng hộp sọ, não thất, tiểu não, thể chai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Mặt",
+        "desc": "Môi, hàm, mũi, hốc mắt, khẩu cái (khi quan sát được).",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Cột sống",
+        "desc": "Đánh giá liên tục đốt sống, da phủ phía sau, hở đốt sống.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tim và lồng ngực",
+        "desc": "Bốn buồng tim, đường ra các mạch máu lớn, phổi, cơ hoành.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Bụng và hệ tiết niệu",
+        "desc": "Dạ dày, bàng quang, thận, thành bụng, dây rốn.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tứ chi",
+        "desc": "Xương dài, bàn tay, bàn chân, ngón.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nhau thai, nước ối, dây rốn",
+        "desc": "Vị trí nhau, lượng nước ối, số mạch máu dây rốn.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và rà soát hồ sơ",
+        "desc": "Xác nhận tuổi thai, xem kết quả siêu âm, xét nghiệm sàng lọc trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khảo sát hình thái 2D và Doppler",
+        "desc": "Bác sĩ thực hiện lần lượt các mặt cắt tiêu chuẩn của các cơ quan.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Ghi hình 4D/5D",
+        "desc": "Tái tạo hình ảnh khuôn mặt, tay chân bé bằng HD-Live khi tư thế thai thuận lợi.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Giải thích kết quả",
+        "desc": "Bác sĩ giải thích, tư vấn và hẹn tái khám nếu cần khảo sát lại.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Ăn uống bình thường, không cần nhịn ăn hay nhịn tiểu",
+      "Uống đủ nước, ăn nhẹ trước khi đến để thai hoạt động tốt hơn",
+      "Mặc đồ rộng thoải mái, dễ vén bụng",
+      "Mang theo sổ khám thai, kết quả siêu âm và xét nghiệm trước đây",
+      "Có thể đi cùng người thân để cùng xem và nghe tư vấn"
+    ],
+    "aftercare": [
+      "Có thể sinh hoạt bình thường sau siêu âm",
+      "Nếu có vấn đề cần theo dõi, bác sĩ sẽ hẹn siêu âm lại hoặc chỉ định xét nghiệm bổ sung",
+      "Tiếp tục khám thai định kỳ và mang kết quả đến bác sĩ điều trị"
+    ],
+    "warning_signs": [
+      "Giảm hoặc mất cử động thai",
+      "Ra máu âm đạo, ra nước ối, đau bụng từng cơn",
+      "Phù nhanh, đau đầu dữ dội, nhìn mờ"
+    ],
+    "technology": {
+      "title": "GE Voluson Expert với HD-Live",
+      "desc": "Hệ thống siêu âm chẩn đoán sản phụ khoa cao cấp, tái tạo hình ảnh 3D/4D với nguồn sáng ảo cho hình ảnh bề mặt và độ sâu chân thực, kết hợp Doppler màu để khảo sát tuần hoàn.",
+      "items": [
+        "Hình ảnh 4D thời gian thực",
+        "HD-Live với nguồn sáng ảo",
+        "Doppler màu và năng lượng",
+        "Độ phân giải cao cho khảo sát tim thai"
+      ]
+    },
+    "accuracy_note": "Siêu âm hình thái phát hiện được phần lớn nhưng không phải mọi dị tật. Chất lượng hình ảnh phụ thuộc vào tư thế thai, lượng nước ối, độ dày thành bụng và tuổi thai. Có những trường hợp cần siêu âm lại hoặc khảo sát bổ sung. Hình ảnh 4D/5D đẹp không đồng nghĩa với kết luận hình thái hoàn toàn bình thường.",
+    "faqs": [
+      {
+        "q": "Siêu âm 4D/5D có an toàn cho thai không?",
+        "a": "Siêu âm được xem là an toàn khi thực hiện bởi người được đào tạo, tuân thủ nguyên tắc dùng mức năng lượng thấp nhất cần thiết và thời gian ngắn nhất cần thiết."
+      },
+      {
+        "q": "Làm vào tuần nào để thấy mặt bé rõ nhất?",
+        "a": "Thông thường khoảng tuần 26–32 khi bé có lớp mỡ dưới da, nhưng còn tùy tư thế và lượng nước ối. Khảo sát hình thái chuẩn nên làm vào khoảng tuần 18–24."
+      },
+      {
+        "q": "Bé quay lưng, che mặt thì sao?",
+        "a": "Bác sĩ sẽ chờ bé đổi tư thế hoặc hướng dẫn bạn vận động nhẹ. Nếu không thành công, có thể hẹn lại để chụp lại hình ảnh."
+      },
+      {
+        "q": "Gói có kèm ảnh và video cho gia đình không?",
+        "a": "Việc lưu trữ ảnh, video tuân theo chính sách của bệnh viện; vui lòng hỏi nhân viên khi đặt lịch hoặc tại phòng siêu âm."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Chẩn đoán hình ảnh sản phụ khoa hoặc Y học bào thai",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of routine mid-trimester fetal ultrasound scanning (2011)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "RE_AMH_ASSAY": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "AMH (Anti-Müllerian Hormone) do các nang noãn nhỏ trong buồng trứng tiết ra, nên nồng độ trong máu phản ánh dự trữ buồng trứng, tức số lượng trứng còn lại. Khác với nhiều hormone sinh dục khác, AMH ít thay đổi theo chu kỳ kinh nên có thể xét nghiệm vào bất kỳ ngày nào. Kết quả giúp bác sĩ tiên lượng đáp ứng với kích thích buồng trứng, chọn phác đồ thụ thai tự nhiên hoặc IVF, và hỗ trợ đánh giá nguy cơ suy buồng trứng sớm hoặc hội chứng buồng trứng đa nang.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm lấy máu",
+        "value": "Bất kỳ ngày nào của chu kỳ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      },
+      {
+        "icon": "file-check",
+        "label": "Kết quả",
+        "value": "Thường sau vài ngày làm việc"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "gauge",
+        "title": "Chỉ số dự trữ buồng trứng",
+        "desc": "Phản ánh số lượng nang noãn nhỏ còn lại, nền tảng để lập kế hoạch sinh con."
+      },
+      {
+        "icon": "calendar-check",
+        "title": "Làm bất kỳ ngày nào",
+        "desc": "Không phụ thuộc ngày kinh, thuận tiện cho người có kinh không đều."
+      },
+      {
+        "icon": "git-branch",
+        "title": "Định hướng phác đồ",
+        "desc": "Giúp bác sĩ chọn liều thuốc kích thích và dự đoán số trứng thu được khi làm IVF."
+      },
+      {
+        "icon": "user-check",
+        "title": "Tư vấn bởi bác sĩ hiếm muộn",
+        "desc": "Giải thích kết quả trong bối cảnh tuổi, siêu âm và tiền sử của bạn."
+      }
+    ],
+    "suitable_for": [
+      "Phụ nữ muốn đánh giá khả năng sinh sản hoặc có kế hoạch trì hoãn sinh con",
+      "Phụ nữ trên 35 tuổi đang chuẩn bị mang thai",
+      "Hiếm muộn, chuẩn bị làm IUI hoặc IVF",
+      "Kinh nguyệt thưa, mất kinh hoặc nghi ngờ suy buồng trứng sớm",
+      "Nghi ngờ hội chứng buồng trứng đa nang",
+      "Tiền sử phẫu thuật buồng trứng, xạ trị, hóa trị hoặc u buồng trứng"
+    ],
+    "not_suitable_for": [
+      "Đang mang thai (nồng độ AMH có thể thay đổi, kết quả khó diễn giải)",
+      "Đang dùng thuốc nội tiết hoặc ngừa thai kéo dài (nên báo bác sĩ vì có thể làm AMH thấp hơn tạm thời)",
+      "Đang dùng biotin (vitamin B7) liều cao (có thể gây sai số ở một số phương pháp xét nghiệm)"
+    ],
+    "parameters": [
+      {
+        "name": "AMH thấp",
+        "desc": "Gợi ý dự trữ buồng trứng giảm. Cần kết hợp tuổi, FSH, số nang thứ cấp trên siêu âm.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "AMH trung bình",
+        "desc": "Thường phù hợp với dự trữ buồng trứng bình thường theo độ tuổi.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "AMH cao",
+        "desc": "Có thể gặp ở buồng trứng đa nang và nguy cơ đáp ứng quá mức với thuốc kích thích.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và hỏi tiền sử",
+        "desc": "Ghi nhận tuổi, chu kỳ kinh, thuốc nội tiết, tiền sử phẫu thuật buồng trứng.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu tĩnh mạch",
+        "desc": "Lấy một mẫu máu nhỏ tại phòng xét nghiệm.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích mẫu",
+        "desc": "Định lượng AMH bằng phương pháp miễn dịch tự động.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích chỉ số trong bối cảnh của bạn và hướng xử trí.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn, có thể làm bất kỳ ngày nào trong chu kỳ",
+      "Báo bác sĩ nếu đang dùng thuốc tránh thai, thuốc nội tiết hoặc biotin liều cao (có thể cần ngưng theo hướng dẫn trước xét nghiệm)",
+      "Mang theo kết quả siêu âm, xét nghiệm hormone trước đây (nếu có)"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường ngay sau lấy máu",
+      "Mang kết quả đến khám với bác sĩ hiếm muộn để được tư vấn đầy đủ",
+      "Kết hợp siêu âm đếm nang thứ cấp, FSH, estradiol để đánh giá toàn diện dự trữ buồng trứng"
+    ],
+    "accuracy_note": "AMH phản ánh số lượng chứ không phản ánh chất lượng trứng. Chỉ số thấp không có nghĩa là không thể có thai, và chỉ số cao không đảm bảo khả năng thụ thai. Ngưỡng tham chiếu thay đổi theo phương pháp xét nghiệm và độ tuổi nên cần được bác sĩ diễn giải. Nên kết hợp với siêu âm, các hormone khác và tuổi để đánh giá toàn diện.",
+    "faqs": [
+      {
+        "q": "AMH thấp có nghĩa là tôi khó có con?",
+        "a": "Không hoàn toàn. AMH thấp cho thấy số lượng trứng còn ít, nhưng nhiều phụ nữ vẫn có thai tự nhiên. Tuy nhiên, bạn nên được tư vấn sớm để không bỏ lỡ cơ hội."
+      },
+      {
+        "q": "Có thể tăng AMH bằng thuốc hoặc thực phẩm không?",
+        "a": "Hiện chưa có phương pháp nào được chứng minh rõ ràng giúp tăng AMH hoặc tăng số lượng trứng. Lối sống lành mạnh giúp sức khỏe sinh sản nói chung."
+      },
+      {
+        "q": "Bao lâu nên xét nghiệm lại AMH?",
+        "a": "Tùy trường hợp, thường sau 6–12 tháng hoặc khi bác sĩ cần đánh giá lại trước khi điều trị."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Hiếm muộn & Hỗ trợ sinh sản",
+    "references": [
+      {
+        "title": "ESHRE guideline: ovarian stimulation for IVF/ICSI (2020)",
+        "org": "ESHRE"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "TRIPLE_TEST": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Triple test là xét nghiệm máu sàng lọc quý 2 định lượng ba chất trong máu mẹ: AFP (alpha-fetoprotein), hCG và uE3 (estriol không liên hợp). Kết hợp với tuổi mẹ và tuổi thai, kết quả cho nguy cơ thai mắc hội chứng Down (T21), Edwards (T18) và dị tật ống thần kinh hở như nứt đốt sống, vô sọ. Xét nghiệm thực hiện từ tuần 15 đến 20, là lựa chọn cho thai phụ chưa kịp làm Double test ở quý 1.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 15–20 (thường tối ưu 16–18)"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "droplet",
+        "label": "Mẫu thực hiện",
+        "value": "Một mẫu máu tĩnh mạch của mẹ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng AFP, hCG, uE3",
+        "desc": "Ba chỉ số sinh hóa cùng được tính nguy cơ bằng phần mềm chuyên dụng."
+      },
+      {
+        "icon": "brain",
+        "title": "Phát hiện dị tật ống thần kinh",
+        "desc": "AFP tăng cao là dấu hiệu gợi ý dị tật hở ống thần kinh."
+      },
+      {
+        "icon": "syringe",
+        "title": "An toàn, không xâm lấn",
+        "desc": "Chỉ cần một mẫu máu của mẹ, không ảnh hưởng đến thai."
+      },
+      {
+        "icon": "route",
+        "title": "Lựa chọn khi lỡ mốc quý 1",
+        "desc": "Phù hợp thai phụ bắt đầu khám thai muộn hoặc không làm Double test."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ ở tuần 15–20 muốn sàng lọc hội chứng Down, Edwards và dị tật ống thần kinh",
+      "Thai phụ chưa thực hiện Double test ở quý 1",
+      "Thai phụ có tiền sử gia đình có dị tật ống thần kinh",
+      "Thai phụ đái tháo đường type 1 hoặc dùng một số thuốc chống động kinh (nguy cơ dị tật ống thần kinh cao hơn)",
+      "Thai phụ muốn sàng lọc bổ sung kết hợp với siêu âm"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 15 tuần hoặc trên 20 tuần (kết quả kém tin cậy)",
+      "Đa thai (cách tính nguy cơ khác và độ chính xác thấp hơn)",
+      "Cần chẩn đoán xác định hoặc nghi ngờ dị tật rõ trên siêu âm (cần chọc ối hoặc xét nghiệm chuyên sâu)",
+      "Chưa xác định chính xác tuổi thai (cần siêu âm xác nhận trước)"
+    ],
+    "parameters": [
+      {
+        "name": "AFP",
+        "desc": "Protein do thai nhi sản xuất. Tăng gợi ý dị tật ống thần kinh, thành bụng; giảm có thể gợi ý hội chứng Down.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "hCG (tự do β hoặc tổng)",
+        "desc": "Hormone do nhau thai tiết ra. Tăng thường gặp trong hội chứng Down; giảm gợi ý hội chứng Edwards.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "uE3 (estriol không liên hợp)",
+        "desc": "Hormone liên quan chức năng thai và nhau. Giảm trong hội chứng Down và Edwards.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận tuổi thai",
+        "desc": "Kiểm tra siêu âm, ngày kinh cuối, cân nặng, tiền sử đái tháo đường, hút thuốc, IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu",
+        "desc": "Lấy một mẫu máu tĩnh mạch nhỏ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phân tích và tính nguy cơ",
+        "desc": "Định lượng AFP, hCG, uE3 và tính nguy cơ bằng phần mềm kết hợp tuổi mẹ, tuổi thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả, tư vấn bước tiếp theo nếu nguy cơ cao.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Mang theo kết quả siêu âm gần nhất có ghi tuổi thai",
+      "Cung cấp thông tin cân nặng, hút thuốc, đái tháo đường, mang thai IVF, thuốc đang dùng",
+      "Báo bác sĩ nếu thai phụ đã làm các xét nghiệm sàng lọc khác"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Kết quả nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái ở tuần 18–24",
+      "Kết quả nguy cơ cao: đặt lịch gặp bác sĩ để tư vấn, có thể cần siêu âm chi tiết, NIPT hoặc chọc ối",
+      "Nếu AFP tăng: có thể cần siêu âm chuyên sâu để loại trừ dị tật ống thần kinh"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: nên gặp bác sĩ sớm, không tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối hoặc giảm cử động thai"
+    ],
+    "accuracy_note": "Triple test là xét nghiệm sàng lọc, không phải chẩn đoán. Khả năng phát hiện hội chứng Down của Triple test xấp xỉ 60–70% với tỷ lệ dương tính giả khoảng 5%, thấp hơn so với Double test kết hợp siêu âm độ mờ da gáy ở quý 1 và thấp hơn NIPT. Kết quả nguy cơ cao cần xác nhận bằng chọc ối hoặc các xét nghiệm chuyên sâu; kết quả nguy cơ thấp không loại trừ hoàn toàn bất thường.",
+    "faqs": [
+      {
+        "q": "Triple test khác Double test như thế nào?",
+        "a": "Double test làm ở tuần 11–13 tuần 6 ngày, kết hợp với đo độ mờ da gáy. Triple test làm ở quý 2 (tuần 15–20) với ba chỉ số AFP, hCG, uE3. Bạn thường chỉ cần làm một trong hai."
+      },
+      {
+        "q": "Đã làm Double test, có cần làm Triple test không?",
+        "a": "Thường không cần. Bác sĩ có thể chỉ định thêm AFP riêng để sàng lọc dị tật ống thần kinh trong một số trường hợp."
+      },
+      {
+        "q": "Kết quả nguy cơ cao thì phải làm gì?",
+        "a": "Bạn sẽ được tư vấn các bước tiếp theo như siêu âm chi tiết, NIPT hoặc chọc ối để chẩn đoán xác định. Nguy cơ cao không đồng nghĩa với thai chắc chắn bất thường."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "US_2D": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Siêu âm thai 2D tiêu chuẩn là phương pháp nền tảng và an toàn nhất để theo dõi thai kỳ. Ở giai đoạn đầu, siêu âm xác định thai làm tổ trong buồng tử cung, tuổi thai và dấu hiệu tim thai (từ khoảng tuần 6). Ở các giai đoạn sau, siêu âm kiểm tra vị trí, ngôi thai, nhịp tim thai, lượng nước ối, nhau thai và ước tính cân nặng, giúp bác sĩ theo dõi sự phát triển của bé và phát hiện sớm bất thường.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm thực hiện",
+        "value": "Mọi giai đoạn của thai kỳ, theo mốc và chỉ định của bác sĩ"
+      },
+      {
+        "icon": "droplet",
+        "label": "Nhịn tiểu",
+        "value": "Có thể cần nhịn tiểu ở thai rất sớm; bác sĩ hướng dẫn khi đặt lịch"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "map-pin",
+        "title": "Xác định thai trong tử cung",
+        "desc": "Loại trừ thai ngoài tử cung ở giai đoạn sớm."
+      },
+      {
+        "icon": "heart-pulse",
+        "title": "Nghe tim thai và đo nhịp tim",
+        "desc": "Dấu hiệu quan trọng xác nhận thai còn sống và phát triển."
+      },
+      {
+        "icon": "ruler",
+        "title": "Đo tuổi thai và cân nặng",
+        "desc": "Chiều dài đầu mông (CRL) ở quý 1; các chỉ số BPD, HC, AC, FL ở quý 2, 3."
+      },
+      {
+        "icon": "waves",
+        "title": "Đánh giá nước ối và nhau thai",
+        "desc": "Phát hiện đa ối, thiểu ối, nhau tiền đạo, nhau bong non."
+      }
+    ],
+    "suitable_for": [
+      "Chậm kinh, nghi có thai, cần xác định thai trong tử cung",
+      "Đau bụng, ra máu âm đạo trong thai kỳ đầu",
+      "Xác định tuổi thai và ngày dự sinh",
+      "Kiểm tra định kỳ vị trí thai, ngôi thai, nước ối, nhau thai",
+      "Ước tính cân nặng thai nhi ở quý 3",
+      "Theo dõi các thai kỳ nguy cơ cao theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Cần khảo sát hình thái chi tiết (nên chọn siêu âm hình thái 4D/5D)",
+      "Cần đánh giá Doppler chuyên sâu hoặc song thai nguy cơ (có dịch vụ riêng)",
+      "Tình huống cấp cứu sản khoa: vui lòng đến khoa cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Túi thai, tim thai",
+        "desc": "Xác định vị trí, số lượng thai, hoạt động tim thai ở quý 1.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chiều dài đầu mông (CRL)",
+        "desc": "Dùng tính tuổi thai chính xác nhất ở quý 1.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "BPD, HC, AC, FL",
+        "desc": "Đường kính lưỡng đỉnh, chu vi đầu, chu vi bụng, chiều dài xương đùi để ước tính cân nặng.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nước ối (AFI hoặc túi ối sâu nhất)",
+        "desc": "Đánh giá lượng nước ối.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nhau thai và dây rốn",
+        "desc": "Vị trí nhau, độ trưởng thành nhau, số mạch dây rốn.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và rà soát hồ sơ",
+        "desc": "Xác nhận tuổi thai, lý do siêu âm, kết quả siêu âm trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm qua thành bụng",
+        "desc": "Bác sĩ bôi gel và quét đầu dò trên bụng. Thai rất sớm có thể cần thêm siêu âm đầu dò âm đạo.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đo và đánh giá các chỉ số",
+        "desc": "Đo các chỉ số tuổi thai, tim thai, nước ối, nhau thai.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Giải thích kết quả",
+        "desc": "Bác sĩ thông báo kết quả, tư vấn và hẹn lịch tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Thai dưới khoảng 8–10 tuần có thể cần nhịn tiểu nhẹ; từ quý 2 không cần",
+      "Không cần nhịn ăn",
+      "Mặc đồ rộng, dễ vén bụng",
+      "Mang theo sổ khám thai và kết quả siêu âm trước đây"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau siêu âm, lau sạch gel trên bụng",
+      "Mang kết quả đến bác sĩ điều trị để được tư vấn tiếp",
+      "Theo dõi cử động thai và đi khám ngay khi có dấu hiệu bất thường"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo, đau bụng dữ dội, đau vai (nghi thai ngoài tử cung)",
+      "Giảm hoặc mất cử động thai",
+      "Ra nước ối, co thắt đều đặn"
+    ],
+    "accuracy_note": "Siêu âm 2D là công cụ chẩn đoán hình ảnh phụ thuộc kinh nghiệm người thực hiện và điều kiện thăm khám (tư thế thai, thể trạng mẹ, lượng nước ối). Ước tính cân nặng thai có thể sai lệch vài trăm gram, nhất là ở quý 3. Siêu âm 2D tiêu chuẩn không thay thế khảo sát hình thái chuyên sâu.",
+    "faqs": [
+      {
+        "q": "Siêu âm có hại cho thai không?",
+        "a": "Siêu âm chẩn đoán được xem là an toàn khi dùng đúng chỉ định và đúng kỹ thuật, không sử dụng bức xạ ion hóa như X-quang."
+      },
+      {
+        "q": "Từ tuần mấy thì nhìn thấy tim thai?",
+        "a": "Thường từ khoảng tuần 6 có thể thấy hoạt động tim thai trên siêu âm, tùy thiết bị và tuổi thai chính xác."
+      },
+      {
+        "q": "Siêu âm 2D khác 4D/5D thế nào?",
+        "a": "2D là chuẩn để theo dõi và đo đạc. 4D/5D chủ yếu dùng khảo sát hình thái chi tiết và hình ảnh khuôn mặt, tay chân chân thực hơn."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản phụ khoa có chứng chỉ siêu âm",
+    "references": [
+      {
+        "title": "ISUOG Practice Guidelines: performance of first-trimester fetal ultrasound scan (2013)",
+        "org": "ISUOG"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PACKAGE_BIRTH_SURGERY": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Gói sinh mổ chủ động trọn gói Bình An dành cho các trường hợp có chỉ định mổ lấy thai hoặc mổ chủ động theo nguyện vọng sau khi được bác sĩ tư vấn và đánh giá an toàn. Gói mang đến kíp mổ chuyên gia, phòng mổ vô khuẩn một chiều, giảm đau đa tầng và lưu viện 4 ngày tại phòng riêng cao cấp. Kỹ thuật mổ ưu tiên đường rạch nhỏ, thẩm mỹ, giúp mẹ hồi phục thoải mái và an tâm trong cuộc vượt cạn.",
+    "key_facts": [
+      {
+        "icon": "bed",
+        "label": "Lưu viện",
+        "value": "Chăm sóc toàn diện mẹ và bé tại viện theo phác đồ"
+      },
+      {
+        "icon": "calendar-days",
+        "label": "Thời điểm mổ chủ động",
+        "value": "Thường từ tuần 39 nếu không có chỉ định sớm hơn; bác sĩ quyết định ngày mổ"
+      },
+      {
+        "icon": "users",
+        "label": "Kíp mổ",
+        "value": "Phẫu thuật viên chính, phụ mổ, bác sĩ gây mê hồi sức, bác sĩ sơ sinh, nữ hộ sinh/điều dưỡng"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình đăng ký",
+        "value": "Thăm khám, tư vấn và lập kế hoạch sinh chu đáo"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "users",
+        "title": "Kíp mổ chuyên gia",
+        "desc": "Phẫu thuật viên, bác sĩ gây mê hồi sức và bác sĩ sơ sinh giàu kinh nghiệm cùng phối hợp."
+      },
+      {
+        "icon": "shield-check",
+        "title": "Phòng mổ vô khuẩn một chiều",
+        "desc": "Quy trình kiểm soát nhiễm khuẩn nghiêm ngặt, giảm nguy cơ nhiễm trùng vết mổ."
+      },
+      {
+        "icon": "pill",
+        "title": "Giảm đau đa tầng",
+        "desc": "Phối hợp nhiều phương pháp giảm đau trong và sau mổ để mẹ vận động và chăm bé sớm."
+      },
+      {
+        "icon": "sparkles",
+        "title": "Đường rạch nhỏ, thẩm mỹ",
+        "desc": "Kỹ thuật khâu thẩm mỹ giúp vết mổ liền gọn, hạn chế sẹo."
+      },
+      {
+        "icon": "bed",
+        "title": "Phòng riêng cao cấp 4 ngày",
+        "desc": "Không gian yên tĩnh, tiện nghi cho mẹ nghỉ ngơi và gắn kết với bé."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ có chỉ định mổ lấy thai: ngôi bất thường, nhau tiền đạo, tiền sử mổ lấy thai, khung chậu hẹp, thai quá to và các chỉ định khác",
+      "Thai phụ muốn chủ động lên lịch mổ sau khi bác sĩ tư vấn đầy đủ lợi ích và nguy cơ",
+      "Thai phụ muốn có kế hoạch rõ ràng, chi phí minh bạch trước ngày sinh",
+      "Thai phụ cần môi trường phòng riêng, yên tĩnh sau mổ"
+    ],
+    "not_suitable_for": [
+      "Chuyển dạ đã bắt đầu hoặc có biến chứng cấp cứu (sẽ được xử trí theo quy trình cấp cứu)",
+      "Thai phụ có chống chỉ định gây tê hoặc bệnh lý nặng cần theo dõi ở đơn vị hồi sức (bác sĩ sẽ tư vấn phương án phù hợp)",
+      "Thai phụ không đủ điều kiện sức khỏe để mổ chủ động tại cơ sở (sẽ được tư vấn chuyển tuyến)"
+    ],
+    "package": {
+      "included_groups": [
+        {
+          "group": "Kíp phẫu thuật",
+          "items": [
+            {
+              "name": "Phẫu thuật viên chính và phụ mổ"
+            },
+            {
+              "name": "Bác sĩ gây mê hồi sức"
+            },
+            {
+              "name": "Bác sĩ sơ sinh đón bé tại phòng mổ"
+            },
+            {
+              "name": "Nữ hộ sinh, điều dưỡng gây mê và dụng cụ viên"
+            }
+          ]
+        },
+        {
+          "group": "Phòng mổ và kỹ thuật",
+          "items": [
+            {
+              "name": "Phòng mổ vô khuẩn một chiều"
+            },
+            {
+              "name": "Kỹ thuật mổ đường rạch nhỏ, khâu thẩm mỹ"
+            },
+            {
+              "name": "Gây tê tủy sống hoặc ngoài màng cứng theo chỉ định"
+            }
+          ]
+        },
+        {
+          "group": "Giảm đau",
+          "items": [
+            {
+              "name": "Giảm đau đa tầng trong và sau mổ"
+            }
+          ]
+        },
+        {
+          "group": "Lưu viện",
+          "items": [
+            {
+              "name": "Phòng riêng cao cấp",
+              "qty": "4 ngày"
+            },
+            {
+              "name": "Chăm sóc mẹ và bé sau mổ, hướng dẫn cho con bú, chăm sóc rốn"
+            }
+          ]
+        }
+      ],
+      "excluded": [
+        "Biến chứng hoặc can thiệp ngoài dự kiến (mất máu nhiều, truyền máu, cắt tử cung, nằm hồi sức)",
+        "Kéo dài ngày nằm viện quá thời gian trong gói do chỉ định y khoa",
+        "Chăm sóc trẻ sơ sinh cần điều trị đặc biệt (NICU, cấp cứu sơ sinh)",
+        "Thuốc, vật tư đặc biệt hoặc xét nghiệm ngoài danh mục gói",
+        "Chi phí dịch vụ tùy chọn (nâng hạng bác sĩ, thêm giường người nhà nếu có)"
+      ],
+      "conditions": [
+        "Thai phụ cần được bác sĩ khám, đánh giá chỉ định và đủ điều kiện sức khỏe trước khi đăng ký",
+        "Ngày mổ chủ động được bác sĩ xác nhận theo tuổi thai và tình trạng mẹ-bé",
+        "Phạm vi chi tiết, điều kiện hoàn hủy và khoản phát sinh theo hợp đồng gói tại thời điểm đăng ký",
+        "Cần đối chiếu và hoàn thiện danh mục gói với bộ phận dịch vụ trước khi công bố"
+      ],
+      "needs_confirmation": true
+    },
+    "process_steps": [
+      {
+        "title": "Đăng ký gói và khám tiền phẫu",
+        "desc": "Bác sĩ khám, đánh giá chỉ định mổ, tư vấn lợi ích và nguy cơ, lập kế hoạch cùng thai phụ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xét nghiệm và gây mê tiền phẫu",
+        "desc": "Xét nghiệm máu, nước tiểu, tim mạch theo chỉ định; bác sĩ gây mê đánh giá, tư vấn phương pháp gây tê.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chốt lịch mổ",
+        "desc": "Đặt ngày mổ chủ động, thường từ tuần 39 nếu không có chỉ định sớm hơn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nhập viện ngày mổ",
+        "desc": "Làm thủ tục, nhịn ăn theo hướng dẫn (thường 6–8 giờ), chuẩn bị tiền mê, đặt đường truyền.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Phẫu thuật và đón bé",
+        "desc": "Gây tê tủy sống hoặc ngoài màng cứng, thực hiện mổ lấy thai, đón bé, da kề da khi đủ điều kiện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Hồi tỉnh và chăm sóc hậu phẫu",
+        "desc": "Theo dõi sau mổ, giảm đau đa tầng, vận động sớm, hướng dẫn cho con bú và chăm sóc bé.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Xuất viện và hẹn tái khám",
+        "desc": "Sau 4 ngày lưu viện, hướng dẫn chăm sóc vết mổ, dinh dưỡng, hẹn tái khám sau sinh.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Hoàn thành khám thai định kỳ và các xét nghiệm tiền phẫu theo hướng dẫn",
+      "Nhịn ăn thức ăn đặc trước mổ theo hướng dẫn của bác sĩ gây mê (thường 6–8 giờ)",
+      "Chuẩn bị túi đồ nhập viện cho mẹ và bé, giấy tờ tùy thân, sổ khám thai",
+      "Báo bác sĩ về thuốc đang dùng, tiền sử dị ứng, tiền sử phẫu thuật",
+      "Sắp xếp người thân hỗ trợ sau sinh và đưa đón"
+    ],
+    "aftercare": [
+      "Vận động nhẹ sớm theo hướng dẫn để giảm nguy cơ huyết khối và tắc ruột",
+      "Giữ vết mổ khô sạch, tuân thủ thuốc kháng sinh, giảm đau theo đơn",
+      "Cho con bú sớm, nghỉ ngơi đủ, ăn uống đủ chất và uống nhiều nước",
+      "Tái khám vết mổ và sức khỏe sau sinh theo lịch hẹn",
+      "Tránh mang vác nặng và tránh quan hệ vợ chồng cho đến khi bác sĩ cho phép"
+    ],
+    "warning_signs": [
+      "Sốt trên 38°C, vết mổ đỏ, sưng, đau tăng, chảy dịch hoặc mủ",
+      "Ra máu âm đạo nhiều (thấm hơn 1 băng vệ sinh mỗi giờ), có máu cục lớn",
+      "Đau, sưng, đỏ một bên chân; khó thở, đau ngực",
+      "Đau bụng tăng dần, nôn, bí trung đại tiện, tiểu khó",
+      "Cảm giác buồn bã kéo dài, lo âu nặng hoặc có ý nghĩ tự làm hại bản thân (cần được hỗ trợ ngay)"
+    ],
+    "accuracy_note": "Mổ lấy thai là phẫu thuật lớn, có thể có biến chứng như chảy máu, nhiễm trùng, tổn thương cơ quan lân cận, huyết khối và ảnh hưởng đến các lần mang thai sau. Khuyến cáo chung là mổ lấy thai khi có chỉ định y khoa; trường hợp mổ theo nguyện vọng cần được bác sĩ tư vấn đầy đủ trước khi quyết định.",
+    "faqs": [
+      {
+        "q": "Có thể mổ chủ động mà không có chỉ định y khoa không?",
+        "a": "Bác sĩ sẽ tư vấn đầy đủ lợi ích và nguy cơ để bạn đưa ra quyết định có hiểu biết. Việc chấp thuận mổ theo nguyện vọng phụ thuộc đánh giá của bác sĩ và quy định của bệnh viện."
+      },
+      {
+        "q": "Vì sao mổ chủ động thường chọn từ tuần 39?",
+        "a": "Thai đủ tháng giúp giảm nguy cơ vấn đề hô hấp ở trẻ sơ sinh. Nếu có chỉ định y khoa sớm hơn, bác sĩ sẽ quyết định ngày mổ phù hợp."
+      },
+      {
+        "q": "Gói đã bao gồm tất cả chi phí chưa?",
+        "a": "Gói là trọn gói trong phạm vi quy định. Những khoản phát sinh do biến chứng hoặc dịch vụ ngoài danh mục sẽ được thông báo và tính theo bảng giá. Vui lòng xem hợp đồng gói."
+      },
+      {
+        "q": "Sau mổ bao lâu được xuất viện?",
+        "a": "Gói bao gồm 4 ngày lưu viện tại phòng riêng. Nếu mẹ hoặc bé cần theo dõi thêm, bác sĩ sẽ tư vấn."
+      },
+      {
+        "q": "Tôi có phải chọn hạng bác sĩ khi đặt lịch không?",
+        "a": "Không. Gói không yêu cầu chọn hạng bác sĩ khi đặt lịch; kíp mổ được bệnh viện phân công theo quy trình."
+      }
+    ],
+    "performed_by": "Kíp mổ chuyên gia Khoa Sản, bác sĩ gây mê hồi sức và bác sĩ sơ sinh",
+    "references": [
+      {
+        "title": "Cesarean Delivery on Maternal Request, Committee Opinion No. 761 (2019)",
+        "org": "ACOG"
+      },
+      {
+        "title": "WHO recommendations: non-clinical interventions to reduce unnecessary caesarean sections (2018)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "DOUBLE_TEST": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Double test (xét nghiệm sàng lọc quý 1) là phương pháp sàng lọc sinh hóa quy chuẩn của Bộ Y tế nhằm đánh giá nguy cơ thai nhi mắc các hội chứng rối loạn nhiễm sắc thể phổ biến như Down (T21), Edwards (T18) và Patau (T13). Xét nghiệm định lượng β-hCG tự do và PAPP-A trong máu mẹ, kết hợp với đo độ mờ da gáy (NT) trên siêu âm và tuổi mẹ để cho ra nguy cơ cá thể hóa. Thời điểm tối ưu là tuần 11 đến 13 tuần 6 ngày.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Tuần thai thực hiện",
+        "value": "Tuần 11 đến 13 tuần 6 ngày"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "scan-line",
+        "label": "Kết hợp",
+        "value": "Siêu âm đo độ mờ da gáy (NT) và tuổi mẹ"
+      },
+      {
+        "icon": "utensils",
+        "label": "Nhịn ăn",
+        "value": "Không cần"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng β-hCG tự do và PAPP-A",
+        "desc": "Hai chỉ số sinh hóa quan trọng trong sàng lọc quý 1."
+      },
+      {
+        "icon": "ruler",
+        "title": "Kết hợp độ mờ da gáy (NT)",
+        "desc": "Kết hợp siêu âm giúp tăng độ nhạy so với chỉ xét nghiệm máu."
+      },
+      {
+        "icon": "badge-check",
+        "title": "Quy chuẩn Bộ Y tế",
+        "desc": "Phương pháp sàng lọc được áp dụng rộng rãi và được khuyến cáo trong chăm sóc tiền sản."
+      },
+      {
+        "icon": "zap",
+        "title": "Nhanh, an toàn",
+        "desc": "Chỉ cần lấy một mẫu máu mẹ, không ảnh hưởng đến thai."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ ở tuần 11 đến 13 tuần 6 ngày muốn sàng lọc hội chứng Down, Edwards, Patau",
+      "Thai phụ từ 35 tuổi trở lên hoặc có tiền sử thai bất thường",
+      "Thai phụ có siêu âm nghi ngờ tăng độ mờ da gáy",
+      "Thai phụ cần bước sàng lọc đầu tiên trước khi cân nhắc NIPT hoặc chọc ối",
+      "Thai phụ mang thai từ IVF hoặc có bệnh nền (đái tháo đường, bệnh tự miễn)"
+    ],
+    "not_suitable_for": [
+      "Thai dưới 11 tuần hoặc trên 13 tuần 6 ngày (cần chuyển sang Triple test hoặc phương pháp khác)",
+      "Đa thai (cách tính nguy cơ khác, cần tư vấn chuyên sâu)",
+      "Cần chẩn đoán xác định hoặc có dấu hiệu bất thường rõ trên siêu âm (cần chọc ối, sinh thiết gai nhau)",
+      "Không có kết quả đo độ mờ da gáy do người đủ chứng chỉ thực hiện"
+    ],
+    "parameters": [
+      {
+        "name": "β-hCG tự do",
+        "desc": "Hormone do nhau thai tiết ra. Tăng cao thường gặp ở thai mắc hội chứng Down.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PAPP-A",
+        "desc": "Protein huyết tương liên quan thai kỳ. Giảm thấp có thể gặp ở hội chứng Down, Edwards.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Độ mờ da gáy (NT)",
+        "desc": "Khoảng dịch sau gáy thai nhi đo bằng siêu âm. Tăng độ mờ là dấu hiệu nguy cơ bất thường nhiễm sắc thể và một số dị tật tim.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tuổi mẹ và tuổi thai",
+        "desc": "Là các yếu tố nền để tính nguy cơ cá thể hóa.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và xác nhận tuổi thai",
+        "desc": "Kiểm tra ngày kinh cuối, siêu âm xác định tuổi thai chính xác (CRL).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm đo độ mờ da gáy",
+        "desc": "Do bác sĩ có chứng chỉ thực hiện, cần đúng tuổi thai và đúng kỹ thuật.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu",
+        "desc": "Lấy một mẫu máu tĩnh mạch nhỏ để định lượng β-hCG tự do và PAPP-A.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tính nguy cơ",
+        "desc": "Phần mềm tính nguy cơ kết hợp tuổi mẹ, tuổi thai, NT và kết quả sinh hóa.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Trả kết quả và tư vấn",
+        "desc": "Bác sĩ giải thích kết quả và hướng xử trí tiếp theo.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Xác định chính xác ngày kinh cuối hoặc mang theo kết quả siêu âm tuổi thai",
+      "Cung cấp thông tin cân nặng, hút thuốc, đái tháo đường, thai IVF, tiền sử thai bất thường",
+      "Hỏi bệnh viện về việc kết quả đo độ mờ da gáy (NT) đã bao gồm trong gói chưa trước khi đặt lịch"
+    ],
+    "aftercare": [
+      "Sinh hoạt bình thường sau lấy máu",
+      "Nguy cơ thấp: tiếp tục khám thai và siêu âm hình thái quý 2",
+      "Nguy cơ cao: gặp bác sĩ để tư vấn NIPT, chọc ối hoặc sinh thiết gai nhau",
+      "Có thể làm thêm sàng lọc tiền sản giật ở cùng thời điểm theo chỉ định bác sĩ"
+    ],
+    "warning_signs": [
+      "Nhận kết quả nguy cơ cao: nên gặp bác sĩ sớm, không tự kết luận",
+      "Ra máu âm đạo, đau bụng, ra nước ối trong thai kỳ"
+    ],
+    "accuracy_note": "Double test kết hợp NT là xét nghiệm sàng lọc, không phải chẩn đoán. Với hội chứng Down, khả năng phát hiện khoảng 85–90% với tỷ lệ dương tính giả khoảng 5% khi kết hợp NT, tuổi mẹ và tuổi thai. Kết quả nguy cơ cao không đồng nghĩa với thai bất thường; nguy cơ thấp cũng không loại trừ hoàn toàn. Chẩn đoán xác định cần chọc ối hoặc sinh thiết gai nhau.",
+    "faqs": [
+      {
+        "q": "Double test có bao gồm siêu âm độ mờ da gáy không?",
+        "a": "Để có kết quả nguy cơ đầy đủ, cần có số đo độ mờ da gáy (NT) do người có chứng chỉ thực hiện. Vui lòng xác nhận phạm vi dịch vụ khi đặt lịch hoặc tại quầy tiếp nhận."
+      },
+      {
+        "q": "Double test có thay thế NIPT không?",
+        "a": "Không. NIPT có độ nhạy cao hơn ở các hội chứng phổ biến, nhưng Double test kết hợp NT vẫn là sàng lọc nền tảng và NT còn giúp phát hiện một số dị tật khác."
+      },
+      {
+        "q": "Nếu lỡ mốc Double test thì làm gì?",
+        "a": "Bạn có thể làm Triple test ở tuần 15–20 hoặc NIPT (từ tuần 9–10). Bác sĩ sẽ tư vấn lựa chọn phù hợp."
+      },
+      {
+        "q": "Tôi mang song thai thì sao?",
+        "a": "Cần tư vấn trực tiếp vì cách tính nguy cơ ở song thai khác. Bác sĩ sẽ chỉ định phương pháp phù hợp."
+      }
+    ],
+    "performed_by": "Điều dưỡng xét nghiệm, bác sĩ siêu âm đo NT và bác sĩ chuyên khoa Sản",
+    "references": [
+      {
+        "title": "Screening for Fetal Chromosomal Abnormalities, Practice Bulletin No. 226 (2020)",
+        "org": "ACOG"
+      },
+      {
+        "title": "The 11–13 weeks scan",
+        "org": "Fetal Medicine Foundation"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "PACKAGE_BIRTH_STANDARD": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Gói sinh con thường trọn gói Hạnh Phúc đồng hành cùng mẹ suốt hành trình chuyển dạ và sinh nở tự nhiên. Chuyển dạ được theo dõi bằng Monitoring tim thai liên tục, mẹ được hỗ trợ giảm đau sản khoa bằng gây tê ngoài màng cứng khi có chỉ định và nguyện vọng, kíp bác sĩ Sản khoa và hộ sinh trực tiếp đỡ đẻ, sau đó mẹ và bé được chăm sóc tại viện 2 ngày trong phòng lưu viện tiêu chuẩn. Mọi chi phí chính được tính trọn gói để mẹ an tâm đón con.",
+    "key_facts": [
+      {
+        "icon": "activity",
+        "label": "Theo dõi chuyển dạ",
+        "value": "Monitoring tim thai liên tục"
+      },
+      {
+        "icon": "syringe",
+        "label": "Giảm đau",
+        "value": "Gây tê ngoài màng cứng giảm đau sản khoa khi có chỉ định và nguyện vọng"
+      },
+      {
+        "icon": "bed",
+        "label": "Lưu viện",
+        "value": "Chăm sóc toàn diện mẹ và bé tại viện theo phác đồ"
+      },
+      {
+        "icon": "clock",
+        "label": "Quy trình đăng ký",
+        "value": "Thăm khám, tư vấn và lập kế hoạch sinh chu đáo"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "activity",
+        "title": "Monitoring tim thai liên tục",
+        "desc": "Theo dõi sát nhịp tim thai và cơn co tử cung trong suốt quá trình chuyển dạ."
+      },
+      {
+        "icon": "pill",
+        "title": "Giảm đau sản khoa",
+        "desc": "Gây tê ngoài màng cứng giúp giảm đau, giữ sức cho mẹ khi chuyển dạ."
+      },
+      {
+        "icon": "users",
+        "title": "Kíp bác sĩ và hộ sinh đỡ đẻ",
+        "desc": "Bác sĩ Sản khoa cùng nữ hộ sinh đồng hành từ lúc chuyển dạ đến khi sinh."
+      },
+      {
+        "icon": "heart-handshake",
+        "title": "Gắn kết mẹ con",
+        "desc": "Da kề da sớm và hỗ trợ cho con bú trong giờ đầu sau sinh khi đủ điều kiện."
+      },
+      {
+        "icon": "baby",
+        "title": "Chăm sóc sơ sinh",
+        "desc": "Bao gồm tiêm vitamin cho bé theo quy trình sơ sinh của bệnh viện."
+      }
+    ],
+    "suitable_for": [
+      "Thai phụ mang thai đơn, ngôi đầu, dự kiến sinh thường qua đường âm đạo",
+      "Thai phụ muốn theo dõi chuyển dạ an toàn với thiết bị hiện đại",
+      "Thai phụ muốn giảm đau khi chuyển dạ",
+      "Thai phụ muốn chi phí sinh nở rõ ràng, trọn gói, hạn chế phát sinh"
+    ],
+    "not_suitable_for": [
+      "Thai có chỉ định mổ lấy thai: nhau tiền đạo, ngôi ngang, ngôi mông không đủ điều kiện sinh ngả âm đạo, vết mổ cũ không phù hợp thử sinh ngả âm đạo (bác sĩ tư vấn gói sinh mổ)",
+      "Thai phụ có chống chỉ định gây tê ngoài màng cứng (rối loạn đông máu, nhiễm trùng vùng lưng, dị ứng thuốc tê)",
+      "Thai kỳ nguy cơ cao cần hồi sức hoặc chăm sóc đặc biệt (bác sĩ đánh giá và tư vấn phương án phù hợp)"
+    ],
+    "package": {
+      "included_groups": [
+        {
+          "group": "Kíp đỡ đẻ",
+          "items": [
+            {
+              "name": "Bác sĩ Sản khoa theo dõi và đỡ đẻ"
+            },
+            {
+              "name": "Nữ hộ sinh đỡ đẻ và hỗ trợ mẹ trong chuyển dạ"
+            }
+          ]
+        },
+        {
+          "group": "Theo dõi và giảm đau",
+          "items": [
+            {
+              "name": "Monitoring tim thai liên tục trong chuyển dạ"
+            },
+            {
+              "name": "Gây tê ngoài màng cứng giảm đau sản khoa",
+              "note": "Khi có chỉ định và nguyện vọng của mẹ"
+            }
+          ]
+        },
+        {
+          "group": "Chăm sóc sơ sinh",
+          "items": [
+            {
+              "name": "Tiêm vitamin cho trẻ sơ sinh theo quy trình"
+            },
+            {
+              "name": "Da kề da, hỗ trợ cho con bú sớm và chăm sóc rốn"
+            }
+          ]
+        },
+        {
+          "group": "Lưu viện",
+          "items": [
+            {
+              "name": "Phòng lưu viện tiêu chuẩn",
+              "qty": "2 ngày"
+            },
+            {
+              "name": "Chăm sóc mẹ và bé sau sinh, hướng dẫn chăm sóc tại nhà"
+            }
+          ]
+        }
+      ],
+      "excluded": [
+        "Mổ lấy thai cấp cứu hoặc chuyển sang phẫu thuật",
+        "Can thiệp sản khoa đặc biệt (giác hút, forceps, thủ thuật xử trí băng huyết...) nếu phát sinh ngoài kế hoạch",
+        "Kéo dài ngày nằm viện quá 2 ngày do chỉ định y khoa",
+        "Chăm sóc trẻ sơ sinh cần điều trị đặc biệt (NICU, cấp cứu sơ sinh)",
+        "Thuốc, vật tư đặc biệt, xét nghiệm ngoài danh mục gói",
+        "Dịch vụ tùy chọn như nâng hạng phòng, giường người nhà"
+      ],
+      "conditions": [
+        "Đăng ký và khám thai tại bệnh viện theo hướng dẫn để bác sĩ đánh giá điều kiện sinh thường",
+        "Gây tê ngoài màng cứng được thực hiện khi bác sĩ gây mê đánh giá đủ điều kiện",
+        "Nếu cần chuyển sinh mổ hoặc có biến chứng, chi phí tính theo bảng giá riêng",
+        "Cần đối chiếu và hoàn thiện danh mục gói với bộ phận dịch vụ trước khi công bố"
+      ],
+      "needs_confirmation": true
+    },
+    "process_steps": [
+      {
+        "title": "Đăng ký gói và tư vấn kế hoạch sinh",
+        "desc": "Bác sĩ đánh giá thai kỳ, tư vấn kế hoạch sinh, giảm đau và giải đáp thắc mắc.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Khám thai định kỳ đến ngày sinh",
+        "desc": "Tiếp tục khám theo lịch, chuẩn bị dấu hiệu chuyển dạ và túi đồ nhập viện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Nhập viện khi chuyển dạ",
+        "desc": "Khi có cơn co đều đặn, ra nước ối, ra máu hoặc theo hướng dẫn của bác sĩ, mẹ đến viện làm thủ tục.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Theo dõi chuyển dạ",
+        "desc": "Monitoring tim thai và cơn co liên tục, khám đánh giá tiến triển cổ tử cung.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Gây tê ngoài màng cứng giảm đau",
+        "desc": "Thực hiện bởi bác sĩ gây mê khi có chỉ định, nguyện vọng và điều kiện phù hợp.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Sinh con",
+        "desc": "Kíp bác sĩ và hộ sinh đỡ đẻ, da kề da và hỗ trợ cho con bú trong giờ đầu khi đủ điều kiện.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Chăm sóc sau sinh và xuất viện",
+        "desc": "Lưu viện 2 ngày, theo dõi mẹ và bé, hướng dẫn chăm sóc và hẹn tái khám.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Khám thai đủ và thực hiện các xét nghiệm tuần cuối theo hướng dẫn",
+      "Học các dấu hiệu chuyển dạ thật và cách thở, rặn khi sinh",
+      "Chuẩn bị túi đồ nhập viện cho mẹ và bé, giấy tờ tùy thân, sổ khám thai",
+      "Ghi lại số điện thoại liên hệ khẩn của bệnh viện và sắp xếp phương tiện di chuyển",
+      "Trao đổi trước với bác sĩ về mong muốn giảm đau và các lựa chọn khi sinh"
+    ],
+    "aftercare": [
+      "Nghỉ ngơi, ăn uống đủ chất, uống nhiều nước và cho con bú sớm",
+      "Vệ sinh vết khâu tầng sinh môn (nếu có) đúng hướng dẫn",
+      "Theo dõi lượng sản dịch, thân nhiệt và tinh thần",
+      "Tái khám sau sinh theo lịch hẹn của bác sĩ",
+      "Đưa bé đi tiêm chủng và khám sơ sinh đúng lịch"
+    ],
+    "warning_signs": [
+      "Ra máu âm đạo nhiều (thấm hơn 1 băng vệ sinh mỗi giờ), có máu cục lớn",
+      "Sốt trên 38°C, sản dịch hôi, đau bụng dưới tăng",
+      "Vết khâu sưng, đau, chảy mủ",
+      "Đau, sưng một bên chân, khó thở, đau ngực",
+      "Buồn bã kéo dài, lo âu nặng hoặc có ý nghĩ tự làm hại bản thân (cần được hỗ trợ ngay)"
+    ],
+    "technology": {
+      "title": "Monitoring sản khoa",
+      "desc": "Thiết bị theo dõi tim thai và cơn co tử cung liên tục, giúp phát hiện sớm dấu hiệu suy thai để bác sĩ xử trí kịp thời.",
+      "items": [
+        "Ghi nhịp tim thai liên tục",
+        "Ghi cơn co tử cung",
+        "Cảnh báo bất thường nhịp tim thai"
+      ]
+    },
+    "accuracy_note": "Mỗi cuộc chuyển dạ diễn biến khác nhau. Gây tê ngoài màng cứng giảm đau đáng kể nhưng không phải lúc nào cũng loại bỏ hoàn toàn cảm giác đau, và có thể có tác dụng phụ như hạ huyết áp, tê chân tạm thời, đau lưng nhẹ. Trường hợp cần mổ lấy thai hoặc can thiệp thủ thuật, bác sĩ sẽ giải thích và chi phí theo quy định riêng.",
+    "faqs": [
+      {
+        "q": "Gây tê ngoài màng cứng có ảnh hưởng đến bé không?",
+        "a": "Thuốc tê tác dụng tại chỗ, lượng thuốc vào máu mẹ rất nhỏ nên ít ảnh hưởng đến bé. Bác sĩ gây mê sẽ đánh giá trước và theo dõi trong suốt thời gian giảm đau."
+      },
+      {
+        "q": "Tôi có thể chọn bác sĩ đỡ đẻ không?",
+        "a": "Dịch vụ do kíp bác sĩ và hộ sinh trực tiếp theo dõi và đỡ đẻ. Vui lòng trao đổi với bệnh viện khi đăng ký về nhu cầu chọn bác sĩ."
+      },
+      {
+        "q": "Nếu chuyển dạ rồi phải mổ lấy thai thì sao?",
+        "a": "Sự an toàn của mẹ và bé là ưu tiên hàng đầu. Chi phí mổ lấy thai hoặc can thiệp ngoài kế hoạch sẽ được thông báo và tính theo bảng giá."
+      },
+      {
+        "q": "Lưu viện 2 ngày có đủ không?",
+        "a": "Thông thường 2 ngày đủ để theo dõi mẹ và bé sau sinh thường không biến chứng. Nếu cần theo dõi thêm, bác sĩ sẽ tư vấn."
+      }
+    ],
+    "performed_by": "Bác sĩ Sản khoa, nữ hộ sinh, bác sĩ gây mê hồi sức và bác sĩ sơ sinh",
+    "references": [
+      {
+        "title": "WHO recommendations: intrapartum care for a positive childbirth experience (2018)",
+        "org": "WHO"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "GENETIC_COUNSELING": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tư vấn di truyền là buổi trao đổi 1:1 với bác sĩ chuyên gia di truyền để phân tích tiền sử gia đình, đánh giá nguy cơ đột biến gen và bất thường nhiễm sắc thể, giải thích kết quả xét nghiệm di truyền và định hướng các bước tiếp theo. Dịch vụ dành cho các cặp đôi trước hôn nhân hoặc chuẩn bị mang thai, thai phụ có kết quả sàng lọc bất thường, hoặc gia đình có người mắc bệnh di truyền. Buổi tư vấn tôn trọng quyền tự quyết định của bạn và bảo mật thông tin gen.",
+    "key_facts": [
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "users",
+        "label": "Đối tượng",
+        "value": "Cá nhân, cặp đôi, thai phụ và gia đình"
+      },
+      {
+        "icon": "file-text",
+        "label": "Bạn nhận được",
+        "value": "Phả hệ, đánh giá nguy cơ, tóm tắt tư vấn và đề xuất xét nghiệm phù hợp"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "git-fork",
+        "title": "Phân tích phả hệ 3 thế hệ",
+        "desc": "Vẽ cây phả hệ để nhận diện kiểu di truyền và các thành viên có nguy cơ."
+      },
+      {
+        "icon": "dna",
+        "title": "Đánh giá nguy cơ cá thể hóa",
+        "desc": "Nguy cơ mang gen bệnh, nguy cơ tái phát và nguy cơ cho con."
+      },
+      {
+        "icon": "file-search",
+        "title": "Giải thích kết quả xét nghiệm",
+        "desc": "NIPT, Double test, Triple test, kết quả chọc ối, giải trình tự gen và các kết quả di truyền khác."
+      },
+      {
+        "icon": "lock",
+        "title": "Bảo mật và tôn trọng quyết định",
+        "desc": "Tư vấn không áp đặt, thông tin di truyền của bạn được bảo mật."
+      }
+    ],
+    "suitable_for": [
+      "Cặp đôi chuẩn bị kết hôn hoặc mang thai, có người thân mắc bệnh di truyền",
+      "Vợ chồng có tiền sử sảy thai liên tiếp, thai lưu hoặc sinh con dị tật, chậm phát triển",
+      "Thai phụ có kết quả sàng lọc nguy cơ cao hoặc siêu âm gợi ý bất thường",
+      "Gia đình có tiền sử ung thư xuất hiện sớm hoặc nhiều thế hệ",
+      "Người muốn tầm soát mang gen lặn phổ biến (ví dụ thalassemia, thiếu men G6PD, teo cơ tủy sống SMA)",
+      "Thai phụ cần giải thích kết quả xét nghiệm di truyền từ nơi khác"
+    ],
+    "not_suitable_for": [
+      "Cần xét nghiệm di truyền thực tế: buổi tư vấn không bao gồm chi phí xét nghiệm, sẽ được chỉ định và tính riêng",
+      "Tình huống cấp cứu sản khoa: đến khoa cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Phả hệ",
+        "desc": "Ghi nhận bệnh lý, tuổi khởi phát, dị tật và sảy thai trong gia đình ít nhất 3 thế hệ.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nguy cơ mang gen bệnh lặn",
+        "desc": "Đánh giá nguy cơ cả hai vợ chồng cùng mang gen lặn gây bệnh ở con.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Nguy cơ lệch bội nhiễm sắc thể",
+        "desc": "Dựa trên tuổi mẹ, kết quả sàng lọc và siêu âm.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chỉ định xét nghiệm",
+        "desc": "Gợi ý xét nghiệm phù hợp: carrier screening, NIPT, chọc ối, giải trình tự gen, PGT.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Tiếp nhận và ghi nhận lý do tư vấn",
+        "desc": "Làm rõ mối quan tâm, mục tiêu và kỳ vọng của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Thu thập tiền sử và vẽ phả hệ",
+        "desc": "Hỏi tiền sử gia đình, thai kỳ, sảy thai, dị tật, bệnh lý và kết quả xét nghiệm trước.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đánh giá nguy cơ",
+        "desc": "Phân tích kiểu di truyền, ước tính nguy cơ và xác định xét nghiệm cần thiết.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tư vấn các lựa chọn",
+        "desc": "Trình bày xét nghiệm, ưu điểm, giới hạn, và các hướng xử trí. Tôn trọng quyết định của bạn.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tóm tắt và hẹn bước tiếp theo",
+        "desc": "Tóm tắt nội dung tư vấn, hẹn lịch xét nghiệm hoặc nhận kết quả.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Chuẩn bị thông tin bệnh lý, dị tật, ung thư, sảy thai của người thân trong 3 thế hệ",
+      "Mang theo kết quả xét nghiệm di truyền, siêu âm, hồ sơ bệnh án có liên quan",
+      "Nếu có thể, mời chồng hoặc vợ cùng tham gia buổi tư vấn",
+      "Liệt kê các câu hỏi và mối lo lắng để buổi tư vấn đúng trọng tâm"
+    ],
+    "aftercare": [
+      "Đọc kỹ bản tóm tắt tư vấn và trao đổi với người thân",
+      "Thực hiện các xét nghiệm đã thống nhất, đặt lịch tư vấn sau xét nghiệm",
+      "Đặt thêm câu hỏi cho bác sĩ nếu có thắc mắc mới",
+      "Cân nhắc chia sẻ kết quả với người thân có liên quan nếu phù hợp"
+    ],
+    "accuracy_note": "Tư vấn di truyền cung cấp thông tin và ước tính nguy cơ dựa trên dữ liệu hiện có, không đảm bảo kết quả cụ thể. Xét nghiệm di truyền có giới hạn: kết quả bình thường không loại trừ mọi bệnh, và có thể có kết quả chưa rõ ý nghĩa. Mọi quyết định thuộc về bạn và gia đình.",
+    "faqs": [
+      {
+        "q": "Tư vấn di truyền khác gì xét nghiệm di truyền?",
+        "a": "Tư vấn là buổi trao đổi để đánh giá nguy cơ và chọn xét nghiệm phù hợp, giải thích kết quả. Xét nghiệm là bước lấy mẫu và phân tích, tính phí riêng."
+      },
+      {
+        "q": "Thalassemia có phổ biến ở Việt Nam không?",
+        "a": "Có. Thalassemia và thiếu men G6PD là các bệnh lý di truyền lặn khá thường gặp ở người Việt, nên tầm soát mang gen trước hoặc sớm trong thai kỳ là cần thiết trong nhiều trường hợp."
+      },
+      {
+        "q": "Thông tin di truyền của tôi có được bảo mật không?",
+        "a": "Thông tin sức khỏe và di truyền được bảo mật theo quy định. Bạn là người quyết định có chia sẻ cho người thân hoặc cơ sở khác hay không."
+      },
+      {
+        "q": "Cần cả hai vợ chồng cùng đi không?",
+        "a": "Không bắt buộc, nhưng nên có cả hai vì nguy cơ di truyền thường liên quan đến cả hai bên gia đình."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên gia di truyền hoặc bác sĩ Sản khoa có chuyên môn tư vấn di truyền",
+    "references": [
+      {
+        "title": "Carrier Screening in the Age of Genomic Medicine, Committee Opinion No. 690 (2017)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Genetic counseling practice resources",
+        "org": "NSGC"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  },
+  "MM_PREECLAMPSIA_SCREEN": {
+    "schema_version": 1,
+    "review": {
+      "status": "DRAFT",
+      "needs_medical_review": true
+    },
+    "intro": "Tiền sản giật là biến chứng nguy hiểm của thai kỳ, có thể gây ảnh hưởng nghiêm trọng đến mẹ và thai, đặc biệt thể khởi phát sớm. Gói dịch vụ này gồm hai phần: (1) sàng lọc kết hợp ở tuần 11–13 tuần 6 ngày dựa trên huyết áp động mạch trung bình, Doppler động mạch tử cung và định lượng các yếu tố sinh mạch trong máu mẹ (như PlGF); (2) quản lý dự phòng cho thai phụ nguy cơ cao, trong đó bác sĩ có thể chỉ định aspirin liều thấp. Từ giữa thai kỳ, tỷ số sFlt-1/PlGF còn hỗ trợ bác sĩ đánh giá và theo dõi thai phụ nghi ngờ tiền sản giật.",
+    "key_facts": [
+      {
+        "icon": "calendar-days",
+        "label": "Sàng lọc quý 1",
+        "value": "Tuần 11 đến 13 tuần 6 ngày"
+      },
+      {
+        "icon": "clock",
+        "label": "Thời gian thực hiện",
+        "value": "Tùy theo tình trạng lâm sàng & chỉ định bác sĩ"
+      },
+      {
+        "icon": "file-text",
+        "label": "Kết quả",
+        "value": "Nguy cơ tiền sản giật sớm (thường dưới 34 tuần) cùng kế hoạch theo dõi và dự phòng"
+      },
+      {
+        "icon": "user-check",
+        "label": "Chọn bác sĩ",
+        "value": "Cho phép nâng hạng bác sĩ"
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "calculator",
+        "title": "Tính nguy cơ cá thể hóa",
+        "desc": "Kết hợp tiền sử, huyết áp, Doppler và xét nghiệm máu để cho ra nguy cơ riêng cho từng thai phụ."
+      },
+      {
+        "icon": "activity",
+        "title": "Doppler động mạch tử cung",
+        "desc": "Đánh giá sức cản của dòng máu nuôi tử cung, một yếu tố quan trọng của nguy cơ tiền sản giật sớm."
+      },
+      {
+        "icon": "flask-conical",
+        "title": "Định lượng yếu tố sinh mạch",
+        "desc": "Đo PlGF (và PAPP-A theo phác đồ) trong máu mẹ; sFlt-1/PlGF dùng hỗ trợ đánh giá giai đoạn sau."
+      },
+      {
+        "icon": "pill",
+        "title": "Dự phòng khi nguy cơ cao",
+        "desc": "Bác sĩ cân nhắc aspirin liều thấp và lên kế hoạch theo dõi sát suốt thai kỳ."
+      }
+    ],
+    "suitable_for": [
+      "Mọi thai phụ ở tuần 11–13 tuần 6 ngày (sàng lọc phổ quát theo khuyến cáo của FMF)",
+      "Thai phụ mang thai lần đầu, từ 35 tuổi trở lên, béo phì",
+      "Tiền sử tiền sản giật ở lần mang thai trước hoặc mẹ/chị em ruột từng bị",
+      "Tăng huyết áp mạn tính, đái tháo đường, bệnh thận, lupus ban đỏ, hội chứng kháng phospholipid",
+      "Đa thai, thai từ hỗ trợ sinh sản (IVF), khoảng cách giữa hai lần sinh quá xa",
+      "Từ khoảng tuần 20 trở đi: thai phụ có biểu hiện nghi ngờ tiền sản giật cần đánh giá thêm theo chỉ định bác sĩ"
+    ],
+    "not_suitable_for": [
+      "Thai đã quá 13 tuần 6 ngày (mô hình sàng lọc quý 1 không còn áp dụng, bác sĩ sẽ tư vấn phương pháp khác)",
+      "Thai chưa xác định được tuổi thai hoặc không có tim thai",
+      "Chống chỉ định aspirin: dị ứng aspirin/NSAID, loét dạ dày tá tràng đang hoạt động, rối loạn đông máu, bệnh gan nặng (bác sĩ sẽ đánh giá khi cần dự phòng)",
+      "Cần xử trí cấp cứu vì huyết áp cao, đau đầu dữ dội, nhìn mờ: đến cấp cứu ngay"
+    ],
+    "parameters": [
+      {
+        "name": "Huyết áp động mạch trung bình (MAP)",
+        "desc": "Đo bằng máy chuẩn, hai tay, ở tư thế ngồi nghỉ, lấy giá trị trung bình.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Chỉ số xung động mạch tử cung (UtA-PI)",
+        "desc": "Đo bằng Doppler qua đường bụng hoặc âm đạo, phản ánh sức cản dòng máu nuôi nhau thai.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PlGF (placental growth factor)",
+        "desc": "Yếu tố sinh mạch thường thấp hơn ở thai phụ có nguy cơ tiền sản giật.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "PAPP-A",
+        "desc": "Protein huyết tương liên quan thai kỳ, tham gia vào mô hình tính nguy cơ theo phác đồ.",
+        "reference": "Theo phác đồ"
+      },
+      {
+        "name": "Tỷ số sFlt-1/PlGF",
+        "desc": "Dùng hỗ trợ đánh giá, tiên lượng ngắn hạn ở thai phụ nghi ngờ tiền sản giật từ khoảng tuần 20.",
+        "reference": "Theo phác đồ"
+      }
+    ],
+    "process_steps": [
+      {
+        "title": "Hỏi tiền sử và đánh giá yếu tố nguy cơ",
+        "desc": "Tiền sử sản khoa, bệnh nền, gia đình, cân nặng, chiều cao, chủng tộc, thai tự nhiên hay IVF.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Đo huyết áp động mạch trung bình",
+        "desc": "Đo 2 tay, 2 lần bằng máy tự động đã chuẩn hóa.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Siêu âm Doppler động mạch tử cung",
+        "desc": "Đo chỉ số xung (PI) hai bên động mạch tử cung và xác nhận tuổi thai qua chiều dài đầu mông (CRL).",
+        "duration_minutes": null
+      },
+      {
+        "title": "Lấy máu xét nghiệm",
+        "desc": "Định lượng PlGF (và PAPP-A tùy phác đồ) trong máu mẹ.",
+        "duration_minutes": null
+      },
+      {
+        "title": "Tính nguy cơ và tư vấn",
+        "desc": "Bác sĩ tính nguy cơ, giải thích kết quả, quyết định có chỉ định aspirin và lịch theo dõi.",
+        "duration_minutes": null
+      }
+    ],
+    "preparation": [
+      "Không cần nhịn ăn",
+      "Nghỉ ngơi 5–10 phút trước khi đo huyết áp, không dùng cà phê hoặc thuốc lá ngay trước đó",
+      "Mang theo kết quả siêu âm, xét nghiệm trước đây, ngày kinh cuối hoặc hồ sơ IVF",
+      "Báo cho bác sĩ các bệnh nền, thuốc đang dùng và tiền sử tiền sản giật của gia đình"
+    ],
+    "aftercare": [
+      "Nếu nguy cơ cao: dùng aspirin liều thấp đúng liều, đúng giờ theo đơn (thường bắt đầu trước tuần 16 và duy trì đến khoảng tuần 36 nếu không có chống chỉ định)",
+      "Đo huyết áp tại nhà và ghi chép nếu bác sĩ dặn",
+      "Tuân thủ lịch khám thai dày hơn, siêu âm theo dõi tăng trưởng thai và Doppler khi cần",
+      "Nếu nguy cơ thấp: tiếp tục khám thai định kỳ, vẫn cần đi khám ngay khi có dấu hiệu bất thường"
+    ],
+    "warning_signs": [
+      "Đau đầu dữ dội không đỡ, nhìn mờ, chớp sáng, đau thượng vị hoặc hạ sườn phải",
+      "Phù nhanh ở mặt, tay, tăng cân đột ngột",
+      "Huyết áp từ 140/90 mmHg",
+      "Giảm cử động thai, ra máu âm đạo, đau bụng"
+    ],
+    "accuracy_note": "Đây là xét nghiệm sàng lọc nguy cơ, không phải chẩn đoán. Kết quả nguy cơ cao không có nghĩa chắc chắn sẽ bị tiền sản giật, và nguy cơ thấp không loại trừ hoàn toàn khả năng xảy ra. Hiệu quả của aspirin liều thấp phụ thuộc vào việc bắt đầu sớm, liều lượng và sự tuân thủ; phác đồ do bác sĩ chỉ định riêng cho từng người.",
+    "faqs": [
+      {
+        "q": "Tôi khỏe mạnh, huyết áp bình thường, có cần sàng lọc không?",
+        "a": "Có. Nhiều trường hợp tiền sản giật xảy ra ở thai phụ không có yếu tố nguy cơ rõ ràng. Sàng lọc ở quý 1 giúp phát hiện nhóm nguy cơ cao sớm để dự phòng."
+      },
+      {
+        "q": "Aspirin liều thấp có an toàn không?",
+        "a": "Ở thai phụ nguy cơ cao và không có chống chỉ định, aspirin liều thấp được các hiệp hội sản phụ khoa khuyến cáo. Tuy nhiên bạn chỉ nên dùng khi có chỉ định và hướng dẫn của bác sĩ."
+      },
+      {
+        "q": "Gói này khác Double test như thế nào?",
+        "a": "Double test sàng lọc hội chứng Down, Edwards, Patau. Gói này sàng lọc nguy cơ tiền sản giật; hai dịch vụ có thể thực hiện trong cùng đợt khám quý 1 nếu bác sĩ chỉ định."
+      },
+      {
+        "q": "Tôi đã quá tuần 14 thì còn làm được không?",
+        "a": "Mô hình sàng lọc quý 1 tối ưu ở tuần 11–13 tuần 6 ngày. Nếu đã muộn hơn, bác sĩ sẽ đánh giá yếu tố nguy cơ và tư vấn hướng theo dõi phù hợp."
+      }
+    ],
+    "performed_by": "Bác sĩ chuyên khoa Sản, chẩn đoán trước sinh (có thể chọn hạng bác sĩ)",
+    "references": [
+      {
+        "title": "Low-Dose Aspirin Use During Pregnancy, Committee Opinion No. 743 (2018)",
+        "org": "ACOG"
+      },
+      {
+        "title": "Aspirin versus Placebo in Pregnancies at High Risk for Preterm Preeclampsia (ASPRE trial, 2017)",
+        "org": "N Engl J Med"
+      },
+      {
+        "title": "First-trimester screening for pre-eclampsia",
+        "org": "Fetal Medicine Foundation"
+      }
+    ],
+    "disclaimer": "Thông tin trên trang chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của bác sĩ. Quy trình, chỉ định và kết quả có thể khác nhau ở từng người. Vui lòng trao đổi với bác sĩ để được tư vấn phù hợp."
+  }
+};
+  const rawServiceContent = SERVICE_CONTENT;
   const serviceContentMap = {};
   for (const [key, val] of Object.entries(rawServiceContent)) {
     if (val.schema_version !== 1) {
@@ -797,40 +3896,6 @@ async function main() {
       tagCodes: ['HIGH_RISK', 'REPRODUCTIVE_AGE'],
       status: 'ACTIVE',
     },
-    // Dịch vụ tạm ngưng (INACTIVE) do hiệu chuẩn thiết bị
-    {
-      code: 'US_DOPPLER_TWINS',
-      slug: 'sieu-am-doppler-song-thai-chuyen-sau',
-      name: 'Siêu âm Doppler song thai & Đa thai chuyên sâu',
-      summary: 'Tạm ngưng nhận lịch hẹn trực tuyến do thiết bị đang trong kỳ hiệu chuẩn y tế định kỳ.',
-      description: 'Đánh giá chi tiết tuần hoàn hai thai, hội chứng truyền máu song thai (TTTS). Dịch vụ tạm dừng tiếp nhận hẹn mới trên hệ thống.',
-      kind: 'DIAGNOSTIC',
-      specialtyCode: 'PERINATOLOGY',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=85',
-      duration: null,
-      policy: 'NOT_REQUIRED',
-      price: 650000,
-      tagCodes: ['HIGH_RISK'],
-      status: 'INACTIVE',
-      bookingEnabled: false,
-    },
-    // Dịch vụ đang dự thảo (DRAFT)
-    {
-      code: 'PACKAGE_STEM_CELL',
-      slug: 'goi-thu-thap-va-luu-tru-te-bao-goc-cuong-ron',
-      name: 'Gói thu thập & Lưu trữ Tế bào gốc Máu cuống rốn',
-      summary: 'Bảo hiểm sinh học tương lai cho trẻ sơ sinh, hợp tác cùng ngân hàng tế bào gốc quốc tế.',
-      description: 'Dịch vụ đang trong giai đoạn soạn thảo quy trình kỹ thuật và chính sách giá, chuẩn bị ra mắt vào quý tới.',
-      kind: 'PACKAGE',
-      specialtyCode: 'OBSTETRICS',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=85',
-      duration: null,
-      policy: 'NOT_REQUIRED',
-      price: 35000000,
-      tagCodes: ['POPULAR'],
-      status: 'DRAFT',
-      bookingEnabled: false,
-    },
     // Dịch vụ bổ sung cho các chuyên khoa Phụ khoa, Hiếm muộn & Nội khoa thai kỳ
     {
       code: 'GYN_THINPREP_HPV',
@@ -901,23 +3966,6 @@ async function main() {
       policy: 'RANK_UPGRADE_ALLOWED',
       price: 1200000,
       tagCodes: ['HIGH_RISK', 'POPULAR'],
-    },
-    // Dịch vụ cũ đã lưu trữ (ARCHIVED)
-    {
-      code: 'OLD_COVID_SCREENING',
-      slug: 'xet-nghiem-nhanh-sars-cov-2-tien-phau',
-      name: 'Xét nghiệm nhanh kháng nguyên SARS-CoV-2 tiền phẫu',
-      summary: 'Dịch vụ sàng lọc y tế giai đoạn cũ, hiện đã lưu trữ hồ sơ và ngừng cung cấp.',
-      description: 'Quy trình xét nghiệm nhanh Covid-19 phục vụ sàng lọc dịch tễ thời kỳ trước, đã lưu trữ.',
-      kind: 'DIAGNOSTIC',
-      specialtyCode: 'MATERNAL_MEDICINE',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=85',
-      duration: null,
-      policy: 'NOT_REQUIRED',
-      price: 100000,
-      tagCodes: [],
-      status: 'ARCHIVED',
-      bookingEnabled: false,
     },
   ];
 
@@ -999,34 +4047,7 @@ async function main() {
   console.log(`   - Danh sách code trong JSON không tìm thấy trong DB:`, unmappedInDb);
   console.log(`   - Danh sách dịch vụ trong DB còn content = null:`, nullContentCodes);
 
-  // Bổ sung các bản ghi BasePrice với trạng thái EXPIRED, SCHEDULED, CANCELLED
-  const routineServiceId = serviceMap['PRENATAL_ROUTINE'].id;
-  const vipServiceId = serviceMap['PRENATAL_VIP'].id;
-  const niptServiceId = serviceMap['NIPT_BASIC'].id;
-
-  // 1. Giá cũ EXPIRED của Khám thai định kỳ (250.000đ áp dụng từ 1 năm trước đến đầu tháng này)
-  await clients.catalog.query(
-    `INSERT INTO base_prices (id, medical_service_id, amount_minor, currency, effective_from, effective_to, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 250000, 'VND', $2, $3, 'EXPIRED', 1, $2, $3)`,
-    [routineServiceId, oneYearAgo, startOfThisMonth]
-  );
-
-  // 2. Giá mới SCHEDULED của Khám thai VIP (550.000đ áp dụng từ đầu tháng tới)
-  const nextMonthPriceDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  await clients.catalog.query(
-    `INSERT INTO base_prices (id, medical_service_id, amount_minor, currency, effective_from, effective_to, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 550000, 'VND', $2, NULL, 'SCHEDULED', 1, NOW(), NOW())`,
-    [vipServiceId, nextMonthPriceDate]
-  );
-
-  // 3. Giá bị CANCELLED của NIPT Basic (dự thảo giá bị hủy bỏ)
-  await clients.catalog.query(
-    `INSERT INTO base_prices (id, medical_service_id, amount_minor, currency, effective_from, effective_to, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 2900000, 'VND', NOW(), NULL, 'CANCELLED', 1, NOW(), NOW())`,
-    [niptServiceId]
-  );
-
-  console.log(`✅ Đã khởi tạo 18 Dịch vụ Y tế (Tất cả Kinds & Statuses), Danh mục phân cấp, Thẻ, Bảng giá đa trạng thái (ACTIVE, EXPIRED, SCHEDULED, CANCELLED).`);
+  console.log('✅ Đã khởi tạo 20 Dịch vụ Y tế chuẩn kèm nội dung lâm sàng, Phân loại, Thẻ tag và Bảng giá hiện hành (ACTIVE).');
 
   // ============================================================================
   // 4. KHU VỰC & CÁC BƯỚC ĐIỀU PHỐI HÀNG ĐỢI (QUEUE STAGES)
@@ -1218,21 +4239,7 @@ async function main() {
       category: 'CATEGORY_X',
       warning: 'ĐỘC TÍNH CỰC CAO: Gây dị tật bẩm sinh nặng nề (não úng thủy, dị tật tim, sọ mặt). Bắt buộc ngừa thai 1 tháng trước và sau dùng thuốc.',
     },
-    // Thuốc ngưng lưu hành (isActive = false)
-    {
-      code: 'MED_RANITIDINE_150',
-      name: 'Ranitidine 150mg viên nén (Thu hồi)',
-      ingredient: 'Ranitidine hydrochloride',
-      strength: '150 mg',
-      dosageForm: 'Viên nén bao phim',
-      route: 'Uống',
-      dose: '1 viên',
-      freq: '2 lần/ngày',
-      instruction: 'Thuốc đã bị cơ quan quản lý dược phẩm thu hồi lưu hành toàn quốc do nhiễm tạp chất NDMA.',
-      category: 'CATEGORY_B',
-      warning: 'Thuốc đã bị đình chỉ lưu hành và vô hiệu hóa trên hệ thống dược viện.',
-      isActive: false,
-    },
+
   ];
 
   const medicationMap = {};
@@ -1245,7 +4252,7 @@ async function main() {
     );
     medicationMap[med.code] = { id: res.rows[0].id, ...med };
   }
-  console.log(`✅ Đã khởi tạo 13 Thuốc chuẩn Thai kỳ (Đầy đủ cả 5 phân loại FDA: A, B, C, D, X và thuốc ngừng hoạt động).`);
+  console.log(`✅ Đã khởi tạo 12 Thuốc chuẩn Thai kỳ (Phân loại an toàn thai kỳ FDA: A, B, C, D, X hiện hành).`);
 
   // ============================================================================
   // 6. ĐỘI NGŨ BÁC SĨ & LỊCH LÀM VIỆC (DOCTORS & SCHEDULES)
@@ -1449,8 +4456,8 @@ async function main() {
       );
     }
 
-    // Lịch làm việc cả tuần từ Chủ nhật đến Thứ 7 (day_of_week: 1 -> 7) gắn với phòng khám cố định của bác sĩ
-    for (let day = 1; day <= 7; day++) {
+    // Lịch làm việc chuẩn từ Thứ 2 đến Thứ 7 (day_of_week: 1 -> 6 theo chuẩn doctor-service, Chủ nhật nghỉ)
+    for (let day = 1; day <= 6; day++) {
       await clients.doctor.query(
         `INSERT INTO doctor_schedules (id, doctor_id, day_of_week, start_time, end_time, slot_duration_minutes, room_id, effective_from, timezone, status, version, created_at, updated_at)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, 30, $5, $6, 'Asia/Ho_Chi_Minh', 'ACTIVE', 1, NOW(), NOW())`,
@@ -1516,104 +4523,7 @@ async function main() {
     );
   }
 
-  // Bác sĩ trạng thái INACTIVE (liên kết với test.disabled@antam.local)
-  const inactiveDocRes = await clients.doctor.query(
-    `INSERT INTO doctors (id, account_id, license_number, consultation_rank, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, '009999/BYT-CCHN', 'SPECIALIST_I', 'INACTIVE', 1, NOW(), NOW()) RETURNING id`,
-    [disabledAccountId]
-  );
-  const inactiveDocId = inactiveDocRes.rows[0].id;
-  await clients.doctor.query(
-    `INSERT INTO doctor_profiles (doctor_id, full_name, biography, practice_start_year, languages, photo_url, created_at, updated_at)
-     VALUES ($1, 'BS. Nguyễn Văn Tạm Ngưng', 'Bác sĩ đang tạm ngưng công tác tại phòng khám để tham gia chương trình nghiên cứu.', 2017, ARRAY['vi'], 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
-    [inactiveDocId]
-  );
-  if (specialtyMap['OBSTETRICS']) {
-    await clients.doctor.query(
-      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
-       VALUES ($1, $2, true, NOW())`,
-      [inactiveDocId, specialtyMap['OBSTETRICS']]
-    );
-  }
-
-  // Bác sĩ trạng thái DRAFT (Bác sĩ mới nộp hồ sơ, chờ duyệt chứng chỉ hành nghề)
-  const draftAccountId = await createAuthAccount('dr.draft@antam.local', 'DOCTOR', null, 'PENDING_VERIFICATION');
-  const draftDocRes = await clients.doctor.query(
-    `INSERT INTO doctors (id, account_id, license_number, consultation_rank, status, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, '010001/BYT-CCHN', 'BASIC', 'DRAFT', 1, NOW(), NOW()) RETURNING id`,
-    [draftAccountId]
-  );
-  const draftDocId = draftDocRes.rows[0].id;
-  await clients.doctor.query(
-    `INSERT INTO doctor_profiles (doctor_id, full_name, biography, practice_start_year, languages, photo_url, created_at, updated_at)
-     VALUES ($1, 'BS. Nguyễn Văn Nháp', 'Bác sĩ nội trú tốt nghiệp loại Giỏi, đang hoàn thiện hồ sơ đăng ký hành nghề chính thức.', 2023, ARRAY['vi', 'en'], 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80', NOW(), NOW())`,
-    [draftDocId]
-  );
-  if (specialtyMap['OBSTETRICS']) {
-    await clients.doctor.query(
-      `INSERT INTO doctor_specialties (doctor_id, specialty_id, is_primary, created_at)
-       VALUES ($1, $2, true, NOW())`,
-      [draftDocId, specialtyMap['OBSTETRICS']]
-    );
-  }
-
-  // Khởi tạo Lịch khả dụng đặc biệt & Nghỉ phép (Doctor Availabilities)
-  const trainingStart = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-  trainingStart.setHours(8, 0, 0, 0);
-  const trainingEnd = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-  trainingEnd.setHours(17, 0, 0, 0);
-
-  // 1. BS. Đặng Kim Oanh nghỉ tập huấn ISUOG
-  await clients.doctor.query(
-    `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, reason_code, note, status, created_by, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 'UNAVAILABLE', $2, $3, 'TRAINING', 'Tham gia khóa đào tạo chuyên sâu về Siêu âm hình thái tim thai ISUOG', 'ACTIVE', $4, 1, NOW(), NOW())`,
-    [doctorList[3].id, trainingStart, trainingEnd, adminAccountId]
-  );
-
-  // 2. BS. Lê Thu Hà tăng cường ca trực hội chẩn ngoài giờ (EXTRA_AVAILABLE)
-  const extraShiftStart = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  extraShiftStart.setHours(7, 0, 0, 0);
-  const extraShiftEnd = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-  extraShiftEnd.setHours(7, 30, 0, 0);
-
-  await clients.doctor.query(
-    `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, room_id, reason_code, note, status, created_by, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 'EXTRA_AVAILABLE', $2, $3, $4, 'EXTRA_SHIFT', 'Tăng cường ca hội chẩn thai kỳ nguy cơ cao ngoài giờ tại P.201', 'ACTIVE', $5, 1, NOW(), NOW())`,
-    [doctorList[0].id, extraShiftStart, extraShiftEnd, doctorList[0].roomId, adminAccountId]
-  );
-
-  // 3. BS. Trần Thanh Mai xin nghỉ phép cá nhân nhưng đã hủy (CANCELLED)
-  const leaveStart = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-  leaveStart.setHours(13, 0, 0, 0);
-  const leaveEnd = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-  leaveEnd.setHours(17, 0, 0, 0);
-
-  await clients.doctor.query(
-    `INSERT INTO doctor_availabilities (id, doctor_id, type, start_at, end_at, reason_code, note, status, created_by, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, 'UNAVAILABLE', $2, $3, 'PERSONAL_LEAVE', 'Bận việc gia đình cá nhân (đã hủy lịch xin nghỉ)', 'CANCELLED', $4, 1, NOW(), NOW())`,
-    [doctorList[2].id, leaveStart, leaveEnd, adminAccountId]
-  );
-
-  // Khởi tạo Nhật ký thay đổi (Doctor Audit Records)
-  await clients.doctor.query(
-    `INSERT INTO audit_records (id, event_type, actor_id, doctor_id, details, created_at)
-     VALUES (gen_random_uuid(), 'DOCTOR_PROFILE_UPDATED', $1, $2, $3, NOW())`,
-    [adminAccountId, doctorList[0].id, JSON.stringify({ field: 'consultation_rank', change: 'Bổ nhiệm Bác sĩ Trưởng khoa' })]
-  );
-  await clients.doctor.query(
-    `INSERT INTO audit_records (id, event_type, actor_id, doctor_id, details, created_at)
-     VALUES (gen_random_uuid(), 'SCHEDULE_CONFIGURED', $1, $2, $3, NOW())`,
-    [adminAccountId, doctorList[1].id, JSON.stringify({ action: 'WEEKLY_SCHEDULE_INITIALIZED', days: [2, 3, 4, 5, 6, 7], slotDurationMinutes: 30 })]
-  );
-
-  // Khởi tạo Outbox Event mẫu
-  await clients.doctor.query(
-    `INSERT INTO outbox_events (id, event_type, aggregate_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, created_at)
-     VALUES (gen_random_uuid(), 'doctor.availability_changed', 'DOCTOR', $1, 1, $2, 'PROCESSED', 1, NOW(), NOW())`,
-    [doctorList[3].id, JSON.stringify({ doctorId: doctorList[3].id, event: 'AVAILABILITY_OVERRIDE_ADDED', reason: 'TRAINING' })]
-  );
-
-  console.log(`✅ Đã khởi tạo 10 Bác sĩ (ACTIVE, INACTIVE, DRAFT), Chuyên khoa chính/phụ, Lịch trực tuần, Lịch khả dụng (TRAINING, EXTRA_SHIFT, CANCELLED), Audit Records và Outbox.`);
+  console.log('✅ Đã khởi tạo 5 Phòng khám (Clinic Rooms), 12 Bác sĩ chuyên khoa, Chuyên khoa chính/phụ và Lịch làm việc tuần (Thứ 2 - Thứ 7).');
 
   // ============================================================================
   // 7. NHÂN VIÊN LỄ TÂN & TIẾP ĐÓN (RECEPTIONISTS)
@@ -1645,8 +4555,8 @@ async function main() {
       authStatus: 'ACTIVE',
     },
     {
-      email: 'demo.receptionist@antam.local',
-      fullName: 'Trần Thu Ngân (Demo Lễ tân)',
+      email: 'reception.thungan@antam.local',
+      fullName: 'Trần Thu Ngân',
       phone: '0904001003',
       code: 'REC-000',
       dept: 'Ban Tiếp đón & Chăm sóc Khách hàng',
@@ -1668,30 +4578,7 @@ async function main() {
       status: 'ACTIVE',
       authStatus: 'ACTIVE',
     },
-    {
-      email: 'reception.thuthao@antam.local',
-      fullName: 'Đặng Thu Thảo',
-      phone: '0904001005',
-      code: 'REC-004',
-      dept: 'Khu Tiếp đón Sản khoa Tầng 2 (Tạm nghỉ thai sản)',
-      gender: 'FEMALE',
-      address: '42 Phố Huế, Hoàn Kiếm, Hà Nội',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-      status: 'INACTIVE',
-      authStatus: 'DISABLED',
-    },
-    {
-      email: 'reception.thuytrang@antam.local',
-      fullName: 'Nguyễn Thùy Trang',
-      phone: '0904001006',
-      code: 'REC-005',
-      dept: 'Tập sự Bộ phận Tiếp đón Khách hàng',
-      gender: 'FEMALE',
-      address: '77 Đội Cấn, Ba Đình, Hà Nội',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
-      status: 'DRAFT',
-      authStatus: 'PENDING_VERIFICATION',
-    },
+
   ];
 
   const receptionistList = [];
@@ -1714,22 +4601,7 @@ async function main() {
     receptionistList.push({ id: receptionistId, accountId: accId, ...rec });
   }
 
-  // Nhật ký thao tác lễ tân (Reception Audit Log)
-  await clients.receptionist.query(
-    `INSERT INTO reception_audit_logs (id, event_type, actor_id, receptionist_id, changed_fields, reason_code, request_id, created_at)
-     VALUES (gen_random_uuid(), 'RECEPTIONIST_UPDATED', $1, $2, ARRAY['profile.department'], 'ADMIN_PROFILE_UPDATE', gen_random_uuid(), NOW())`,
-    [adminAccountId, receptionistList[0].id]
-  );
-
-  // Bản ghi kiểm soát lặp lại (Reception Idempotency Record)
-  const recIdempotencyHash = sha256(JSON.stringify({ receptionistId: receptionistList[4].id, reason: 'Nghỉ thai sản' }));
-  await clients.receptionist.query(
-    `INSERT INTO reception_idempotency_records (id, actor_id, operation, idempotency_key, request_hash, resource_id, response_status, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, $2, gen_random_uuid(), $3, $4, 200, NOW() + INTERVAL '24 hours', NOW())`,
-    [adminAccountId, `receptionist.deactivate:${receptionistList[4].id}`, recIdempotencyHash, receptionistList[4].id]
-  );
-
-  console.log(`✅ Đã khởi tạo 6 Nhân viên Lễ tân (ACTIVE, INACTIVE, DRAFT - Nam/Nữ), Audit Log và Idempotency Record.`);
+  console.log('✅ Đã khởi tạo 4 Nhân viên Lễ tân (Receptionists & Profiles).');
 
   // ============================================================================
   // 8. BỆNH NHÂN THAI PHỤ (PATIENTS WITH ENCRYPTED NATIONAL ID)
@@ -1737,7 +4609,7 @@ async function main() {
   console.log('\n--- BƯỚC 8: KHỞI TẠO DANH SÁCH BỆNH NHÂN THAI PHỤ (PATIENTS) ---');
   const patientsDef = [
     {
-      email: 'demo.patient@antam.local',
+      email: 'patient.minhanh@gmail.com',
       fullName: 'Nguyễn Minh Anh',
       phone: '0901000001',
       dob: '1995-06-15',
@@ -1749,8 +4621,6 @@ async function main() {
       secondaryContacts: [
         { name: 'Lê Thị Mai', rel: 'Mẹ ruột', phone: '0901000099', priority: 2 },
       ],
-      gestationalWeeks: 22,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.thanhhang@gmail.com',
@@ -1765,8 +4635,6 @@ async function main() {
       secondaryContacts: [
         { name: 'Trần Thị Kim Oanh', rel: 'Chị ruột', phone: '0901234098', priority: 2 },
       ],
-      gestationalWeeks: 12,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.ngocmai@gmail.com',
@@ -1778,8 +4646,6 @@ async function main() {
       emergencyName: 'Lê Văn Tuấn',
       emergencyRel: 'Bố đẻ',
       emergencyPhone: '0901234006',
-      gestationalWeeks: 28,
-      riskLevel: 'MODERATE',
     },
     {
       email: 'patient.quynhchi@gmail.com',
@@ -1794,8 +4660,6 @@ async function main() {
       secondaryContacts: [
         { name: 'Vũ Thị Lan', rel: 'Mẹ chồng', phone: '0901234097', priority: 2 },
       ],
-      gestationalWeeks: 34,
-      riskLevel: 'HIGH',
     },
     {
       email: 'patient.thuyduong@gmail.com',
@@ -1807,8 +4671,6 @@ async function main() {
       emergencyName: 'Hoàng Văn Nam',
       emergencyRel: 'Bố đẻ',
       emergencyPhone: '0901234010',
-      gestationalWeeks: 16,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.kimngan@gmail.com',
@@ -1820,8 +4682,6 @@ async function main() {
       emergencyName: 'Đỗ Đức Thắng',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234012',
-      gestationalWeeks: 10,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.thutrang@gmail.com',
@@ -1833,8 +4693,6 @@ async function main() {
       emergencyName: 'Phạm Hải Đăng',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234014',
-      gestationalWeeks: 20,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.phuonglinh@gmail.com',
@@ -1846,8 +4704,6 @@ async function main() {
       emergencyName: 'Bùi Quang Vinh',
       emergencyRel: 'Bố đẻ',
       emergencyPhone: '0901234016',
-      gestationalWeeks: 8,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.honghanh@gmail.com',
@@ -1859,8 +4715,6 @@ async function main() {
       emergencyName: 'Trương Quốc Bảo',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234018',
-      gestationalWeeks: 31,
-      riskLevel: 'MODERATE',
     },
     {
       email: 'patient.bichthuy@gmail.com',
@@ -1872,8 +4726,6 @@ async function main() {
       emergencyName: 'Nguyễn Đình Trọng',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234020',
-      gestationalWeeks: 25,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.yennhi@gmail.com',
@@ -1885,8 +4737,6 @@ async function main() {
       emergencyName: 'Dương Thế Anh',
       emergencyRel: 'Bố đẻ',
       emergencyPhone: '0901234022',
-      gestationalWeeks: 14,
-      riskLevel: 'LOW',
     },
     {
       email: 'patient.baochau@gmail.com',
@@ -1898,8 +4748,6 @@ async function main() {
       emergencyName: 'Lê Quang Huy',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234024',
-      gestationalWeeks: 18,
-      riskLevel: 'LOW',
     },
     // Bệnh nhân vãng lai đăng ký trực tiếp tại quầy tiếp đón (authAccountId = null)
     {
@@ -1913,8 +4761,6 @@ async function main() {
       emergencyName: 'Bùi Văn Hưng',
       emergencyRel: 'Bố ruột',
       emergencyPhone: '0901234026',
-      gestationalWeeks: 8,
-      riskLevel: 'LOW',
     },
     {
       isWalkIn: true,
@@ -1927,39 +4773,8 @@ async function main() {
       emergencyName: 'Đặng Quốc Anh',
       emergencyRel: 'Chồng',
       emergencyPhone: '0901234028',
-      gestationalWeeks: 14,
-      riskLevel: 'LOW',
     },
-    // Tài khoản 2: Đã có thông tin cá nhân (Chưa khám & Chưa có Medical Record)
-    {
-      email: 'patient.profile@taman.hospital',
-      fullName: 'Lê Hoàng Kim Ngân',
-      phone: '0908888002',
-      dob: '1997-08-20',
-      nationalId: '001197000888',
-      address: '78 Trần Hưng Đạo, Phường Phan Chu Trinh, Quận Hoàn Kiếm, Hà Nội',
-      emergencyName: 'Trần Anh Tuấn',
-      emergencyRel: 'Chồng',
-      emergencyPhone: '0908888009',
-      noMedicalRecord: true,
-    },
-    // Tài khoản 3: Đang theo dõi thai kỳ (Đầy đủ dữ liệu chuyên sâu)
-    {
-      email: 'patient.thaiky@taman.hospital',
-      fullName: 'Trần Diệu Hương',
-      phone: '0908888003',
-      dob: '1994-05-12',
-      nationalId: '001194000999',
-      address: '158 Phố Huế, Phường Hàng Bài, Quận Hai Bà Trưng, Hà Nội',
-      emergencyName: 'Phạm Quốc Huy',
-      emergencyRel: 'Chồng',
-      emergencyPhone: '0908888099',
-      secondaryContacts: [
-        { name: 'Nguyễn Thị Minh Loan', rel: 'Mẹ ruột', phone: '0908888098', priority: 2 },
-      ],
-      gestationalWeeks: 20,
-      riskLevel: 'LOW',
-    },
+
   ];
 
   const patientList = [];
@@ -2000,3020 +4815,10 @@ async function main() {
       }
     }
 
-    // Hồ sơ Thai kỳ (PregnancyEpisode) trong MedicalRecord Service (chỉ tạo nếu không phải noMedicalRecord)
-    let pregnancyEpisodeId = null;
-    if (!pat.noMedicalRecord && pat.gestationalWeeks) {
-      const lmpDate = new Date(now);
-      lmpDate.setDate(lmpDate.getDate() - pat.gestationalWeeks * 7);
-      const eddDate = new Date(lmpDate);
-      eddDate.setDate(eddDate.getDate() + 280);
-
-      const epRes = await clients.medicalRecord.query(
-        `INSERT INTO pregnancy_episodes (id, patient_id, status, estimated_due_date, last_menstrual_period, risk_level, version, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, 'ACTIVE', $2, $3, $4, 1, NOW(), NOW()) RETURNING id`,
-        [patientId, eddDate, lmpDate, pat.riskLevel || 'LOW']
-      );
-      pregnancyEpisodeId = epRes.rows[0].id;
-    }
-
-    patientList.push({ id: patientId, accountId: accId, pregnancyEpisodeId, ...pat, phone: formattedPhone });
+    patientList.push({ id: patientId, accountId: accId, ...pat, phone: formattedPhone });
   }
 
-  // ============================================================================
-  // NHẬT KÝ KIỂM TOÁN HỒ SƠ BỆNH NHÂN (PATIENT AUDIT LOGS) & IDEMPOTENCY
-  // ============================================================================
-  const pat1 = patientList[0]; // Nguyễn Minh Anh
-  const pat2 = patientList[1]; // Trần Thị Thanh Hằng
-  const walkin1 = patientList[12]; // Bùi Thị Ngọc Mai
-  const walkin2 = patientList[13]; // Phan Thanh Trúc
-  const rec1Acc = receptionistList[0].accountId;
-  const rec2Acc = receptionistList[1].accountId;
-  const doc1Acc = doctorList[0].accountId;
-
-  // 1. Audit: Bệnh nhân tự tạo tài khoản (patient.created)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.created', $1, 'PATIENT', $2, ARRAY[]::TEXT[], gen_random_uuid(), NULL, NOW() - INTERVAL '30 days')`,
-    [pat1.accountId, pat1.id]
-  );
-
-  // 2. Audit: Lễ tân tạo hồ sơ vãng lai tại quầy (patient.created)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.created', $1, 'RECEPTIONIST', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '2 hours')`,
-    [rec1Acc, walkin1.id, JSON.stringify({ reason: 'Đăng ký hồ sơ bệnh nhân vãng lai khám lần đầu tại quầy tiếp đón' })]
-  );
-
-  // 3. Audit: Bệnh nhân cập nhật địa chỉ thường trú (patient.updated)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.updated', $1, 'PATIENT', $2, ARRAY['address']::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '15 days')`,
-    [pat1.accountId, pat1.id, JSON.stringify({ reason: 'Cập nhật số nhà và phường mới sau khi chuyển chỗ ở' })]
-  );
-
-  // 4. Audit: Lễ tân cập nhật số điện thoại cho bệnh nhân (patient.updated)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.updated', $1, 'RECEPTIONIST', $2, ARRAY['phoneNumber']::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '1 day')`,
-    [rec2Acc, pat2.id, JSON.stringify({ reason: 'Thay đổi số điện thoại liên lạc theo xác nhận căn cước trực tiếp' })]
-  );
-
-  // 5. Audit: Lễ tân xem chi tiết hồ sơ lúc tiếp đón check-in (patient.viewed)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.viewed', $1, 'RECEPTIONIST', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '30 minutes')`,
-    [rec1Acc, pat1.id, JSON.stringify({ purpose: 'CHECK_IN' })]
-  );
-
-  // 6. Audit: Bác sĩ xem hồ sơ bệnh án trước khi thăm khám (patient.viewed)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.viewed', $1, 'DOCTOR', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '10 minutes')`,
-    [doc1Acc, pat1.id, JSON.stringify({ purpose: 'CLINICAL_CONSULTATION' })]
-  );
-
-  // 7. Audit: Lễ tân tra cứu bệnh nhân theo SĐT (patient.searched)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.searched', $1, 'RECEPTIONIST', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '35 minutes')`,
-    [rec1Acc, pat1.id, JSON.stringify({ searchType: ['PHONE'], resultCount: 1 })]
-  );
-
-  // 8. Audit: Lễ tân tra cứu bệnh nhân theo CCCD (patient.searched)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'patient.searched', $1, 'RECEPTIONIST', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '25 minutes')`,
-    [rec2Acc, pat2.id, JSON.stringify({ searchType: ['NATIONAL_ID'], resultCount: 1 })]
-  );
-
-  // 9. Audit: Bệnh nhân thêm người liên hệ khẩn cấp thứ 2 (emergency_contact.changed)
-  await clients.patient.query(
-    `INSERT INTO patient_audit_logs (id, event_type, actor_id, actor_role, patient_id, changed_fields, request_id, metadata, created_at)
-     VALUES (gen_random_uuid(), 'emergency_contact.changed', $1, 'PATIENT', $2, ARRAY[]::TEXT[], gen_random_uuid(), $3, NOW() - INTERVAL '20 days')`,
-    [pat1.accountId, pat1.id, JSON.stringify({ action: 'added', priority: 2, relationship: 'Mẹ ruột' })]
-  );
-
-  // 10. Bản ghi kiểm soát lặp lại (Idempotency Records)
-  const reqHash1 = sha256(JSON.stringify({ fullName: walkin1.fullName, phone: walkin1.phone, nationalId: walkin1.nationalId }));
-  await clients.patient.query(
-    `INSERT INTO idempotency_records (id, actor_id, operation, idempotency_key, request_hash, patient_id, status, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, 'patient.create', gen_random_uuid(), $2, $3, 'COMPLETED', NOW() + INTERVAL '24 hours', NOW() - INTERVAL '2 hours')`,
-    [rec1Acc, reqHash1, walkin1.id]
-  );
-
-  const reqHash2 = sha256(JSON.stringify({ fullName: walkin2.fullName, phone: walkin2.phone, nationalId: walkin2.nationalId }));
-  await clients.patient.query(
-    `INSERT INTO idempotency_records (id, actor_id, operation, idempotency_key, request_hash, patient_id, status, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, 'patient.create', gen_random_uuid(), $2, $3, 'COMPLETED', NOW() + INTERVAL '24 hours', NOW() - INTERVAL '1 hour')`,
-    [rec2Acc, reqHash2, walkin2.id]
-  );
-
-  console.log(`✅ Đã khởi tạo 14 Bệnh nhân thai phụ (12 trực tuyến + 2 vãng lai) với mã hóa AES-256-GCM, Người liên hệ khẩn cấp đa cấp, Audit Logs và Idempotency Records.`);
-
-  // ============================================================================
-  // 9. LỊCH HẸN KHÁM, HÓA ĐƠN, THANH TOÁN & BỆNH ÁN LÂM SÀNG
-  // ============================================================================
-  console.log('\n--- BƯỚC 9: KHỞI TẠO LỊCH HẸN KHÁM, HÓA ĐƠN & BỆNH ÁN LÂM SÀNG ---');
-
-  // Lập kịch bản lịch hẹn:
-  // 1. Quá khứ (Đã khám xong - COMPLETED)
-  // 2. Hôm nay (Đang khám / Đã check-in - CHECKED_IN, IN_CLINICAL_CARE, COMPLETED)
-  // 3. Ngày mai & Tương lai (Đã đặt lịch - BOOKED)
-
-  const appointmentsData = [
-    // Lịch khám HÔM NAY - Nguyễn Minh Anh
-    {
-      patientIdx: 0,
-      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
-      serviceCode: 'PRENATAL_VIP',
-      dayOffset: 0,
-      startHour: 9,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'IN_CLINICAL_CARE',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0001',
-      vitals: { sys: 115, dia: 75, hr: 82, temp: 36.6, weight: 58.5 },
-      complaint: 'Khám thai mốc 22 tuần, khảo sát hình thái học thai nhi và tư vấn dinh dưỡng.',
-      summary: 'Thai 22 tuần phát triển tốt tương đương tuổi thai. Chiều dài xương đùi và chu vi đầu bình thường. Không phát hiện bất thường hình thái trên siêu âm. Tim thai 148 ck/p đều rõ.',
-      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai nghén con so bình thường tuần thứ 22' },
-      medications: ['MED_FOLIC_400', 'MED_CALCIUM_CORBIERE', 'MED_DHA_PRENATAL'],
-    },
-    // Lịch khám HÔM NAY - Trần Thị Thanh Hằng
-    {
-      patientIdx: 1,
-      doctorIdx: 1, // PGS. Nguyễn Quang Minh (P.203, 07:30 - 12:00)
-      serviceCode: 'US_4D_5D',
-      dayOffset: 0,
-      startHour: 10,
-      startMinute: 0,
-      channel: 'RECEPTION',
-      selectionMode: 'DOCTOR',
-      status: 'CHECKED_IN',
-      invoiceStatus: 'CREDIT_APPROVED',
-      code: 'AT-2026-0002',
-      vitals: { sys: 110, dia: 70, hr: 78, temp: 36.5, weight: 52.0 },
-      complaint: 'Siêu âm 4D sàng lọc hình thái và đo độ mờ da gáy tuần 12.',
-      summary: 'Đã check-in tiếp đón, hoàn tất đo sinh hiệu và chuyển tiếp đến phòng khám P.203.',
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám HÔM NAY - Lê Ngọc Mai
-    {
-      patientIdx: 2,
-      doctorIdx: 5, // BS. Phạm Thùy Dương (P.207, 07:30 - 12:00)
-      serviceCode: 'OGTT_DIABETES',
-      dayOffset: 0,
-      startHour: 8,
-      startMinute: 30,
-      channel: 'WALK_IN',
-      selectionMode: 'RANK',
-      status: 'COMPLETED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0003',
-      vitals: { sys: 120, dia: 80, hr: 84, temp: 36.7, weight: 64.2 },
-      complaint: 'Thực hiện nghiệm pháp dung nạp đường huyết 75g tầm soát đái tháo đường tuần 28.',
-      summary: 'Đường huyết lúc đói: 4.8 mmol/L, sau 1h: 8.2 mmol/L, sau 2h: 7.1 mmol/L. Các chỉ số đều nằm trong giới hạn an toàn. Bác sĩ tư vấn duy trì chế độ ăn giảm đường tinh luyện.',
-      diagnosis: { code: 'Z34.8', desc: 'Giám sát thai nghén bình thường khác, đường huyết kiểm soát tốt' },
-      medications: ['MED_IRON_FEMAT', 'MED_CALCIUM_CORBIERE'],
-    },
-    // Lịch khám QUÁ KHỨ (3 ngày trước) - Phạm Quỳnh Chi
-    {
-      patientIdx: 3,
-      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
-      serviceCode: 'PRENATAL_ROUTINE',
-      dayOffset: -3,
-      startHour: 10,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'COMPLETED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0004',
-      vitals: { sys: 125, dia: 82, hr: 80, temp: 36.6, weight: 68.0 },
-      complaint: 'Khám thai định kỳ tuần 34, kiểm tra nước ối và vị trí ngôi thai.',
-      summary: 'Ngôi đầu, tim thai 142 ck/p, cử động thai tốt. Nước ối AFI 12cm trong giới hạn bình thường. Hướng dẫn thai phụ theo dõi cử động thai (đếm thai máy hàng ngày).',
-      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai nghén bình thường 34 tuần' },
-      medications: ['MED_CALCIUM_CORBIERE', 'MED_MAGNE_B6'],
-    },
-    // Lịch khám QUÁ KHỨ (5 ngày trước) - Hoàng Thùy Dương
-    {
-      patientIdx: 4,
-      doctorIdx: 3, // BS. Đặng Kim Oanh (P.203, 12:30 - 17:00)
-      serviceCode: 'NIPT_BASIC',
-      dayOffset: -5,
-      startHour: 14,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'RANK',
-      status: 'COMPLETED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0005',
-      vitals: { sys: 112, dia: 72, hr: 76, temp: 36.5, weight: 55.4 },
-      complaint: 'Lấy mẫu xét nghiệm NIPT Basic sàng lọc 3 cặp NST 21, 18, 13.',
-      summary: 'Đã lấy máu tĩnh mạch thành công và chuyển phòng xét nghiệm di truyền. Kết quả: Nguy cơ rất thấp (Low risk) với hội chứng Down, Edwards và Patau.',
-      diagnosis: { code: 'Z34.0', desc: 'Sàng lọc dị tật thai nhi trước sinh bình thường' },
-      medications: ['MED_FOLIC_400'],
-    },
-    // Lịch khám NGÀY MAI - Vũ Thị Kim Ngân
-    {
-      patientIdx: 5,
-      doctorIdx: 2, // ThS. BS. Trần Thanh Mai (P.201, 12:30 - 17:00)
-      serviceCode: 'PRENATAL_ROUTINE',
-      dayOffset: 1,
-      startHour: 13,
-      startMinute: 30,
-      channel: 'RECEPTION',
-      selectionMode: 'DOCTOR',
-      status: 'BOOKED',
-      invoiceStatus: 'PAYMENT_PENDING_VERIFICATION',
-      code: 'AT-2026-0006',
-      vitals: null,
-      complaint: 'Đặt lịch khám thai định kỳ tuần 10.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám NGÀY MAI - Đỗ Thu Trang
-    {
-      patientIdx: 6,
-      doctorIdx: 1, // PGS. Nguyễn Quang Minh (P.203, 07:30 - 12:00)
-      serviceCode: 'US_4D_5D',
-      dayOffset: 1,
-      startHour: 10,
-      startMinute: 30,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'BOOKED',
-      invoiceStatus: 'OUTSTANDING',
-      code: 'AT-2026-0007',
-      vitals: null,
-      complaint: 'Đặt lịch siêu âm hình thái 4D tuần 20.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám 3 NGÀY NỮA - Bùi Phương Linh
-    {
-      patientIdx: 7,
-      doctorIdx: 6, // BS. Nguyễn Hồng Nhung (P.207, 12:30 - 17:00)
-      serviceCode: 'US_2D',
-      dayOffset: 3,
-      startHour: 14,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'BOOKED',
-      invoiceStatus: 'OUTSTANDING',
-      code: 'AT-2026-0008',
-      vitals: null,
-      complaint: 'Đặt lịch siêu âm 2D kiểm tra tim thai lần đầu.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám 4 NGÀY NỮA - Đinh Thị Hồng Hạnh
-    {
-      patientIdx: 8,
-      doctorIdx: 5, // BS. Phạm Thùy Dương (P.207, 07:30 - 12:00)
-      serviceCode: 'PRENATAL_VIP',
-      dayOffset: 4,
-      startHour: 9,
-      startMinute: 0,
-      channel: 'RECEPTION',
-      selectionMode: 'RANK',
-      status: 'BOOKED',
-      invoiceStatus: 'OPEN',
-      code: 'AT-2026-0009',
-      vitals: null,
-      complaint: 'Tư vấn và theo dõi huyết áp thai kỳ tuần 31.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám HÔM NAY - Phan Thị Bích Thủy (Cần chuyển giao bác sĩ: REASSIGNMENT_REQUIRED)
-    {
-      patientIdx: 9,
-      doctorIdx: 0, // BS. Lê Thu Hà (P.201, 07:30 - 12:00)
-      serviceCode: 'PRENATAL_ROUTINE',
-      dayOffset: 0,
-      startHour: 11,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'RANK',
-      status: 'REASSIGNMENT_REQUIRED',
-      invoiceStatus: 'OPEN',
-      code: 'AT-2026-0010',
-      vitals: null,
-      complaint: 'Theo dõi thai định kỳ tuần 16. Bác sĩ phụ trách có lịch mổ cấp cứu đột xuất.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám HÔM QUA - Dương Yến Nhi (Bị hủy: CANCELLED)
-    {
-      patientIdx: 10,
-      doctorIdx: 4, // BS. CKII. Vũ Hoàng Long (P.201, 17:30 - 20:30)
-      serviceCode: 'IUI_PROCEDURE',
-      dayOffset: -1,
-      startHour: 18,
-      startMinute: 0,
-      channel: 'RECEPTION',
-      selectionMode: 'DOCTOR',
-      status: 'CANCELLED',
-      cancellationReason: 'Thai phụ bận công tác đột xuất, gọi điện xin hủy lịch hẹn và hẹn lại sau 1 tuần.',
-      invoiceStatus: 'CANCELLED',
-      code: 'AT-2026-0011',
-      vitals: null,
-      complaint: 'Tư vấn hiếm muộn & hỗ trợ sinh sản.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // Lịch khám 2 NGÀY TRƯỚC - Võ Bảo Châu (Vắng mặt: NO_SHOW)
-    {
-      patientIdx: 11,
-      doctorIdx: 6, // BS. Nguyễn Hồng Nhung (P.207, 12:30 - 17:00)
-      serviceCode: 'US_2D',
-      dayOffset: -2,
-      startHour: 16,
-      startMinute: 0,
-      channel: 'WALK_IN',
-      selectionMode: 'DOCTOR',
-      status: 'NO_SHOW',
-      invoiceStatus: 'OPEN',
-      code: 'AT-2026-0012',
-      vitals: null,
-      complaint: 'Đăng ký siêu âm 2D nhưng không có mặt tại phòng khám quá thời hạn quy định.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-    // =========================================================================
-    // DỮ LIỆU CHUYÊN SÂU CHO TÀI KHOẢN 3: patient.thaiky@taman.hospital (Thai 20 tuần)
-    // =========================================================================
-    // 1. Quá khứ (Mốc 12 tuần - Đã hoàn thành): Siêu âm đo độ mờ da gáy NT
-    {
-      patientIdx: 15,
-      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
-      serviceCode: 'US_4D_5D',
-      dayOffset: -56, // 8 tuần trước
-      startHour: 9,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'COMPLETED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0013',
-      vitals: { sys: 112, dia: 72, hr: 76, temp: 36.6, weight: 54.0 },
-      complaint: 'Khám thai định kỳ mốc 12 tuần, đo độ mờ da gáy NT và tư vấn sàng lọc trước sinh.',
-      summary: 'Thai 12 tuần phát triển tốt, chiều dài đầu mông CRL = 54mm. Độ mờ da gáy NT = 1.2mm (nguy cơ thấp). Xương mũi hiện rõ, tim thai 152 ck/p đều rõ. Bác sĩ tư vấn chế độ dinh dưỡng và kê đơn bổ sung vi chất thai kỳ.',
-      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai nghén con so bình thường tuần thứ 12' },
-      medications: ['MED_FOLIC_400', 'MED_CALCIUM_CORBIERE', 'MED_DHA_PRENATAL'],
-    },
-    // 2. Hôm nay (Mốc 20 tuần - Đã hoàn thành): Siêu âm 4D/5D khảo sát dị tật hình thái học thai nhi chuyên sâu
-    {
-      patientIdx: 15,
-      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
-      serviceCode: 'US_4D_5D',
-      dayOffset: 0, // Hôm nay
-      startHour: 14,
-      startMinute: 30,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'COMPLETED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0014',
-      vitals: { sys: 115, dia: 75, hr: 78, temp: 36.6, weight: 57.5 },
-      complaint: 'Khám thai mốc 20 tuần, siêu âm khảo sát dị tật hình thái học thai nhi chuyên sâu 4D/5D.',
-      summary: 'Thai 20 tuần phát triển bình thường theo bách phân vị tiêu chuẩn. Cấu trúc tim 4 buồng cân xứng, vòm sọ não liên tục, tứ chi đủ ngón, cử động thai linh hoạt. Nhịp tim thai FHR 146 ck/p đều rõ. Bánh rau bám mặt sau độ 1, nước ối bình thường AFI = 14cm. Doppler động mạch rốn và tử cung chỉ số trở kháng bình thường. Mẹ sức khỏe tốt, huyết áp ổn định.',
-      diagnosis: { code: 'Z34.0', desc: 'Giám sát thai kỳ bình thường tuần thứ 20 - Hình thái học thai nhi phát triển tốt' },
-      medications: ['MED_IRON_FEMAT', 'MED_CALCIUM_CORBIERE', 'MED_DHA_PRENATAL'],
-    },
-    // 3. Tương lai (Mốc 24 tuần - Đã đặt lịch): Nghiệm pháp dung nạp đường huyết thai kỳ OGTT
-    {
-      patientIdx: 15,
-      doctorIdx: 7, // TS. BS. Đoàn Văn Bắc (P.207)
-      serviceCode: 'OGTT_DIABETES',
-      dayOffset: 28, // 4 tuần sau
-      startHour: 8,
-      startMinute: 0,
-      channel: 'ONLINE',
-      selectionMode: 'DOCTOR',
-      status: 'BOOKED',
-      invoiceStatus: 'PAID',
-      code: 'AT-2026-0015',
-      vitals: null,
-      complaint: 'Lịch hẹn nghiệm pháp dung nạp glucose đường uống 75g (OGTT) tầm soát đái tháo đường thai kỳ tuần 24.',
-      summary: null,
-      diagnosis: null,
-      medications: [],
-    },
-  ];
-
-  let ticketCounter = 1;
-  const seededAppointments = [];
-
-  for (const app of appointmentsData) {
-    let paymentId = null;
-    let encounterId = null;
-    let journeyId = null;
-    let ticketId = null;
-    let prescriptionId = null;
-
-    const pat = patientList[app.patientIdx];
-    const doc = doctorList[app.doctorIdx];
-    const srv = serviceMap[app.serviceCode];
-    const rankInfo = rankSurchargeMap[doc.rank] || { id: null, amount: 0 };
-
-    const appDate = new Date(now);
-    appDate.setDate(appDate.getDate() + app.dayOffset);
-    appDate.setHours(app.startHour, app.startMinute, 0, 0);
-
-    const appEndDate = new Date(appDate);
-    appEndDate.setMinutes(appEndDate.getMinutes() + 30);
-
-    const baseAmount = srv.price;
-    const surchargeAmount = rankInfo.amount;
-    const totalAmount = baseAmount + surchargeAmount;
-
-    const appChannel = app.channel || 'ONLINE';
-    const appSelectionMode = app.selectionMode || 'DOCTOR';
-    const requestedDoctor = appSelectionMode === 'DOCTOR' ? doc.id : null;
-    const requestedRank = appSelectionMode === 'RANK' ? doc.rank : null;
-    const checkedInTime = ['CHECKED_IN', 'IN_CLINICAL_CARE', 'COMPLETED'].includes(app.status) ? appDate : null;
-    const clinicalStartedTime = ['IN_CLINICAL_CARE', 'COMPLETED'].includes(app.status) ? new Date(appDate.getTime() + 10 * 60 * 1000) : null;
-    const completedTime = app.status === 'COMPLETED' ? appEndDate : null;
-
-    // 1. Tạo Lịch hẹn (Appointment) kèm đầy đủ thông tin Phòng khám (room_id, room_code, room_name_snapshot)
-    const appRes = await clients.appointment.query(
-      `INSERT INTO appointments (
-        id, appointment_code, patient_id, service_id, channel, selection_mode,
-        requested_doctor_id, requested_rank_code, assigned_doctor_id, assigned_rank_code,
-        specialty_id, room_id, room_code, room_name_snapshot,
-        start_at, end_at, status, service_name_snapshot, service_version,
-        base_price_id, base_amount_minor, rank_surcharge_price_id, rank_surcharge_amount_minor,
-        estimated_total_minor, currency, availability_version, queue_estimate_minutes,
-        checked_in_at, clinical_started_at, completed_at, cancellation_reason, reschedule_count,
-        created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, $4, $5,
-        $6, $7, $8, $9,
-        $10, $24, $25, $26,
-        $11, $12, $13, $14, 1,
-        $15, $16, $17, $18,
-        $19, 'VND', 1, 15,
-        $20, $21, $22, $23, 0,
-        NOW(), NOW()
-      ) RETURNING id`,
-      [
-        app.code, pat.id, srv.id, appChannel, appSelectionMode,
-        requestedDoctor, requestedRank, doc.id, doc.rank,
-        srv.specialtyId, appDate, appEndDate, app.status, srv.name,
-        srv.priceId, baseAmount, rankInfo.id, surchargeAmount,
-        totalAmount,
-        checkedInTime, clinicalStartedTime, completedTime, app.cancellationReason || null,
-        doc.roomId, doc.roomCode, doc.roomName
-      ]
-    );
-    const appointmentId = appRes.rows[0].id;
-
-    // 2. Tạo Hóa đơn (Billing Invoice & Lines & Payments & Credits)
-    const invNumber = `INV-${app.code.replace('AT-', '')}`;
-    const paidMinor = app.invoiceStatus === 'PAID' ? totalAmount : 0;
-    const balanceMinor = (app.invoiceStatus === 'PAID' || app.invoiceStatus === 'CANCELLED') ? 0 : totalAmount;
-
-    const invRes = await clients.billing.query(
-      `INSERT INTO invoices (
-        id, invoice_number, patient_id, appointment_id, type, status,
-        currency, subtotal_minor, total_minor, paid_minor, balance_minor, source_version,
-        due_at, paid_at, version, created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, 'BASE', $4,
-        'VND', $5, $5, $6, $7, 1,
-        $8, $9, 1, NOW(), NOW()
-      ) RETURNING id`,
-      [
-        invNumber, pat.id, appointmentId, app.invoiceStatus,
-        totalAmount, paidMinor, balanceMinor,
-        appDate, app.invoiceStatus === 'PAID' ? appDate : null,
-      ]
-    );
-    const invoiceId = invRes.rows[0].id;
-
-    // Dòng hóa đơn dịch vụ (Line 1: APPOINTMENT_SNAPSHOT)
-    await clients.billing.query(
-      `INSERT INTO invoice_lines (
-        id, invoice_id, line_no, source, source_reference_id, service_id,
-        description_snapshot, quantity, unit_amount_minor, line_amount_minor,
-        price_reference_id, created_at
-      ) VALUES (
-        gen_random_uuid(), $1, 1, 'APPOINTMENT_SNAPSHOT', $2, $3,
-        $4, 1, $5, $5,
-        $6, NOW()
-      )`,
-      [invoiceId, appointmentId, srv.id, srv.name, baseAmount, srv.priceId]
-    );
-
-    // Dòng hóa đơn phụ thu bác sĩ (Line 2: APPOINTMENT_SNAPSHOT - nếu có)
-    if (surchargeAmount > 0 && rankInfo.id) {
-      await clients.billing.query(
-        `INSERT INTO invoice_lines (
-          id, invoice_id, line_no, source, source_reference_id, service_id,
-          description_snapshot, quantity, unit_amount_minor, line_amount_minor,
-          price_reference_id, created_at
-        ) VALUES (
-          gen_random_uuid(), $1, 2, 'APPOINTMENT_SNAPSHOT', gen_random_uuid(), $2,
-          $3, 1, $4, $4,
-          $5, NOW()
-        )`,
-        [invoiceId, srv.id, `Phụ thu chuyên môn: ${doc.title}`, surchargeAmount, rankInfo.id]
-      );
-    }
-
-    // Ghi nhận Audit Log & Outbox khi phát hành hóa đơn gốc
-    await clients.billing.query(
-      `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-       VALUES (gen_random_uuid(), 'billing.invoice_issued.v1', NULL, $1, $2, $3, NOW() - INTERVAL '15 minutes')`,
-      [invoiceId, `Phát hành hóa đơn gốc ${invNumber} cho lịch hẹn ${app.code}`, crypto.randomUUID()]
-    );
-
-    await clients.billing.query(
-      `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-       VALUES (gen_random_uuid(), 'billing.invoice_issued.v1', $1, 1, $2, 'PUBLISHED', 0, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '14 minutes')`,
-      [invoiceId, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: invoiceId, data: { invoiceId, appointmentId, status: app.invoiceStatus } })]
-    );
-
-    await clients.billing.query(
-      `INSERT INTO billing_idempotency_records (id, scope, key, request_hash, resource_id, response_status, response_body, created_at)
-       VALUES (gen_random_uuid(), 'base-invoice', $1, $2, $3, 201, $4, NOW() - INTERVAL '15 minutes')`,
-      [
-        `base-inv-${appointmentId}`,
-        sha256(`create_base_invoice_${appointmentId}`),
-        invoiceId,
-        JSON.stringify({ invoiceNumber: invNumber, appointmentId, totalMinor: totalAmount })
-      ]
-    );
-
-    // 1. Kịch bản Đã thanh toán (PAID)
-    if (app.invoiceStatus === 'PAID') {
-      const isCash = (app.code === 'AT-2026-0001');
-      const payMethod = isCash ? 'CASH' : 'MANUAL_BANK_TRANSFER';
-      const refCode = isCash ? `REC-CASH-${app.code.replace('AT-', '')}` : `TXN-BANK-${app.code.replace('AT-', '')}`;
-
-      const payRes = await clients.billing.query(
-        `INSERT INTO payments (
-          id, invoice_id, method, status, amount_minor, currency,
-          received_at, verified_at, reference, recorded_by, version, created_at
-        ) VALUES (
-          gen_random_uuid(), $1, $2, 'VERIFIED', $3, 'VND',
-          $4, $4, $5, $6, 1, NOW()
-        ) RETURNING id`,
-        [invoiceId, payMethod, totalAmount, appDate, refCode, receptionistList[0].id]
-      );
-      paymentId = payRes.rows[0].id;
-
-      await clients.billing.query(
-        `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-         VALUES (gen_random_uuid(), 'billing.payment_recorded.v1', $1, $2, $3, $4, NOW() - INTERVAL '10 minutes')`,
-        [receptionistList[0].id, invoiceId, `Xác nhận thanh toán ${payMethod} thành công số tiền ${totalAmount} VND`, crypto.randomUUID()]
-      );
-      await clients.billing.query(
-        `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-         VALUES (gen_random_uuid(), 'billing.payment_recorded.v1', $1, 2, $2, 'PUBLISHED', 0, NOW() - INTERVAL '10 minutes', NOW() - INTERVAL '9 minutes')`,
-        [invoiceId, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: invoiceId, data: { invoiceId, appointmentId, paymentId, status: 'PAID' } })]
-      );
-
-      await clients.billing.query(
-        `INSERT INTO billing_idempotency_records (id, scope, key, request_hash, resource_id, response_status, response_body, created_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, 201, $5, NOW() - INTERVAL '10 minutes')`,
-        [
-          `payment:${invoiceId}`,
-          `pay-key-${invoiceId}`,
-          sha256(`pay_${invoiceId}_${totalAmount}`),
-          paymentId,
-          JSON.stringify({ invoiceId, paymentId, amountMinor: totalAmount, status: 'VERIFIED' })
-        ]
-      );
-    }
-    // 2. Kịch bản Bảo lãnh viện phí (CREDIT_APPROVED - AT-2026-0002)
-    else if (app.invoiceStatus === 'CREDIT_APPROVED') {
-      await clients.billing.query(
-        `INSERT INTO credit_approvals (
-          id, invoice_id, status, reason_code, reason_text, approved_by, approved_at, version
-        ) VALUES (
-          gen_random_uuid(), $1, 'APPROVED', 'VIP_PARTNER_CORPORATE_SPONSORSHIP',
-          'Chương trình bảo lãnh viện phí VIP cho cán bộ tập đoàn đối tác chiến lược An Tâm',
-          $2, NOW() - INTERVAL '20 minutes', 1
-        )`,
-        [invoiceId, adminAccountId]
-      );
-
-      await clients.billing.query(
-        `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-         VALUES (gen_random_uuid(), 'billing.credit_approved.v1', $1, $2, $3, $4, NOW() - INTERVAL '20 minutes')`,
-        [adminAccountId, invoiceId, 'Phê duyệt bảo lãnh viện phí thai sản VIP', crypto.randomUUID()]
-      );
-      await clients.billing.query(
-        `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-         VALUES (gen_random_uuid(), 'billing.credit_approved.v1', $1, 2, $2, 'PUBLISHED', 0, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '19 minutes')`,
-        [invoiceId, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: invoiceId, data: { invoiceId, appointmentId, status: 'CREDIT_APPROVED' } })]
-      );
-    }
-    // 3. Kịch bản Chờ đối soát thanh toán (PAYMENT_PENDING_VERIFICATION - AT-2026-0006)
-    else if (app.invoiceStatus === 'PAYMENT_PENDING_VERIFICATION') {
-      const payRes = await clients.billing.query(
-        `INSERT INTO payments (
-          id, invoice_id, method, status, amount_minor, currency,
-          received_at, verified_at, reference, recorded_by, version, created_at
-        ) VALUES (
-          gen_random_uuid(), $1, 'MANUAL_BANK_TRANSFER', 'RECORDED', $2, 'VND',
-          NOW() - INTERVAL '30 minutes', NULL, $3, $4, 1, NOW()
-        ) RETURNING id`,
-        [invoiceId, totalAmount, `VCB-WAIT-${app.code.replace('AT-', '')}`, receptionistList[0].id]
-      );
-      paymentId = payRes.rows[0].id;
-
-      await clients.billing.query(
-        `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-         VALUES (gen_random_uuid(), 'billing.payment_pending.v1', $1, $2, $3, $4, NOW() - INTERVAL '30 minutes')`,
-        [receptionistList[0].id, invoiceId, 'Ghi nhận ủy nhiệm chi chuyển khoản ngân hàng, chờ xác thực sao kê', crypto.randomUUID()]
-      );
-      await clients.billing.query(
-        `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-         VALUES (gen_random_uuid(), 'billing.payment_pending.v1', $1, 2, $2, 'PENDING', 0, NOW() - INTERVAL '30 minutes', NULL)`,
-        [invoiceId, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: invoiceId, data: { invoiceId, appointmentId, status: 'PAYMENT_PENDING_VERIFICATION' } })]
-      );
-    }
-    // 4. Kịch bản Nợ tồn đọng (OUTSTANDING: AT-2026-0007 Chuyển khoản bị từ chối; AT-2026-0008 Thu hồi bảo lãnh)
-    else if (app.invoiceStatus === 'OUTSTANDING') {
-      if (app.code === 'AT-2026-0007') {
-        const payRes = await clients.billing.query(
-          `INSERT INTO payments (
-            id, invoice_id, method, status, amount_minor, currency,
-            received_at, verified_at, reference, recorded_by, version, created_at
-          ) VALUES (
-            gen_random_uuid(), $1, 'MANUAL_BANK_TRANSFER', 'REJECTED', $2, 'VND',
-            NOW() - INTERVAL '2 hours', NULL, $3, $4, 2, NOW()
-          ) RETURNING id`,
-          [invoiceId, totalAmount, `BIDV-REJ-${app.code.replace('AT-', '')}`, receptionistList[1].id]
-        );
-        paymentId = payRes.rows[0].id;
-
-        await clients.billing.query(
-          `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-           VALUES (gen_random_uuid(), 'billing.payment_rejected.v1', $1, $2, $3, $4, NOW() - INTERVAL '1 hour')`,
-          [receptionistList[1].id, invoiceId, 'Giao dịch chuyển khoản bị từ chối do sai cú pháp mã lịch hẹn và không nhận được tiền', crypto.randomUUID()]
-        );
-      } else if (app.code === 'AT-2026-0008') {
-        await clients.billing.query(
-          `INSERT INTO credit_approvals (
-            id, invoice_id, status, reason_code, reason_text, approved_by, approved_at, revoked_at, version
-          ) VALUES (
-            gen_random_uuid(), $1, 'REVOKED', 'INSURANCE_PRE_AUTH_REJECTED',
-            'Công ty bảo hiểm từ chối cấp chứng thư bảo lãnh trực tiếp, chuyển sang hình thức thai phụ tự thanh toán hoàn tiền sau',
-            $2, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '1 hour', 2
-          )`,
-          [invoiceId, adminAccountId]
-        );
-
-        await clients.billing.query(
-          `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-           VALUES (gen_random_uuid(), 'billing.credit_revoked.v1', $1, $2, $3, $4, NOW() - INTERVAL '1 hour')`,
-          [adminAccountId, invoiceId, 'Thu hồi bảo lãnh viện phí do hồ sơ bảo lãnh ngoài mạng lưới không hợp lệ', crypto.randomUUID()]
-        );
-      }
-    }
-    // 5. Kịch bản Hủy hóa đơn (CANCELLED - AT-2026-0011)
-    else if (app.invoiceStatus === 'CANCELLED') {
-      await clients.billing.query(
-        `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-         VALUES (gen_random_uuid(), 'billing.invoice_cancelled.v1', $1, $2, $3, $4, NOW() - INTERVAL '24 hours')`,
-        [receptionistList[1].id, invoiceId, 'Hủy hóa đơn do thai phụ thông báo hủy lịch hẹn trước giờ khám', crypto.randomUUID()]
-      );
-    }
-
-    // 3. Khám lâm sàng (Clinical Encounter) bao phủ đầy đủ cả 5 trạng thái
-    const shouldCreateEncounter = (
-      app.status === 'COMPLETED' ||
-      app.status === 'IN_CLINICAL_CARE' ||
-      app.status === 'CHECKED_IN' ||
-      app.code === 'AT-2026-0006'
-    );
-
-    if (shouldCreateEncounter) {
-      let encState = 'DRAFT';
-      let reviewReadyTime = null;
-      let startedTime = null;
-      let finalizedTime = null;
-
-      if (app.code === 'AT-2026-0001') {
-        encState = 'IN_PROGRESS';
-        startedTime = appDate;
-      } else if (app.code === 'AT-2026-0002') {
-        encState = 'AWAITING_RESULTS';
-        startedTime = appDate;
-      } else if (app.code === 'AT-2026-0003') {
-        encState = 'READY_FOR_REVIEW';
-        startedTime = appDate;
-        reviewReadyTime = new Date(appDate.getTime() + 25 * 60 * 1000);
-      } else if (app.status === 'COMPLETED') {
-        encState = 'FINALIZED';
-        startedTime = appDate;
-        reviewReadyTime = new Date(appDate.getTime() + 25 * 60 * 1000);
-        finalizedTime = appEndDate;
-      }
-
-      const encRes = await clients.medicalRecord.query(
-        `INSERT INTO clinical_encounters (
-          id, appointment_id, patient_id, pregnancy_episode_id, primary_doctor_id,
-          state, chief_complaint, clinical_summary, started_at, review_ready_at, finalized_at,
-          version, created_at, updated_at
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3, $4,
-          $5, $6, $7, $8, $9, $10,
-          1, NOW(), NOW()
-        ) RETURNING id`,
-        [
-          appointmentId, pat.id, pat.pregnancyEpisodeId, doc.id,
-          encState, app.complaint, app.summary,
-          startedTime, reviewReadyTime, finalizedTime,
-        ]
-      );
-      encounterId = encRes.rows[0].id;
-
-      // Cập nhật encounter_id ngược lại appointment
-      await clients.appointment.query(`UPDATE appointments SET encounter_id = $1 WHERE id = $2`, [encounterId, appointmentId]);
-
-      // Sinh hiệu (Vital signs)
-      if (app.vitals) {
-        await clients.medicalRecord.query(
-          `INSERT INTO vital_signs (
-            id, encounter_id, systolic, diastolic, heart_rate, temperature, weight, recorded_by, recorded_at
-          ) VALUES (
-            gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW()
-          )`,
-          [encounterId, app.vitals.sys, app.vitals.dia, app.vitals.hr, app.vitals.temp, app.vitals.weight, nurseAccountId]
-        );
-      }
-
-      // Ghi chú lâm sàng (Clinical Notes)
-      if (app.summary) {
-        await clients.medicalRecord.query(
-          `INSERT INTO clinical_notes (id, encounter_id, text, author_id, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
-          [encounterId, app.summary, doc.accountId]
-        );
-      }
-
-      // Chẩn đoán (Diagnoses)
-      if (app.diagnosis) {
-        await clients.medicalRecord.query(
-          `INSERT INTO diagnoses (id, encounter_id, code, description, doctor_id, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())`,
-          [encounterId, app.diagnosis.code, app.diagnosis.desc, doc.id]
-        );
-      }
-
-      // Kê đơn thuốc (Prescription) nếu có thuốc
-      if (app.medications && app.medications.length > 0) {
-        const prescRes = await clients.prescription.query(
-          `INSERT INTO prescriptions (
-            id, encounter_id, patient_id, pregnancy_episode_id, prescribing_doctor_id,
-            status, version, issued_at, created_at, updated_at
-          ) VALUES (
-            gen_random_uuid(), $1, $2, $3, $4,
-            'ISSUED', 1, NOW(), NOW(), NOW()
-          ) RETURNING id`,
-          [encounterId, pat.id, pat.pregnancyEpisodeId, doc.id]
-        );
-        prescriptionId = prescRes.rows[0].id;
-
-        let medSort = 1;
-        for (const medCode of app.medications) {
-          const med = medicationMap[medCode];
-          if (med) {
-            await clients.prescription.query(
-              `INSERT INTO prescription_items (
-                id, prescription_id, medication_code, medication_name, strength,
-                dosage_form, route, dose, frequency, duration_days, instruction, sort_order
-              ) VALUES (
-                gen_random_uuid(), $1, $2, $3, $4,
-                $5, $6, $7, $8, 30, $9, $10
-              )`,
-              [prescriptionId, med.code, med.name, med.strength, med.dosageForm, med.route, med.dose, med.freq, med.instruction, medSort++]
-            );
-          }
-        }
-      }
-
-      // 4. Hàng đợi phòng khám (Queue Journey & Stage Tickets) cho lịch khám hôm nay
-      if (app.dayOffset === 0) {
-        const businessDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        if (app.code === 'AT-2026-0001') {
-          // Lịch 1: Nguyễn Minh Anh - Khám VIP đang diễn ra (ACTIVE)
-          const jrnRes = await clients.queue.query(
-            `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 0, false, 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
-            [appointmentId, pat.id, encounterId, businessDate]
-          );
-          journeyId = jrnRes.rows[0].id;
-
-          // Vé 1: Sinh hiệu (VITALS - COMPLETED tại P.102)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, 1, 'VIT-001', 'COMPLETED', 'ROUTINE', false, 1, 1, $4, $5, $6, 1, NOW(), NOW())`,
-            [journeyId, stageMap['VITALS'], businessDate, new Date(appDate.getTime() - 25 * 60000), new Date(appDate.getTime() - 20 * 60000), new Date(appDate.getTime() - 10 * 60000)]
-          );
-
-          // Vé 2: Bác sĩ chuyên khoa (CONSULTATION - IN_SERVICE tại P.201)
-          const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $6, $3, 1, 'CONS-001', 'IN_SERVICE', 'ROUTINE', false, 2, 1, $4, $5, 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate, appDate, new Date(appDate.getTime() + 2 * 60000), doc.roomCode]
-          );
-          ticketId = t2Res.rows[0].id;
-
-          // Lần gọi vé (Call Attempt)
-          await clients.queue.query(
-            `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, $2, $3, 'ANSWERED', $4, $5)`,
-            [ticketId, appDate, new Date(appDate.getTime() + 5 * 60000), doc.accountId, doc.roomCode]
-          );
-
-          // Bác sĩ chỉ định siêu âm 4D bổ sung trong phiên khám
-          const ordRes = await clients.medicalRecord.query(
-            `INSERT INTO clinical_service_orders (id, encounter_id, catalog_service_id, stage_code, ordered_by_doctor_id, required_result, billable_snapshot, status, version, created_at)
-             VALUES (gen_random_uuid(), $1, $2, 'ULTRASOUND', $3, true, true, 'ORDERED', 1, NOW()) RETURNING id`,
-            [encounterId, serviceMap['US_4D_5D'].id, doc.id]
-          );
-
-          // Vé 3: Siêu âm chẩn đoán (ULTRASOUND - WAITING tại P.301)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, $4, 1, 'US-001', 'WAITING', 'ROUTINE', false, 3, 0, 1, NOW(), NOW())`,
-            [journeyId, stageMap['ULTRASOUND'], ordRes.rows[0].id, businessDate]
-          );
-
-        } else if (app.code === 'AT-2026-0002') {
-          // Lịch 2: Trần Thị Thanh Hằng - ĐẾN MUỘN 45 phút (lateDemoted = true, trạng thái CALLED)
-          const jrnRes = await clients.queue.query(
-            `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 45, true, 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
-            [appointmentId, pat.id, encounterId, businessDate]
-          );
-          journeyId = jrnRes.rows[0].id;
-
-          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, 2, 'VIT-002', 'COMPLETED', 'ROUTINE', true, 4, 1, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '5 minutes', 1, NOW(), NOW())`,
-            [journeyId, stageMap['VITALS'], businessDate]
-          );
-
-          // Vé 2: Phòng khám Bác sĩ (CONSULTATION - CALLED tại P.202)
-          const callExp = new Date(now.getTime() + 4 * 60000);
-          const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, call_expires_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $5, $3, 2, 'CONS-002', 'CALLED', 'ROUTINE', true, 5, 1, NOW() - INTERVAL '1 minute', $4, 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate, callExp, doc.roomCode]
-          );
-          ticketId = t2Res.rows[0].id;
-
-          // Lần gọi vé (Call Attempt đang chờ bệnh nhân bước vào)
-          await clients.queue.query(
-            `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '1 minute', $2, 'CALLING', $3, $4)`,
-            [ticketId, callExp, doc.accountId, doc.roomCode]
-          );
-
-        } else if (app.code === 'AT-2026-0003') {
-          // Lịch 3: Lê Ngọc Mai - Hoàn tất mọi khâu (Journey COMPLETED)
-          const jrnRes = await clients.queue.query(
-            `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, 0, false, 'COMPLETED', 1, NOW(), NOW()) RETURNING id`,
-            [appointmentId, pat.id, encounterId, businessDate]
-          );
-          journeyId = jrnRes.rows[0].id;
-
-          // Vé 1: Đo sinh hiệu (VITALS - COMPLETED tại P.102)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, 3, 'VIT-003', 'COMPLETED', 'ROUTINE', false, 6, 1, NOW() - INTERVAL '105 minutes', 1, NOW(), NOW())`,
-            [journeyId, stageMap['VITALS'], businessDate]
-          );
-
-          // Vé 2: Khám Bác sĩ (CONSULTATION - COMPLETED tại P.206)
-          const t2Res = await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, $4, $3, 3, 'CONS-003', 'COMPLETED', 'ROUTINE', false, 7, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', NOW() - INTERVAL '70 minutes', 1, NOW(), NOW()) RETURNING id`,
-            [journeyId, stageMap['CONSULTATION'], businessDate, doc.roomCode]
-          );
-          ticketId = t2Res.rows[0].id;
-
-          await clients.queue.query(
-            `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-             VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '105 minutes', NOW() - INTERVAL '100 minutes', 'ANSWERED', $2, $3)`,
-            [ticketId, doc.accountId, doc.roomCode]
-          );
-
-          // Chỉ định xét nghiệm OGTT
-          const ordRes = await clients.medicalRecord.query(
-            `INSERT INTO clinical_service_orders (id, encounter_id, catalog_service_id, stage_code, ordered_by_doctor_id, required_result, billable_snapshot, status, version, created_at)
-             VALUES (gen_random_uuid(), $1, $2, 'LAB_SAMPLE', $3, true, true, 'VERIFIED', 1, NOW()) RETURNING id`,
-            [encounterId, serviceMap['OGTT_DIABETES'].id, doc.id]
-          );
-
-          // Vé 3: Xét nghiệm máu OGTT (LAB_SAMPLE - COMPLETED tại P.105)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, source_order_id, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, $4, 1, 'LAB-001', 'COMPLETED', 'ROUTINE', false, 8, 1, NOW() - INTERVAL '65 minutes', NOW() - INTERVAL '25 minutes', 1, NOW(), NOW())`,
-            [journeyId, stageMap['LAB_SAMPLE'], ordRes.rows[0].id, businessDate]
-          );
-
-          // Vé 4: Nhà thuốc (PHARMACY - COMPLETED tại P.109)
-          await clients.queue.query(
-            `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, service_started_at, completed_at, version, created_at, updated_at)
-             VALUES (gen_random_uuid(), $1, $2, null, $3, 1, 'PHARM-001', 'COMPLETED', 'ROUTINE', false, 9, 1, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '10 minutes', 1, NOW(), NOW())`,
-            [journeyId, stageMap['PHARMACY'], businessDate]
-          );
-        }
-      }
-    }
-
-    seededAppointments.push({
-      code: app.code,
-      appointmentId,
-      patientId: pat.id,
-      patientName: pat.fullName,
-      serviceId: srv.id,
-      doctorId: doc.id,
-      status: app.status,
-      appDate,
-      appEndDate,
-      cancellationReason: app.cancellationReason || null,
-      invoiceId,
-      paymentId,
-      encounterId,
-      journeyId,
-      ticketId,
-      prescriptionId,
-    });
-  }
-
-  // ============================================================================
-  // APPOINTMENT DỮ LIỆU ĐẦY ĐỦ: SLOT HOLDS, PHÂN CÔNG BÁC SĨ, AUDIT, OUTBOX & IDEMPOTENCY
-  // ============================================================================
-  // 1. Giữ chỗ (SlotHold) đầy đủ 4 trạng thái: CONSUMED, ACTIVE, EXPIRED, RELEASED kèm thông tin phòng khám
-  const hold1Res = await clients.appointment.query(
-    `INSERT INTO slot_holds (
-      id, patient_id, service_id, doctor_id, rank_code, selection_mode,
-      room_id, room_code, room_name,
-      start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, $2, $3, $4, 'DOCTOR',
-      $9, $10, $11,
-      $5, $6, 'CONSUMED', $7, $8, NOW() - INTERVAL '15 minutes'
-    ) RETURNING id`,
-    [
-      seededAppointments[0].patientId, seededAppointments[0].serviceId, seededAppointments[0].doctorId,
-      doctorList[0].rank, seededAppointments[0].appDate, seededAppointments[0].appEndDate,
-      new Date(seededAppointments[0].appDate.getTime() + 5 * 60 * 1000), seededAppointments[0].appointmentId,
-      doctorList[0].roomId, doctorList[0].roomCode, doctorList[0].roomName
-    ]
-  );
-  const hold1Id = hold1Res.rows[0].id;
-
-  const hold2Start = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-  hold2Start.setHours(13, 30, 0, 0);
-  const hold2EndDate = new Date(hold2Start.getTime() + 30 * 60 * 1000);
-
-  const hold3Start = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-  hold3Start.setHours(14, 30, 0, 0);
-  const hold3EndDate = new Date(hold3Start.getTime() + 30 * 60 * 1000);
-
-  const hold4Start = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-  hold4Start.setHours(9, 30, 0, 0);
-  const hold4EndDate = new Date(hold4Start.getTime() + 30 * 60 * 1000);
-
-  const hold2Res = await clients.appointment.query(
-    `INSERT INTO slot_holds (
-      id, patient_id, service_id, doctor_id, rank_code, selection_mode,
-      room_id, room_code, room_name,
-      start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, $2, $3, $4, 'DOCTOR',
-      $7, $8, $9,
-      $5, $6, 'ACTIVE', NOW() + INTERVAL '5 minutes', NULL, NOW()
-    ) RETURNING id`,
-    [
-      patientList[5].id, serviceMap['PRENATAL_ROUTINE'].id, doctorList[2].id,
-      doctorList[2].rank, hold2Start, hold2EndDate,
-      doctorList[2].roomId, doctorList[2].roomCode, doctorList[2].roomName
-    ]
-  );
-  const hold2Id = hold2Res.rows[0].id;
-
-  const hold3Res = await clients.appointment.query(
-    `INSERT INTO slot_holds (
-      id, patient_id, service_id, doctor_id, rank_code, selection_mode,
-      room_id, room_code, room_name,
-      start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, $2, $3, $4, 'RANK',
-      $7, $8, $9,
-      $5, $6, 'EXPIRED', NOW() - INTERVAL '30 minutes', NULL, NOW() - INTERVAL '35 minutes'
-    ) RETURNING id`,
-    [
-      patientList[7].id, serviceMap['US_2D'].id, doctorList[6].id,
-      'BS', hold3Start, hold3EndDate,
-      doctorList[6].roomId, doctorList[6].roomCode, doctorList[6].roomName
-    ]
-  );
-  const hold3Id = hold3Res.rows[0].id;
-
-  const hold4Res = await clients.appointment.query(
-    `INSERT INTO slot_holds (
-      id, patient_id, service_id, doctor_id, rank_code, selection_mode,
-      room_id, room_code, room_name,
-      start_at, end_at, status, expires_at, consumed_by_appointment_id, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, $2, $3, $4, 'RANK',
-      $7, $8, $9,
-      $5, $6, 'RELEASED', NOW() + INTERVAL '2 minutes', NULL, NOW() - INTERVAL '10 minutes'
-    ) RETURNING id`,
-    [
-      patientList[8].id, serviceMap['PRENATAL_VIP'].id, doctorList[5].id,
-      'CKI', hold4Start, hold4EndDate,
-      doctorList[5].roomId, doctorList[5].roomCode, doctorList[5].roomName
-    ]
-  );
-  const hold4Id = hold4Res.rows[0].id;
-
-  // 2. Lịch sử điều chuyển bác sĩ (Appointment Assignment History)
-  await clients.appointment.query(
-    `INSERT INTO appointment_assignment_history (id, appointment_id, from_doctor_id, to_doctor_id, rank_code, reason, actor_id, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW() - INTERVAL '1 hour')`,
-    [
-      seededAppointments[5].appointmentId, doctorList[0].id, doctorList[2].id,
-      doctorList[2].rank, 'BS. Lê Thu Hà có ca phẫu thuật cấp cứu mổ đẻ lấy thai | Đã trao đổi qua điện thoại và thai phụ đồng ý đổi bác sĩ',
-      receptionistList[0].accountId
-    ]
-  );
-  await clients.appointment.query(
-    `INSERT INTO appointment_assignment_history (id, appointment_id, from_doctor_id, to_doctor_id, rank_code, reason, actor_id, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW() - INTERVAL '2 hours')`,
-    [
-      seededAppointments[7].appointmentId, doctorList[2].id, doctorList[6].id,
-      doctorList[6].rank, 'Điều phối cân bằng tải phòng khám chuyên khoa siêu âm buổi chiều | Xác nhận qua ứng dụng di động',
-      receptionistList[1].accountId
-    ]
-  );
-
-  // 3. Nhật ký kiểm toán Lịch hẹn (Appointment Audit Logs)
-  const appAuditLogs = [
-    {
-      eventType: 'appointment.booked.v1',
-      actorId: patientList[0].accountId,
-      resourceId: seededAppointments[0].appointmentId,
-      reason: 'Thai phụ đặt lịch khám thai VIP trực tuyến qua cổng Portal',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.checked_in.v1',
-      actorId: receptionistList[0].accountId,
-      resourceId: seededAppointments[0].appointmentId,
-      reason: 'Tiếp đón tại quầy T1, xác nhận BHYT và hoàn tất thủ tục check-in',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.clinical_started.v1',
-      actorId: doctorList[0].accountId,
-      resourceId: seededAppointments[0].appointmentId,
-      reason: 'Bác sĩ bắt đầu phiên khám lâm sàng thai 22 tuần',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.completed.v1',
-      actorId: doctorList[5].accountId,
-      resourceId: seededAppointments[2].appointmentId,
-      reason: 'Hoàn tất khám nghiệm pháp dung nạp đường huyết và tư vấn dinh dưỡng',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.reassigned.v1',
-      actorId: receptionistList[0].accountId,
-      resourceId: seededAppointments[5].appointmentId,
-      reason: 'Điều chuyển bác sĩ phụ trách ca khám do trùng lịch phẫu thuật khẩn cấp',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.cancelled.v1',
-      actorId: receptionistList[1].accountId,
-      resourceId: seededAppointments[10].appointmentId,
-      reason: 'Thai phụ bận công tác đột xuất, gọi điện xin hủy lịch hẹn',
-      requestId: crypto.randomUUID(),
-    },
-    {
-      eventType: 'appointment.no_show.v1',
-      actorId: receptionistList[0].accountId,
-      resourceId: seededAppointments[11].appointmentId,
-      reason: 'Bệnh nhân vắng mặt quá 60 phút sau thời gian hẹn khám',
-      requestId: crypto.randomUUID(),
-    },
-  ];
-
-  for (const log of appAuditLogs) {
-    await clients.appointment.query(
-      `INSERT INTO appointment_audit_logs (id, event_type, actor_id, resource_id, reason, request_id, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW())`,
-      [log.eventType, log.actorId, log.resourceId, log.reason, log.requestId]
-    );
-  }
-
-  // 4. Sự kiện Outbox cho Lịch hẹn (Appointment Outbox Events)
-  const appOutboxEvents = [
-    {
-      eventType: 'appointment.booked.v1',
-      aggregateId: seededAppointments[0].appointmentId,
-      aggregateVersion: 1,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[0].appointmentId,
-        data: {
-          appointmentId: seededAppointments[0].appointmentId,
-          appointmentCode: seededAppointments[0].code,
-          patientId: seededAppointments[0].patientId,
-          status: 'BOOKED',
-          startAt: seededAppointments[0].appDate,
-        },
-      },
-      status: 'PUBLISHED',
-      publishedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-    },
-    {
-      eventType: 'appointment.checked_in.v1',
-      aggregateId: seededAppointments[0].appointmentId,
-      aggregateVersion: 2,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[0].appointmentId,
-        data: {
-          appointmentId: seededAppointments[0].appointmentId,
-          patientId: seededAppointments[0].patientId,
-          status: 'CHECKED_IN',
-          checkedInAt: seededAppointments[0].appDate,
-        },
-      },
-      status: 'PUBLISHED',
-      publishedAt: new Date(now.getTime() - 30 * 60 * 1000),
-    },
-    {
-      eventType: 'appointment.completed.v1',
-      aggregateId: seededAppointments[2].appointmentId,
-      aggregateVersion: 3,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[2].appointmentId,
-        data: {
-          appointmentId: seededAppointments[2].appointmentId,
-          patientId: seededAppointments[2].patientId,
-          status: 'COMPLETED',
-          completedAt: seededAppointments[2].appEndDate,
-        },
-      },
-      status: 'PUBLISHED',
-      publishedAt: new Date(now.getTime() - 10 * 60 * 1000),
-    },
-    {
-      eventType: 'appointment.reassigned.v1',
-      aggregateId: seededAppointments[5].appointmentId,
-      aggregateVersion: 2,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[5].appointmentId,
-        data: {
-          appointmentId: seededAppointments[5].appointmentId,
-          patientId: seededAppointments[5].patientId,
-          fromDoctorId: doctorList[0].id,
-          toDoctorId: doctorList[2].id,
-          status: 'BOOKED',
-        },
-      },
-      status: 'PUBLISHED',
-      publishedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
-    },
-    {
-      eventType: 'appointment.cancelled.v1',
-      aggregateId: seededAppointments[10].appointmentId,
-      aggregateVersion: 2,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[10].appointmentId,
-        data: {
-          appointmentId: seededAppointments[10].appointmentId,
-          patientId: seededAppointments[10].patientId,
-          status: 'CANCELLED',
-          cancellationReason: seededAppointments[10].cancellationReason,
-        },
-      },
-      status: 'PUBLISHED',
-      publishedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-    },
-    {
-      eventType: 'appointment.no_show.v1',
-      aggregateId: seededAppointments[11].appointmentId,
-      aggregateVersion: 2,
-      payload: {
-        eventVersion: 1,
-        aggregateType: 'appointment',
-        aggregateId: seededAppointments[11].appointmentId,
-        data: {
-          appointmentId: seededAppointments[11].appointmentId,
-          patientId: seededAppointments[11].patientId,
-          status: 'NO_SHOW',
-        },
-      },
-      status: 'PENDING',
-      publishedAt: null,
-    },
-  ];
-
-  for (const ob of appOutboxEvents) {
-    await clients.appointment.query(
-      `INSERT INTO appointment_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 0, NOW(), $6)`,
-      [ob.eventType, ob.aggregateId, ob.aggregateVersion, JSON.stringify(ob.payload), ob.status, ob.publishedAt]
-    );
-  }
-
-  // 5. Bản ghi kiểm soát lặp lại (Appointment Idempotency Records)
-  const appRecords = [
-    {
-      scope: 'create-appointment',
-      key: `idemp-create-app-${seededAppointments[0].appointmentId}`,
-      hash: sha256(`create_app_${seededAppointments[0].code}`),
-      resourceId: seededAppointments[0].appointmentId,
-      status: 201,
-      body: { appointmentId: seededAppointments[0].appointmentId, appointmentCode: seededAppointments[0].code, status: 'BOOKED' },
-    },
-    {
-      scope: 'create-hold',
-      key: `idemp-hold-${hold1Id}`,
-      hash: sha256(`create_hold_${hold1Id}`),
-      resourceId: hold1Id,
-      status: 201,
-      body: { holdId: hold1Id, status: 'CONSUMED' },
-    },
-    {
-      scope: 'appointment.reassigned.v1',
-      key: `idemp-reassign-${seededAppointments[5].appointmentId}`,
-      hash: sha256(`reassign_${seededAppointments[5].appointmentId}`),
-      resourceId: seededAppointments[5].appointmentId,
-      status: 200,
-      body: { appointmentId: seededAppointments[5].appointmentId, assignedDoctorId: doctorList[2].id, status: 'BOOKED' },
-    },
-  ];
-
-  for (const idemp of appRecords) {
-    await clients.appointment.query(
-      `INSERT INTO appointment_idempotency_records (id, scope, key, request_hash, resource_id, response_status, response_body, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW())`,
-      [idemp.scope, idemp.key, idemp.hash, idemp.resourceId, idemp.status, JSON.stringify(idemp.body)]
-    );
-  }
-
-  console.log(`✅ Đã khởi tạo 12 Lịch hẹn (Tất cả 7 trạng thái, 3 kênh, 2 chế độ chọn), 4 Giữ chỗ (Tất cả trạng thái), Lịch sử phân công, Audit Logs, Outbox và Idempotency.`);
-
-  // ============================================================================
-  // BƯỚC 9.0: HÓA ĐƠN BỔ SUNG PHÁT SINH LÂM SÀNG (SUPPLEMENTARY INVOICES & PERFORMED SERVICES)
-  // ============================================================================
-  console.log('\n--- BƯỚC 9.0: KHỞI TẠO HÓA ĐƠN BỔ SUNG PHÁT SINH LÂM SÀNG (BILLING SUPPLEMENTARY) ---');
-
-  // 1. Hóa đơn bổ sung 1 cho Lịch hẹn AT-2026-0001 (Nguyễn Minh Anh - COMPLETED)
-  // Phát sinh thêm: Siêu âm hình thái thai nhi 4D/5D Doppler màu HD-Live (US_4D_5D - 650.000đ)
-  const supp1Srv = serviceMap['US_4D_5D'];
-  const supp1Amount = supp1Srv.price;
-  const supp1App = seededAppointments[0];
-
-  const supp1Res = await clients.billing.query(
-    `INSERT INTO invoices (
-      id, invoice_number, patient_id, appointment_id, encounter_id, type, status,
-      currency, subtotal_minor, total_minor, paid_minor, balance_minor, source_version,
-      due_at, paid_at, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'INV-2026-SUPP-01', $1, $2, $3, 'SUPPLEMENTARY', 'PAID',
-      'VND', $4, $4, $4, 0, 1,
-      NOW(), NOW(), 2, NOW() - INTERVAL '20 minutes', NOW()
-    ) RETURNING id`,
-    [supp1App.patientId, supp1App.appointmentId, supp1App.encounterId, supp1Amount]
-  );
-  const supp1Id = supp1Res.rows[0].id;
-
-  // Dòng chi phí lâm sàng thực hiện (PERFORMED_SERVICE)
-  await clients.billing.query(
-    `INSERT INTO invoice_lines (
-      id, invoice_id, line_no, source, source_reference_id, service_id,
-      description_snapshot, quantity, unit_amount_minor, line_amount_minor,
-      price_reference_id, performed_at, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, 1, 'PERFORMED_SERVICE', gen_random_uuid(), $2,
-      $3, 1, $4, $4,
-      $5, NOW() - INTERVAL '25 minutes', NOW()
-    )`,
-    [supp1Id, supp1Srv.id, `Chỉ định lâm sàng bổ sung: ${supp1Srv.name}`, supp1Amount, supp1Srv.priceId]
-  );
-
-  // Thanh toán tiền mặt bổ sung
-  const supp1PayRes = await clients.billing.query(
-    `INSERT INTO payments (
-      id, invoice_id, method, status, amount_minor, currency,
-      received_at, verified_at, reference, recorded_by, version, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'CASH', 'VERIFIED', $2, 'VND',
-      NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '15 minutes', 'REC-SUPP-CASH-0001', $3, 1, NOW()
-    ) RETURNING id`,
-    [supp1Id, supp1Amount, receptionistList[0].id]
-  );
-
-  await clients.billing.query(
-    `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-     VALUES (gen_random_uuid(), 'billing.invoice_issued.v1', NULL, $1, 'Phát hành hóa đơn bổ sung dịch vụ siêu âm 4D chỉ định trong phiên khám', $2, NOW() - INTERVAL '20 minutes')`,
-    [supp1Id, crypto.randomUUID()]
-  );
-  await clients.billing.query(
-    `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-     VALUES (gen_random_uuid(), 'billing.payment_recorded.v1', $1, $2, 'Thu tiền mặt bổ sung tại phòng khám cho dịch vụ siêu âm 4D', $3, NOW() - INTERVAL '15 minutes')`,
-    [receptionistList[0].id, supp1Id, crypto.randomUUID()]
-  );
-  await clients.billing.query(
-    `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'billing.payment_recorded.v1', $1, 2, $2, 'PUBLISHED', 0, NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '14 minutes')`,
-    [supp1Id, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: supp1Id, data: { invoiceId: supp1Id, type: 'SUPPLEMENTARY', status: 'PAID' } })]
-  );
-
-  await clients.billing.query(
-    `INSERT INTO billing_idempotency_records (id, scope, key, request_hash, resource_id, response_status, response_body, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 201, $5, NOW() - INTERVAL '15 minutes')`,
-    [
-      `payment:${supp1Id}`,
-      `supp-pay-key-${supp1Id}`,
-      sha256(`supp_pay_${supp1Id}_${supp1Amount}`),
-      supp1PayRes.rows[0].id,
-      JSON.stringify({ invoiceId: supp1Id, paymentId: supp1PayRes.rows[0].id, amountMinor: supp1Amount, status: 'VERIFIED' })
-    ]
-  );
-
-  // 2. Hóa đơn bổ sung 2 cho Lịch hẹn AT-2026-0002 (Trần Thị Thanh Hằng - CHECKED_IN / Đang khám lâm sàng)
-  // Phát sinh 2 dịch vụ lâm sàng:
-  // - Xét nghiệm dung nạp đường huyết (OGTT_DIABETES - 350.000đ)
-  // - Siêu âm thai 2D (US_2D - 250.000đ)
-  // Trạng thái: OUTSTANDING (chưa thanh toán, chờ hoàn thành đợt khám)
-  const supp2Srv1 = serviceMap['OGTT_DIABETES'];
-  const supp2Srv2 = serviceMap['US_2D'];
-  const supp2Total = supp2Srv1.price + supp2Srv2.price; // 600.000đ
-  const supp2App = seededAppointments[1];
-
-  const supp2Res = await clients.billing.query(
-    `INSERT INTO invoices (
-      id, invoice_number, patient_id, appointment_id, encounter_id, type, status,
-      currency, subtotal_minor, total_minor, paid_minor, balance_minor, source_version,
-      due_at, paid_at, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'INV-2026-SUPP-02', $1, $2, $3, 'SUPPLEMENTARY', 'OUTSTANDING',
-      'VND', $4, $4, 0, $4, 1,
-      NOW() + INTERVAL '1 day', NULL, 1, NOW() - INTERVAL '10 minutes', NOW()
-    ) RETURNING id`,
-    [supp2App.patientId, supp2App.appointmentId, supp2App.encounterId, supp2Total]
-  );
-  const supp2Id = supp2Res.rows[0].id;
-
-  // Dòng 1: OGTT_DIABETES
-  await clients.billing.query(
-    `INSERT INTO invoice_lines (
-      id, invoice_id, line_no, source, source_reference_id, service_id,
-      description_snapshot, quantity, unit_amount_minor, line_amount_minor,
-      price_reference_id, performed_at, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, 1, 'PERFORMED_SERVICE', gen_random_uuid(), $2,
-      $3, 1, $4, $4,
-      $5, NOW() - INTERVAL '10 minutes', NOW()
-    )`,
-    [supp2Id, supp2Srv1.id, `Chỉ định lâm sàng: ${supp2Srv1.name}`, supp2Srv1.price, supp2Srv1.priceId]
-  );
-
-  // Dòng 2: US_2D
-  await clients.billing.query(
-    `INSERT INTO invoice_lines (
-      id, invoice_id, line_no, source, source_reference_id, service_id,
-      description_snapshot, quantity, unit_amount_minor, line_amount_minor,
-      price_reference_id, performed_at, created_at
-    ) VALUES (
-      gen_random_uuid(), $1, 2, 'PERFORMED_SERVICE', gen_random_uuid(), $2,
-      $3, 1, $4, $4,
-      $5, NOW() - INTERVAL '5 minutes', NOW()
-    )`,
-    [supp2Id, supp2Srv2.id, `Chỉ định lâm sàng: ${supp2Srv2.name}`, supp2Srv2.price, supp2Srv2.priceId]
-  );
-
-  await clients.billing.query(
-    `INSERT INTO billing_audit_logs (id, event_type, actor_id, invoice_id, reason, request_id, created_at)
-     VALUES (gen_random_uuid(), 'billing.invoice_issued.v1', NULL, $1, 'Phát hành hóa đơn bổ sung các xét nghiệm chỉ định trong ca khám lâm sàng', $2, NOW() - INTERVAL '10 minutes')`,
-    [supp2Id, crypto.randomUUID()]
-  );
-  await clients.billing.query(
-    `INSERT INTO billing_outbox_events (id, event_type, aggregate_id, aggregate_version, payload, status, attempts, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'billing.invoice_issued.v1', $1, 1, $2, 'PUBLISHED', 0, NOW() - INTERVAL '10 minutes', NOW() - INTERVAL '9 minutes')`,
-    [supp2Id, JSON.stringify({ eventVersion: 1, aggregateType: 'invoice', aggregateId: supp2Id, data: { invoiceId: supp2Id, type: 'SUPPLEMENTARY', status: 'OUTSTANDING' } })]
-  );
-
-  console.log(`✅ Đã khởi tạo đầy đủ hệ thống Hóa đơn bổ sung (SUPPLEMENTARY), Chi phí lâm sàng (PERFORMED_SERVICE), Bảo lãnh viện phí, Thanh toán đa phương thức và Audit/Outbox.`);
-
-  // ============================================================================
-  // BƯỚC 9.05: TOÀN DIỆN HỆ THỐNG BỆNH ÁN LÂM SÀNG (MEDICAL RECORD SERVICE)
-  // ============================================================================
-  console.log('\n--- BƯỚC 9.05: KHỞI TẠO DỮ LIỆU TOÀN DIỆN BỆNH ÁN LÂM SÀNG (MEDICAL RECORD) ---');
-
-  // 1. Hồ sơ thai kỳ tiền sử đã kết thúc thành công (CLOSED) cho Phạm Quỳnh Chi (Thai lần 1 cách đây 2 năm)
-  const chiPatient = patientList[3]; // Phạm Quỳnh Chi
-  const closedEdd = new Date(now.getFullYear() - 2, 5, 20);
-  const closedLmp = new Date(closedEdd.getTime() - 280 * 24 * 60 * 60 * 1000);
-  await clients.medicalRecord.query(
-    `INSERT INTO pregnancy_episodes (
-      id, patient_id, status, estimated_due_date, last_menstrual_period, risk_level, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'CLOSED', $2, $3, 'LOW', 2, NOW() - INTERVAL '2 years', NOW() - INTERVAL '2 years'
-    )`,
-    [chiPatient.id, closedEdd, closedLmp]
-  );
-
-  // 2. Phân công nhân sự y tế tham gia ca khám (Encounter Assignments)
-  const enc1Id = seededAppointments[0].encounterId; // Nguyễn Minh Anh - IN_PROGRESS
-  const enc2Id = seededAppointments[1].encounterId; // Trần Thị Thanh Hằng - AWAITING_RESULTS
-  const enc3Id = seededAppointments[2].encounterId; // Lê Ngọc Mai - READY_FOR_REVIEW
-  const enc4Id = seededAppointments[3].encounterId; // Phạm Quỳnh Chi - FINALIZED
-  const enc5Id = seededAppointments[4].encounterId; // Hoàng Thùy Dương - FINALIZED
-  const enc6Id = seededAppointments[5].encounterId; // Vũ Thị Kim Ngân - DRAFT
-
-  const assignmentsDef = [
-    // Ca 1: Nguyễn Minh Anh (Khám VIP)
-    { encId: enc1Id, staffId: doctorList[0].id, role: 'PRIMARY', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 40 * 60000), endedAt: null },
-    { encId: enc1Id, staffId: nurseAccountId, role: 'NURSE', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 40 * 60000), endedAt: null },
-    { encId: enc1Id, staffId: doctorList[1].id, role: 'CONSULTING', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 25 * 60000), endedAt: null },
-    { encId: enc1Id, staffId: receptionistList[0].accountId, role: 'TECHNICIAN', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 25 * 60000), endedAt: null },
-    { encId: enc1Id, staffId: doctorList[3].id, role: 'CONSULTING', status: 'ENDED', assignedAt: new Date(now.getTime() - 35 * 60000), endedAt: new Date(now.getTime() - 25 * 60000) },
-    // Ca 2: Trần Thị Thanh Hằng (Siêu âm 4D)
-    { encId: enc2Id, staffId: doctorList[1].id, role: 'PRIMARY', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 30 * 60000), endedAt: null },
-    { encId: enc2Id, staffId: nurseAccountId, role: 'NURSE', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 30 * 60000), endedAt: null },
-    // Ca 3: Lê Ngọc Mai (Nghiệm pháp OGTT)
-    { encId: enc3Id, staffId: doctorList[5].id, role: 'PRIMARY', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 50 * 60000), endedAt: null },
-    // Ca 4: Phạm Quỳnh Chi (Khám tuần 34)
-    { encId: enc4Id, staffId: doctorList[0].id, role: 'PRIMARY', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 3 * 24 * 3600000), endedAt: null },
-    // Ca 5: Hoàng Thùy Dương (NIPT Basic)
-    { encId: enc5Id, staffId: doctorList[3].id, role: 'PRIMARY', status: 'ACTIVE', assignedAt: new Date(now.getTime() - 5 * 24 * 3600000), endedAt: null },
-  ];
-
-  for (const a of assignmentsDef) {
-    if (a.encId) {
-      await clients.medicalRecord.query(
-        `INSERT INTO encounter_assignments (id, encounter_id, staff_id, role, status, assigned_at, ended_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
-         ON CONFLICT (encounter_id, staff_id, role, status) DO NOTHING`,
-        [a.encId, a.staffId, a.role, a.status, a.assignedAt, a.endedAt]
-      );
-    }
-  }
-
-  // 3. Chỉ định cận lâm sàng (Clinical Service Orders) đầy đủ cả 6/6 trạng thái
-  const ordersDef = [
-    // 1. ORDERED: Chỉ định Triple Test cho thai 12 tuần (Trần Thị Thanh Hằng)
-    {
-      encId: enc2Id,
-      serviceId: serviceMap['TRIPLE_TEST'].id,
-      stageCode: 'LAB_SAMPLE',
-      doctorId: doctorList[1].id,
-      status: 'ORDERED',
-      result: null,
-      perfAt: null,
-      verAt: null,
-    },
-    // 2. IN_PROGRESS: Chỉ định Nghiệm pháp OGTT đang chạy mẫu (Nguyễn Minh Anh)
-    {
-      encId: enc1Id,
-      serviceId: serviceMap['OGTT_DIABETES'].id,
-      stageCode: 'LAB_SAMPLE',
-      doctorId: doctorList[0].id,
-      status: 'IN_PROGRESS',
-      result: null,
-      perfAt: null,
-      verAt: null,
-    },
-    // 3. PERFORMED: Chỉ định Siêu âm 2D đã đo đạc xong (Phạm Quỳnh Chi)
-    {
-      encId: enc4Id,
-      serviceId: serviceMap['US_2D'].id,
-      stageCode: 'ULTRASOUND',
-      doctorId: doctorList[0].id,
-      status: 'PERFORMED',
-      result: null,
-      perfAt: new Date(now.getTime() - 3 * 24 * 3600000 + 15 * 60000),
-      verAt: null,
-    },
-    // 4. RESULT_AVAILABLE: Nghiệm pháp OGTT đã có kết quả phân tích thô (Lê Ngọc Mai)
-    {
-      encId: enc3Id,
-      serviceId: serviceMap['OGTT_DIABETES'].id,
-      stageCode: 'LAB_SAMPLE',
-      doctorId: doctorList[5].id,
-      status: 'RESULT_AVAILABLE',
-      result: {
-        fastingGlucoseMmol: 4.8,
-        glucosePost1hMmol: 8.2,
-        glucosePost2hMmol: 7.1,
-        normalThreshold: 'Đói < 5.1, Sau 1h < 10.0, Sau 2h < 8.5 mmol/L',
-        interpretation: 'Dung nạp đường huyết trong giới hạn bình thường'
-      },
-      perfAt: new Date(now.getTime() - 30 * 60000),
-      verAt: null,
-    },
-    // 5. VERIFIED: Siêu âm 4D hình thái thai nhi đã được bác sĩ ký duyệt (Nguyễn Minh Anh)
-    {
-      encId: enc1Id,
-      serviceId: serviceMap['US_4D_5D'].id,
-      stageCode: 'ULTRASOUND',
-      doctorId: doctorList[0].id,
-      status: 'VERIFIED',
-      result: {
-        gestationalAgeWeeks: '22w2d',
-        biparietalDiameterMm: 54.2,
-        femurLengthMm: 38.0,
-        headCircumferenceMm: 198.5,
-        abdominalCircumferenceMm: 178.5,
-        estimatedFetalWeightGram: 495,
-        fetalHeartRateBpm: 148,
-        amnioticFluidIndexCm: 13.5,
-        placentaLocation: 'Mặt sau nhóm 1, độ trưởng thành I',
-        fetalAnatomy: 'Hình thái học não thất, tim 4 buồng, môi trên, cột sống, 2 thận, dạ dày, bàng quang và tứ chi đều bình thường, không phát hiện dị tật lớn'
-      },
-      perfAt: new Date(now.getTime() - 25 * 60000),
-      verAt: new Date(now.getTime() - 15 * 60000),
-    },
-    // 6. CANCELLED: Double Test bị hủy do thai phụ đã làm NIPT (Hoàng Thùy Dương)
-    {
-      encId: enc5Id,
-      serviceId: serviceMap['DOUBLE_TEST'].id,
-      stageCode: 'LAB_SAMPLE',
-      doctorId: doctorList[3].id,
-      status: 'CANCELLED',
-      result: { cancelReason: 'Thai phụ lựa chọn xét nghiệm NIPT Basic có độ chính xác cao hơn, hủy chỉ định Double Test sinh hóa thông thường' },
-      perfAt: null,
-      verAt: null,
-    },
-  ];
-
-  let verifiedOrderId = null;
-  for (const o of ordersDef) {
-    if (o.encId) {
-      const ordRes = await clients.medicalRecord.query(
-        `INSERT INTO clinical_service_orders (
-          id, encounter_id, catalog_service_id, stage_code, ordered_by_doctor_id,
-          required_result, billable_snapshot, status, structured_result, performed_at, verified_at,
-          version, created_at
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3, $4,
-          true, true, $5, $6, $7, $8,
-          1, NOW()
-        ) RETURNING id`,
-        [o.encId, o.serviceId, o.stageCode, o.doctorId, o.status, o.result ? JSON.stringify(o.result) : null, o.perfAt, o.verAt]
-      );
-      if (o.status === 'VERIFIED') {
-        verifiedOrderId = ordRes.rows[0].id;
-      }
-    }
-  }
-
-  // 4. Liên kết tài nguyên ngoại vi (External Clinical References)
-  if (enc1Id && seededAppointments[0].prescriptionId) {
-    await clients.medicalRecord.query(
-      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
-       VALUES (gen_random_uuid(), $1, 'PRESCRIPTION', $2, NOW())
-       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
-      [enc1Id, seededAppointments[0].prescriptionId]
-    );
-  }
-  if (enc1Id) {
-    await clients.medicalRecord.query(
-      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
-       VALUES (gen_random_uuid(), $1, 'DOCUMENT', gen_random_uuid(), NOW())
-       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
-      [enc1Id]
-    );
-  }
-  if (enc4Id && seededAppointments[3].prescriptionId) {
-    await clients.medicalRecord.query(
-      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
-       VALUES (gen_random_uuid(), $1, 'PRESCRIPTION', $2, NOW())
-       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
-      [enc4Id, seededAppointments[3].prescriptionId]
-    );
-  }
-
-  // 5. Bổ sung điều chỉnh bệnh án sau khi hoàn tất (Encounter Amendments)
-  if (enc4Id) {
-    await clients.medicalRecord.query(
-      `INSERT INTO encounter_amendments (id, encounter_id, section, reason, patch, author_doctor_id, created_at)
-       VALUES (
-         gen_random_uuid(), $1, 'DIAGNOSIS',
-         'Bổ sung chẩn đoán theo dõi tiền sản giật nhẹ sau khi đối chiếu chỉ số huyết áp và protein niệu vết',
-         $2, $3, NOW() - INTERVAL '1 day'
-       )`,
-      [
-        enc4Id,
-        JSON.stringify({
-          additionalIcdCode: 'O14.0',
-          additionalDescription: 'Theo dõi tiền sản giật nhẹ thai 34 tuần',
-          monitoringInstructions: 'Đo huyết áp tại nhà 2 lần/ngày (sáng - chiều), nếu huyết áp >= 140/90 mmHg hoặc đau đầu hoa mắt phải vào viện ngay'
-        }),
-        doctorList[0].id
-      ]
-    );
-  }
-
-  if (enc5Id) {
-    await clients.medicalRecord.query(
-      `INSERT INTO encounter_amendments (id, encounter_id, section, reason, patch, author_doctor_id, created_at)
-       VALUES (
-         gen_random_uuid(), $1, 'CLINICAL_SUMMARY',
-         'Cập nhật kết quả phân tích di truyền cfDNA NIPT Basic từ Viện Di truyền Y học',
-         $2, $3, NOW() - INTERVAL '3 days'
-       )`,
-      [
-        enc5Id,
-        JSON.stringify({
-          niptResultStatus: 'LOW_RISK',
-          trisomy21Down: 'Nguy cơ rất thấp (T-score: -2.85)',
-          trisomy18Edwards: 'Nguy cơ rất thấp (T-score: -3.12)',
-          trisomy13Patau: 'Nguy cơ rất thấp (T-score: -2.94)',
-          fetalDnaFraction: '8.6%',
-          recommendation: 'Tiếp tục theo dõi thai kỳ định kỳ, siêu âm hình thái học mốc 20-22 tuần'
-        }),
-        doctorList[3].id
-      ]
-    );
-  }
-
-  // 6. Nhật ký kiểm toán bệnh án (Medical Audit Logs)
-  const medAudits = [
-    { event: 'medical.encounter_opened.v1', actor: receptionistList[0].accountId, enc: enc1Id, reason: 'Mở bệnh án lâm sàng tiếp nhận từ lịch hẹn AT-2026-0001' },
-    { event: 'medical.encounter_started.v1', actor: doctorList[0].accountId, enc: enc1Id, reason: 'Bác sĩ bắt đầu phiên khám chuyên gia VIP thai 22 tuần' },
-    { event: 'medical.encounter_ready.v1', actor: doctorList[5].accountId, enc: enc3Id, reason: 'Đã nhận đủ kết quả xét nghiệm OGTT 3 thời điểm, sẵn sàng tổng duyệt' },
-    { event: 'medical.encounter_finalized.v1', actor: doctorList[0].accountId, enc: enc4Id, reason: 'Hoàn tất khám, kết luận bệnh án và kê đơn canxi magie thai 34 tuần' },
-    { event: 'medical.amendment_added.v1', actor: doctorList[0].accountId, enc: enc4Id, reason: 'Bác sĩ cập nhật phụ lục theo dõi tiền sản giật nhẹ' },
-  ];
-
-  for (const ma of medAudits) {
-    if (ma.enc) {
-      await clients.medicalRecord.query(
-        `INSERT INTO medical_audit (id, event_type, actor_id, encounter_id, reason, created_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())`,
-        [ma.event, ma.actor, ma.enc, ma.reason]
-      );
-    }
-  }
-
-  // 7. Sự kiện Outbox Bệnh án (Medical Outbox Events)
-  const medOutboxEvents = [
-    { event: 'medical.encounter_opened.v1', enc: enc1Id, ver: 1, status: 'PUBLISHED', pubAt: new Date(now.getTime() - 35 * 60000) },
-    { event: 'medical.encounter_started.v1', enc: enc1Id, ver: 2, status: 'PUBLISHED', pubAt: new Date(now.getTime() - 30 * 60000) },
-    { event: 'medical.encounter_ready.v1', enc: enc3Id, ver: 2, status: 'PUBLISHED', pubAt: new Date(now.getTime() - 20 * 60000) },
-    { event: 'medical.encounter_finalized.v1', enc: enc4Id, ver: 3, status: 'PUBLISHED', pubAt: new Date(now.getTime() - 15 * 60000) },
-    { event: 'medical.amendment_added.v1', enc: enc4Id, ver: 4, status: 'PENDING', pubAt: null },
-  ];
-
-  for (const mo of medOutboxEvents) {
-    if (mo.enc) {
-      await clients.medicalRecord.query(
-        `INSERT INTO medical_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW() - INTERVAL '30 minutes', $6)`,
-        [
-          mo.event, mo.enc, mo.ver,
-          JSON.stringify({ eventVersion: 1, aggregateType: 'clinical_encounter', aggregateId: mo.enc, eventType: mo.event }),
-          mo.status, mo.pubAt
-        ]
-      );
-    }
-  }
-
-  // 8. Bản ghi kiểm soát chống lặp bệnh án (Medical Idempotency)
-  if (enc1Id) {
-    await clients.medicalRecord.query(
-      `INSERT INTO medical_idempotency (id, scope, key, request_hash, resource_id, response, created_at)
-       VALUES (gen_random_uuid(), 'open-encounter', $1, $2, $3, $4, NOW())
-       ON CONFLICT (scope, key) DO NOTHING`,
-      [
-        `idemp-open-${enc1Id}`,
-        sha256(`open_enc_${enc1Id}`),
-        enc1Id,
-        JSON.stringify({ encounterId: enc1Id, status: 'OPENED' })
-      ]
-    );
-
-    await clients.medicalRecord.query(
-      `INSERT INTO medical_idempotency (id, scope, key, request_hash, resource_id, response, created_at)
-       VALUES (gen_random_uuid(), 'add-vital', $1, $2, $3, $4, NOW())
-       ON CONFLICT (scope, key) DO NOTHING`,
-      [
-        `idemp-vital-${enc1Id}`,
-        sha256(`vital_enc_${enc1Id}`),
-        enc1Id,
-        JSON.stringify({ encounterId: enc1Id, status: 'RECORDED' })
-      ]
-    );
-  }
-
-  if (verifiedOrderId) {
-    await clients.medicalRecord.query(
-      `INSERT INTO medical_idempotency (id, scope, key, request_hash, resource_id, response, created_at)
-       VALUES (gen_random_uuid(), 'order', $1, $2, $3, $4, NOW())
-       ON CONFLICT (scope, key) DO NOTHING`,
-      [
-        `idemp-order-${verifiedOrderId}`,
-        sha256(`order_${verifiedOrderId}`),
-        verifiedOrderId,
-        JSON.stringify({ orderId: verifiedOrderId, status: 'VERIFIED' })
-      ]
-    );
-  }
-
-  console.log(`✅ Đã khởi tạo đầy đủ hệ thống Bệnh án lâm sàng: Tất cả 5 trạng thái (DRAFT, IN_PROGRESS, AWAITING_RESULTS, READY_FOR_REVIEW, FINALIZED), Phân công nhân sự y tế đa vai trò, 6 trạng thái y lệnh cận lâm sàng kèm kết quả JSON, Phụ lục điều chỉnh (Amendments), Liên kết ngoài, Audit, Outbox và Idempotency.`);
-
-  // ============================================================================
-  // CÁC HÀNG ĐỢI ĐẶC BIỆT BỔ SUNG: URGENT (CẤP CỨU), SKIPPED (BỎ QUA), CANCELLED (HỦY)
-  // ============================================================================
-  const todayBusinessDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  // 1. Thai phụ Cấp cứu / Ưu tiên khẩn cấp (BasePriority URGENT) - Lý Mỹ Dung (Thai 20 tuần)
-  const urgentPatient = patientList[9];
-  const urgentAppId = crypto.randomUUID();
-  const urgentEncId = crypto.randomUUID();
-  const urgentJrnRes = await clients.queue.query(
-    `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 0, false, 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
-    [urgentAppId, urgentPatient.id, urgentEncId, todayBusinessDate]
-  );
-  const urgentJourneyId = urgentJrnRes.rows[0].id;
-  const urgentTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, 'P.201', $3, 4, 'CONS-004', 'WAITING', 'URGENT', false, 10, 0, 1, NOW(), NOW()) RETURNING id`,
-    [urgentJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
-  );
-  const urgentTicketId = urgentTicketRes.rows[0].id;
-
-  // 2. Bệnh nhân bị Bỏ qua (SKIPPED) do vắng mặt sau 2 lần gọi loa - Trương Thảo My
-  const skippedPatient = patientList[10];
-  const skippedAppId = crypto.randomUUID();
-  const skippedEncId = crypto.randomUUID();
-  const skippedJrnRes = await clients.queue.query(
-    `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 0, false, 'ACTIVE', 1, NOW(), NOW()) RETURNING id`,
-    [skippedAppId, skippedPatient.id, skippedEncId, todayBusinessDate]
-  );
-  const skippedJourneyId = skippedJrnRes.rows[0].id;
-  const skippedTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, called_at, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, 'P.201', $3, 5, 'CONS-005', 'SKIPPED', 'ROUTINE', false, 11, 2, NOW() - INTERVAL '20 minutes', 1, NOW(), NOW()) RETURNING id`,
-    [skippedJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
-  );
-  const skippedTicketId = skippedTicketRes.rows[0].id;
-
-  // 2 lần gọi thất bại (CallAttempts: NO_SHOW)
-  await clients.queue.query(
-    `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-     VALUES (gen_random_uuid(), $1, 1, NOW() - INTERVAL '25 minutes', NOW() - INTERVAL '20 minutes', 'NO_SHOW', $2, 'P.201')`,
-    [skippedTicketId, nurseAccountId]
-  );
-  await clients.queue.query(
-    `INSERT INTO call_attempts (id, ticket_id, attempt_number, called_at, expires_at, outcome, caller_account_id, room_code)
-     VALUES (gen_random_uuid(), $1, 2, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '15 minutes', 'NO_SHOW', $2, 'P.201')`,
-    [skippedTicketId, nurseAccountId]
-  );
-
-  // 3. Hành trình bị HỦY (Journey CANCELLED & Ticket CANCELLED) - Nguyễn Mai Hương
-  const cancelledPatient = patientList[11];
-  const cancelledAppId = crypto.randomUUID();
-  const cancelledEncId = crypto.randomUUID();
-  const cancelledJrnRes = await clients.queue.query(
-    `INSERT INTO queue_journeys (id, appointment_id, patient_id, encounter_id, business_date, late_minutes, late_demoted, state, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 0, false, 'CANCELLED', 1, NOW(), NOW()) RETURNING id`,
-    [cancelledAppId, cancelledPatient.id, cancelledEncId, todayBusinessDate]
-  );
-  const cancelledJourneyId = cancelledJrnRes.rows[0].id;
-  const cancelledTicketRes = await clients.queue.query(
-    `INSERT INTO stage_tickets (id, journey_id, stage_id, room_code, business_date, ordinal, ticket_code, state, base_priority, late_demotion, enqueue_sequence, call_count, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, 'P.203', $3, 6, 'CONS-006', 'CANCELLED', 'ROUTINE', false, 12, 0, 1, NOW(), NOW()) RETURNING id`,
-    [cancelledJourneyId, stageMap['CONSULTATION'], todayBusinessDate]
-  );
-  const cancelledTicketId = cancelledTicketRes.rows[0].id;
-
-  // ============================================================================
-  // QUEUE AUDIT, IDEMPOTENCY & OUTBOX
-  // ============================================================================
-  // Nhật ký kiểm toán điều phối hàng đợi (QueueAudit)
-  const queueAuditLogs = [
-    { event: 'QUEUE_JOURNEY_CREATED', actor: receptionistList[0].accountId, ticketId: seededAppointments[0].ticketId, reason: 'Khởi tạo hành trình tiếp đón thai phụ Nguyễn Minh Anh' },
-    { event: 'QUEUE_TICKET_CALLED', actor: doctorList[1].accountId, ticketId: seededAppointments[1].ticketId, reason: 'Bác sĩ gọi số thứ tự CONS-002 vào phòng P.203' },
-    { event: 'QUEUE_OVERRIDE_CALLED', actor: doctorList[0].accountId, ticketId: urgentTicketId, reason: 'Bác sĩ ưu tiên gọi trước thai phụ nguy cơ cao cấp cứu' },
-    { event: 'QUEUE_TICKET_SKIPPED', actor: nurseAccountId, ticketId: skippedTicketId, reason: 'Bệnh nhân vắng mặt tại sảnh sau 2 lần phát thanh gọi số' },
-    { event: 'QUEUE_TICKET_CANCELLED', actor: receptionistList[0].accountId, ticketId: cancelledTicketId, reason: 'Bệnh nhân xin hủy chuyển tuyến theo nguyện vọng' },
-    { event: 'QUEUE_TICKET_REQUEUED', actor: receptionistList[0].accountId, ticketId: skippedTicketId, reason: 'Bệnh nhân có mặt trở lại, xin tái xếp hàng vào cuối danh sách' },
-  ];
-  for (const al of queueAuditLogs) {
-    await clients.queue.query(
-      `INSERT INTO queue_audit (id, event_type, actor_id, ticket_id, reason, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())`,
-      [al.event, al.actor, al.ticketId, al.reason]
-    );
-  }
-
-  // Bản ghi chống trùng lặp (QueueIdempotency)
-  await clients.queue.query(
-    `INSERT INTO queue_idempotency (id, scope, key, request_hash, response, created_at)
-     VALUES (gen_random_uuid(), 'create_journey', $1, $2, $3, NOW())`,
-    [
-      `idemp-journey-${seededAppointments[0].appointmentId}`,
-      sha256(`create_journey_${seededAppointments[0].appointmentId}`),
-      JSON.stringify({ success: true, journeyId: seededAppointments[0].journeyId, ticketCode: 'CONS-001' })
-    ]
-  );
-  await clients.queue.query(
-    `INSERT INTO queue_idempotency (id, scope, key, request_hash, response, created_at)
-     VALUES (gen_random_uuid(), 'enqueue_stage', $1, $2, $3, NOW())`,
-    [
-      `idemp-stage-ultrasound-${seededAppointments[0].appointmentId}`,
-      sha256(`enqueue_stage_ultrasound_${seededAppointments[0].appointmentId}`),
-      JSON.stringify({ success: true, stageCode: 'ULTRASOUND', ticketCode: 'US-001' })
-    ]
-  );
-
-  // Sự kiện gửi ra ngoài (QueueOutbox)
-  await clients.queue.query(
-    `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'queue.journey_created.v1', $1, 1, $2, 'PUBLISHED', NOW(), NOW())`,
-    [seededAppointments[0].journeyId, JSON.stringify({ journeyId: seededAppointments[0].journeyId, patientId: seededAppointments[0].patientId, state: 'ACTIVE' })]
-  );
-  await clients.queue.query(
-    `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'queue.ticket_called.v1', $1, 1, $2, 'PUBLISHED', NOW(), NOW())`,
-    [seededAppointments[1].journeyId, JSON.stringify({ ticketCode: 'CONS-002', stage: 'CONSULTATION', room: 'P.203', calledAt: new Date() })]
-  );
-  await clients.queue.query(
-    `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'queue.ticket_in_service.v1', $1, 1, $2, 'PUBLISHED', NOW(), NOW())`,
-    [seededAppointments[0].journeyId, JSON.stringify({ ticketCode: 'CONS-001', doctorId: doctorList[0].id, startedAt: new Date() })]
-  );
-  await clients.queue.query(
-    `INSERT INTO queue_outbox (id, event_type, aggregate_id, aggregate_version, payload, status, occurred_at, published_at)
-     VALUES (gen_random_uuid(), 'queue.ticket_completed.v1', $1, 1, $2, 'PENDING', NOW(), NULL)`,
-    [seededAppointments[2].journeyId, JSON.stringify({ ticketCode: 'CONS-003', state: 'COMPLETED', completedAt: new Date() })]
-  );
-
-  console.log(`✅ Đã tạo thành công 9 Lịch hẹn, Hóa đơn viện phí, Bệnh án lâm sàng và Hệ thống Hàng đợi phong phú (Tất cả trạng thái Journey & Ticket, Ưu tiên URGENT, Cuộc gọi, Audit, Idempotency, Outbox).`);
-
-  // ============================================================================
-  // ĐƠN THUỐC ĐA TRẠNG THÁI (PRESCRIPTION STATUSES: DRAFT, CANCELLED, SUPERSEDES) & OUTBOX
-  // ============================================================================
-  // 1. Đơn thuốc nháp đang kê dở (DRAFT) - BS. Nguyễn Quang Minh kê cho Trần Thị Thanh Hằng
-  const draftPrescRes = await clients.prescription.query(
-    `INSERT INTO prescriptions (id, encounter_id, patient_id, pregnancy_episode_id, prescribing_doctor_id, status, version, issued_at, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'DRAFT', 1, NULL, NOW(), NOW()) RETURNING id`,
-    [seededAppointments[1].encounterId, seededAppointments[1].patientId, patientList[1].pregnancyEpisodeId, doctorList[1].id]
-  );
-  const draftPrescId = draftPrescRes.rows[0].id;
-  await clients.prescription.query(
-    `INSERT INTO prescription_items (id, prescription_id, medication_code, medication_name, strength, dosage_form, route, dose, frequency, duration_days, instruction, sort_order)
-     VALUES (gen_random_uuid(), $1, 'MED_PROGESTERONE_200', 'Utrogestan 200mg (Progesterone vi hạt)', '200 mg', 'Viên nang đặt âm đạo/uống', 'Đặt âm đạo sâu', '1 viên', '1 lần/ngày vào buổi tối', 15, 'Đặt sâu vào âm đạo buổi tối trước ngủ, nghỉ ngơi 30 phút.', 1)`,
-    [draftPrescId]
-  );
-  await clients.prescription.query(
-    `INSERT INTO prescription_items (id, prescription_id, medication_code, medication_name, strength, dosage_form, route, dose, frequency, duration_days, instruction, sort_order)
-     VALUES (gen_random_uuid(), $1, 'MED_MAGNE_B6', 'Magne-B6 Corbiere', '470mg / 5mg', 'Viên bao đường', 'Uống', '1 viên', '2 lần/ngày', 30, 'Uống cùng bữa ăn với nhiều nước.', 2)`,
-    [draftPrescId]
-  );
-
-  // 2. Đơn thuốc bị HỦY (CANCELLED) do thai phụ dị ứng tá dược - BS. Lê Thu Hà
-  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-  const cancelledPrescRes = await clients.prescription.query(
-    `INSERT INTO prescriptions (id, encounter_id, patient_id, pregnancy_episode_id, prescribing_doctor_id, status, cancelled_at, cancel_reason, version, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'CANCELLED', $5, 'Thai phụ có phản ứng dị ứng ngứa da và buồn nôn với dạng sắt viên nang, hủy đơn để chuyển sang phác đồ thay thế', 2, $5, $5) RETURNING id`,
-    [seededAppointments[0].encounterId, seededAppointments[0].patientId, patientList[0].pregnancyEpisodeId, doctorList[0].id, twoDaysAgo]
-  );
-  const cancelledPrescId = cancelledPrescRes.rows[0].id;
-  await clients.prescription.query(
-    `INSERT INTO prescription_items (id, prescription_id, medication_code, medication_name, strength, dosage_form, route, dose, frequency, duration_days, instruction, sort_order)
-     VALUES (gen_random_uuid(), $1, 'MED_IRON_FEMAT', 'Sắt hữu cơ Polymaltose (Femat)', '50 mg', 'Viên nang mềm', 'Uống', '1 viên', '1 lần/ngày', 30, 'Uống trước ăn 30 phút với nhiều nước.', 1)`,
-    [cancelledPrescId]
-  );
-
-  // 3. Đơn thuốc THAY THẾ (ISSUED) nối với đơn cũ qua supersedes_prescription_id
-  const supersedingPrescRes = await clients.prescription.query(
-    `INSERT INTO prescriptions (id, encounter_id, patient_id, pregnancy_episode_id, prescribing_doctor_id, status, supersedes_prescription_id, version, issued_at, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, 'ISSUED', $5, 1, $6, $6, $6) RETURNING id`,
-    [seededAppointments[0].encounterId, seededAppointments[0].patientId, patientList[0].pregnancyEpisodeId, doctorList[0].id, cancelledPrescId, new Date(twoDaysAgo.getTime() + 15 * 60 * 1000)]
-  );
-  const supersedingPrescId = supersedingPrescRes.rows[0].id;
-  await clients.prescription.query(
-    `INSERT INTO prescription_items (id, prescription_id, medication_code, medication_name, strength, dosage_form, route, dose, frequency, duration_days, instruction, sort_order)
-     VALUES (gen_random_uuid(), $1, 'MED_CALCIUM_CORBIERE', 'Canxi Corbiere Sanofi 5ml', '552.5 mg/5ml', 'Dung dịch uống ống bẻ', 'Uống', '1 ống (5ml)', '2 lần/ngày', 30, 'Uống trực tiếp sau ăn sáng và ăn trưa.', 1)`,
-    [supersedingPrescId]
-  );
-  await clients.prescription.query(
-    `INSERT INTO prescription_items (id, prescription_id, medication_code, medication_name, strength, dosage_form, route, dose, frequency, duration_days, instruction, sort_order)
-     VALUES (gen_random_uuid(), $1, 'MED_DHA_PRENATAL', 'Bio Island DHA for Pregnancy 210mg', '210 mg', 'Viên nang mềm', 'Uống', '1 viên', '1 lần/ngày', 30, 'Uống ngay trong hoặc ngay sau bữa ăn có chất béo.', 2)`,
-    [supersedingPrescId]
-  );
-
-  // 4. Sự kiện Outbox cho Prescription (PrescriptionOutbox)
-  await clients.prescription.query(
-    `INSERT INTO prescription_outbox (id, event_type, aggregate_id, payload, status, occurred_at)
-     VALUES (gen_random_uuid(), 'prescription.draft_created.v1', $1, $2, 'PUBLISHED', NOW())`,
-    [draftPrescId, JSON.stringify({ prescriptionId: draftPrescId, status: 'DRAFT', doctorId: doctorList[1].id })]
-  );
-  await clients.prescription.query(
-    `INSERT INTO prescription_outbox (id, event_type, aggregate_id, payload, status, occurred_at)
-     VALUES (gen_random_uuid(), 'prescription.cancelled.v1', $1, $2, 'PUBLISHED', $3)`,
-    [cancelledPrescId, JSON.stringify({ prescriptionId: cancelledPrescId, status: 'CANCELLED', reason: 'Dị ứng tá dược thuốc' }), twoDaysAgo]
-  );
-  await clients.prescription.query(
-    `INSERT INTO prescription_outbox (id, event_type, aggregate_id, payload, status, occurred_at)
-     VALUES (gen_random_uuid(), 'prescription.issued.v1', $1, $2, 'PENDING', NOW())`,
-    [supersedingPrescId, JSON.stringify({ prescriptionId: supersedingPrescId, supersedesPrescriptionId: cancelledPrescId, status: 'ISSUED' })]
-  );
-
-  console.log(`✅ Đã khởi tạo đầy đủ hệ thống Đơn thuốc (Tất cả trạng thái DRAFT, ISSUED, CANCELLED, Đơn thay thế SUPERSEDES và Outbox).`);
-
-  // ============================================================================
-  // 9.1 TIẾP ĐÓN, XÁC THỰC DANH TÍNH & NHẬP VIỆN (RECEPTION CASES & ADMISSIONS)
-  // ============================================================================
-  console.log('\n--- BƯỚC 9.1: KHỞI TẠO TIẾP ĐÓN, XÁC THỰC DANH TÍNH & NHẬP VIỆN (RECEPTION CASES) ---');
-
-  // Case 1: Lịch hẹn AT-2026-0001 (Nguyễn Minh Anh - COMPLETED hôm nay) -> ADMITTED & COMPLETED
-  const app1 = seededAppointments[0];
-  const app1Arrival = new Date(app1.appDate.getTime() - 15 * 60 * 1000);
-  const app1Checkin = new Date(app1.appDate.getTime() - 10 * 60 * 1000);
-  const app1Complete = new Date(app1.appDate.getTime() + 30 * 60 * 1000);
-
-  const case1Res = await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'SCHEDULED', $1, $2, 'ADMITTED', $3, $4,
-      'SERVICE', $5, $5, 1, NOW(), NOW()
-    ) RETURNING id`,
-    [app1.appointmentId, app1.patientId, app1Arrival, app1.appDate, receptionistList[0].accountId]
-  );
-  const case1Id = case1Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO identity_verifications (
-      id, reception_case_id, method, result, reason_code, note, verified_fields, performed_by_account_id, performed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'NATIONAL_ID_DOCUMENT', 'VERIFIED', 'MATCH_PERFECT',
-      'Đối chiếu CCCD gắn chip và nhận diện khuôn mặt khớp 100%',
-      ARRAY['fullName', 'dob', 'nationalId', 'photo'], $2, $3
-    )`,
-    [case1Id, receptionistList[0].accountId, app1Arrival]
-  );
-
-  const adm1Res = await clients.receptionist.query(
-    `INSERT INTO admissions (
-      id, reception_case_id, status, current_step, invoice_id, payment_id,
-      medical_record_id, encounter_id, queue_ticket_id, queue_journey_id,
-      appointment_checked_in_at, retry_count, version, created_at, updated_at, completed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'COMPLETED', 'DONE', $2, $3,
-      $4, $4, $5, $6,
-      $7, 0, 1, NOW(), NOW(), $8
-    ) RETURNING id`,
-    [case1Id, app1.invoiceId, app1.paymentId, app1.encounterId, app1.ticketId, app1.journeyId, app1Checkin, app1Complete]
-  );
-  const adm1Id = adm1Res.rows[0].id;
-
-  // Lịch sử các bước nhập viện của Case 1
-  const historyStepsCase1 = [
-    { from: 'IN_PROGRESS', to: 'IN_PROGRESS', step: 'VALIDATE_APPOINTMENT', reason: 'APPOINTMENT_VALIDATED', time: app1Arrival },
-    { from: 'IN_PROGRESS', to: 'IN_PROGRESS', step: 'VERIFY_PAYMENT_OR_APPROVED_CREDIT', reason: 'PAYMENT_VERIFIED', time: app1Checkin },
-    { from: 'IN_PROGRESS', to: 'COMPLETED', step: 'DONE', reason: 'ADMISSION_COMPLETED', time: app1Complete },
-  ];
-  for (const h of historyStepsCase1) {
-    await clients.receptionist.query(
-      `INSERT INTO admission_status_history (
-        id, admission_id, from_status, to_status, step, actor_id, reason_code, occurred_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7
-      )`,
-      [adm1Id, h.from, h.to, h.step, receptionistList[0].accountId, h.reason, h.time]
-    );
-  }
-
-  // Case 2: Lịch hẹn AT-2026-0002 (Trần Thị Thanh Hằng - IN_CLINICAL_CARE hôm nay) -> ADMISSION_IN_PROGRESS
-  const app2 = seededAppointments[1];
-  const app2Arrival = new Date(app2.appDate.getTime() - 20 * 60 * 1000);
-  const app2Checkin = new Date(app2.appDate.getTime() - 15 * 60 * 1000);
-
-  const case2Res = await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'SCHEDULED', $1, $2, 'ADMISSION_IN_PROGRESS', $3, $4,
-      'SERVICE', $5, $5, 1, NOW(), NOW()
-    ) RETURNING id`,
-    [app2.appointmentId, app2.patientId, app2Arrival, app2.appDate, receptionistList[1].accountId]
-  );
-  const case2Id = case2Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO identity_verifications (
-      id, reception_case_id, method, result, reason_code, note, verified_fields, performed_by_account_id, performed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'APPOINTMENT_CODE', 'VERIFIED', 'APP_CODE_VALID',
-      'Xác thực qua mã QR lịch hẹn trên ứng dụng di động An Tâm',
-      ARRAY['appointmentCode', 'phone'], $2, $3
-    )`,
-    [case2Id, receptionistList[1].accountId, app2Arrival]
-  );
-
-  const adm2Res = await clients.receptionist.query(
-    `INSERT INTO admissions (
-      id, reception_case_id, status, current_step, invoice_id, payment_id,
-      medical_record_id, encounter_id, queue_ticket_id, queue_journey_id,
-      appointment_checked_in_at, retry_count, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'IN_PROGRESS', 'OPEN_CLINICAL_ENCOUNTER_DRAFT', $2, $3,
-      $4, $4, $5, $6,
-      $7, 0, 1, NOW(), NOW()
-    ) RETURNING id`,
-    [case2Id, app2.invoiceId, app2.paymentId, app2.encounterId, app2.ticketId, app2.journeyId, app2Checkin]
-  );
-  const adm2Id = adm2Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO admission_status_history (
-      id, admission_id, from_status, to_status, step, actor_id, reason_code, occurred_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'IN_PROGRESS', 'IN_PROGRESS', 'OPEN_CLINICAL_ENCOUNTER_DRAFT', $2, 'ENCOUNTER_OPENED', $3
-    )`,
-    [adm2Id, receptionistList[1].accountId, app2Checkin]
-  );
-
-  // Case 3: Lịch hẹn AT-2026-0003 (Lê Bích Thủy - CHECKED_IN hôm nay) -> IDENTITY_VERIFIED
-  const app3 = seededAppointments[2];
-  const app3Arrival = new Date(app3.appDate.getTime() - 10 * 60 * 1000);
-
-  const case3Res = await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'SCHEDULED', $1, $2, 'IDENTITY_VERIFIED', $3, $4,
-      'SERVICE', $5, $5, 1, NOW(), NOW()
-    ) RETURNING id`,
-    [app3.appointmentId, app3.patientId, app3Arrival, app3.appDate, receptionistList[0].accountId]
-  );
-  const case3Id = case3Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO identity_verifications (
-      id, reception_case_id, method, result, reason_code, note, verified_fields, performed_by_account_id, performed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'PHONE_AND_DOB', 'VERIFIED', 'PHONE_DOB_MATCH',
-      'Xác nhận thông tin qua Số điện thoại và Ngày tháng năm sinh của thai phụ',
-      ARRAY['phone', 'dob'], $2, $3
-    )`,
-    [case3Id, receptionistList[0].accountId, app3Arrival]
-  );
-
-  // Case 4: Tiếp đón Vãng lai không hẹn trước (WALK_IN - Vũ Ngọc Mai) -> OPEN
-  const walkinPatient = patientList[9];
-  const walkinArrival = new Date(now.getTime() - 5 * 60 * 1000);
-  await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'WALK_IN', NULL, $1, 'OPEN', $2, NULL,
-      'WALK_IN', $3, $3, 1, NOW(), NOW()
-    )`,
-    [walkinPatient.id, walkinArrival, receptionistList[0].accountId]
-  );
-
-  // Case 5: Tiếp đón cần kiểm tra thủ công (MANUAL_REVIEW - Vũ Thị Kim Ngân, AT-2026-0006)
-  const app6 = seededAppointments[5];
-  const case5Res = await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'SCHEDULED', $1, $2, 'MANUAL_REVIEW', NOW(), $3,
-      'SERVICE', $4, $4, 1, NOW(), NOW()
-    ) RETURNING id`,
-    [app6.appointmentId, app6.patientId, app6.appDate, receptionistList[2].accountId]
-  );
-  const case5Id = case5Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO identity_verifications (
-      id, reception_case_id, method, result, reason_code, note, verified_fields, performed_by_account_id, performed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'OTHER_DOCUMENT', 'INCONCLUSIVE', 'SUSPICIOUS_DOC',
-      'Ảnh chụp giấy tờ tùy thân mờ góc, cần xuất trình bản gốc đối chiếu tại quầy',
-      ARRAY['documentNumber'], $2, NOW()
-    )`,
-    [case5Id, receptionistList[2].accountId]
-  );
-
-  await clients.receptionist.query(
-    `INSERT INTO admissions (
-      id, reception_case_id, status, current_step, invoice_id, payment_id,
-      last_error_code, retry_count, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'AWAITING_PAYMENT', 'VERIFY_PAYMENT_OR_APPROVED_CREDIT', $2, NULL,
-      'PAYMENT_NOT_CLEARED', 1, 1, NOW(), NOW()
-    )`,
-    [case5Id, app6.invoiceId]
-  );
-
-  // Case 6: Tiếp đón bị hủy do sai lệch thông tin danh tính (CANCELLED)
-  const cancelPatient = patientList[10];
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const case6Res = await clients.receptionist.query(
-    `INSERT INTO reception_cases (
-      id, type, appointment_id, patient_id, status, arrival_at, scheduled_start_at_snapshot,
-      appointment_type_snapshot, opened_by_account_id, last_handled_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      gen_random_uuid(), 'SCHEDULED', NULL, $1, 'CANCELLED', $2, $2,
-      'SERVICE', $3, $3, 1, $2, $2
-    ) RETURNING id`,
-    [cancelPatient.id, yesterday, receptionistList[0].accountId]
-  );
-  const case6Id = case6Res.rows[0].id;
-
-  await clients.receptionist.query(
-    `INSERT INTO identity_verifications (
-      id, reception_case_id, method, result, reason_code, note, verified_fields, performed_by_account_id, performed_at
-    ) VALUES (
-      gen_random_uuid(), $1, 'NATIONAL_ID_DOCUMENT', 'MISMATCH', 'WRONG_PERSON',
-      'Người đến tiếp đón không trùng khớp với CCCD của thai phụ đăng ký',
-      ARRAY['nationalId'], $2, $3
-    )`,
-    [case6Id, receptionistList[0].accountId, yesterday]
-  );
-
-  // Nhật ký kiểm toán tiếp đón (Reception Audit Logs)
-  await clients.receptionist.query(
-    `INSERT INTO reception_audit_logs (id, event_type, actor_id, receptionist_id, case_id, admission_id, changed_fields, reason_code, request_id, created_at)
-     VALUES (gen_random_uuid(), 'RECEPTION_CASE_OPENED', $1, $2, $3, NULL, ARRAY['status'], 'PATIENT_CHECKIN', gen_random_uuid(), NOW())`,
-    [receptionistList[0].accountId, receptionistList[0].id, case1Id]
-  );
-  await clients.receptionist.query(
-    `INSERT INTO reception_audit_logs (id, event_type, actor_id, receptionist_id, case_id, admission_id, changed_fields, reason_code, request_id, created_at)
-     VALUES (gen_random_uuid(), 'IDENTITY_VERIFIED', $1, $2, $3, NULL, ARRAY['status'], 'IDENTITY_VERIFIED', gen_random_uuid(), NOW())`,
-    [receptionistList[0].accountId, receptionistList[0].id, case1Id]
-  );
-  await clients.receptionist.query(
-    `INSERT INTO reception_audit_logs (id, event_type, actor_id, receptionist_id, case_id, admission_id, changed_fields, reason_code, request_id, created_at)
-     VALUES (gen_random_uuid(), 'PATIENT_ADMITTED', $1, $2, $3, $4, ARRAY['admission.status'], 'ADMISSION_COMPLETED', gen_random_uuid(), NOW())`,
-    [receptionistList[0].accountId, receptionistList[0].id, case1Id, adm1Id]
-  );
-
-  console.log(`✅ Đã khởi tạo 6 Hồ sơ tiếp đón (SCHEDULED/WALK-IN), Xác thực danh tính (VERIFIED, MISMATCH, INCONCLUSIVE), Admissions và Lịch sử chuyển bước.`);
-
-  // ============================================================================
-  // 10. KẾ HOẠCH THEO DÕI THAI KỲ (TREATMENT PLANS TOÀN DIỆN)
-  // ============================================================================
-  console.log('\n--- BƯỚC 10: KHỞI TẠO KẾ HOẠCH THEO DÕI THAI KỲ TOÀN DIỆN (TREATMENT PLAN) ---');
-
-  // Plan 1: ACTIVE (Nguyễn Minh Anh - Thai 22 tuần, Quản lý thai nghén toàn diện)
-  const demoPatient = patientList[0];
-  const attendingDoctor = doctorList[0]; // BS. Lê Thu Hà
-  const enc1 = seededAppointments[0];
-
-  const plan1Id = crypto.randomUUID();
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plans (
-      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
-      status, title, summary, effective_from, effective_to, version, activated_at, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, $5,
-      'ACTIVE', $6, $7, $8, $9, 2, NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days', NOW()
-    )`,
-    [
-      plan1Id,
-      demoPatient.id,
-      demoPatient.pregnancyEpisodeId,
-      enc1.encounterId,
-      attendingDoctor.id,
-      'Kế hoạch theo dõi thai kỳ 40 tuần chuẩn Bộ Y Tế & Chuyên gia An Tâm',
-      'Phác đồ quản lý thai nghén toàn diện dành riêng cho thai phụ Nguyễn Minh Anh: Lịch khám, siêu âm hình thái học 4D, xét nghiệm di truyền NIPT, theo dõi dung nạp đường huyết và lịch tiêm phòng uốn ván tiền sản.',
-      new Date(now.getTime() - 30 * 24 * 3600000),
-      new Date(now.getFullYear(), now.getMonth() + 4, 15),
-    ]
-  );
-
-  // Items của Plan 1: Đủ các trạng thái DONE, IN_PROGRESS, PENDING, CANCELLED
-  const plan1Items = [
-    { type: 'ULTRASOUND', title: 'Siêu âm 4D hình thái thai nhi tuần 22', desc: 'Khảo sát dị tật chi tiết hộp sọ, gương mặt, tim 4 buồng và hệ vận động.', status: 'DONE', dueAt: new Date(now.getTime() - 24 * 3600000), completedAt: new Date(now.getTime() - 20 * 60000), sort: 1 },
-    { type: 'LAB_TEST', title: 'Nghiệm pháp dung nạp Glucose 75g (OGTT) tuần 24-28', desc: 'Tầm soát đái tháo đường thai kỳ 3 thời điểm: Lúc đói, sau 1h và sau 2h uống đường.', status: 'IN_PROGRESS', dueAt: new Date(now.getTime() + 14 * 24 * 3600000), completedAt: null, sort: 2 },
-    { type: 'VACCINATION', title: 'Tiêm phòng vắc xin Uốn ván mũi 1 (VAT 1) tuần 28', desc: 'Phòng ngừa uốn ván sơ sinh cho mẹ và con khi sinh nở.', status: 'PENDING', dueAt: new Date(now.getTime() + 42 * 24 * 3600000), completedAt: null, sort: 3 },
-    { type: 'ULTRASOUND', title: 'Siêu âm Doppler màu đánh giá tuần hoàn thai nhi tuần 32', desc: 'Đo Doppler động mạch rốn và động mạch não giữa, kiểm tra lượng ối và cân nặng thai.', status: 'PENDING', dueAt: new Date(now.getTime() + 70 * 24 * 3600000), completedAt: null, sort: 4 },
-    { type: 'CONSULTATION', title: 'Khám tư vấn làm hồ sơ sinh và giảm đau sản khoa tuần 36', desc: 'Đo Monitoring tim thai và cơn co tử cung NST, khám khung chậu và hướng dẫn dấu hiệu chuyển dạ.', status: 'PENDING', dueAt: new Date(now.getTime() + 98 * 24 * 3600000), completedAt: null, sort: 5 },
-    { type: 'LAB_TEST', title: 'Xét nghiệm Double Test sinh hóa quý 1', desc: 'Hủy bỏ do thai phụ đã thực hiện gói sàng lọc NIPT Pro toàn diện 23 cặp NST.', status: 'CANCELLED', dueAt: new Date(now.getTime() - 60 * 24 * 3600000), completedAt: null, sort: 6 },
-  ];
-
-  let item1Id = null;
-  for (const item of plan1Items) {
-    const itRes = await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_items (
-        id, plan_id, type, title, description, due_at, status, sort_order, completed_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8
-      ) RETURNING id`,
-      [plan1Id, item.type, item.title, item.desc, item.dueAt, item.status, item.sort, item.completedAt]
-    );
-    if (item.status === 'DONE') item1Id = itRes.rows[0].id;
-  }
-
-  // Versions của Plan 1
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW() - INTERVAL '30 days')`,
-    [
-      plan1Id,
-      JSON.stringify({
-        title: 'Kế hoạch theo dõi thai kỳ 40 tuần chuẩn Bộ Y Tế & Chuyên gia An Tâm',
-        itemsCount: 5,
-        targetDelivery: 'Tháng 2/2027'
-      }),
-      attendingDoctor.id
-    ]
-  );
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 2, $2, $3, 'UPDATED', NOW() - INTERVAL '1 day')`,
-    [
-      plan1Id,
-      JSON.stringify({
-        title: 'Kế hoạch theo dõi thai kỳ 40 tuần chuẩn Bộ Y Tế & Chuyên gia An Tâm (Cập nhật)',
-        updatedSection: 'Hủy Double test, chuyển sang theo dõi đường huyết OGTT chuyên sâu',
-        itemsCount: 6
-      }),
-      attendingDoctor.id
-    ]
-  );
-
-  // Plan 2: COMPLETED (Phạm Quỳnh Chi - Hoàn thành thai kỳ lần 1 cách đây 2 năm)
-  const chiPat = patientList[3];
-  const plan2Id = crypto.randomUUID();
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plans (
-      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
-      status, title, summary, effective_from, effective_to, version, activated_at, completed_at, created_at, updated_at
-    ) VALUES (
-      $1, $2, NULL, $3, $4,
-      'COMPLETED', $5, $6, $7, $8, 1, NOW() - INTERVAL '2 years', NOW() - INTERVAL '16 months', NOW() - INTERVAL '2 years', NOW() - INTERVAL '16 months'
-    )`,
-    [
-      plan2Id,
-      chiPat.id,
-      seededAppointments[3].encounterId,
-      attendingDoctor.id,
-      'Phác đồ quản lý thai kỳ & đỡ sinh thường an toàn (Thai kỳ lần 1)',
-      'Toàn bộ phác đồ theo dõi thai kỳ 40 tuần và chuẩn bị sinh nở an toàn đã hoàn thành xuất sắc. Bé gái chào đời khỏe mạnh nặng 3.2kg tại Bệnh viện Phụ sản An Tâm.',
-      new Date(now.getFullYear() - 2, 0, 15),
-      new Date(now.getFullYear() - 2, 8, 30),
-    ]
-  );
-
-  const plan2Items = [
-    { type: 'ULTRASOUND', title: 'Siêu âm hình thái học quý 2', desc: 'Khảo sát cấu trúc giải phẫu thai nhi toàn diện.', status: 'DONE', sort: 1, compAt: new Date(now.getFullYear() - 2, 4, 10) },
-    { type: 'LAB_TEST', title: 'Tổng phân tích tế bào máu & đường huyết thai kỳ', desc: 'Tầm soát thiếu máu thiếu sắt và dung nạp glucose.', status: 'DONE', sort: 2, compAt: new Date(now.getFullYear() - 2, 5, 20) },
-    { type: 'DELIVERY', title: 'Theo dõi chuyển dạ và đỡ sinh thường an toàn', desc: 'Đỡ đẻ ngôi đầu an toàn, da kề da và kẹp rốn muộn.', status: 'DONE', sort: 3, compAt: new Date(now.getFullYear() - 2, 8, 25) },
-  ];
-
-  for (const it of plan2Items) {
-    await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_items (id, plan_id, type, title, description, status, sort_order, completed_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)`,
-      [plan2Id, it.type, it.title, it.desc, it.status, it.sort, it.compAt]
-    );
-  }
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW() - INTERVAL '2 years')`,
-    [plan2Id, JSON.stringify({ title: 'Phác đồ thai kỳ lần 1', completed: true }), attendingDoctor.id]
-  );
-
-  // Plan 3: DRAFT (Vũ Thị Kim Ngân - Thai 10 tuần, vừa đến khám tiếp nhận)
-  const nganPat = patientList[5];
-  const drMai = doctorList[2]; // ThS. BS. Trần Thanh Mai
-  const plan3Id = crypto.randomUUID();
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plans (
-      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
-      status, title, summary, effective_from, effective_to, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, $5,
-      'DRAFT', $6, $7, $8, $9, 1, NOW(), NOW()
-    )`,
-    [
-      plan3Id,
-      nganPat.id,
-      nganPat.pregnancyEpisodeId,
-      seededAppointments[5].encounterId,
-      drMai.id,
-      'Dự thảo phác đồ theo dõi thai kỳ quý 1 & sàng lọc trước sinh sớm',
-      'Dự thảo kế hoạch chăm sóc thai kỳ 3 tháng đầu: Khám thai định kỳ tuần 10-12, đo độ mờ da gáy, xét nghiệm Double test / NIPT và bổ sung acid folic vi chất.',
-      new Date(),
-      new Date(now.getFullYear(), now.getMonth() + 2, 1),
-    ]
-  );
-
-  const plan3Items = [
-    { type: 'ULTRASOUND', title: 'Siêu âm đo độ mờ da gáy (NT) tuần 11-13', desc: 'Đo khoảng sáng sau gáy sàng lọc hội chứng Down sớm.', status: 'PENDING', sort: 1 },
-    { type: 'LAB_TEST', title: 'Xét nghiệm sàng lọc trước sinh NIPT Basic', desc: 'Tách chiết ADN tự do thai nhi trong máu mẹ.', status: 'PENDING', sort: 2 },
-  ];
-
-  for (const it of plan3Items) {
-    await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_items (id, plan_id, type, title, description, status, sort_order)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
-      [plan3Id, it.type, it.title, it.desc, it.status, it.sort]
-    );
-  }
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW())`,
-    [plan3Id, JSON.stringify({ title: 'Dự thảo phác đồ quý 1', draft: true }), drMai.id]
-  );
-
-  // Plan 4: CANCELLED (Lê Ngọc Mai - Hủy phác đồ can thiệp đường huyết thai kỳ sau khi OGTT đạt chuẩn an toàn)
-  const maiPat = patientList[2];
-  const drDuong = doctorList[5]; // BS. Phạm Thùy Dương
-  const plan4Id = crypto.randomUUID();
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plans (
-      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
-      status, title, summary, effective_from, effective_to, version, activated_at, cancelled_at, cancel_reason, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, $5,
-      'CANCELLED', $6, $7, $8, $9, 1, NOW() - INTERVAL '15 days', NOW() - INTERVAL '1 hour', $10, NOW() - INTERVAL '15 days', NOW() - INTERVAL '1 hour'
-    )`,
-    [
-      plan4Id,
-      maiPat.id,
-      maiPat.pregnancyEpisodeId,
-      seededAppointments[2].encounterId,
-      drDuong.id,
-      'Phác đồ can thiệp kiểm soát đường huyết mao mạch & chế độ ăn nghiêm ngặt',
-      'Kế hoạch theo dõi đường huyết mao mạch 4 lần/ngày và cân nhắc sử dụng insulin thai kỳ nếu chế độ ăn không đạt mục tiêu kiểm soát.',
-      new Date(now.getTime() - 15 * 24 * 3600000),
-      new Date(now.getTime() + 45 * 24 * 3600000),
-      'Kết quả nghiệm pháp dung nạp Glucose (OGTT 75g) ngày hôm nay cho kết quả hoàn toàn bình thường, không có đái tháo đường thai kỳ. Bác sĩ quyết định dừng và hủy phác đồ can thiệp đặc biệt, chuyển sang theo dõi thai sản định kỳ thông thường.'
-    ]
-  );
-
-  const plan4Items = [
-    { type: 'MEDICATION', title: 'Đo đường huyết mao mạch tại nhà 4 lần/ngày', desc: 'Đo đường huyết lúc đói buổi sáng và sau ăn 2h các bữa chính.', status: 'CANCELLED', sort: 1 },
-    { type: 'CONSULTATION', title: 'Tư vấn chuyên khoa Dinh dưỡng lâm sàng & Đái tháo đường', desc: 'Xây dựng thực đơn kiểm soát Carbohydrate nghiêm ngặt.', status: 'CANCELLED', sort: 2 },
-  ];
-
-  for (const it of plan4Items) {
-    await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_items (id, plan_id, type, title, description, status, sort_order)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
-      [plan4Id, it.type, it.title, it.desc, it.status, it.sort]
-    );
-  }
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW() - INTERVAL '15 days')`,
-    [plan4Id, JSON.stringify({ title: 'Phác đồ can thiệp đường huyết', cancelled: true }), drDuong.id]
-  );
-
-  // --- KẾ HOẠCH ĐIỀU TRỊ CHO TÀI KHOẢN 3: Trần Diệu Hương (patient.thaiky@taman.hospital, Thai 20 tuần) ---
-  const thaikyPat = patientList[15];
-  const drBac = doctorList[7]; // TS. BS. Đoàn Văn Bắc
-  const plan5Id = crypto.randomUUID();
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plans (
-      id, patient_id, pregnancy_episode_id, source_encounter_id, author_doctor_id,
-      status, title, summary, effective_from, effective_to, version, activated_at, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, $5,
-      'ACTIVE', $6, $7, $8, $9, 1, NOW() - INTERVAL '56 days', NOW() - INTERVAL '56 days', NOW()
-    )`,
-    [
-      plan5Id,
-      thaikyPat.id,
-      thaikyPat.pregnancyEpisodeId,
-      seededAppointments[12]?.encounterId || null,
-      drBac.id,
-      'Phác đồ chăm sóc & quản lý thai kỳ chuyên sâu 40 tuần (TS. BS. Đoàn Văn Bắc)',
-      'Phác đồ quản lý thai kỳ cá thể hóa dành riêng cho thai phụ Trần Diệu Hương: Giám sát siêu âm hình thái học 4D/5D, sàng lọc đái tháo đường thai kỳ, tiêm phòng uốn ván tiền sản và theo dõi tăng trưởng thai nhi.',
-      new Date(now.getTime() - 56 * 24 * 3600000),
-      new Date(now.getFullYear(), now.getMonth() + 5, 1),
-    ]
-  );
-
-  const plan5Items = [
-    { type: 'ULTRASOUND', title: 'Siêu âm đo độ mờ da gáy (NT) & Sàng lọc quý 1 tuần 12', desc: 'Đo khoảng sáng sau gáy và kiểm tra xương mũi.', status: 'DONE', dueAt: new Date(now.getTime() - 56 * 24 * 3600000), completedAt: new Date(now.getTime() - 56 * 24 * 3600000), sort: 1 },
-    { type: 'ULTRASOUND', title: 'Siêu âm 4D/5D khảo sát hình thái học thai nhi tuần 20', desc: 'Khảo sát dị tật chi tiết giải phẫu tim thai, thần kinh sọ não và hệ vận động.', status: 'DONE', dueAt: new Date(), completedAt: new Date(), sort: 2 },
-    { type: 'LAB_TEST', title: 'Nghiệm pháp dung nạp Glucose 75g (OGTT) tuần 24', desc: 'Tầm soát đái tháo đường thai kỳ 3 thời điểm: Lúc đói, sau 1h và sau 2h uống đường.', status: 'PENDING', dueAt: new Date(now.getTime() + 28 * 24 * 3600000), completedAt: null, sort: 3 },
-    { type: 'VACCINATION', title: 'Tiêm phòng vắc xin Uốn ván mũi 1 (VAT 1) tuần 28', desc: 'Phòng ngừa uốn ván sơ sinh cho mẹ và con khi sinh nở.', status: 'PENDING', dueAt: new Date(now.getTime() + 56 * 24 * 3600000), completedAt: null, sort: 4 },
-    { type: 'ULTRASOUND', title: 'Siêu âm Doppler màu đánh giá tăng trưởng thai tuần 32', desc: 'Đo Doppler động mạch rốn và não giữa, kiểm tra thể tích ối và cân nặng ước lượng.', status: 'PENDING', dueAt: new Date(now.getTime() + 84 * 24 * 3600000), completedAt: null, sort: 5 },
-    { type: 'CONSULTATION', title: 'Khám tư vấn làm hồ sơ sinh & giảm đau sản khoa tuần 36', desc: 'Đo Monitoring tim thai NST, khám khung chậu và hướng dẫn quy trình nhập viện.', status: 'PENDING', dueAt: new Date(now.getTime() + 112 * 24 * 3600000), completedAt: null, sort: 6 },
-  ];
-
-  for (const it of plan5Items) {
-    await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_items (id, plan_id, type, title, description, due_at, status, sort_order, completed_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)`,
-      [plan5Id, it.type, it.title, it.desc, it.dueAt, it.status, it.sort, it.completedAt]
-    );
-  }
-
-  await clients.treatmentPlan.query(
-    `INSERT INTO treatment_plan_versions (id, plan_id, version, snapshot, changed_by, change_reason, created_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, $3, 'CREATED', NOW() - INTERVAL '56 days')`,
-    [
-      plan5Id,
-      JSON.stringify({
-        title: 'Phác đồ chăm sóc & quản lý thai kỳ chuyên sâu 40 tuần (TS. BS. Đoàn Văn Bắc)',
-        itemsCount: 6,
-        targetDelivery: 'Tháng 3/2027'
-      }),
-      drBac.id
-    ]
-  );
-
-  if (seededAppointments[13]?.encounterId) {
-    await clients.medicalRecord.query(
-      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
-       VALUES (gen_random_uuid(), $1, 'TREATMENT_PLAN', $2, NOW())
-       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
-      [seededAppointments[13].encounterId, plan5Id]
-    );
-  }
-
-  // Sự kiện Outbox của Treatment Plan (TreatmentPlanOutbox)
-  const planOutboxEvents = [
-    { eventType: 'treatment_plan.created.v1', aggId: plan1Id, payload: { planId: plan1Id, patientId: demoPatient.id, status: 'DRAFT' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 30 * 24 * 3600000) },
-    { eventType: 'treatment_plan.activated.v1', aggId: plan1Id, payload: { planId: plan1Id, patientId: demoPatient.id, status: 'ACTIVE' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 30 * 24 * 3600000) },
-    { eventType: 'treatment_plan.item_completed.v1', aggId: plan1Id, payload: { planId: plan1Id, itemId: item1Id, status: 'DONE' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 20 * 60000) },
-    { eventType: 'treatment_plan.completed.v1', aggId: plan2Id, payload: { planId: plan2Id, patientId: chiPat.id, status: 'COMPLETED' }, status: 'PUBLISHED', occAt: new Date(now.getFullYear() - 2, 8, 30) },
-    { eventType: 'treatment_plan.cancelled.v1', aggId: plan4Id, payload: { planId: plan4Id, patientId: maiPat.id, status: 'CANCELLED', reason: 'Kết quả OGTT bình thường, hủy phác đồ' }, status: 'PENDING', occAt: new Date(now.getTime() - 3600000) },
-  ];
-
-  for (const ob of planOutboxEvents) {
-    await clients.treatmentPlan.query(
-      `INSERT INTO treatment_plan_outbox (id, event_type, aggregate_id, payload, status, occurred_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)`,
-      [ob.eventType, ob.aggId, JSON.stringify(ob.payload), ob.status, ob.occAt]
-    );
-  }
-
-  // Cập nhật External Clinical Reference trong Medical Record trỏ đến Treatment Plan 1
-  if (enc1.encounterId && plan1Id) {
-    await clients.medicalRecord.query(
-      `INSERT INTO external_clinical_references (id, encounter_id, resource_type, resource_id, created_at)
-       VALUES (gen_random_uuid(), $1, 'TREATMENT_PLAN', $2, NOW())
-       ON CONFLICT (resource_type, resource_id) DO NOTHING`,
-      [enc1.encounterId, plan1Id]
-    );
-  }
-
-  console.log(`✅ Đã khởi tạo đầy đủ hệ thống Kế hoạch điều trị (Treatment Plans): Tất cả 4 trạng thái (ACTIVE, COMPLETED, DRAFT, CANCELLED), 4 trạng thái mục tiêu (DONE, IN_PROGRESS, PENDING, CANCELLED), Lịch sử phiên bản (Versions), Outbox events và liên kết ngược Medical Record.`);
-
-  // ============================================================================
-  // 11. HỎI ĐÁP & TƯ VẤN TRỰC TUYẾN (CONSULTATION THREADS, MESSAGES, ASSIGNMENTS & ESCALATIONS)
-  // ============================================================================
-  console.log('\n--- BƯỚC 11: KHỞI TẠO HỆ THỐNG TƯ VẤN BÁC SĨ (CONSULTATION TOÀN DIỆN) ---');
-
-  // --- THREAD 1: ANSWERED (Nguyễn Minh Anh - BS. Lê Thu Hà) ---
-  const thread1Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'ANSWERED', $5, 3,
-      NOW() - INTERVAL '10 minutes', $6, 3, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '10 minutes'
-    )`,
-    [
-      thread1Id,
-      demoPatient.id,
-      seededAppointments[0].appointmentId,
-      'Tư vấn chế độ bổ sung canxi và giảm ốm nghén tuần 22',
-      attendingDoctor.id,
-      demoPatient.accountId,
-    ]
-  );
-
-  // Phân công bác sĩ Thread 1 (Assignment ACTIVE)
-  await clients.consultation.query(
-    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
-     VALUES (gen_random_uuid(), $1, $2, 'ACTIVE', $3, NOW() - INTERVAL '3 hours', NULL)`,
-    [thread1Id, attendingDoctor.id, receptionistList[0].accountId]
-  );
-
-  // Tin nhắn Thread 1
-  const t1Msg1 = 'Chào Bác sĩ Hà ạ! Dạo này em hay bị chuột rút bắp chân vào ban đêm khi ngủ, em có cần tăng liều Canxi Corbiere không hay uống thêm magie ạ?';
-  const t1Msg2 = 'Chào Minh Anh! Ở tuần 22, thai nhi phát triển hệ xương nhanh nên nhu cầu canxi và magie tăng cao. Em tiếp tục duy trì 1 ống Canxi Corbiere sau ăn sáng, và Bác sĩ kê thêm Magne-B6 uống ngày 2 viên (sáng 1, trưa 1) trong 10 ngày để giảm hẳn tình trạng co rút cơ nhé. Uống nhiều nước và kê cao chân khi ngủ em nhé!';
-  const t1Msg3 = 'Dạ vâng em cảm ơn Bác sĩ Hà nhiều ạ! Em sẽ uống theo đúng đơn và duy trì kê gối cao chân khi ngủ ạ.';
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES 
-      (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '3 hours'),
-      (gen_random_uuid(), $1, 2, $5, 'DOCTOR', gen_random_uuid(), $6, $7, NOW() - INTERVAL '40 minutes'),
-      (gen_random_uuid(), $1, 3, $2, 'PATIENT', gen_random_uuid(), $8, $9, NOW() - INTERVAL '10 minutes')`,
-    [
-      thread1Id, demoPatient.accountId, t1Msg1, sha256(t1Msg1),
-      attendingDoctor.accountId, t1Msg2, sha256(t1Msg2),
-      t1Msg3, sha256(t1Msg3)
-    ]
-  );
-
-  // --- THREAD 2: REOPENED (Phạm Quỳnh Chi - BS. Trần Thanh Mai chuyển sang PGS. Nguyễn Quang Minh) ---
-  const thread2Id = crypto.randomUUID();
-  const chiPatientConsult = patientList[3]; // Phạm Quỳnh Chi (High Risk)
-  const drMaiObj = doctorList[2]; // ThS. BS. Trần Thanh Mai
-  const drMinhObj = doctorList[1]; // PGS. TS. BS. Nguyễn Quang Minh
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'REOPENED', $5, 4,
-      NOW() - INTERVAL '5 minutes', $6, 4, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '5 minutes'
-    )`,
-    [
-      thread2Id,
-      chiPatientConsult.id,
-      seededAppointments[3].appointmentId,
-      'Khẩn cấp: Đau tức bụng dưới từng cơn và cử động thai máy giảm sau khi đi bộ',
-      drMinhObj.id,
-      chiPatientConsult.accountId,
-    ]
-  );
-
-  // Phân công Thread 2: Lịch sử chuyển giao bác sĩ (ENDED -> ACTIVE)
-  await clients.consultation.query(
-    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
-     VALUES 
-      (gen_random_uuid(), $1, $2, 'ENDED', $4, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '2 hours'),
-      (gen_random_uuid(), $1, $3, 'ACTIVE', $5, NOW() - INTERVAL '2 hours', NULL)`,
-    [thread2Id, drMaiObj.id, drMinhObj.id, receptionistList[0].accountId, drMaiObj.accountId]
-  );
-
-  // Tin nhắn Thread 2 (PATIENT, SYSTEM, DOCTOR, PATIENT)
-  const t2Msg1 = 'Chào Bác sĩ! Chiều nay em thấy bụng dưới có cơn gò cứng lại 3 lần, bé ít máy hơn hẳn so với hôm qua. Em rất lo lắng vì từng có tiền sử sinh non ở tuần 35 lần trước ạ.';
-  const t2Msg2 = '[HỆ THỐNG AN TÂM]: Đã kích hoạt Cảnh báo khẩn cấp (Escalation) - Bác sĩ chuyên khoa Bào thai & Cấp cứu Sản đang tiếp nhận xử lý ưu tiên.';
-  const t2Msg3 = 'Chào Quỳnh Chi! Với thai 34 tuần có cơn co gò tử cung và thai máy giảm, em cần nằm nghiêng trái ngay, uống 1 ly nước ấm và đếm cử động thai trong 60 phút. Nếu trong 1 giờ có trên 2 cơn gò cứng hoặc thai máy dưới 3 lần, em và người nhà phải đến ngay Cấp cứu Sản Bệnh viện An Tâm để đo Monitoring tim thai NST nhé!';
-  const t2Msg4 = 'Dạ em đã đến viện và vừa hoàn tất chạy Monitoring NST tại Bệnh viện An Tâm rồi ạ! Tim thai 145 ck/p dao động tốt, cơn gò đã giãn ra. Em mở lại thread để cập nhật tình hình với Bác sĩ ạ.';
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES 
-      (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '6 hours'),
-      (gen_random_uuid(), $1, 2, $5, 'SYSTEM', gen_random_uuid(), $6, $7, NOW() - INTERVAL '5 hours 50 minutes'),
-      (gen_random_uuid(), $1, 3, $8, 'DOCTOR', gen_random_uuid(), $9, $10, NOW() - INTERVAL '2 hours'),
-      (gen_random_uuid(), $1, 4, $2, 'PATIENT', gen_random_uuid(), $11, $12, NOW() - INTERVAL '5 minutes')`,
-    [
-      thread2Id, chiPatientConsult.accountId, t2Msg1, sha256(t2Msg1),
-      adminAccountId, t2Msg2, sha256(t2Msg2),
-      drMinhObj.accountId, t2Msg3, sha256(t2Msg3),
-      t2Msg4, sha256(t2Msg4)
-    ]
-  );
-
-  // Escalation Thread 2: RESOLVED
-  const esc2Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_escalations (
-      id, thread_id, reason_code, detail, status,
-      raised_by_account_id, raised_at,
-      acknowledged_by_account_id, acknowledged_at,
-      resolved_by_account_id, resolved_at, resolution_note,
-      version, created_at, updated_at
-    ) VALUES (
-      $1, $2, 'COMPLICATION_RISK', $3, 'RESOLVED',
-      $4, NOW() - INTERVAL '5 hours 50 minutes',
-      $5, NOW() - INTERVAL '5 hours 40 minutes',
-      $6, NOW() - INTERVAL '1 hour', $7,
-      2, NOW() - INTERVAL '5 hours 50 minutes', NOW() - INTERVAL '1 hour'
-    )`,
-    [
-      esc2Id,
-      thread2Id,
-      'Thai phụ 34 tuần có triệu chứng cơn gò tử cung dọa sinh non và giảm cử động thai trên nền nguy cơ cao.',
-      chiPatientConsult.accountId,
-      receptionistList[0].accountId,
-      drMinhObj.accountId,
-      'Thai phụ đã đến viện đo NST và siêu âm Doppler rốn. Tim thai bình thường 145 ck/p, cổ tử cung đóng kín, đã hướng dẫn dùng thuốc giảm co Spasfon và hẹn tái khám sau 3 ngày.'
-    ]
-  );
-
-  // --- THREAD 3: ASSIGNED (Trần Thị Bích Ngọc - BS. Phạm Thùy Dương) ---
-  const thread3Id = crypto.randomUUID();
-  const bichNgocPatient = patientList[1];
-  const drDuongObj = doctorList[5];
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'ASSIGNED', $5, 1,
-      NOW() - INTERVAL '25 minutes', $6, 1, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '25 minutes'
-    )`,
-    [
-      thread3Id,
-      bichNgocPatient.id,
-      seededAppointments[1].appointmentId,
-      'Tư vấn chỉ số nước ối AFI và kết quả đường huyết trước giờ khám',
-      drDuongObj.id,
-      bichNgocPatient.accountId,
-    ]
-  );
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
-     VALUES (gen_random_uuid(), $1, $2, 'ACTIVE', $3, NOW() - INTERVAL '25 minutes', NULL)`,
-    [thread3Id, drDuongObj.id, receptionistList[1].accountId]
-  );
-
-  const t3Msg1 = 'Em chào Bác sĩ Dương ạ! Em vừa nhận được kết quả xét nghiệm đường huyết và siêu âm có ghi AFI 16cm. Chiều nay em có lịch khám với Bác sĩ, Bác sĩ xem trước giúp em với ạ.';
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '25 minutes')`,
-    [thread3Id, bichNgocPatient.accountId, t3Msg1, sha256(t3Msg1)]
-  );
-
-  // Escalation Thread 3: ACKNOWLEDGED
-  const esc3Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_escalations (
-      id, thread_id, reason_code, detail, status,
-      raised_by_account_id, raised_at,
-      acknowledged_by_account_id, acknowledged_at,
-      version, created_at, updated_at
-    ) VALUES (
-      $1, $2, 'SECOND_OPINION', $3, 'ACKNOWLEDGED',
-      $4, NOW() - INTERVAL '25 minutes',
-      $5, NOW() - INTERVAL '15 minutes',
-      1, NOW() - INTERVAL '25 minutes', NOW() - INTERVAL '15 minutes'
-    )`,
-    [
-      esc3Id,
-      thread3Id,
-      'Thai phụ đề nghị chuyên gia đái tháo đường thai kỳ hội chẩn trước ca khám trực tiếp chiều nay.',
-      bichNgocPatient.accountId,
-      receptionistList[1].accountId
-    ]
-  );
-
-  // --- THREAD 4: OPEN (Đỗ Thu Trang - Chưa phân công bác sĩ) ---
-  const thread4Id = crypto.randomUUID();
-  const trangPatient = patientList[6];
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'OPEN', NULL, 1,
-      NOW() - INTERVAL '40 minutes', $5, 1, NOW() - INTERVAL '40 minutes', NOW() - INTERVAL '40 minutes'
-    )`,
-    [
-      thread4Id,
-      trangPatient.id,
-      seededAppointments[6].appointmentId,
-      'Hỏi về nôn nghén kéo dài sang tuần 20 và hiện tượng chóng mặt khi đứng dậy',
-      trangPatient.accountId,
-    ]
-  );
-
-  const t4Msg1 = 'Chào các bác sĩ phòng khám An Tâm, em mang thai tuần thứ 20 rồi mà vẫn nôn khan nhiều sau bữa tối, sáng nay đứng dậy bị hoa mắt choáng váng. Em muốn hỏi có loại vitamin nào dễ uống hoặc giảm nghén tốt không ạ?';
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '40 minutes')`,
-    [thread4Id, trangPatient.accountId, t4Msg1, sha256(t4Msg1)]
-  );
-
-  // Escalation Thread 4: OPEN
-  const esc4Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_escalations (
-      id, thread_id, reason_code, detail, status,
-      raised_by_account_id, raised_at,
-      version, created_at, updated_at
-    ) VALUES (
-      $1, $2, 'URGENT_SYMPTOMS', $3, 'OPEN',
-      $4, NOW() - INTERVAL '40 minutes',
-      1, NOW() - INTERVAL '40 minutes', NOW() - INTERVAL '40 minutes'
-    )`,
-    [
-      esc4Id,
-      thread4Id,
-      'Nôn nghén kéo dài đến quý 2 kèm hạ huyết áp tư thế, cần phân công bác sĩ tư vấn sớm.',
-      trangPatient.accountId
-    ]
-  );
-
-  // --- THREAD 5: CLOSED (Lê Ngọc Mai - BS. Đặng Kim Oanh) ---
-  const thread5Id = crypto.randomUUID();
-  const maiPatient = patientList[2];
-  const drOanhObj = doctorList[3];
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'CLOSED', $5, 4,
-      NOW() - INTERVAL '12 hours', $6, 3, NOW() - INTERVAL '24 hours', NOW() - INTERVAL '12 hours'
-    )`,
-    [
-      thread5Id,
-      maiPatient.id,
-      seededAppointments[2].appointmentId,
-      'Hướng dẫn chuẩn bị nhịn ăn trước khi làm nghiệm pháp dung nạp đường OGTT 75g',
-      drOanhObj.id,
-      maiPatient.accountId,
-    ]
-  );
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
-     VALUES (gen_random_uuid(), $1, $2, 'ACTIVE', $3, NOW() - INTERVAL '24 hours', NULL)`,
-    [thread5Id, drOanhObj.id, receptionistList[0].accountId]
-  );
-
-  const t5Msg1 = 'Bác sĩ cho em hỏi, tối nay trước khi làm nghiệm pháp OGTT 75g sáng mai thì em cần nhịn ăn từ mấy giờ và có được uống nước lọc không ạ?';
-  const t5Msg2 = 'Chào Ngọc Mai! Em cần nhịn ăn tối thiểu 8 tiếng (từ sau 22h tối nay). Vẫn được uống nước lọc ấm lượng vừa phải để đỡ khát. Sáng mai đến bệnh viện lúc 7h30 chưa ăn sáng nhé em!';
-  const t5Msg3 = 'Dạ em cảm ơn bác sĩ nhiều ạ, em đã nắm rõ rồi ạ!';
-  const t5Msg4 = 'Cuộc tư vấn đã được Bác sĩ đóng sau khi giải đáp đầy đủ thắc mắc chuẩn bị xét nghiệm.';
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES 
-      (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '24 hours'),
-      (gen_random_uuid(), $1, 2, $5, 'DOCTOR', gen_random_uuid(), $6, $7, NOW() - INTERVAL '20 hours'),
-      (gen_random_uuid(), $1, 3, $2, 'PATIENT', gen_random_uuid(), $8, $9, NOW() - INTERVAL '18 hours'),
-      (gen_random_uuid(), $1, 4, $10, 'SYSTEM', gen_random_uuid(), $11, $12, NOW() - INTERVAL '12 hours')`,
-    [
-      thread5Id, maiPatient.accountId, t5Msg1, sha256(t5Msg1),
-      drOanhObj.accountId, t5Msg2, sha256(t5Msg2),
-      t5Msg3, sha256(t5Msg3),
-      adminAccountId, t5Msg4, sha256(t5Msg4)
-    ]
-  );
-
-  // Escalation Thread 5: CANCELLED
-  const esc5Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_escalations (
-      id, thread_id, reason_code, detail, status,
-      raised_by_account_id, raised_at,
-      resolution_note,
-      version, created_at, updated_at
-    ) VALUES (
-      $1, $2, 'OTHER', $3, 'CANCELLED',
-      $4, NOW() - INTERVAL '23 hours',
-      'Thai phụ xác nhận bấm nhầm nút Yêu cầu khẩn cấp trên ứng dụng, đã hủy yêu cầu.',
-      2, NOW() - INTERVAL '23 hours', NOW() - INTERVAL '22 hours'
-    )`,
-    [
-      esc5Id,
-      thread5Id,
-      'Thai phụ thao tác nhầm nút Báo động khẩn cấp trên ứng dụng di động.',
-      maiPatient.accountId
-    ]
-  );
-
-  // --- SỰ KIỆN OUTBOX (CONSULTATION OUTBOX EVENTS) ---
-  const consultationOutboxEvents = [
-    { eventType: 'consultation.thread_created.v1', aggId: thread1Id, payload: { threadId: thread1Id, patientId: demoPatient.id, subject: 'Tư vấn bổ sung canxi', status: 'OPEN' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 3 * 3600000) },
-    { eventType: 'consultation.doctor_assigned.v1', aggId: thread1Id, payload: { threadId: thread1Id, doctorId: attendingDoctor.id, status: 'ASSIGNED' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 3 * 3600000) },
-    { eventType: 'consultation.message_sent.v1', aggId: thread1Id, payload: { threadId: thread1Id, senderRole: 'DOCTOR', sequenceNo: 2 }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 40 * 60000) },
-    { eventType: 'consultation.escalation_raised.v1', aggId: thread2Id, payload: { threadId: thread2Id, escalationId: esc2Id, reasonCode: 'COMPLICATION_RISK' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 5 * 3600000) },
-    { eventType: 'consultation.escalation_resolved.v1', aggId: thread2Id, payload: { threadId: thread2Id, escalationId: esc2Id, resolvedBy: drMinhObj.id }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 60 * 60000) },
-    { eventType: 'consultation.thread_closed.v1', aggId: thread5Id, payload: { threadId: thread5Id, closedBy: drOanhObj.id, status: 'CLOSED' }, status: 'PUBLISHED', occAt: new Date(now.getTime() - 12 * 3600000) },
-  ];
-
-  for (const ob of consultationOutboxEvents) {
-    await clients.consultation.query(
-      `INSERT INTO consultation_outbox (id, event_type, aggregate_id, payload, status, occurred_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)`,
-      [ob.eventType, ob.aggId, JSON.stringify(ob.payload), ob.status, ob.occAt]
-    );
-  }
-
-  // --- THREAD 6: ANSWERED (Trần Diệu Hương - TS. BS. Đoàn Văn Bắc) ---
-  const thread6Id = crypto.randomUUID();
-  await clients.consultation.query(
-    `INSERT INTO consultation_threads (
-      id, patient_id, appointment_id, subject, status, assigned_doctor_id, last_sequence_no,
-      last_message_at, created_by_account_id, version, created_at, updated_at
-    ) VALUES (
-      $1, $2, $3, $4, 'ANSWERED', $5, 3,
-      NOW() - INTERVAL '1 hour', $6, 3, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '1 hour'
-    )`,
-    [
-      thread6Id,
-      thaikyPat.id,
-      seededAppointments[13]?.appointmentId || null,
-      'Tư vấn kết quả siêu âm hình thái học tuần 20 và cách uống bổ sung vi chất thai kỳ',
-      drBac.id,
-      thaikyPat.accountId,
-    ]
-  );
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_assignments (id, thread_id, doctor_id, status, assigned_by, assigned_at, ended_at)
-     VALUES (gen_random_uuid(), $1, $2, 'ACTIVE', $3, NOW() - INTERVAL '4 hours', NULL)`,
-    [thread6Id, drBac.id, receptionistList[0].accountId]
-  );
-
-  const t6Msg1 = 'Chào Bác sĩ Bắc ạ! Hôm nay em vừa làm siêu âm 4D tuần 20 chỗ Bác sĩ về. Kết quả bình thường em rất mừng ạ. Bác sĩ cho em hỏi hiện em đang dùng Canxi Corbiere dạng ống, dạo này uống vào hơi đầy bụng nhẹ thì có cần chuyển sang loại canxi khác không ạ?';
-  const t6Msg2 = 'Chào Diệu Hương! Kết quả siêu âm 20 tuần của em hôm nay rất đẹp, các cấu trúc giải phẫu của thai hoàn toàn bình thường và tim thai rất khỏe nhé. Về canxi, Canxi Corbiere dạng dung dịch hấp thu rất tốt; nếu em thấy hơi đầy bụng thì nên uống ngay sau bữa ăn sáng 30 phút cùng một cốc nước ấm, chia nhỏ ngụm và tránh uống gần cữ uống sắt (uống cách xa sắt ít nhất 2 tiếng). Em theo dõi thêm 3-4 ngày, nếu vẫn còn cảm giác đầy bụng Bác sĩ sẽ đổi sang viên canxi hữu cơ nhé. Cứ an tâm nghỉ ngơi dưỡng thai!';
-  const t6Msg3 = 'Dạ vâng em hiểu rồi ạ, em cảm ơn Bác sĩ Bắc rất nhiều ạ! Hẹn gặp lại Bác sĩ ở mốc khám 24 tuần làm nghiệm pháp đường huyết ạ.';
-
-  await clients.consultation.query(
-    `INSERT INTO consultation_messages (id, thread_id, sequence_no, sender_account_id, sender_type, client_message_id, body, body_hash, sent_at)
-     VALUES 
-      (gen_random_uuid(), $1, 1, $2, 'PATIENT', gen_random_uuid(), $3, $4, NOW() - INTERVAL '4 hours'),
-      (gen_random_uuid(), $1, 2, $5, 'DOCTOR', gen_random_uuid(), $6, $7, NOW() - INTERVAL '2 hours'),
-      (gen_random_uuid(), $1, 3, $2, 'PATIENT', gen_random_uuid(), $8, $9, NOW() - INTERVAL '1 hour')`,
-    [
-      thread6Id, thaikyPat.accountId, t6Msg1, sha256(t6Msg1),
-      drBac.accountId, t6Msg2, sha256(t6Msg2),
-      t6Msg3, sha256(t6Msg3)
-    ]
-  );
-
-    console.log(`✅ Đã khởi tạo đầy đủ hệ thống Tư vấn trực tuyến (Consultation): Tất cả 5 trạng thái Thread (OPEN, ASSIGNED, ANSWERED, CLOSED, REOPENED), 4 trạng thái Escalation (OPEN, ACKNOWLEDGED, RESOLVED, CANCELLED), Phân công bác sĩ đa cấp (ACTIVE, ENDED), Tin nhắn đa vai trò và Outbox events.`);
-
-  // ============================================================================
-  // 12. THÔNG BÁO HỆ THỐNG (NOTIFICATIONS)
-  // ============================================================================
-  console.log('\n--- BƯỚC 12: KHỞI TẠO THÔNG BÁO HỆ THỐNG (NOTIFICATIONS) ---');
-  const notificationsDef = [
-    {
-      accId: thaikyPat.accountId,
-      category: 'BOOKING',
-      title: 'Đặt lịch khám thành công',
-      body: 'Lịch khám [Siêu âm thai 4D/5D hình thái học] mã AT-2026-0014 với TS. BS. Đoàn Văn Bắc đã được xác nhận thành công.',
-    },
-    {
-      accId: thaikyPat.accountId,
-      category: 'RESULT',
-      title: 'Đã có kết quả siêu âm hình thái học tuần 20',
-      body: 'Kết quả siêu âm 4D khảo sát hình thái học thai nhi của bạn đã được TS. BS. Đoàn Văn Bắc hoàn tất và lưu vào bệnh án điện tử.',
-    },
-    {
-      accId: thaikyPat.accountId,
-      category: 'REMINDER',
-      title: 'Bác sĩ Đoàn Văn Bắc đã phản hồi tư vấn',
-      body: 'Bác sĩ Đoàn Văn Bắc đã trả lời câu hỏi của bạn về hướng dẫn bổ sung vi chất thai kỳ an toàn.',
-    },
-    {
-      accId: demoPatient.accountId,
-      category: 'BOOKING',
-      title: 'Đặt lịch khám thành công',
-      body: 'Lịch khám [Khám thai chuyên gia & tư vấn dinh dưỡng] mã AT-2026-0001 với BS. CKII. Lê Thu Hà lúc 09:00 đã được xác nhận thành công.',
-    },
-    {
-      accId: demoPatient.accountId,
-      category: 'QUEUE',
-      title: 'Đã đến lượt khám của bạn',
-      body: 'Số phiếu A001 của bạn đã được mời vào phòng khám P.201 - BS. CKII. Lê Thu Hà. Xin mời bạn vào phòng khám.',
-    },
-    {
-      accId: demoPatient.accountId,
-      category: 'RESULT',
-      title: 'Đã có kết quả siêu âm hình thái học',
-      body: 'Kết quả siêu âm 4D hình thái thai nhi tuần 22 của bạn đã được bác sĩ cập nhật vào hồ sơ bệnh án điện tử.',
-    },
-  ];
-
-  for (const notif of notificationsDef) {
-    await clients.notification.query(
-      `INSERT INTO notifications (
-        id, source_event_id, event_type, recipient_account_id, template_code,
-        category, title, body, created_at
-      ) VALUES (
-        gen_random_uuid(), gen_random_uuid(), 'SYSTEM_NOTIFICATION', $1, 'SYSTEM_ALERT',
-        $2, $3, $4, NOW()
-      )`,
-      [notif.accId, notif.category, notif.title, notif.body]
-    );
-  }
-  console.log(`✅ Đã khởi tạo Thông báo tự động trong hệ thống Notification.`);
-
-  // ============================================================================
-  // 13. NHẬT KÝ KIỂM TOÁN AN TOÀN DỮ LIỆU (AUDIT LOGS)
-  // ============================================================================
-  console.log('\n--- BƯỚC 13: KHỞI TẠO NHẬT KÝ KIỂM TOÁN HỆ THỐNG (AUDIT LOG) ---');
-  const profilePat = patientList[14];
-  const auditEntriesDef = [
-    {
-      service: 'patient-service',
-      type: 'PATIENT_PROFILE',
-      id: profilePat.id,
-      actorId: profilePat.accountId,
-      actorType: 'PATIENT',
-      action: 'UPSERT_PROFILE',
-      res: 'SUCCESS',
-      desc: 'Bệnh nhân hoàn tất điền hồ sơ cá nhân trên ứng dụng.',
-    },
-    {
-      service: 'patient-service',
-      type: 'PATIENT_PROFILE',
-      id: thaikyPat.id,
-      actorId: thaikyPat.accountId,
-      actorType: 'PATIENT',
-      action: 'UPSERT_PROFILE',
-      res: 'SUCCESS',
-      desc: 'Thai phụ hoàn tất hồ sơ và khởi tạo phác đồ theo dõi thai kỳ 20 tuần.',
-    },
-    {
-      service: 'patient-service',
-      type: 'PATIENT_PROFILE',
-      id: demoPatient.id,
-      actorId: demoPatient.accountId,
-      actorType: 'PATIENT',
-      action: 'UPSERT_PROFILE',
-      res: 'SUCCESS',
-      desc: 'Khởi tạo hồ sơ thai phụ và mã hóa dữ liệu căn cước công dân.',
-    },
-    {
-      service: 'appointment-service',
-      type: 'APPOINTMENT',
-      id: appointmentsData[0].code,
-      actorId: demoPatient.accountId,
-      actorType: 'PATIENT',
-      action: 'BOOK_APPOINTMENT',
-      res: 'SUCCESS',
-      desc: 'Đặt lịch khám trực tuyến với BS. CKII. Lê Thu Hà.',
-    },
-    {
-      service: 'billing-service',
-      type: 'INVOICE',
-      id: `INV-${appointmentsData[0].code.replace('AT-', '')}`,
-      actorId: receptionistList[0].accountId,
-      actorType: 'RECEPTIONIST',
-      action: 'COLLECT_PAYMENT',
-      res: 'SUCCESS',
-      desc: 'Xác thực thanh toán viện phí chuyển khoản ngân hàng.',
-    },
-  ];
-
-  for (const entry of auditEntriesDef) {
-    await clients.auditLog.query(
-      `INSERT INTO audit_entries (
-        id, event_id, event_type, event_version, source_service, aggregate_type,
-        aggregate_id, actor_id, actor_type, action, result, patient_id,
-        changed_fields, sensitivity, payload_hash, occurred_at, ingested_at
-      ) VALUES (
-        gen_random_uuid(), gen_random_uuid(), 'AUDIT_EVENT', 1, $1, $2,
-        $3, $4, $5, $6, $7, $8,
-        ARRAY['initial_seed']::text[], 'RESTRICTED', $9, NOW(), NOW()
-      )`,
-      [
-        entry.service, entry.type, entry.id, entry.actorId, entry.actorType,
-        entry.action, entry.res, demoPatient.id, sha256(entry.desc),
-      ]
-    );
-  }
-  console.log(`✅ Đã khởi tạo Nhật ký kiểm toán hệ thống (Audit Entries).`);
+  console.log('✅ Đã khởi tạo 14 Bệnh nhân thai phụ (12 trực tuyến + 2 vãng lai) với mã hóa AES-256-GCM và Người liên hệ khẩn cấp.');
 
   // ============================================================================
   // ĐÓNG TẤT CẢ KẾT NỐI DATABASE
@@ -5021,38 +4826,48 @@ async function main() {
   await Promise.all(Object.values(clients).map((c) => c.end()));
 
   console.log('\n================================================================');
-  console.log('🎉 SEED DỮ LIỆU TOÀN DIỆN THÀNH CÔNG RỰC RỠ 100%!');
+  console.log('🎉 SEED DỮ LIỆU NỀN TẢNG HỆ THỐNG THÀNH CÔNG RỰC RỠ 100%!');
   console.log('================================================================');
-  console.log('\n📋 THÔNG TIN TÀI KHOẢN ĐĂNG NHẬP KIỂM THỬ:');
+  console.log('\n📋 THÔNG TIN TÀI KHOẢN ĐĂNG NHẬP CHÍNH THỨC:');
   console.log('----------------------------------------------------------------');
   console.log(`🔑 Mật khẩu chung cho TẤT CẢ tài khoản bên dưới: "${DEFAULT_PASSWORD}"`);
   console.log('----------------------------------------------------------------');
-  console.log('1. Quản trị viên (ADMIN):');
-  console.log('   - Email: admin@antam.local');
-  console.log('2. Bác sĩ chuyên khoa (DOCTOR):');
-  console.log('   - Email: dr.lethuha@antam.local        (BS. Lê Thu Hà - Trưởng khoa Sản)');
-  console.log('   - Email: dr.nguyenquangminh@antam.local (PGS. TS. BS. Nguyễn Quang Minh - Y học bào thai)');
-  console.log('   - Email: dr.tranthanhmai@antam.local    (ThS. BS. Trần Thanh Mai - Sản phụ khoa)');
-  console.log('   - Email: dr.dangkimoanh@antam.local     (BS. CKI. Đặng Kim Oanh - Y học bào thai)');
-  console.log('   - Email: dr.vuhoanglong@antam.local     (BS. CKII. Vũ Hoàng Long - Hiếm muộn & IVF)');
-  console.log('   - Email: dr.phamthuyduong@antam.local   (BS. CKI. Phạm Thùy Dương - Bệnh lý thai kỳ)');
-  console.log('   - Email: dr.nguyenhongnhung@antam.local (BS. Nguyễn Hồng Nhung - BASIC - Ca chiều)');
-  console.log('   - Email: dr.hoangminhtuan@antam.local   (BS. Hoàng Minh Tuấn - BASIC - Ca sáng)');
-  console.log('   - Email: dr.tranmaianh@antam.local      (BS. Trần Mai Anh - BASIC - Ca sáng)');
-  console.log('   - Email: dr.levanduc@antam.local        (BS. Lê Văn Đức - BASIC - Ca chiều)');
-  console.log('   - Email: dr.buithaolinh@antam.local     (BS. Bùi Thảo Linh - BASIC - Ca chiều)');
-  console.log('3. Nhân viên Lễ tân (RECEPTIONIST):');
-  console.log('   - Email: demo.receptionist@antam.local  (Trần Thu Ngân - Ban Tiếp đón)');
-  console.log('   - Email: reception.hoangyen@antam.local (Hoàng Thị Yến - Quầy Tiếp đón T1)');
-  console.log('4. Thai phụ / Bệnh nhân (PATIENT):');
-  console.log('   - Email: demo.patient@antam.local       (Nguyễn Minh Anh - 0901000001 - Thai 22 tuần)');
+  console.log('1. Quản trị viên & Nhân viên y tế (ADMIN / NURSE):');
+  console.log('   - Email: admin@antam.local            (Quản trị viên toàn hệ thống)');
+  console.log('   - Email: manager@antam.local          (Quản lý vận hành phòng khám)');
+  console.log('   - Email: nurse.huong@antam.local      (Hộ sinh / Y tá trưởng)');
+  console.log('2. Đội ngũ Bác sĩ chuyên khoa (DOCTOR - 12 Bác sĩ, Lịch Thứ 2 - Thứ 7):');
+  console.log('   - Email: dr.lethuha@antam.local        | BS. Lê Thu Hà (Trưởng khoa Sản)             | Phòng P.201 (Ca sáng 07:30 - 12:00)');
+  console.log('   - Email: dr.nguyenquangminh@antam.local | PGS. TS. Nguyễn Quang Minh (Y học bào thai) | Phòng P.203 (Ca sáng 07:30 - 12:00)');
+  console.log('   - Email: dr.tranthanhmai@antam.local    | ThS. BS. Trần Thanh Mai (Sản phụ khoa)      | Phòng P.201 (Ca chiều 12:30 - 17:00)');
+  console.log('   - Email: dr.dangkimoanh@antam.local     | BS. CKI. Đặng Kim Oanh (Y học bào thai)     | Phòng P.203 (Ca chiều 12:30 - 17:00)');
+  console.log('   - Email: dr.vuhoanglong@antam.local     | BS. CKII. Vũ Hoàng Long (Hiếm muộn & IVF)   | Phòng P.201 (Ca tối 17:30 - 20:30)');
+  console.log('   - Email: dr.phamthuyduong@antam.local   | BS. CKI. Phạm Thùy Dương (Bệnh lý thai kỳ)  | Phòng P.207 (Ca sáng 07:30 - 12:00)');
+  console.log('   - Email: dr.nguyenhongnhung@antam.local | BS. Nguyễn Hồng Nhung (Sản khoa)            | Phòng P.207 (Ca chiều 12:30 - 17:00)');
+  console.log('   - Email: dr.doanvanbac@antam.local      | TS. BS. Đoàn Văn Bắc (Nội tiết sinh sản)    | Phòng P.207 (Ca tối 17:30 - 20:30)');
+  console.log('   - Email: dr.hoangminhtuan@antam.local   | BS. Hoàng Minh Tuấn (Sản phụ khoa)          | Phòng P.202 (Ca sáng 07:30 - 12:00)');
+  console.log('   - Email: dr.tranmaianh@antam.local      | BS. Trần Mai Anh (Sản phụ khoa)             | Phòng P.208 (Ca sáng 07:30 - 12:00)');
+  console.log('   - Email: dr.levanduc@antam.local        | BS. Lê Văn Đức (Sản phụ khoa)               | Phòng P.208 (Ca chiều 12:30 - 17:00)');
+  console.log('   - Email: dr.buithaolinh@antam.local     | BS. Bùi Thảo Linh (Sản phụ khoa tổng quát)  | Phòng P.202 (Ca chiều 12:30 - 17:00)');
+  console.log('3. Nhân viên Lễ tân tiếp đón (RECEPTIONIST - 4 Nhân sự):');
+  console.log('   - Email: reception.thungan@antam.local  (Trần Thu Ngân - Ban Tiếp đón & CSKH)');
+  console.log('   - Email: reception.hoangyen@antam.local (Hoàng Thị Yến - Quầy Tiếp đón Tầng 1)');
+  console.log('   - Email: reception.maiphuong@antam.local(Lê Mai Phương - Quầy Tiếp đón Tầng 2)');
+  console.log('   - Email: reception.quocanh@antam.local  (Phạm Quốc Anh - Tiếp đón Cấp cứu Tầng 1)');
+  console.log('4. Thai phụ / Bệnh nhân thật (PATIENT - 12 Tài khoản):');
+  console.log('   - Email: patient.minhanh@gmail.com      (Nguyễn Minh Anh - SĐT: 0901000001)');
   console.log('   - Email: patient.thanhhang@gmail.com    (Trần Thị Thanh Hằng - 0901234003 - Thai 12 tuần)');
+  console.log('   - Email: patient.ngocmai@gmail.com      (Lê Ngọc Mai - 0901234005 - Thai 28 tuần)');
   console.log('   - Email: patient.quynhchi@gmail.com     (Phạm Quỳnh Chi - 0901234007 - Thai 34 tuần)');
-  console.log('----------------------------------------------------------------');
-  console.log('⭐ 3 TÀI KHOẢN KIỂM THỬ ĐẶC BIỆT THEO YÊU CẦU:');
-  console.log('   1. patient.new@taman.hospital     | Mới tạo tài khoản (Chưa có Profile & Medical Record)');
-  console.log('   2. patient.profile@taman.hospital | Đã có thông tin cá nhân (Chưa khám & Chưa có Medical Record)');
-  console.log('   3. patient.thaiky@taman.hospital  | Đang theo dõi thai kỳ 20 tuần (Đầy đủ dữ liệu chuyên sâu)');
+  console.log('   - Email: patient.thuyduong@gmail.com    (Hoàng Thùy Dương - 0901234009 - Thai 16 tuần)');
+  console.log('   - Email: patient.kimngan@gmail.com      (Vũ Thị Kim Ngân - 0901234011 - Thai 10 tuần)');
+  console.log('   - Email: patient.thutrang@gmail.com     (Đỗ Thu Trang - 0901234013 - Thai 20 tuần)');
+  console.log('   - Email: patient.phuonglinh@gmail.com   (Bùi Phương Linh - 0901234015 - Thai 8 tuần)');
+  console.log('   - Email: patient.honghanh@gmail.com     (Đinh Thị Hồng Hạnh - 0901234017 - Thai 31 tuần)');
+  console.log('   - Email: patient.bichthuy@gmail.com     (Phan Thị Bích Thủy - 0901234019 - Thai 25 tuần)');
+  console.log('   - Email: patient.yennhi@gmail.com       (Dương Yến Nhi - 0901234021 - Thai 14 tuần)');
+  console.log('   - Email: patient.baochau@gmail.com      (Võ Bảo Châu - 0901234023 - Thai 18 tuần)');
+  console.log('   (+ 2 Bệnh nhân vãng lai đăng ký tại quầy: Bùi Thị Ngọc Mai & Phan Thanh Trúc)');
   console.log('----------------------------------------------------------------\n');
 }
 

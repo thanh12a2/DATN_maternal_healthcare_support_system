@@ -1,6 +1,6 @@
 # Common project commands. The repository uses one canonical docker-compose.yml.
 
-.PHONY: help init up up-d down build logs status validate seed-demo frontend-test backend-test
+.PHONY: help init up up-d down build logs status validate seed-demo seed-system frontend-test backend-test
 
 help:
 	@echo "make init          Prepare local .env and keys"
@@ -9,6 +9,7 @@ help:
 	@echo "make up-d          Start the full stack in background"
 	@echo "make down          Stop containers and keep volumes"
 	@echo "make seed-demo     Seed idempotent demo data"
+	@echo "make seed-system   Seed full system data (seed_system_data.js)"
 	@echo "make frontend-test Run frontend tests and build"
 	@echo "make backend-test  Run backend tests"
 
@@ -38,6 +39,9 @@ status:
 
 seed-demo:
 	cd services && npm.cmd run prisma:seed:demo
+
+seed-system:
+	cd services && node seed_system_data.js
 
 frontend-test:
 	cd frontend && npm.cmd run test && npm.cmd run build

@@ -40,7 +40,7 @@ Script sẽ:
 3. Validate Docker Compose.
 4. Build image và khởi động toàn bộ stack.
 5. Chạy các migration service.
-6. Seed dữ liệu demo nếu có `-SeedDemo`.
+6. Tự động seed toàn diện 14 dịch vụ bằng `seed_system_data.js` (hoặc dùng `-NoSeed` nếu muốn bỏ qua).
 
 Nếu muốn cấu hình nhưng chưa chạy Docker:
 
@@ -238,9 +238,9 @@ curl.exe -i http://localhost:5003/health
 curl.exe -i http://localhost:5004/health
 curl.exe -i http://localhost:5005/health
 
-# Seed demo (idempotent)
+# Seed toan dien he thong (seed_system_data.js)
 cd services
-npm.cmd run prisma:seed:demo
+npm.cmd run seed:system
 cd ..
 
 # Dừng, giữ nguyên volume
@@ -282,6 +282,7 @@ make up-d
 make status
 make logs
 make down
+make seed-system
 make seed-demo
 ```
 

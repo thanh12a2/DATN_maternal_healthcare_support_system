@@ -4,7 +4,8 @@ param(
   [string]$Mode = '',
   [switch]$NoBuild,
   [switch]$ConfigureSmtp,
-  [switch]$SeedDemo
+  [switch]$SeedDemo,
+  [switch]$NoSeed
 )
 
 $ErrorActionPreference = 'Stop'
@@ -120,9 +121,19 @@ if ($Mode -eq 'Docker') {
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-if ($SeedDemo -and $Mode -eq 'Docker') {
-  Push-Location (Join-Path $Root 'services')
-  try { npm.cmd run prisma:seed:demo }
+if ($Mode -eq 'Docker' -and -not $NoSeed) {
+  Write-Host '==> Dang seed toan bo du lieu he thong (seed_system_data.js)...' -ForegroundColor Cyan
+  Start-Sleep -Seconds 3
+  $servicesDir = Join-Path $Root 'services'
+  Push-Location $servicesDir
+  try {
+    if (-not (Test-Path (Join-Path $servicesDir 'node_modules'))) {
+      Write-Host 'Dang cai dat dependencies cho services...' -ForegroundColor Yellow
+      npm.cmd ci
+    }
+    & (Join-Path $PSScriptRoot 'load-env.ps1')
+    node seed_system_data.js
+  }
   finally { Pop-Location }
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
