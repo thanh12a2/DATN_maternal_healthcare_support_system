@@ -332,6 +332,11 @@ services:
       RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
       SERVICE_ID: billing-service
+      VNPAY_PAYMENT_URL: ${VNPAY_PAYMENT_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:3000/vnpay/return}
+      VNPAY_EXPIRE_MINUTES: ${VNPAY_EXPIRE_MINUTES:-15}
     networks:
       app-network: null
     ports:

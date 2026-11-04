@@ -34,6 +34,7 @@ export interface DeskPatient {
 export interface DeskInvoice {
   id: string;
   number: string;
+  type?: 'BASE' | 'SUPPLEMENTARY';
   version: number;
   lines: Array<{ name: string; qty: number; unitPrice: number; amount: number }>;
   total: number;
@@ -68,6 +69,7 @@ export interface DeskAppointment {
   updatedAt?: string;
   estimatedTotal: number;
   invoice?: DeskInvoice | null;
+  invoices?: DeskInvoice[];
 }
 export interface DeskDoctorInfo {
   id: string;
@@ -326,6 +328,7 @@ function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null
   return {
     id: String(raw.id ?? raw.invoiceId),
     number: str(raw.invoiceNumber) ?? '',
+    type: raw.type === 'SUPPLEMENTARY' ? 'SUPPLEMENTARY' : 'BASE',
     version: num(raw.version) || 1,
     lines: lines.map((l) => ({
       name: (str(l.descriptionSnapshot) ?? '').replace(': undefined', ': Khám theo yêu cầu'),
@@ -367,6 +370,9 @@ async function enrich(request: Requester, cat: DeskCatalog, raws: ReceptionAppoi
     const pricing = (x.pricing ?? {}) as Record<string, unknown>;
     const channel = String(x.channel ?? '');
     const t = tickets.get(id);
+    const deskInvoices = invoices
+      .map((invoice) => toInvoice(invoice as Record<string, unknown>))
+      .filter((invoice): invoice is DeskInvoice => invoice !== null);
     const doctorId = str(x.assignedDoctorId);
     const serviceId = str(r.serviceId) ?? str(x.serviceId);
     return {
@@ -395,7 +401,8 @@ async function enrich(request: Requester, cat: DeskCatalog, raws: ReceptionAppoi
       createdAt: str(x.createdAt),
       updatedAt: str(x.updatedAt),
       estimatedTotal: num(pricing.estimatedTotalMinor),
-      invoice: toInvoice(invoices[0] as Record<string, unknown> | undefined),
+      invoice: deskInvoices.find((invoice) => invoice.type === 'BASE') ?? deskInvoices[0] ?? null,
+      invoices: deskInvoices,
     };
   }));
 }
@@ -560,6 +567,48 @@ export function cancelAppointment(request: Requester, a: DeskAppointment, reason
 
 export function collectCash(request: Requester, inv: DeskInvoice) {
   return recordReceptionCashPayment(request, { id: inv.id, balanceMinor: inv.balance, totalMinor: inv.total, version: inv.version });
+}
+
+export interface ReceptionVnpayAttempt {
+  paymentAttemptId: string;
+  txnRef: string;
+  paymentUrl: string;
+  expiresAt: string;
+}
+
+export async function createReceptionVnpayAttempt(
+  request: Requester,
+  invoice: DeskInvoice,
+  returnPath: string,
+): Promise<ReceptionVnpayAttempt> {
+  const raw = await request<unknown>(`/api/billing/invoices/${encodeURIComponent(invoice.id)}/vnpay-attempts`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key() },
+    body: JSON.stringify({ expectedInvoiceVersion: invoice.version, returnPath }),
+  });
+  const envelope = raw as { data?: unknown };
+  const value = (envelope?.data && typeof envelope.data === 'object' ? envelope.data : raw) as Partial<ReceptionVnpayAttempt>;
+  if (!value.paymentUrl || !value.txnRef) throw new Error('Billing API không trả về đường dẫn thanh toán VNPay hợp lệ.');
+  return value as ReceptionVnpayAttempt;
+}
+
+export async function createAppointmentVnpayAttempt(
+  request: Requester,
+  appointment: DeskAppointment,
+  returnPath: string,
+): Promise<{ invoice: DeskInvoice; attempt: ReceptionVnpayAttempt }> {
+  let invoice = appointment.invoices?.find((item) => item.type === 'BASE') ?? appointment.invoice ?? undefined;
+  if (!invoice) {
+    // Opening/admitting the reception case is what creates a missing base invoice.
+    await checkInAppointment(request, appointment).catch(() => undefined);
+    const invoices = await listReceptionInvoices(request, { appointmentId: appointment.id });
+    invoice = invoices
+      .map((raw) => toInvoice(raw as Record<string, unknown>))
+      .find((item): item is DeskInvoice => item?.type === 'BASE') ?? undefined;
+  }
+  if (!invoice) throw new Error('Chưa tạo được hóa đơn ban đầu cho lịch hẹn này.');
+  const attempt = await createReceptionVnpayAttempt(request, invoice, returnPath);
+  return { invoice, attempt };
 }
 
 export async function refreshAppointment(request: Requester, cat: DeskCatalog, a: DeskAppointment): Promise<DeskAppointment> {

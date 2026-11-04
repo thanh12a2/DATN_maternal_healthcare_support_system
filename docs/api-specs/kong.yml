@@ -94,6 +94,19 @@ services:
       - name: jwt
         config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
 
+  # VNPay calls this one callback route server-to-server. It authenticates the
+  # signed transaction in Billing; the neighboring Billing APIs keep JWT.
+  - name: billing-vnpay-ipn
+    url: http://billing-service:5009
+    routes:
+      - name: billing-vnpay-ipn-route
+        paths: [/api/payment-callbacks/vnpay]
+        methods: [GET]
+        strip_path: true
+        plugins:
+          - name: rate-limiting
+            config: { minute: 120, policy: local }
+
   - name: medical-record-service
     url: http://medical-record-service:5011
     routes: [{ name: medical-record-service-route, paths: [/api/medical-records], strip_path: true }]

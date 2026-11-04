@@ -1,6 +1,6 @@
 import { Button, Descriptions, Divider, Drawer, Grid, Popconfirm, Space, Steps, Tabs, Tag } from 'antd';
 import dayjs from 'dayjs';
-import { amountTotalOf, paymentStatusOf, type DeskAppointment, type DeskPatient } from '../../../services/receptionDesk';
+import { amountTotalOf, paymentStatusOf, type DeskAppointment, type DeskInvoice, type DeskPatient } from '../../../services/receptionDesk';
 import { InvoiceSection } from './InvoiceSection';
 import { age, channelText, dateTime, money, payMeta, sourceMeta, statusMeta, time } from '../utils/appointmentMeta';
 
@@ -11,11 +11,12 @@ interface Props {
   onClose: () => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel: (a: DeskAppointment) => void;
-  onCollect: (a: DeskAppointment) => void;
+  onCollect: (a: DeskAppointment, invoice: DeskInvoice) => void;
+  onPayVnpay: (a: DeskAppointment, invoice: DeskInvoice) => void;
   onPrint: (what: string) => void;
 }
 
-export function AppointmentDrawer({ appointment: a, patient: p, busy, onClose, onCheckIn, onCancel, onCollect, onPrint }: Props) {
+export function AppointmentDrawer({ appointment: a, patient: p, busy, onClose, onCheckIn, onCancel, onCollect, onPayVnpay, onPrint }: Props) {
   const screens = Grid.useBreakpoint();
   const step = a ? (a.completedAt ? 3 : a.startedAt ? 2 : a.checkedInAt ? 1 : 0) : 0;
   const closed = a ? ['CANCELLED', 'NO_SHOW', 'COMPLETED', 'IN_CLINICAL_CARE'].includes(a.status) : true;
@@ -82,7 +83,7 @@ export function AppointmentDrawer({ appointment: a, patient: p, busy, onClose, o
               </>
             ),
           },
-          { key: 'invoice', label: 'Hóa đơn & viện phí', children: <InvoiceSection appointment={a} busy={busy} onCollect={onCollect} onPrint={() => onPrint('hóa đơn')} /> },
+          { key: 'invoice', label: 'Hóa đơn & viện phí', children: <InvoiceSection appointment={a} busy={busy} onCollect={onCollect} onPayVnpay={onPayVnpay} onPrint={() => onPrint('hóa đơn')} /> },
         ]} />
       )}
     </Drawer>

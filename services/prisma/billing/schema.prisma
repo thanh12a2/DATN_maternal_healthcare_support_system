@@ -21,11 +21,20 @@ enum InvoiceStatus {
 enum PaymentMethod {
   CASH
   MANUAL_BANK_TRANSFER
+  VNPAY
 }
 enum PaymentStatus {
   RECORDED
   VERIFIED
   REJECTED
+}
+enum PaymentAttemptStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  EXPIRED
+  RECONCILIATION_REQUIRED
 }
 enum CreditApprovalStatus {
   APPROVED
@@ -56,6 +65,7 @@ model Invoice {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   lines InvoiceLine[]
   payment Payment?
+  paymentAttempts PaymentAttempt[]
   credits CreditApproval[]
   @@unique([appointmentId, type])
   @@index([patientId, createdAt])
@@ -96,6 +106,30 @@ model Payment {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   @@map("payments")
+}
+model PaymentAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  invoiceId String @map("invoice_id") @db.Uuid
+  /// Merchant-generated reference sent to VNPay as vnp_TxnRef.
+  txnRef String @unique @map("txn_ref") @db.VarChar(100)
+  /// Amount in the billing system's integer VND unit. VNPay receives this value multiplied by 100.
+  amountMinor BigInt @map("amount_minor")
+  currency String @default("VND") @db.Char(3)
+  status PaymentAttemptStatus @default(PENDING)
+  /// Validated relative frontend path to restore the receptionist's originating screen.
+  returnPath String? @map("return_path") @db.VarChar(1024)
+  gatewayTransactionNo String? @map("gateway_transaction_no") @db.VarChar(100)
+  bankTransactionNo String? @map("bank_transaction_no") @db.VarChar(100)
+  responseCode String? @map("response_code") @db.VarChar(10)
+  createdBy String @map("created_by") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  @@index([invoiceId, status, createdAt])
+  @@index([status, expiresAt])
+  @@map("payment_attempts")
 }
 model CreditApproval {
   id String @id @default(uuid()) @db.Uuid

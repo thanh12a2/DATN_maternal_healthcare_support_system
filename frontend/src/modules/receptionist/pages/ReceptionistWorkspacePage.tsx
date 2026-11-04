@@ -26,6 +26,7 @@ import {
   cancelAppointment,
   checkInAppointment,
   collectCash,
+  createReceptionVnpayAttempt,
   createWalkInAppointment,
   fetchCatalog,
   fetchDayAppointments,
@@ -36,11 +37,18 @@ import {
   type AppointmentSource,
   type AppointmentStatus,
   type DeskAppointment,
+  type DeskInvoice,
   type DeskCatalog,
   type DeskPatient,
   type PatientMap,
   type WalkInInput,
 } from '../../../services/receptionDesk';
+import {
+  COMPLETED_VNPAY_RETURN_KEY,
+  PENDING_VNPAY_RETURN_KEY,
+  readVnpayContext,
+  type VnpayReturnContext,
+} from '../../../services/vnpayReturn';
 import { AppointmentDrawer } from '../components/AppointmentDrawer';
 import { AppointmentTable } from '../components/AppointmentTable';
 import { PatientSearchBar } from '../components/PatientSearchBar';
@@ -66,22 +74,28 @@ function Desk() {
   const auth = useAuthSession();
   const { request } = auth;
 
+  const [vnpayReturnContext] = useState<VnpayReturnContext | null>(() => {
+    const value = readVnpayContext(COMPLETED_VNPAY_RETURN_KEY);
+    if (value) window.sessionStorage.removeItem(COMPLETED_VNPAY_RETURN_KEY);
+    return value;
+  });
+
   const [catalog, setCatalog] = useState<DeskCatalog | null>(null);
   const [rows, setRows] = useState<DeskAppointment[]>([]);
-  const [patients, setPatients] = useState<PatientMap>({});
+  const [patients, setPatients] = useState<PatientMap>(() => vnpayReturnContext?.patient ? { [vnpayReturnContext.patient.id]: vnpayReturnContext.patient } : {});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => vnpayReturnContext?.page.query ?? '');
   const [search, setSearch] = useState<SearchState | null>(null);
   const [searching, setSearching] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [targetAppointmentId, setTargetAppointmentId] = useState<string | null>(null);
   const skipSearchRef = useRef(false);
-  const [room, setRoom] = useState('P.201');
-  const [date, setDate] = useState(dayjs());
-  const [status, setStatus] = useState<AppointmentStatus | undefined>();
-  const [source, setSource] = useState<AppointmentSource | undefined>();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [room, setRoom] = useState(() => vnpayReturnContext?.page.room ?? 'P.201');
+  const [date, setDate] = useState(() => vnpayReturnContext?.page.date ? dayjs(vnpayReturnContext.page.date) : dayjs());
+  const [status, setStatus] = useState<AppointmentStatus | undefined>(() => vnpayReturnContext?.page.status as AppointmentStatus | undefined);
+  const [source, setSource] = useState<AppointmentSource | undefined>(() => vnpayReturnContext?.page.source as AppointmentSource | undefined);
+  const [openId, setOpenId] = useState<string | null>(() => vnpayReturnContext?.appointment.id ?? null);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -268,7 +282,7 @@ function Desk() {
     [patients, search]
   );
 
-  const [openAppointment, setOpenAppointment] = useState<DeskAppointment | null>(null);
+  const [openAppointment, setOpenAppointment] = useState<DeskAppointment | null>(() => vnpayReturnContext?.appointment ?? null);
 
   const handleOpenAppointment = (a: DeskAppointment) => {
     setOpenAppointment(a);
@@ -292,6 +306,46 @@ function Desk() {
         : cur
     );
   };
+
+  useEffect(() => {
+    if (!catalog || !vnpayReturnContext) return;
+    let live = true;
+    const refreshReturnedInvoice = async () => {
+      try {
+        let latest = vnpayReturnContext.appointment;
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          latest = await refreshAppointment(request, catalog, latest);
+          if (!live) return;
+          setOpenAppointment(latest);
+          replace(latest);
+          const settledInvoice = latest.invoices?.find((invoice) => invoice.id === vnpayReturnContext.invoiceId) ?? latest.invoice;
+          if (settledInvoice && settledInvoice.balance <= 0) {
+            if (vnpayReturnContext.completeCheckInAfterPayment && latest.status === 'BOOKED') {
+              const checkIn = await checkInAppointment(request, latest);
+              latest = await refreshAppointment(request, catalog, latest);
+              if (!live) return;
+              setOpenAppointment(latest);
+              replace(latest);
+              message.success(`VNPay đã xác nhận thanh toán; check-in hoàn tất${checkIn.ticketCode ? `, số thứ tự ${checkIn.ticketCode}` : ''}.`);
+            } else {
+              message.success('VNPay đã xác nhận thanh toán. Hóa đơn đã được cập nhật.');
+            }
+            return;
+          }
+          if (attempt < 4) await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        }
+        if (vnpayReturnContext.responseCode && vnpayReturnContext.responseCode !== '00') {
+          message.warning('VNPay trả về giao dịch chưa thành công. Hóa đơn vẫn chưa được ghi nhận đã thanh toán.');
+        } else {
+          message.info('Đã quay lại đúng hồ sơ. Hệ thống đang chờ VNPay xác nhận hóa đơn; bạn có thể làm mới để kiểm tra lại.');
+        }
+      } catch (error) {
+        if (live) message.error(`Không thể làm mới hóa đơn sau khi quay lại: ${errText(error)}`);
+      }
+    };
+    void refreshReturnedInvoice();
+    return () => { live = false; };
+  }, [catalog, message, request, vnpayReturnContext]);
 
   const run = async (a: DeskAppointment, fn: () => Promise<void>) => {
     setBusy(true);
@@ -324,11 +378,33 @@ function Desk() {
       message.success('Đã hủy lịch hẹn');
     });
 
-  const collect = (a: DeskAppointment) =>
+  const collect = (a: DeskAppointment, invoice: DeskInvoice | undefined = a.invoice ?? undefined) =>
     run(a, async () => {
-      if (a.invoice) await collectCash(request, a.invoice);
+      if (!invoice) return;
+      await collectCash(request, invoice);
       message.success('Đã thu tiền thành công');
     });
+
+  const payVnpay = async (a: DeskAppointment, invoice: DeskInvoice) => {
+    setBusy(true);
+    try {
+      const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const attempt = await createReceptionVnpayAttempt(request, invoice, returnPath);
+      const context: VnpayReturnContext = {
+        txnRef: attempt.txnRef,
+        returnPath,
+        invoiceId: invoice.id,
+        appointment: a,
+        patient: allPatients[a.patientId],
+        page: { room, date: dateStr, status, source, query: trimmed },
+      };
+      window.sessionStorage.setItem(PENDING_VNPAY_RETURN_KEY, JSON.stringify(context));
+      window.location.assign(attempt.paymentUrl);
+    } catch (error) {
+      message.error(errText(error));
+      setBusy(false);
+    }
+  };
 
   const handleCreateWalkIn = async (data: WalkInInput) => {
     try {
@@ -686,6 +762,7 @@ function Desk() {
         onCheckIn={checkIn}
         onCancel={cancel}
         onCollect={collect}
+        onPayVnpay={payVnpay}
         onPrint={(w) => message.info(`Đang gửi lệnh in ${w}...`)}
       />
     </div>
