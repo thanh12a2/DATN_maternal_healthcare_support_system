@@ -3,14 +3,25 @@ import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
 import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
 import { AppointmentTicketModal } from '../../../shared/components/portal/AppointmentTicketModal';
+import {
+  ClinicalJourneyTracker,
+  QueueTicketBadge,
+  PaymentStatusBadge,
+  getClinicalStatusMeta,
+  getPaymentMeta,
+} from '../../../shared/components/portal/ClinicalJourneyTracker';
 import { AppLink } from '../../../app/navigation';
 import {
   listAppointments,
   getAppointment,
+  fetchAppointmentsQueueMap,
+  fetchAppointmentInvoicesMap,
   type Appointment,
+  type QueueTicketInfo,
 } from '../../../services/appointment';
 import { listDoctors, listSpecialties, type Doctor, type Specialty } from '../../../services/doctor';
 import { getMyPatient, type PatientProfile } from '../../../services/patient';
+import { usePatientRealtime } from '../hooks/usePatientRealtime';
 import {
   Calendar,
   Clock,
@@ -107,23 +118,8 @@ function isAppointmentCancelled(apt: Appointment): boolean {
 }
 
 function getStatusBadge(status?: string | null) {
-  switch (status) {
-    case 'CHECKED_IN':
-      return { label: 'Đã tiếp đón', className: 'checked_in', icon: <CheckCircle2 size={13} /> };
-    case 'IN_CLINICAL_CARE':
-      return { label: 'Đang trong ca khám', className: 'in_clinical_care', icon: <Sparkles size={13} /> };
-    case 'COMPLETED':
-      return { label: 'Đã hoàn thành', className: 'completed', icon: <CheckCircle2 size={13} /> };
-    case 'CANCELLED':
-      return { label: 'Đã hủy', className: 'cancelled', icon: <XCircle size={13} /> };
-    case 'NO_SHOW':
-      return { label: 'Vắng mặt', className: 'cancelled', icon: <AlertCircle size={13} /> };
-    case 'REASSIGNMENT_REQUIRED':
-      return { label: 'Đang điều phối lại', className: 'checked_in', icon: <RefreshCw size={13} /> };
-    case 'BOOKED':
-    default:
-      return { label: 'Đã xác nhận', className: 'booked', icon: <CheckCircle2 size={13} /> };
-  }
+  const meta = getClinicalStatusMeta(status);
+  return { label: meta.label, className: meta.badgeClass, icon: meta.icon, color: meta.color };
 }
 
 /**
@@ -138,6 +134,8 @@ export function PatientAppointmentsPage() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [specialties, setSpecialties] = useState<any[]>([]);
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
+  const [queueMap, setQueueMap] = useState<Map<string, QueueTicketInfo>>(new Map());
+  const [invoiceMap, setInvoiceMap] = useState<Map<string, any>>(new Map());
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled' | 'all'>('upcoming');
@@ -145,7 +143,9 @@ export function PatientAppointmentsPage() {
   const [selectedTicket, setSelectedTicket] = useState<Appointment | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // 1. Tải danh sách lịch hẹn & dữ liệu bổ trợ từ DB
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  // 1. Tải danh sách lịch hẹn & dữ liệu bổ trợ từ DB (gồm STT hàng đợi & thanh toán)
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -155,19 +155,108 @@ export function PatientAppointmentsPage() {
       listDoctors(auth.request).catch(() => []),
       listSpecialties(auth.request).catch(() => []),
       getMyPatient(auth.request).catch(() => null),
-    ]).then(([appList, docList, specList, profile]) => {
+      fetchAppointmentsQueueMap(auth.request).catch(() => new Map()),
+    ]).then(async ([appList, docList, specList, profile, qMap]) => {
       if (!active) return;
       setAppointments(appList);
       setDoctors(docList || []);
       setSpecialties(specList || []);
       setPatientProfile(profile);
+      setQueueMap(qMap);
+
+      const ids = (appList || []).map((a: any) => a.id).filter(Boolean);
+      if (ids.length > 0) {
+        const invMap = await fetchAppointmentInvoicesMap(auth.request, ids).catch(() => new Map());
+        if (active) setInvoiceMap(invMap);
+      }
       setLoading(false);
     });
 
     return () => {
       active = false;
     };
-  }, [auth.request]);
+  }, [auth.request, reloadTrigger]);
+
+  // ─── TÍCH HỢP SSE REALTIME CHO BỆNH NHÂN (ĐỒNG BỘ TIẾN TRÌNH TỨC THÌ) ──────────
+  usePatientRealtime({
+    streamFn: auth.stream,
+    onAppointmentEvent: (event) => {
+      // 0. Nếu bệnh nhân vừa tạo lịch mới, reload lại danh sách lịch hẹn ngay
+      if (event.eventType === 'appointment.created') {
+        setReloadTrigger((n) => n + 1);
+        return;
+      }
+
+      // 1. Cập nhật trạng thái lịch hẹn ngay lập tức
+      setAppointments((cur) =>
+        cur.map((a) => {
+          if (a.id === event.appointmentId) {
+            return {
+              ...a,
+              status: (event.status as any) || a.status,
+              queueCode: event.ticketCode || a.queueCode,
+              roomCode: event.roomCode || a.roomCode,
+              roomName: event.roomName || a.roomName,
+              checkedInAt: event.status === 'CHECKED_IN' ? (a.checkedInAt || new Date().toISOString()) : a.checkedInAt,
+              clinicalStartedAt: event.status === 'IN_CLINICAL_CARE' ? (a.clinicalStartedAt || new Date().toISOString()) : a.clinicalStartedAt,
+              completedAt: event.status === 'COMPLETED' ? (a.completedAt || new Date().toISOString()) : a.completedAt,
+            };
+          }
+          return a;
+        })
+      );
+
+      // 2. Cập nhật STT và Phòng khám trên thanh tiến trình ngay tại chỗ
+      if (event.ticketCode || event.roomCode) {
+        setQueueMap((cur) => {
+          const next = new Map(cur);
+          next.set(event.appointmentId, {
+            ticketCode: event.ticketCode,
+            roomCode: event.roomCode,
+            stageCode: 'CONSULTATION',
+            state: 'WAITING',
+          });
+          return next;
+        });
+      }
+
+      // 3. Cập nhật trạng thái viện phí sang Đã thanh toán khi check-in
+      if (event.paymentStatus === 'PAID') {
+        setInvoiceMap((cur) => {
+          const next = new Map(cur);
+          const existing = next.get(event.appointmentId) || {};
+          next.set(event.appointmentId, {
+            ...existing,
+            paid: 1,
+            balance: 0,
+            status: 'PAID',
+          });
+          return next;
+        });
+      }
+
+      // 4. Refetch ngầm thông tin hàng đợi & hóa đơn chính thức từ DB để bảo đảm 100% khớp dữ liệu thật
+      const reloadQueueAndInvoices = () => {
+        fetchAppointmentsQueueMap(auth.request).then((qMap) => {
+          if (qMap && qMap.size > 0) setQueueMap(qMap);
+        });
+        fetchAppointmentInvoicesMap(auth.request, [event.appointmentId]).then((invMap) => {
+          if (invMap && invMap.has(event.appointmentId)) {
+            setInvoiceMap((cur) => {
+              const next = new Map(cur);
+              next.set(event.appointmentId, invMap.get(event.appointmentId));
+              return next;
+            });
+          }
+        });
+      };
+      reloadQueueAndInvoices();
+      setTimeout(reloadQueueAndInvoices, 600);
+    },
+    onRefetch: () => {
+      setReloadTrigger((n) => n + 1);
+    },
+  });
 
   // Maps tra cứu
   const doctorMap = useMemo(() => {
@@ -270,6 +359,8 @@ export function PatientAppointmentsPage() {
     const badge = getStatusBadge(apt.status);
     const doctorName = getDoctorDisplay(apt);
     const specialtyName = apt.specialtyId ? specialtyMap.get(apt.specialtyId)?.name : 'Sản khoa';
+    const queueInfo = apt.id ? queueMap.get(apt.id) : null;
+    const invoice = apt.id ? invoiceMap.get(apt.id) : null;
 
     const cardVariant = isCancelled
       ? 'is-cancelled'
@@ -316,9 +407,27 @@ export function PatientAppointmentsPage() {
             </div>
           </div>
 
+          {/* Hàng hiển thị Số thứ tự & Phòng khám */}
+          <div style={{ margin: '3px 0' }}>
+            <QueueTicketBadge
+              queueCode={apt.queueCode || queueInfo?.ticketCode}
+              roomCode={apt.roomCode || queueInfo?.roomCode}
+              roomName={apt.roomName}
+              appointmentStatus={apt.status}
+              size="sm"
+            />
+          </div>
+
           <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px' }}>
             Mã phiếu hẹn: <strong style={{ color: '#0f172a', fontFamily: 'monospace' }}>{apt.appointmentCode}</strong>
           </div>
+
+          {/* Tiến trình khám khi đi khám (Mini-bar trực quan) */}
+          <ClinicalJourneyTracker
+            appointment={apt}
+            queueInfo={queueInfo}
+            compact={true}
+          />
         </div>
 
         {/* Cột 3: Trạng thái & Hành động */}
@@ -326,6 +435,13 @@ export function PatientAppointmentsPage() {
           <span className={`pap-status-badge ${badge.className}`}>
             {badge.icon} {badge.label}
           </span>
+
+          {/* Huy hiệu thanh toán */}
+          <PaymentStatusBadge
+            appointmentStatus={apt.status}
+            invoice={invoice}
+            showDesc={false}
+          />
 
           <div className="pap-card-price">
             {formatVnd(apt.pricing?.estimatedTotalMinor)}
@@ -537,44 +653,71 @@ export function PatientAppointmentsPage() {
                 {/* 5. HERO CARD: LỊCH HẸN GẦN NHẤT SẮP DIỄN RA */}
                 {nextAppointment && (
                   <article className="pap-hero-next-card">
-                    <div className="pap-hero-ribbon">
-                      ⭐ Lịch Hẹn Gần Nhất Sắp Diễn Ra
+                    {/* Hàng tiêu đề trên: Ribbon bên trái, Status badge bên phải */}
+                    <div className="pap-hero-header-row">
+                      <div className="pap-hero-ribbon">
+                        ⭐ Lịch Hẹn Gần Nhất Sắp Diễn Ra
+                      </div>
+                      <span className={`pap-status-badge ${getStatusBadge(nextAppointment.status).className}`}>
+                        {getStatusBadge(nextAppointment.status).icon} {getStatusBadge(nextAppointment.status).label}
+                      </span>
                     </div>
 
-                    <div className="pap-hero-body">
-                      <div className="pap-hero-main-info">
+                    {/* Khối giữa: 2 cột cân đối hoàn hảo */}
+                    <div className="pap-hero-content-grid">
+                      {/* Cột trái: Thông tin lịch hẹn y tế */}
+                      <div className="pap-hero-left-col">
                         <h2 className="pap-hero-service-title">
                           {nextAppointment.pricing?.serviceName || 'Dịch vụ khám y tế Tâm An'}
                         </h2>
 
-                        <div className="pap-hero-datetime-box">
-                          <span className="pap-hero-time-badge">
-                            {formatTimeRange(nextAppointment.startAt, nextAppointment.endAt)}
-                          </span>
-                          <div className="pap-hero-date-text">
-                            {formatWeekday(nextAppointment.startAt)}, {formatDateDisplay(nextAppointment.startAt)}
+                        <div className="pap-hero-meta-grid">
+                          <div className="pap-hero-datetime-box">
+                            <span className="pap-hero-time-badge">
+                              {formatTimeRange(nextAppointment.startAt, nextAppointment.endAt)}
+                            </span>
+                            <div className="pap-hero-date-text">
+                              {formatWeekday(nextAppointment.startAt)}, {formatDateDisplay(nextAppointment.startAt)}
+                            </div>
+                          </div>
+
+                          <div className="pap-hero-meta-items">
+                            <div className="pap-hero-meta-item">
+                              <Stethoscope size={15} color="#0b4f9c" />
+                              <span>Bác sĩ: <strong>{getDoctorDisplay(nextAppointment)}</strong></span>
+                              {nextAppointment.selectionMode === 'RANK' && (
+                                <span className="pap-auto-tag">Tự động</span>
+                              )}
+                            </div>
+
+                            <div className="pap-hero-meta-item">
+                              <Building2 size={15} color="#0b4f9c" />
+                              <span>
+                                Chuyên khoa: <strong>{nextAppointment.specialtyId ? specialtyMap.get(nextAppointment.specialtyId)?.name : 'Sản Phụ khoa'}</strong>
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="pap-hero-meta-row">
-                          <div className="pap-hero-meta-item">
-                            <Stethoscope size={16} color="#0b4f9c" />
-                            <span>Bác sĩ phụ trách: <strong>{getDoctorDisplay(nextAppointment)}</strong></span>
-                            {nextAppointment.selectionMode === 'RANK' && (
-                              <span className="pap-auto-tag">Tự động sắp xếp</span>
-                            )}
-                          </div>
-
-                          <div className="pap-hero-meta-item">
-                            <Building2 size={16} color="#0b4f9c" />
-                            <span>
-                              Chuyên khoa: <strong>{nextAppointment.specialtyId ? specialtyMap.get(nextAppointment.specialtyId)?.name : 'Sản Phụ khoa'}</strong>
-                            </span>
-                          </div>
+                        {/* Hàng Huy hiệu STT & Trạng thái thanh toán */}
+                        <div className="pap-hero-badges-row">
+                          <QueueTicketBadge
+                            queueCode={nextAppointment.queueCode || (nextAppointment.id ? queueMap.get(nextAppointment.id)?.ticketCode : null)}
+                            roomCode={nextAppointment.roomCode || (nextAppointment.id ? queueMap.get(nextAppointment.id)?.roomCode : null)}
+                            roomName={nextAppointment.roomName}
+                            appointmentStatus={nextAppointment.status}
+                            size="md"
+                          />
+                          <PaymentStatusBadge
+                            appointmentStatus={nextAppointment.status}
+                            invoice={nextAppointment.id ? invoiceMap.get(nextAppointment.id) : null}
+                            showDesc={false}
+                          />
                         </div>
                       </div>
 
-                      <div className="pap-hero-actions-col">
+                      {/* Cột phải: Thẻ hành động & Viện phí */}
+                      <div className="pap-hero-right-card">
                         <div className="pap-hero-code-box">
                           <span>Mã phiếu:</span>
                           <span className="pap-hero-code-val">{nextAppointment.appointmentCode}</span>
@@ -588,8 +731,11 @@ export function PatientAppointmentsPage() {
                           </button>
                         </div>
 
-                        <div className="pap-hero-price-tag">
-                          Tạm tính: {formatVnd(nextAppointment.pricing?.estimatedTotalMinor)}
+                        <div className="pap-hero-price-wrap">
+                          <span className="pap-hero-price-label">Chi phí tạm tính:</span>
+                          <span className="pap-hero-price-tag">
+                            {formatVnd(nextAppointment.pricing?.estimatedTotalMinor)}
+                          </span>
                         </div>
 
                         <button
@@ -601,6 +747,16 @@ export function PatientAppointmentsPage() {
                           <span>Xem Chi Tiết Phiếu Hẹn</span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Hàng dưới cùng: Tiến trình khám bệnh kéo dài 100% full width */}
+                    <div className="pap-hero-journey-row">
+                      <ClinicalJourneyTracker
+                        appointment={nextAppointment}
+                        queueInfo={nextAppointment.id ? queueMap.get(nextAppointment.id) : null}
+                        compact={false}
+                        hideHeaderBadge={true}
+                      />
                     </div>
                   </article>
                 )}
@@ -668,6 +824,8 @@ export function PatientAppointmentsPage() {
         fallbackSpecialtyName={selectedTicket?.specialtyId ? specialtyMap.get(selectedTicket.specialtyId)?.name : 'Sản Phụ khoa'}
         fallbackServiceName={selectedTicket?.pricing?.serviceName || 'Dịch vụ khám Sản Phụ khoa'}
         fallbackRoomName={selectedTicket?.roomName || selectedTicket?.roomCode || 'Quầy tiếp đón Tầng 1'}
+        queueInfo={selectedTicket?.id ? queueMap.get(selectedTicket.id) : null}
+        invoice={selectedTicket?.id ? invoiceMap.get(selectedTicket.id) : null}
       />
     </div>
   );
@@ -680,6 +838,8 @@ export function AppointmentDetailPage({ appointmentId }: { appointmentId: string
   const auth = useAuthSession();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
+  const [queueInfo, setQueueInfo] = useState<QueueTicketInfo | null>(null);
+  const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -691,11 +851,21 @@ export function AppointmentDetailPage({ appointmentId }: { appointmentId: string
     Promise.all([
       getAppointment(auth.request, appointmentId),
       getMyPatient(auth.request).catch(() => null),
+      fetchAppointmentsQueueMap(auth.request).catch(() => new Map()),
     ])
-      .then(([apt, profile]) => {
+      .then(async ([apt, profile, qMap]) => {
         if (!active) return;
         setAppointment(apt);
         setPatientProfile(profile);
+        if (apt?.id && qMap.has(apt.id)) {
+          setQueueInfo(qMap.get(apt.id) || null);
+        }
+        if (apt?.id) {
+          const invMap = await fetchAppointmentInvoicesMap(auth.request, [apt.id]).catch(() => new Map());
+          if (active && invMap.has(apt.id)) {
+            setInvoice(invMap.get(apt.id));
+          }
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -779,6 +949,31 @@ export function AppointmentDetailPage({ appointmentId }: { appointmentId: string
                     {copiedCode ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
                     <span>{copiedCode ? 'Đã sao chép' : 'Sao chép mã'}</span>
                   </button>
+                </div>
+
+                {/* Banner Số thứ tự & Trạng thái thanh toán */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '16px', marginBottom: '16px' }}>
+                  <QueueTicketBadge
+                    queueCode={appointment.queueCode || queueInfo?.ticketCode}
+                    roomCode={appointment.roomCode || queueInfo?.roomCode}
+                    roomName={appointment.roomName}
+                    appointmentStatus={appointment.status}
+                    size="md"
+                  />
+                  <PaymentStatusBadge
+                    appointmentStatus={appointment.status}
+                    invoice={invoice}
+                    showDesc={false}
+                  />
+                </div>
+
+                {/* Tiến trình khám bệnh 4 bước */}
+                <div style={{ marginBottom: '20px' }}>
+                  <ClinicalJourneyTracker
+                    appointment={appointment}
+                    queueInfo={queueInfo}
+                    compact={false}
+                  />
                 </div>
 
                 <div className="pap-ticket-section">
