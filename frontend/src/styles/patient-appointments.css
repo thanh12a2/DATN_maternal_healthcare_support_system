@@ -286,12 +286,21 @@
   background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%);
   border: 1.5px solid #7dd3fc;
   border-radius: 20px;
-  padding: 24px 28px;
-  margin-bottom: 28px;
-  box-shadow: 0 6px 20px rgba(3, 105, 161, 0.1);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(3, 105, 161, 0.08);
   position: relative;
   overflow: hidden;
   animation: pbFadeIn 0.3s ease-out;
+}
+
+/* Hàng tiêu đề trên cùng: Ribbon bên trái, Status badge bên phải */
+.pap-hero-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .pap-hero-ribbon {
@@ -305,103 +314,131 @@
   letter-spacing: 0.5px;
   padding: 4px 12px;
   border-radius: 8px;
-  margin-bottom: 16px;
   text-transform: uppercase;
 }
 
-.pap-hero-body {
+/* Khối giữa: 2 cột cân đối hoàn hảo về chiều cao và độ rộng */
+.pap-hero-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
-  gap: 28px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 20px;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
-  .pap-hero-body {
+  .pap-hero-content-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
 }
 
-.pap-hero-main-info {
+.pap-hero-left-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .pap-hero-service-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 850;
   color: #0b4f9c;
   margin: 0;
   line-height: 1.25;
 }
 
-.pap-hero-meta-row {
+.pap-hero-meta-grid {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
-  font-size: 14px;
-  color: #334155;
-}
-
-.pap-hero-meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pap-hero-meta-item strong {
-  color: #0f172a;
 }
 
 .pap-hero-datetime-box {
   background: #ffffff;
   border: 1px solid #bae6fd;
-  border-radius: 12px;
-  padding: 10px 16px;
+  border-radius: 10px;
+  padding: 6px 14px;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 2px 8px rgba(11, 79, 156, 0.06);
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(11, 79, 156, 0.05);
 }
 
 .pap-hero-time-badge {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 900;
   color: #0b4f9c;
   font-family: var(--font-mono, monospace);
 }
 
 .pap-hero-date-text {
-  font-size: 14px;
+  font-size: 13px;
   color: #1e293b;
   font-weight: 700;
 }
 
-.pap-hero-actions-col {
+.pap-hero-meta-pills,
+.pap-hero-meta-items {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 900px) {
-  .pap-hero-actions-col {
-    align-items: flex-start;
-  }
+.pap-hero-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 230, 253, 0.7);
+}
+
+.pap-hero-meta-item strong {
+  color: #0f172a;
+}
+
+.pap-hero-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.pap-hero-badges-row .pap-payment-badge {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+/* Cột phải: Thẻ gọn gàng chứa mã phiếu, chi phí & nút hành động */
+.pap-hero-right-card {
+  background: #ffffff;
+  border: 1px solid #bae6fd;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(11, 79, 156, 0.05);
 }
 
 .pap-hero-code-box {
-  background: #ffffff;
-  border: 1px dashed #7dd3fc;
-  border-radius: 10px;
-  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  justify-content: space-between;
+  font-size: 12px;
   color: #475569;
 }
 
@@ -409,22 +446,21 @@
   font-family: var(--font-mono, monospace);
   font-weight: 800;
   color: #0b4f9c;
-  letter-spacing: 0.5px;
+  font-size: 12.5px;
 }
 
-.pap-btn-copy-code {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #0284c7;
-  padding: 2px 4px;
-  border-radius: 4px;
+.pap-hero-price-wrap {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 8px;
 }
 
-.pap-btn-copy-code:hover {
-  background: #f0f9ff;
+.pap-hero-price-label {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 600;
 }
 
 .pap-hero-price-tag {
@@ -434,24 +470,32 @@
 }
 
 .pap-btn-hero-view {
-  background: #0b4f9c;
+  background: linear-gradient(135deg, #0b4f9c 0%, #093c77 100%);
   color: #ffffff;
   border: none;
   border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 14px;
+  padding: 9px 16px;
+  font-size: 13.5px;
   font-weight: 750;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: 100%;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(11, 79, 156, 0.25);
+  box-shadow: 0 3px 10px rgba(11, 79, 156, 0.2);
 }
 
 .pap-btn-hero-view:hover {
-  background: #093c77;
+  background: linear-gradient(135deg, #0c57ac 0%, #0b4f9c 100%);
   transform: translateY(-1px);
+}
+
+/* Hàng dưới cùng: Tiến trình khám bệnh full width */
+.pap-hero-journey-row {
+  margin-top: 14px;
+  width: 100%;
 }
 
 .pap-single-appointment-note {
@@ -1194,4 +1238,377 @@
   .pap-modal-footer, .pap-btn-modal-close {
     display: none !important;
   }
+}
+
+/* ==========================================================================
+   CLINICAL JOURNEY STEPPER, QUEUE STT BADGE & PAYMENT STATUS
+   ========================================================================== */
+
+/* 1. Full Journey Tracker (Hero & Ticket Modal) */
+.pap-journey-full-wrap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.pap-hero-journey-row .pap-journey-full-wrap {
+  margin-top: 0;
+}
+
+.pap-journey-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.pap-journey-header-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pap-journey-step-count {
+  font-size: 12px;
+  color: #0284c7;
+  font-weight: 700;
+  background: #e0f2fe;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.pap-journey-current-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 750;
+  border: 1px solid transparent;
+}
+
+.pap-journey-track {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  gap: 0;
+  width: 100%;
+}
+
+.pap-journey-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 80px;
+}
+
+.pap-journey-node-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  transition: all 0.25s ease;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.pap-journey-node.is-completed .pap-journey-node-circle {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.pap-journey-node.is-current .pap-journey-node-circle {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
+  animation: pulseNode 2s infinite;
+}
+
+@keyframes pulseNode {
+  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+}
+
+.pap-journey-node-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pap-journey-node-title {
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #64748b;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.pap-journey-node.is-completed .pap-journey-node-title {
+  color: #0f172a;
+}
+
+.pap-journey-node.is-current .pap-journey-node-title {
+  color: #0284c7;
+  font-weight: 800;
+}
+
+.pap-journey-node-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.pap-journey-node.is-current .pap-journey-node-sub {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.pap-journey-connector {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  margin-top: 13px;
+  margin-left: -2px;
+  margin-right: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.pap-journey-connector.is-done {
+  background: #10b981;
+}
+
+/* 2. Compact Journey Bar (for regular cards) */
+.pap-journey-compact-wrap {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.pap-journey-compact-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.pap-journey-compact-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  flex: 1;
+  position: relative;
+}
+
+.pap-journey-compact-bullet {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pap-journey-compact-step.is-completed {
+  color: #0f172a;
+}
+
+.pap-journey-compact-step.is-completed .pap-journey-compact-bullet {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.pap-journey-compact-step.is-current {
+  color: #0284c7;
+  font-weight: 750;
+}
+
+.pap-journey-compact-step.is-current .pap-journey-compact-bullet {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
+}
+
+.pap-journey-compact-label {
+  white-space: nowrap;
+}
+
+.pap-journey-compact-line {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  min-width: 12px;
+}
+
+.pap-journey-compact-line.is-active {
+  background: #10b981;
+}
+
+/* 3. Alert banner for Cancelled / No show */
+.pap-journey-alert-banner {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+/* 4. Queue STT Badge */
+.pap-queue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 10px;
+  padding: 6px 14px;
+  color: #166534;
+}
+
+.pap-queue-badge.size-sm {
+  padding: 4px 10px;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pap-queue-badge.size-lg {
+  padding: 8px 18px;
+  gap: 14px;
+  border-radius: 12px;
+}
+
+.pap-queue-badge.is-issued {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #93c5fd;
+  color: #1e40af;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+.pap-queue-badge.is-pending {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.pap-queue-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pap-queue-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(30, 64, 175, 0.12);
+  color: #1e40af;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pap-queue-badge.is-pending .pap-queue-tag {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.pap-queue-code {
+  font-size: 16px;
+  font-weight: 900;
+  font-family: var(--font-mono, monospace);
+  color: #1e3a8a;
+  letter-spacing: 0.5px;
+}
+
+.pap-queue-code-pending {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.pap-queue-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.pap-queue-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pap-queue-icon {
+  color: #3b82f6;
+}
+
+.pap-queue-badge.is-pending .pap-queue-icon {
+  color: #94a3b8;
+}
+
+.pap-queue-room {
+  font-size: 13px;
+  font-weight: 750;
+  color: #1e3a8a;
+}
+
+.pap-queue-pending-note {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* 5. Payment Badge */
+.pap-payment-badge-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pap-payment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  border: 1px solid transparent;
+}
+
+.pap-payment-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.3;
 }

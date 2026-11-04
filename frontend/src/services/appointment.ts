@@ -30,7 +30,12 @@ export interface Appointment {
   cancellationReason?: string;
   cancelledAt?: string;
   checkInAt?: string;
+  checkedInAt?: string;
+  clinicalStartedAt?: string;
   completedAt?: string;
+  queueCode?: string;
+  queueState?: string;
+  invoice?: any;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -78,3 +83,89 @@ export async function getDoctorOccupancy(request: Requester, from: string, to: s
 export function getAppointment(request: Requester, id: string) { return request<Appointment>('/api/appointment/appointments/' + encodeURIComponent(id)); }
 export function cancelAppointment(request: Requester, id: string, reason: string, version?: number) { return request<void>('/api/appointment/appointments/' + encodeURIComponent(id) + '/cancel', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey() }, body: JSON.stringify({ reason, ...(version === undefined ? {} : { version }) }) }); }
 export function rescheduleAppointment(request: Requester, id: string, body: { holdId: string; reason?: string; version?: number }) { return request<Appointment>('/api/appointment/appointments/' + encodeURIComponent(id) + '/reschedule', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey() }, body: JSON.stringify(body) }); }
+
+export interface QueueTicketInfo {
+  ticketCode?: string;
+  stageCode?: string;
+  roomCode?: string;
+  state?: string;
+}
+
+export async function fetchAppointmentsQueueMap(request: Requester): Promise<Map<string, QueueTicketInfo>> {
+  const map = new Map<string, QueueTicketInfo>();
+  try {
+    // 1. Kiểm tra nhanh active journey của bệnh nhân đang đăng nhập
+    try {
+      const activeRes = await request<any>('/api/queue/me/journeys/active');
+      const activeJourney = activeRes?.data || activeRes;
+      const apptId = activeJourney?.appointmentId;
+      const tickets = activeJourney?.tickets || [];
+      const primaryTicket = tickets[0];
+      if (apptId && primaryTicket?.ticketCode) {
+        map.set(apptId, {
+          ticketCode: primaryTicket.ticketCode,
+          stageCode: primaryTicket.stageCode,
+          roomCode: primaryTicket.roomCode,
+          state: primaryTicket.state,
+        });
+      }
+    } catch {
+      // Bỏ qua nếu không phải tài khoản bệnh nhân hoặc chưa có active journey
+    }
+
+    // 2. Tải danh sách stages và bóc tách đúng mảng data tickets
+    const stagesRaw = await request<any>('/api/queue/stages').catch(() => []);
+    const stages = Array.isArray(stagesRaw) ? stagesRaw : stagesRaw?.data || [];
+    if (Array.isArray(stages) && stages.length > 0) {
+      const lists = await Promise.all(
+        stages.map(async (s: any) => {
+          if (!s?.id) return [];
+          const res = await request<any>(`/api/queue/stages/${encodeURIComponent(s.id)}/tickets?limit=100`).catch(() => []);
+          const items = Array.isArray(res) ? res : res?.data || res?.items || [];
+          return Array.isArray(items) ? items : [];
+        })
+      );
+      for (const item of lists.flat()) {
+        const apptId = (item as any)?.appointmentId || (item as any)?.journey?.appointmentId;
+        const code = (item as any)?.ticketCode;
+        if (apptId && code) {
+          map.set(apptId, {
+            ticketCode: code,
+            stageCode: (item as any)?.stageCode,
+            roomCode: (item as any)?.roomCode,
+            state: (item as any)?.state,
+          });
+        }
+      }
+    }
+  } catch {
+    // Graceful fallback
+  }
+  return map;
+}
+
+export async function fetchAppointmentInvoicesMap(request: Requester, appointmentIds: string[]): Promise<Map<string, any>> {
+  const map = new Map<string, any>();
+  if (!appointmentIds || appointmentIds.length === 0) return map;
+  try {
+    const list = await Promise.all(
+      appointmentIds.map(async (id) => {
+        try {
+          const res = await request<any>(`/api/billing/invoices?appointmentId=${encodeURIComponent(id)}&limit=1`);
+          const items = Array.isArray(res) ? res : res?.items || res?.data || [];
+          return { id, invoice: items[0] || null };
+        } catch {
+          return { id, invoice: null };
+        }
+      })
+    );
+    for (const item of list) {
+      if (item.invoice) {
+        map.set(item.id, item.invoice);
+      }
+    }
+  } catch {
+    // Graceful fallback
+  }
+  return map;
+}

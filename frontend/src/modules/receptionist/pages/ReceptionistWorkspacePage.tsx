@@ -32,6 +32,7 @@ import {
   loadPatientWorkspace,
   refreshAppointment,
   searchDesk,
+  fetchPatientDetails,
   type AppointmentSource,
   type AppointmentStatus,
   type DeskAppointment,
@@ -47,6 +48,7 @@ import { SearchResults } from '../components/SearchResults';
 import { StatsStrip } from '../components/StatsStrip';
 import { WalkInModal } from '../components/WalkInModal';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
+import { useReceptionRealtime } from '../hooks/useReceptionRealtime';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
 dayjs.locale('vi');
@@ -146,6 +148,38 @@ function Desk() {
       live = false;
     };
   }, [request, catalog, dateStr, reload]);
+
+  // ─── TÍCH HỢP SSE REALTIME STREAM (ĐỒNG BỘ 2 CHIỀU TỨC THÌ) ───────────────
+  const { isLive } = useReceptionRealtime({
+    selectedDateStr: dateStr,
+    streamFn: auth.stream,
+    onNewAppointment: async () => {
+      // Khi có bệnh nhân vừa đặt lịch mới, tải lại danh sách và các chỉ số StatsStrip ngay tức thì
+      setReload((n) => n + 1);
+    },
+    onAppointmentUpdate: (evt) => {
+      setRows((cur) =>
+        cur.map((a) => {
+          if (a.id === evt.appointmentId) {
+            return {
+              ...a,
+              status: (evt.status as AppointmentStatus) || a.status,
+              queueCode: evt.ticketCode || a.queueCode,
+              roomCode: evt.roomCode || a.roomCode,
+              roomName: evt.roomName || a.roomName,
+              updatedAt: evt.updatedAt || a.updatedAt,
+            };
+          }
+          return a;
+        })
+      );
+      // Đồng thời cập nhật lại thống kê các ca hẹn
+      setReload((n) => n + 1);
+    },
+    onRefetch: () => {
+      setReload((n) => n + 1);
+    },
+  });
 
   useEffect(() => {
     if (!catalog || trimmed.length < 2) {
@@ -433,6 +467,34 @@ function Desk() {
 
           {/* Right: + Tiếp nhận vãng lai & User Info Dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: isLive ? '#166534' : '#b45309',
+                background: isLive ? '#f0fdf4' : '#fffbeb',
+                border: `1.5px solid ${isLive ? '#86efac' : '#fde68a'}`,
+                padding: '5px 12px',
+                borderRadius: '20px',
+                userSelect: 'none',
+              }}
+              title={isLive ? 'Đang kết nối luồng sự kiện trực tiếp với máy chủ' : 'Đang kết nối lại luồng sự kiện...'}
+            >
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: isLive ? '#16a34a' : '#d97706',
+                  boxShadow: isLive ? '0 0 0 3px rgba(22, 163, 74, 0.25)' : 'none',
+                }}
+              />
+              <span>{isLive ? 'Trực tuyến' : 'Đang kết nối...'}</span>
+            </span>
+
             <Button
               type="primary"
               icon={<UserAddOutlined />}
