@@ -176,6 +176,12 @@ export class QueueDomainService {
           include: { tickets: { include: { stage: true } } },
         });
         await this.event(tx, journey, 'queue.journey_created.v1');
+        const ticket = journey.tickets[0];
+        await tx.queueOutbox.create({ data: {
+          eventType: 'queue.ticket_created.v1', aggregateId: ticket.id, aggregateVersion: ticket.version,
+          payload: { eventVersion: 1, aggregateType: 'queue_ticket', aggregateId: ticket.id,
+            data: { patientId: journey.patientId, journeyId: journey.id } },
+        } });
         return {
           journey: this.viewJourney(journey),
           initialTicket: this.viewTicket(journey.tickets[0]),
@@ -353,6 +359,12 @@ export class QueueDomainService {
           roomCode: effectiveRoomCode,
         },
       });
+      const journey = await tx.queueJourney.findUniqueOrThrow({ where: { id: ticket.journeyId }, select: { patientId: true } });
+      await tx.queueOutbox.create({ data: {
+        eventType: 'queue.ticket_called.v1', aggregateId: ticket.id, aggregateVersion: ticket.version + 1,
+        payload: { eventVersion: 1, aggregateType: 'queue_ticket', aggregateId: ticket.id,
+          data: { patientId: journey.patientId, journeyId: ticket.journeyId, expiresAt: expires.toISOString() } },
+      } });
       return this.viewTicket(
         await tx.stageTicket.findUnique({
           where: { id: ticket.id },
@@ -373,17 +385,15 @@ export class QueueDomainService {
     if (state === TicketState.COMPLETED) data.completedAt = new Date();
     if (state === TicketState.WAITING)
       data.enqueueSequence = BigInt(Date.now());
-    const u = await this.db.stageTicket.updateMany({
-      where: { id, version },
-      data,
+    return this.db.$transaction(async tx => {
+      const u = await tx.stageTicket.updateMany({ where: { id, version }, data });
+      if (!u.count) throw new ConflictException('VERSION_CONFLICT');
+      const ticket = await tx.stageTicket.findUniqueOrThrow({ where: { id }, include: { stage: true, journey: { select: { patientId: true } } } });
+      const eventType = state === TicketState.WAITING ? 'queue.ticket_requeued.v1' : state === TicketState.CANCELLED ? 'queue.ticket_cancelled.v1' : null;
+      if (eventType) await tx.queueOutbox.create({ data: { eventType, aggregateId: id, aggregateVersion: ticket.version,
+        payload: { eventVersion: 1, aggregateType: 'queue_ticket', aggregateId: id, data: { patientId: ticket.journey.patientId, journeyId: ticket.journeyId } } } });
+      return this.viewTicket(ticket);
     });
-    if (!u.count) throw new ConflictException('VERSION_CONFLICT');
-    return this.viewTicket(
-      await this.db.stageTicket.findUnique({
-        where: { id },
-        include: { stage: true },
-      }),
-    );
   }
 
   async notifyTicketChange(ticketId: string, eventType: string): Promise<void> {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { AppLink, navigate } from '../../../app/navigation';
 import { UserChip } from '../navigation/UserChip';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { fetchSpecialties, type SpecialtyItem } from '../../../services/specialty';
 
 function CalendarIcon() {
@@ -208,6 +209,7 @@ export function PublicPortalHeader() {
                   <CalendarIcon />
                   <span>Đặt lịch khám</span>
                 </AppLink>
+                {auth.user?.role === 'PATIENT' && <NotificationBell />}
                 <UserChip />
               </div>
             )}

@@ -185,6 +185,8 @@ export function PatientBookingPage() {
   const [selectedSlot, setSelectedSlot] = useState<BookableSlot | null>(null);
   const [availableSlots, setAvailableSlots] = useState<BookableSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  const [slotsRetry, setSlotsRetry] = useState(0);
 
   // Lựa chọn ở Bước 3: Hồ sơ bệnh nhân
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
@@ -441,13 +443,17 @@ export function PatientBookingPage() {
 
   // 5. Tải danh sách Slots khi chọn Dịch vụ, Bác sĩ/Chế độ và Ngày
   useEffect(() => {
-    if (!selectedServiceId || !selectedDate) {
+    if (!selectedServiceId || !selectedDate || (doctorMode === 'DOCTOR' && !selectedDoctorId)) {
       setAvailableSlots([]);
+      setSelectedSlot(null);
+      setLoadingSlots(false);
+      setSlotsError(false);
       return;
     }
 
     let active = true;
     setLoadingSlots(true);
+    setSlotsError(false);
     setSelectedSlot(null);
 
     const from = `${selectedDate}T00:00:00+07:00`;
@@ -469,13 +475,14 @@ export function PatientBookingPage() {
       .catch(() => {
         if (!active) return;
         setAvailableSlots([]);
+        setSlotsError(true);
         setLoadingSlots(false);
       });
 
     return () => {
       active = false;
     };
-  }, [auth.request, selectedServiceId, doctorMode, selectedDoctorId, selectedDate]);
+  }, [auth.request, selectedServiceId, doctorMode, selectedDoctorId, selectedDate, slotsRetry]);
 
 
   // Đếm ngược 5 phút (300 giây) khi chọn slot
@@ -1180,6 +1187,7 @@ export function PatientBookingPage() {
                         </h4>
 
                         <div className="pb-doctor-grid">
+                          {!loadingInitial && eligibleDoctorsForService.length === 0 && <p>Chưa tải được bác sĩ phù hợp. Vui lòng thử lại hoặc chọn chế độ bệnh viện tự sắp xếp.</p>}
                           {eligibleDoctorsForService.map((doc: any) => {
                             const isSelected = selectedDoctorId === (doc.id || doc.doctorId);
                             const profile = doc.profile || {};
@@ -1290,13 +1298,17 @@ export function PatientBookingPage() {
                         )}
                       </div>
 
-                      {loadingSlots ? (
+                      {doctorMode === 'DOCTOR' && !selectedDoctorId ? (
+                        <div className="pb-slots-empty">Vui lòng chọn bác sĩ trước để xem lịch khám.</div>
+                      ) : loadingSlots ? (
                         <div style={{ padding: '30px 0', textAlign: 'center', color: '#64748b' }}>
                           Đang kiểm tra lịch trống của bác sĩ...
                         </div>
+                      ) : slotsError ? (
+                        <div className="pb-slots-empty" role="alert">Không thể tải lịch khám lúc này. <button type="button" onClick={() => setSlotsRetry(value => value + 1)}>Thử lại</button></div>
                       ) : availableSlots.length === 0 ? (
                         <div className="pb-slots-empty">
-                          Ngày {formatDateDisplay(selectedDate)} hiện đã kín lịch khám tự động. Quý khách vui lòng chọn ngày khác hoặc chuyển sang chế độ "Chỉ định bác sĩ theo yêu cầu" nếu muốn khám cùng Bác sĩ Chuyên gia / Trưởng khoa.
+                          Chưa có khung giờ phù hợp trong ngày {formatDateDisplay(selectedDate)}. Vui lòng chọn ngày khác hoặc thay đổi lựa chọn bác sĩ.
                         </div>
                       ) : (
                         <div style={{ marginTop: '14px' }}>

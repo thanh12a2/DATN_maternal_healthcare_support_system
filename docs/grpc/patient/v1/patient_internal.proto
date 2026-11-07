@@ -9,10 +9,14 @@ option java_multiple_files = true;
 option java_package = "vn.maternal.patient.v1";
 
 service PatientInternalService {
+  rpc ResolveNotificationAccount(ResolveNotificationAccountRequest) returns (ResolveNotificationAccountResponse);
   rpc GetPatientEligibility(GetPatientEligibilityRequest) returns (GetPatientEligibilityResponse);
   rpc GetPatientIdentity(GetPatientIdentityRequest) returns (GetPatientIdentityResponse);
   rpc SearchPatients(SearchPatientsRequest) returns (SearchPatientsResponse);
 }
+
+message ResolveNotificationAccountRequest { string patient_id = 1; }
+message ResolveNotificationAccountResponse { bool found = 1; string account_id = 2; }
 
 message GetPatientEligibilityRequest {
   maternal.common.v1.RequestContext context = 1;

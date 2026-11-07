@@ -8,6 +8,14 @@ import { PatientsService } from '../patients/patients.service';
 export class PatientGrpcController {
   constructor(private readonly patients: PatientsService) {}
 
+  @GrpcMethod('PatientInternalService', 'ResolveNotificationAccount')
+  @ServiceCallers('notification-service')
+  @ServiceScopes('patient:notification-account:read')
+  async resolveNotificationAccount(request: { patientId?: string }) {
+    const patient = await this.patients.notificationAccount(request.patientId ?? '');
+    return { found: Boolean(patient?.authAccountId), accountId: patient?.authAccountId ?? '' };
+  }
+
   @GrpcMethod('PatientInternalService', 'GetPatientEligibility')
   @ServiceCallers('appointment-service', 'consultation-service', 'queue-service')
   @ServiceScopes('patient:eligibility:read')

@@ -115,6 +115,13 @@ services:
       - name: jwt
         config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
 
+  - name: notification-service
+    url: http://notification-service:5016/notifications
+    routes: [{ name: notification-service-route, paths: [/api/notifications], strip_path: true }]
+    plugins:
+      - name: jwt
+        config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
   - name: document-service
     url: http://document-service:5013
     routes:

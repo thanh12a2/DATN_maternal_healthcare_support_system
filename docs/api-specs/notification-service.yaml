@@ -6,13 +6,43 @@ info:
     Public read-state API for delivered notifications. Notification Service is
     delivery-only: domain services publish notification requests through RabbitMQ,
     and this API provides no synchronous create, send, template, or campaign command.
+    The implemented website API uses /notifications/in-app paths. The other paths
+    in this document remain design proposals and are not implemented.
 servers:
-  - url: /api/v1
+  - url: /api
 security:
   - bearerAuth: []
 tags:
   - name: Notifications
 paths:
+  /notifications/in-app:
+    get:
+      summary: List the current account's in-app notifications
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: Items, page, pageSize and total }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /notifications/in-app/unread-count:
+    get:
+      summary: Count the current account's unread notifications
+      responses:
+        '200': { description: Object containing count }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /notifications/in-app/read-all:
+    post:
+      summary: Mark the current account's existing notifications as read
+      responses:
+        '201': { description: Object containing updated count }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /notifications/in-app/{notificationId}/read:
+    post:
+      summary: Mark one owned notification as read
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '201': { description: Read state updated }
+        '404': { description: Notification absent or not owned by caller }
   /notifications:
     get:
       tags: [Notifications]

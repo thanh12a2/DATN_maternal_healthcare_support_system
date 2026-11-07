@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { NotificationBell } from '../../../shared/components/notifications/NotificationBell';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
 import '../../../styles/doctor-content.css';
 
@@ -22,7 +23,7 @@ export function DoctorWorkspaceFrame({ section, email, children }: { section: st
     <header className="doctor-topbar">
       <div><span>Doctor workspace</span><strong>{titles[section] ?? 'Tổng quan'}</strong></div>
       <div className="doctor-topbar-actions">
-        <button className="doctor-notification" type="button" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg></button>
+        <NotificationBell />
         <UserChip displayName={displayEmail} showWorkspaceLink={false} />
       </div>
     </header>

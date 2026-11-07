@@ -14,3 +14,4 @@ export * from './rabbitmq/rabbitmq.module';
 export * from './rabbitmq/rabbitmq.publisher';
 export * from './rabbitmq/rabbitmq.consumer';
 export * from './outbox/outbox-relay';
+export * from './outbox/notification-relay';
