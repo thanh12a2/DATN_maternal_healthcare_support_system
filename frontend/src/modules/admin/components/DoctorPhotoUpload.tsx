@@ -155,7 +155,17 @@ export function DoctorPhotoUpload({
         const sourceX = cx - CROP_RADIUS;
         const sourceY = cy - CROP_RADIUS;
         const sourceSize = CROP_RADIUS * 2;
-        pCtx.drawImage(canvas, sourceX, sourceY, sourceSize, sourceSize, 0, 0, pw, ph);
+        pCtx.drawImage(
+          canvas,
+          sourceX,
+          sourceY,
+          sourceSize,
+          sourceSize,
+          0,
+          0,
+          pw,
+          ph,
+        );
         pCtx.restore();
       }
     }
@@ -257,10 +267,7 @@ export function DoctorPhotoUpload({
     exportCtx.translate(exportSize / 2, exportSize / 2);
     exportCtx.rotate((rotation * Math.PI) / 180);
     exportCtx.scale(scale * scaleFactor, scale * scaleFactor);
-    exportCtx.translate(
-      pan.x / scale,
-      pan.y / scale,
-    );
+    exportCtx.translate(pan.x / scale, pan.y / scale);
     exportCtx.drawImage(
       loadedImage,
       -loadedImage.width / 2,
@@ -278,7 +285,10 @@ export function DoctorPhotoUpload({
   const handleResetCrop = () => {
     if (!loadedImage) return;
     const diameter = CROP_RADIUS * 2;
-    const baseScale = Math.max(diameter / loadedImage.width, diameter / loadedImage.height);
+    const baseScale = Math.max(
+      diameter / loadedImage.width,
+      diameter / loadedImage.height,
+    );
     setScale(Math.max(baseScale, 1));
     setPan({ x: 0, y: 0 });
     setRotation(0);
@@ -291,13 +301,12 @@ export function DoctorPhotoUpload({
 
   // Extract initial for avatar fallback
   const initial = doctorName
-    ? doctorName.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() || 'B'
+    ? doctorName.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() ||
+      'B'
     : 'B';
 
   const hasPhoto = Boolean(
-    value &&
-      !value.includes('example.test') &&
-      !value.includes('example.com'),
+    value && !value.includes('example.test') && !value.includes('example.com'),
   );
 
   return (
@@ -370,7 +379,8 @@ export function DoctorPhotoUpload({
             type="secondary"
             style={{ fontSize: 12, margin: '0 0 10px 0', lineHeight: 1.4 }}
           >
-            Tải ảnh từ máy tính (JPG, PNG, WEBP). Sau khi chọn ảnh, bạn có thể căn chỉnh khung hình, phóng to và xoay theo ý muốn.
+            Tải ảnh từ máy tính (JPG, PNG, WEBP). Sau khi chọn ảnh, bạn có thể
+            căn chỉnh khung hình, phóng to và xoay theo ý muốn.
           </Typography.Paragraph>
 
           <Space size={8} wrap>
@@ -448,9 +458,19 @@ export function DoctorPhotoUpload({
           }
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12, marginBottom: 10 }}>
-            Kéo thả chuột để di chuyển ảnh vào giữa khung tròn. Dùng thanh trượt bên dưới để phóng to / thu nhỏ.
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 12, marginBottom: 10 }}
+          >
+            Kéo thả chuột để di chuyển ảnh vào giữa khung tròn. Dùng thanh trượt
+            bên dưới để phóng to / thu nhỏ.
           </Typography.Text>
 
           {/* Interactive Canvas */}
@@ -504,7 +524,11 @@ export function DoctorPhotoUpload({
                 <Button
                   size="small"
                   icon={<ZoomInOutlined />}
-                  onClick={() => setScale((s) => Math.min(Math.max(minScale * 3.5, 3), s + 0.1))}
+                  onClick={() =>
+                    setScale((s) =>
+                      Math.min(Math.max(minScale * 3.5, 3), s + 0.1),
+                    )
+                  }
                 />
               </Tooltip>
               <Tooltip title="Xoay 90°">
@@ -532,7 +556,9 @@ export function DoctorPhotoUpload({
               justifyContent: 'center',
             }}
           >
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Hiển thị xem trước:</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+              Hiển thị xem trước:
+            </span>
             <div
               style={{
                 width: 56,

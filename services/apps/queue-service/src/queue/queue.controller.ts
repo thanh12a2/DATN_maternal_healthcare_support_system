@@ -24,7 +24,9 @@ import { QueueRealtimeService } from './queue-realtime.service';
 const CLINICAL_ROLES = ['DOCTOR', 'ADMIN', 'NURSE'];
 function assertClinicalRole(auth: PublicAuthContext) {
   if (!CLINICAL_ROLES.includes(auth.role)) {
-    throw new ForbiddenException('Chỉ bác sĩ hoặc nhân viên lâm sàng mới có quyền gọi số và phục vụ bệnh nhân.');
+    throw new ForbiddenException(
+      'Chỉ bác sĩ hoặc nhân viên lâm sàng mới có quyền gọi số và phục vụ bệnh nhân.',
+    );
   }
 }
 
@@ -75,7 +77,10 @@ export class QueueController {
       response.write('event: ' + event.eventType + '\n');
       response.write('data: ' + JSON.stringify(event.data) + '\n\n');
     });
-    const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 25_000);
+    const heartbeat = setInterval(
+      () => response.write(': heartbeat\n\n'),
+      25_000,
+    );
     response.once('close', () => {
       clearInterval(heartbeat);
       unsubscribe();
@@ -108,29 +113,55 @@ export class QueueController {
     @CurrentAuth() a: PublicAuthContext,
   ) {
     assertClinicalRole(a);
-    const ticket = await this.s.callNext(id, a.userId, b?.overrideTicketId, b?.reason);
-    if (ticket?.id) await this.s.notifyTicketChange(ticket.id, 'queue.ticket_called.v1');
+    const ticket = await this.s.callNext(
+      id,
+      a.userId,
+      b?.overrideTicketId,
+      b?.reason,
+    );
+    if (ticket?.id)
+      await this.s.notifyTicketChange(ticket.id, 'queue.ticket_called.v1');
     return ticket;
   }
 
   @Post('tickets/:id/start')
-  async start(@Param('id') id: string, @Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+  async start(
+    @Param('id') id: string,
+    @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
     assertClinicalRole(a);
-    const ticket = await this.s.transition(id, TicketState.IN_SERVICE, b.expectedVersion);
+    const ticket = await this.s.transition(
+      id,
+      TicketState.IN_SERVICE,
+      b.expectedVersion,
+    );
     await this.s.notifyTicketChange(id, 'queue.ticket_service_started.v1');
     return ticket;
   }
 
   @Post('tickets/:id/complete')
-  async complete(@Param('id') id: string, @Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+  async complete(
+    @Param('id') id: string,
+    @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
     assertClinicalRole(a);
-    const ticket = await this.s.transition(id, TicketState.COMPLETED, b.expectedVersion);
+    const ticket = await this.s.transition(
+      id,
+      TicketState.COMPLETED,
+      b.expectedVersion,
+    );
     await this.s.notifyTicketChange(id, 'queue.ticket_completed.v1');
     return ticket;
   }
 
   @Post('tickets/:id/requeue')
-  async requeue(@Param('id') id: string, @Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+  async requeue(
+    @Param('id') id: string,
+    @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
     assertClinicalRole(a);
     const ticket = await this.s.transition(
       id,
@@ -143,7 +174,11 @@ export class QueueController {
   }
 
   @Post('tickets/:id/cancel')
-  async cancel(@Param('id') id: string, @Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+  async cancel(
+    @Param('id') id: string,
+    @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
     assertClinicalRole(a);
     const ticket = await this.s.transition(
       id,

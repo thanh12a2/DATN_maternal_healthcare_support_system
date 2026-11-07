@@ -25,22 +25,50 @@ import { PrescriptionService } from './prescription.service';
 
 @Controller()
 export class PrescriptionController {
-  constructor(private readonly s: PrescriptionService, private readonly access: ClinicalDoctorAccess) {}
+  constructor(
+    private readonly s: PrescriptionService,
+    private readonly access: ClinicalDoctorAccess,
+  ) {}
 
-  private async authorizeWrite(a: PublicAuthContext, encounterId: string, patientId: string, allowFinalized = false) {
+  private async authorizeWrite(
+    a: PublicAuthContext,
+    encounterId: string,
+    patientId: string,
+    allowFinalized = false,
+  ) {
     if (a.role !== 'DOCTOR') return;
     if (!patientId) throw new BadRequestException('PATIENT_REQUIRED');
-    const encounter = await this.access.assertEncounter(a, encounterId, patientId);
-    const states = ['IN_PROGRESS', 'ENCOUNTER_STATE_IN_PROGRESS', ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : [])];
-    if (!states.includes(encounter.state)) throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
+    const encounter = await this.access.assertEncounter(
+      a,
+      encounterId,
+      patientId,
+    );
+    const states = [
+      'IN_PROGRESS',
+      'ENCOUNTER_STATE_IN_PROGRESS',
+      ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : []),
+    ];
+    if (!states.includes(encounter.state))
+      throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
     return encounter.resolvedDoctorId as string;
   }
 
-  private async authorizeExisting(a: PublicAuthContext, id: string, b: any, allowFinalized = false) {
+  private async authorizeExisting(
+    a: PublicAuthContext,
+    id: string,
+    b: any,
+    allowFinalized = false,
+  ) {
     if (a.role !== 'DOCTOR') return;
-    if (!Number.isInteger(b?.version) || b.version < 1) throw new BadRequestException('VERSION_REQUIRED');
+    if (!Number.isInteger(b?.version) || b.version < 1)
+      throw new BadRequestException('VERSION_REQUIRED');
     const { data } = await this.s.getRest(id);
-    await this.authorizeWrite(a, data.encounterId, data.patientId, allowFinalized && data.status === 'ISSUED');
+    await this.authorizeWrite(
+      a,
+      data.encounterId,
+      data.patientId,
+      allowFinalized && data.status === 'ISSUED',
+    );
   }
 
   @PublicHttp()
@@ -57,23 +85,46 @@ export class PrescriptionController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR' && (!Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.medicationName ?? '').trim() || !String(x.dose ?? '').trim() || !String(x.frequency ?? '').trim()))) throw new BadRequestException('PRESCRIPTION_ITEMS_REQUIRED');
+    if (
+      a.role === 'DOCTOR' &&
+      (!Array.isArray(b.items) ||
+        !b.items.length ||
+        b.items.some(
+          (x: any) =>
+            !String(x.medicationName ?? '').trim() ||
+            !String(x.dose ?? '').trim() ||
+            !String(x.frequency ?? '').trim(),
+        ))
+    )
+      throw new BadRequestException('PRESCRIPTION_ITEMS_REQUIRED');
     const doctorId = await this.authorizeWrite(a, b.encounterId, b.patientId);
     return this.s.createRest(b, a, doctorId);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get(['', 'prescriptions'])
-  async listPrescriptions(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
-    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
+  async listPrescriptions(
+    @Query() q: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
+    if (a.role === 'DOCTOR')
+      await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'prescriptions/:id'])
-  async getPrescription(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+  async getPrescription(
+    @Param('id') id: string,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
     const result = await this.s.getRest(id);
-    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, result.data.encounterId, result.data.patientId);
+    if (a.role === 'DOCTOR')
+      await this.access.assertEncounter(
+        a,
+        result.data.encounterId,
+        result.data.patientId,
+      );
     return result;
   }
 
@@ -84,7 +135,19 @@ export class PrescriptionController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR' && b.items !== undefined && (!Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.medicationName ?? '').trim() || !String(x.dose ?? '').trim() || !String(x.frequency ?? '').trim()))) throw new BadRequestException('PRESCRIPTION_ITEMS_REQUIRED');
+    if (
+      a.role === 'DOCTOR' &&
+      b.items !== undefined &&
+      (!Array.isArray(b.items) ||
+        !b.items.length ||
+        b.items.some(
+          (x: any) =>
+            !String(x.medicationName ?? '').trim() ||
+            !String(x.dose ?? '').trim() ||
+            !String(x.frequency ?? '').trim(),
+        ))
+    )
+      throw new BadRequestException('PRESCRIPTION_ITEMS_REQUIRED');
     await this.authorizeExisting(a, id, b);
     return this.s.updateRest(id, b);
   }

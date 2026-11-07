@@ -324,8 +324,12 @@ export function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
-  const [selectedAction, setSelectedAction] = useState<string | undefined>(undefined);
-  const [selectedService, setSelectedService] = useState<string | undefined>(undefined);
+  const [selectedAction, setSelectedAction] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedService, setSelectedService] = useState<string | undefined>(
+    undefined,
+  );
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   // Detail Modal
@@ -336,18 +340,15 @@ export function AdminAuditLogsPage() {
     setLoading(true);
     try {
       const [res, st, userListRes, doctorListRes] = await Promise.all([
-        fetchAuditLogs(
-          request,
-          {
-            page,
-            pageSize,
-            search: search.trim() || undefined,
-            action: selectedAction || undefined,
-            sourceService: selectedService || undefined,
-            fromDate: dateRange ? dateRange[0] : undefined,
-            toDate: dateRange ? dateRange[1] : undefined,
-          },
-        ),
+        fetchAuditLogs(request, {
+          page,
+          pageSize,
+          search: search.trim() || undefined,
+          action: selectedAction || undefined,
+          sourceService: selectedService || undefined,
+          fromDate: dateRange ? dateRange[0] : undefined,
+          toDate: dateRange ? dateRange[1] : undefined,
+        }),
         fetchAuditStats(request).catch(() => null),
         listAdminUsers(request, { limit: 100 }).catch(() => null),
         listDoctors(request, { limit: 100 }).catch(() => null),
@@ -410,7 +411,10 @@ export function AdminAuditLogsPage() {
             <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
               {d.toLocaleDateString('vi-VN')}
             </Text>
-            <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+            <Text
+              type="secondary"
+              style={{ fontSize: 11, whiteSpace: 'nowrap' }}
+            >
               <ClockCircleOutlined style={{ marginRight: 4 }} />
               {d.toLocaleTimeString('vi-VN')}
             </Text>
@@ -462,7 +466,10 @@ export function AdminAuditLogsPage() {
               <UserOutlined style={{ marginRight: 6, color: '#0284c7' }} />
               {email}
             </Text>
-            <Tag color="cyan" style={{ fontSize: 11, margin: 0, width: 'fit-content' }}>
+            <Tag
+              color="cyan"
+              style={{ fontSize: 11, margin: 0, width: 'fit-content' }}
+            >
               Vai trò: {r.actorType}
             </Tag>
             {r.ipAddress && (
@@ -480,7 +487,8 @@ export function AdminAuditLogsPage() {
       key: 'target',
       render: (_, r) => {
         const meta = r.metadata || {};
-        let summary = meta.description || `${r.aggregateType} [${r.aggregateId}]`;
+        let summary =
+          meta.description || `${r.aggregateType} [${r.aggregateId}]`;
 
         // Nếu là thao tác trên tài khoản người dùng mà bị ghi UUID, tự động phân giải sang Email
         if (
@@ -489,16 +497,19 @@ export function AdminAuditLogsPage() {
           r.action.startsWith('USER_ACCOUNT_')
         ) {
           const userEmail =
-            meta.targetEmail ||
-            meta.email ||
-            userEmailMap[r.aggregateId];
+            meta.targetEmail || meta.email || userEmailMap[r.aggregateId];
 
           if (userEmail) {
-            if (r.action === 'USER_ACCOUNT_CREATED') summary = `Tạo tài khoản mới: ${userEmail}`;
-            else if (r.action === 'USER_ACCOUNT_ACTIVATED') summary = `Kích hoạt tài khoản: ${userEmail}`;
-            else if (r.action === 'USER_ACCOUNT_LOCKED') summary = `Khóa tài khoản: ${userEmail}`;
-            else if (r.action === 'USER_ACCOUNT_UPDATED') summary = `Cập nhật thông tin tài khoản: ${userEmail}`;
-            else if (r.action === 'USER_ACCOUNT_DELETED') summary = `Xóa tài khoản người dùng: ${userEmail}`;
+            if (r.action === 'USER_ACCOUNT_CREATED')
+              summary = `Tạo tài khoản mới: ${userEmail}`;
+            else if (r.action === 'USER_ACCOUNT_ACTIVATED')
+              summary = `Kích hoạt tài khoản: ${userEmail}`;
+            else if (r.action === 'USER_ACCOUNT_LOCKED')
+              summary = `Khóa tài khoản: ${userEmail}`;
+            else if (r.action === 'USER_ACCOUNT_UPDATED')
+              summary = `Cập nhật thông tin tài khoản: ${userEmail}`;
+            else if (r.action === 'USER_ACCOUNT_DELETED')
+              summary = `Xóa tài khoản người dùng: ${userEmail}`;
           } else if (summary.includes(r.aggregateId)) {
             // Thay thế aggregateId trong summary nếu đã có map email
             const mappedEmail = userEmailMap[r.aggregateId];
@@ -517,11 +528,16 @@ export function AdminAuditLogsPage() {
             userEmailMap[r.aggregateId];
 
           if (docIdentifier) {
-            if (r.action === 'DOCTOR_PROFILE_CREATED') summary = `Thêm mới bác sĩ: ${docIdentifier}`;
-            else if (r.action === 'DOCTOR_ACTIVATED') summary = `Kích hoạt bác sĩ: ${docIdentifier}`;
-            else if (r.action === 'DOCTOR_DEACTIVATED') summary = `Tạm khóa bác sĩ: ${docIdentifier}${meta.reason ? ` - Lý do: ${meta.reason}` : ''}`;
-            else if (r.action === 'DOCTOR_PROFILE_UPDATED') summary = `Cập nhật thông tin bác sĩ: ${docIdentifier}`;
-            else if (r.action === 'DOCTOR_DELETED') summary = `Xóa hồ sơ bác sĩ: ${docIdentifier}`;
+            if (r.action === 'DOCTOR_PROFILE_CREATED')
+              summary = `Thêm mới bác sĩ: ${docIdentifier}`;
+            else if (r.action === 'DOCTOR_ACTIVATED')
+              summary = `Kích hoạt bác sĩ: ${docIdentifier}`;
+            else if (r.action === 'DOCTOR_DEACTIVATED')
+              summary = `Tạm khóa bác sĩ: ${docIdentifier}${meta.reason ? ` - Lý do: ${meta.reason}` : ''}`;
+            else if (r.action === 'DOCTOR_PROFILE_UPDATED')
+              summary = `Cập nhật thông tin bác sĩ: ${docIdentifier}`;
+            else if (r.action === 'DOCTOR_DELETED')
+              summary = `Xóa hồ sơ bác sĩ: ${docIdentifier}`;
           } else if (summary.includes(r.aggregateId)) {
             const mapped = userEmailMap[r.aggregateId];
             if (mapped) {
@@ -534,11 +550,16 @@ export function AdminAuditLogsPage() {
         ) {
           const specName = meta.specialtyName || meta.name;
           if (specName) {
-            if (r.action === 'SPECIALTY_CREATED') summary = `Thêm chuyên khoa mới: ${specName}`;
-            else if (r.action === 'SPECIALTY_ACTIVATED') summary = `Kích hoạt chuyên khoa: ${specName}`;
-            else if (r.action === 'SPECIALTY_DEACTIVATED') summary = `Tạm khóa chuyên khoa: ${specName}`;
-            else if (r.action === 'SPECIALTY_UPDATED') summary = `Cập nhật chuyên khoa: ${specName}`;
-            else if (r.action === 'SPECIALTY_DELETED') summary = `Xóa chuyên khoa: ${specName}`;
+            if (r.action === 'SPECIALTY_CREATED')
+              summary = `Thêm chuyên khoa mới: ${specName}`;
+            else if (r.action === 'SPECIALTY_ACTIVATED')
+              summary = `Kích hoạt chuyên khoa: ${specName}`;
+            else if (r.action === 'SPECIALTY_DEACTIVATED')
+              summary = `Tạm khóa chuyên khoa: ${specName}`;
+            else if (r.action === 'SPECIALTY_UPDATED')
+              summary = `Cập nhật chuyên khoa: ${specName}`;
+            else if (r.action === 'SPECIALTY_DELETED')
+              summary = `Xóa chuyên khoa: ${specName}`;
           }
         }
 
@@ -559,7 +580,9 @@ export function AdminAuditLogsPage() {
         }
         return (
           <div style={{ wordBreak: 'break-word', lineHeight: 1.5 }}>
-            <Text style={{ fontWeight: 500, fontSize: 13, color: '#1e293b' }}>{summary}</Text>
+            <Text style={{ fontWeight: 500, fontSize: 13, color: '#1e293b' }}>
+              {summary}
+            </Text>
           </div>
         );
       },
@@ -717,12 +740,24 @@ export function AdminAuditLogsPage() {
                 setPage(1);
               }}
               options={[
-                { label: 'Cập nhật giá dịch vụ', value: 'SERVICE_PRICE_UPDATED' },
-                { label: 'Lên lịch phụ thu hạng', value: 'RANK_SURCHARGE_SCHEDULED' },
+                {
+                  label: 'Cập nhật giá dịch vụ',
+                  value: 'SERVICE_PRICE_UPDATED',
+                },
+                {
+                  label: 'Lên lịch phụ thu hạng',
+                  value: 'RANK_SURCHARGE_SCHEDULED',
+                },
                 { label: 'Đổi hạng bác sĩ', value: 'DOCTOR_RANK_CHANGED' },
                 { label: 'Khóa tài khoản', value: 'USER_ACCOUNT_LOCKED' },
-                { label: 'Kích hoạt tài khoản', value: 'USER_ACCOUNT_ACTIVATED' },
-                { label: 'Duyệt miễn giảm viện phí', value: 'INVOICE_CREDIT_APPROVED' },
+                {
+                  label: 'Kích hoạt tài khoản',
+                  value: 'USER_ACCOUNT_ACTIVATED',
+                },
+                {
+                  label: 'Duyệt miễn giảm viện phí',
+                  value: 'INVOICE_CREDIT_APPROVED',
+                },
               ]}
             />
             <RangePicker
@@ -739,7 +774,11 @@ export function AdminAuditLogsPage() {
             />
           </div>
           <Space size="middle">
-            <Button type="primary" onClick={handleSearchSubmit} icon={<SearchOutlined />}>
+            <Button
+              type="primary"
+              onClick={handleSearchSubmit}
+              icon={<SearchOutlined />}
+            >
               Tìm kiếm
             </Button>
             <Button icon={<ReloadOutlined />} onClick={handleReset}>
@@ -790,14 +829,23 @@ export function AdminAuditLogsPage() {
         open={Boolean(selectedItem)}
         onCancel={() => setSelectedItem(null)}
         footer={[
-          <Button key="close" type="primary" onClick={() => setSelectedItem(null)}>
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => setSelectedItem(null)}
+          >
             Đóng
           </Button>,
         ]}
         width={720}
       >
         {selectedItem && (
-          <Descriptions bordered column={2} size="small" style={{ marginTop: 16 }}>
+          <Descriptions
+            bordered
+            column={2}
+            size="small"
+            style={{ marginTop: 16 }}
+          >
             <Descriptions.Item label="Mã sự kiện (Event ID)" span={2}>
               <Text code copyable>
                 {selectedItem.eventId}
@@ -811,7 +859,8 @@ export function AdminAuditLogsPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Thực hiện bởi">
               <Text>
-                {(selectedItem.metadata as any)?.actorEmail || selectedItem.actorId}
+                {(selectedItem.metadata as any)?.actorEmail ||
+                  selectedItem.actorId}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Địa chỉ IP (Client IP)">

@@ -30,20 +30,34 @@ export class MedicalController {
   }
 
   @Get('encounters')
-  async listEncounters(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
-    const doctorId = auth.role === 'DOCTOR' ? await this.s.doctorIdForAccount(auth.userId) : undefined;
+  async listEncounters(
+    @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    const doctorId =
+      auth.role === 'DOCTOR'
+        ? await this.s.doctorIdForAccount(auth.userId)
+        : undefined;
     return this.s.listEncounters(query, doctorId);
   }
 
   @Get('encounters/:id')
-  async getEncounter(@Param('id') id: string, @CurrentAuth() auth: PublicAuthContext) {
-    if (auth.role === 'DOCTOR') await this.s.assertDoctorAssigned(id, auth.userId);
+  async getEncounter(
+    @Param('id') id: string,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    if (auth.role === 'DOCTOR')
+      await this.s.assertDoctorAssigned(id, auth.userId);
     return this.s.getEncounter(id);
   }
 
   @Post('encounters')
-  async createEncounterRest(@Body() b: any, @CurrentAuth() auth: PublicAuthContext) {
-    if (auth.role === 'DOCTOR') throw new ForbiddenException('ADMISSION_REQUIRED');
+  async createEncounterRest(
+    @Body() b: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    if (auth.role === 'DOCTOR')
+      throw new ForbiddenException('ADMISSION_REQUIRED');
     const res = await this.s.open(b);
     return { data: res.encounter };
   }

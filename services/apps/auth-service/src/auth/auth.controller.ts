@@ -81,7 +81,9 @@ export class AuthController {
 
   @Get('auth/staff')
   listStaff(@Headers('authorization') authorizationHeader?: string) {
-    return this.authService.listStaff(this.extractBearerToken(authorizationHeader));
+    return this.authService.listStaff(
+      this.extractBearerToken(authorizationHeader),
+    );
   }
 
   @Patch('auth/staff/:accountId/status')

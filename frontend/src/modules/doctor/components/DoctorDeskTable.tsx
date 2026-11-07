@@ -24,7 +24,11 @@ export interface DoctorDeskTableProps {
   onOpenClinical: (appointment: DoctorDeskRow) => void;
 }
 
-export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTableProps) {
+export function DoctorDeskTable({
+  rows,
+  loading,
+  onOpenClinical,
+}: DoctorDeskTableProps) {
   const formatTime = (start?: string, end?: string) => {
     if (!start) return '—';
     try {
@@ -33,7 +37,10 @@ export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTab
         minute: '2-digit',
       });
       const e = end
-        ? new Date(end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        ? new Date(end).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
         : '';
       return e ? `${s} - ${e}` : s;
     } catch {
@@ -80,7 +87,9 @@ export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTab
             {formatTime(record.startAt, record.endAt)}
           </div>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            {record.startAt ? new Date(record.startAt).toLocaleDateString('vi-VN') : ''}
+            {record.startAt
+              ? new Date(record.startAt).toLocaleDateString('vi-VN')
+              : ''}
           </Text>
         </div>
       ),
@@ -127,7 +136,9 @@ export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTab
             {record.pricing?.serviceName || 'Khám thai định kỳ chuẩn y khoa'}
           </div>
           <Tag color="cyan" style={{ fontSize: 11, marginTop: 2 }}>
-            {record.roomName || record.roomCode || 'Phòng khám Sản Phụ khoa 201'}
+            {record.roomName ||
+              record.roomCode ||
+              'Phòng khám Sản Phụ khoa 201'}
           </Tag>
         </div>
       ),
@@ -174,7 +185,11 @@ export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTab
             icon={<MedicineBoxOutlined />}
             style={
               isInCare
-                ? { background: '#0B5CAD', borderColor: '#0B5CAD', fontWeight: 600 }
+                ? {
+                    background: '#0B5CAD',
+                    borderColor: '#0B5CAD',
+                    fontWeight: 600,
+                  }
                 : { color: '#0B5CAD', borderColor: '#bfdbfe', fontWeight: 600 }
             }
             onClick={() => onOpenClinical(record)}
@@ -204,4 +219,3 @@ export function DoctorDeskTable({ rows, loading, onOpenClinical }: DoctorDeskTab
     />
   );
 }
-

@@ -9,6 +9,14 @@ const pair = generateKeyPairSync('rsa', {
   privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   publicKeyEncoding: { type: 'spki', format: 'pem' },
 });
-fs.writeFileSync(path.join(outputDir, 'patient-internal-private.pem'), pair.privateKey);
-fs.writeFileSync(path.join(outputDir, 'patient-internal-public.pem'), pair.publicKey);
-console.log('Generated patient-internal-private.pem and patient-internal-public.pem');
+fs.writeFileSync(
+  path.join(outputDir, 'patient-internal-private.pem'),
+  pair.privateKey,
+);
+fs.writeFileSync(
+  path.join(outputDir, 'patient-internal-public.pem'),
+  pair.publicKey,
+);
+console.log(
+  'Generated patient-internal-private.pem and patient-internal-public.pem',
+);

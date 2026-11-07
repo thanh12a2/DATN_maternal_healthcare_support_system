@@ -106,7 +106,6 @@ describe('JwtVerifierService', () => {
     );
   });
 
-
   it('refreshes an inline JWKS for a rotated unknown kid', async () => {
     const { privateKey, publicKey } = createKeyPair();
     const jwk = createPublicKey(publicKey).export({ format: 'jwk' });
@@ -119,11 +118,17 @@ describe('JwtVerifierService', () => {
       }),
     );
     const token = sign({ role: 'PATIENT' }, privateKey, {
-      algorithm: 'RS256', issuer: 'maternal-healthcare-auth', audience: 'maternal-healthcare-api',
-      subject: 'account-id', jwtid: randomUUID(), keyid: 'new-key', expiresIn: '5m',
+      algorithm: 'RS256',
+      issuer: 'maternal-healthcare-auth',
+      audience: 'maternal-healthcare-api',
+      subject: 'account-id',
+      jwtid: randomUUID(),
+      keyid: 'new-key',
+      expiresIn: '5m',
     });
     await expect(service.verifyAccessToken(token)).resolves.toMatchObject({
-      userId: 'account-id', role: 'PATIENT',
+      userId: 'account-id',
+      role: 'PATIENT',
     });
   });
 

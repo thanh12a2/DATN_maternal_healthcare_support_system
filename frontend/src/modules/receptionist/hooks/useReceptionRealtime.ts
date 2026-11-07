@@ -24,7 +24,8 @@ export function useReceptionRealtime({
   enabled = true,
   streamFn,
 }: UseReceptionRealtimeProps) {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('DISCONNECTED');
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>('DISCONNECTED');
   const onNewRef = useRef(onNewAppointment);
   const onUpdateRef = useRef(onAppointmentUpdate);
   const onRefetchRef = useRef(onRefetch);
@@ -53,11 +54,18 @@ export function useReceptionRealtime({
         const currentDate = dateStrRef.current;
         const eventDate =
           event.appointmentDate ||
-          (event.startAt ? new Date(event.startAt).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }) : '');
+          (event.startAt
+            ? new Date(event.startAt).toLocaleDateString('sv-SE', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+              })
+            : '');
 
         if (event.eventType === 'appointment.created') {
           const timeDisplay = event.startAt
-            ? new Date(event.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+            ? new Date(event.startAt).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
             : '';
 
           // 1. Nếu lịch hẹn thuộc đúng ngày đang xem -> chèn vào bảng bàn tiếp đón
@@ -106,4 +114,3 @@ export function useReceptionRealtime({
     isLive: connectionStatus === 'CONNECTED',
   };
 }
-

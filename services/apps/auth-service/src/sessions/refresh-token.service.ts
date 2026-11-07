@@ -33,7 +33,9 @@ export class RefreshTokenService {
   }
 
   private getRefreshTokenTtlDays(): number {
-    const configuredTtl = this.configService.get<string>('AUTH_REFRESH_TOKEN_TTL_DAYS');
+    const configuredTtl = this.configService.get<string>(
+      'AUTH_REFRESH_TOKEN_TTL_DAYS',
+    );
 
     if (!configuredTtl) {
       return DEFAULT_REFRESH_TOKEN_TTL_DAYS;
@@ -42,7 +44,9 @@ export class RefreshTokenService {
     const ttlDays = Number(configuredTtl);
 
     if (!Number.isInteger(ttlDays) || ttlDays <= 0) {
-      throw new InternalServerErrorException('Invalid AUTH_REFRESH_TOKEN_TTL_DAYS configuration');
+      throw new InternalServerErrorException(
+        'Invalid AUTH_REFRESH_TOKEN_TTL_DAYS configuration',
+      );
     }
 
     return ttlDays;
@@ -52,7 +56,9 @@ export class RefreshTokenService {
     const value = this.configService.get<string>(key);
 
     if (!value) {
-      throw new InternalServerErrorException(`Missing required configuration: ${key}`);
+      throw new InternalServerErrorException(
+        `Missing required configuration: ${key}`,
+      );
     }
 
     return value;

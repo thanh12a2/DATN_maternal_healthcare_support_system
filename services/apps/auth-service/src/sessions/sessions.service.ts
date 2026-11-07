@@ -25,7 +25,9 @@ export class SessionsService {
     private readonly sessionsRepository: SessionsRepository,
   ) {}
 
-  async createRefreshSession(accountId: string): Promise<CreatedRefreshSession> {
+  async createRefreshSession(
+    accountId: string,
+  ): Promise<CreatedRefreshSession> {
     const issuedRefreshToken = this.refreshTokenService.issueRefreshToken();
     const createdSession = await this.sessionsRepository.createSession({
       accountId,
@@ -40,9 +42,16 @@ export class SessionsService {
     };
   }
 
-  async refreshSession(refreshToken: string, now = new Date()): Promise<RefreshedSession> {
-    const refreshTokenHash = this.refreshTokenService.hashRefreshToken(refreshToken);
-    const session = await this.sessionsRepository.findSessionByRefreshTokenHash(refreshTokenHash);
+  async refreshSession(
+    refreshToken: string,
+    now = new Date(),
+  ): Promise<RefreshedSession> {
+    const refreshTokenHash =
+      this.refreshTokenService.hashRefreshToken(refreshToken);
+    const session =
+      await this.sessionsRepository.findSessionByRefreshTokenHash(
+        refreshTokenHash,
+      );
 
     this.assertRefreshSessionIsUsable(session, now);
 
@@ -64,8 +73,12 @@ export class SessionsService {
   }
 
   async logoutSession(refreshToken: string, now = new Date()): Promise<void> {
-    const refreshTokenHash = this.refreshTokenService.hashRefreshToken(refreshToken);
-    const session = await this.sessionsRepository.findSessionByRefreshTokenHash(refreshTokenHash);
+    const refreshTokenHash =
+      this.refreshTokenService.hashRefreshToken(refreshToken);
+    const session =
+      await this.sessionsRepository.findSessionByRefreshTokenHash(
+        refreshTokenHash,
+      );
 
     this.assertRefreshSessionIsUsable(session, now);
 

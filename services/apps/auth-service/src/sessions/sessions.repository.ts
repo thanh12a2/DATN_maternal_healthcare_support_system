@@ -26,7 +26,9 @@ export class SessionsRepository {
     };
   }
 
-  async findSessionByRefreshTokenHash(refreshTokenHash: string): Promise<RefreshSessionRecord | null> {
+  async findSessionByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<RefreshSessionRecord | null> {
     const session = await this.prisma.authSession.findUnique({
       where: { refreshTokenHash },
     });

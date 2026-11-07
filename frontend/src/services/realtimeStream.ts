@@ -8,7 +8,8 @@
 
 import { getSessionStorageKey } from '../app/AuthSessionProvider';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 export function resolveStreamUrl(pathOrUrl: string): string {
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
@@ -20,7 +21,11 @@ export function resolveStreamUrl(pathOrUrl: string): string {
 
 export function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const candidateKeys = [getSessionStorageKey(), 'an-tam-auth-session', 'an-tam-admin-session'];
+  const candidateKeys = [
+    getSessionStorageKey(),
+    'an-tam-auth-session',
+    'an-tam-admin-session',
+  ];
   for (const key of candidateKeys) {
     for (const storage of [window.sessionStorage, window.localStorage]) {
       try {
@@ -73,8 +78,17 @@ export interface SseSubscriptionOptions {
   onReconnectSuccess?: () => void;
 }
 
-export function subscribeToRealtimeStream(options: SseSubscriptionOptions): () => void {
-  const { url, getToken, streamFn, onEvent, onStatusChange, onReconnectSuccess } = options;
+export function subscribeToRealtimeStream(
+  options: SseSubscriptionOptions,
+): () => void {
+  const {
+    url,
+    getToken,
+    streamFn,
+    onEvent,
+    onStatusChange,
+    onReconnectSuccess,
+  } = options;
   let isCancelled = false;
   let activeAbortController: AbortController | null = null;
   let hasConnectedBefore = false;
@@ -118,9 +132,13 @@ export function subscribeToRealtimeStream(options: SseSubscriptionOptions): () =
       }
 
       const contentType = response.headers.get('content-type') ?? '';
-      if (!response.ok || !response.body || !contentType.includes('text/event-stream')) {
+      if (
+        !response.ok ||
+        !response.body ||
+        !contentType.includes('text/event-stream')
+      ) {
         throw new Error(
-          `SSE stream failed with status ${response.status}, contentType: ${contentType}`
+          `SSE stream failed with status ${response.status}, contentType: ${contentType}`,
         );
       }
 

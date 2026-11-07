@@ -102,7 +102,10 @@ export class AccountsRepository {
   }
 
   async markLastLoginAt(accountId: string, lastLoginAt: Date): Promise<void> {
-    await this.prisma.account.update({ where: { id: accountId }, data: { lastLoginAt } });
+    await this.prisma.account.update({
+      where: { id: accountId },
+      data: { lastLoginAt },
+    });
   }
 
   async listManagedStaff() {
@@ -111,7 +114,13 @@ export class AccountsRepository {
         roles: {
           some: {
             role: {
-              code: { in: [AuthRoleCode.DOCTOR, AuthRoleCode.NURSE, AuthRoleCode.RECEPTIONIST] },
+              code: {
+                in: [
+                  AuthRoleCode.DOCTOR,
+                  AuthRoleCode.NURSE,
+                  AuthRoleCode.RECEPTIONIST,
+                ],
+              },
             },
           },
         },
@@ -149,7 +158,12 @@ export class AccountsRepository {
       where: { id: accountId },
       data: { status },
     });
-    return { userId: updated.id, email: updated.email, status: updated.status, role };
+    return {
+      userId: updated.id,
+      email: updated.email,
+      status: updated.status,
+      role,
+    };
   }
 
   isUniqueConstraintError(error: unknown): boolean {

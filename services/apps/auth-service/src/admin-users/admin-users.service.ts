@@ -176,7 +176,9 @@ export class AdminUsersService {
           where: { email },
         });
         if (existing) {
-          throw new ConflictException('Email mới đã được sử dụng bởi tài khoản khác');
+          throw new ConflictException(
+            'Email mới đã được sử dụng bởi tài khoản khác',
+          );
         }
       }
     }
@@ -184,7 +186,9 @@ export class AdminUsersService {
     if (dto.role) {
       const currentRole = account.roles[0]?.role?.code;
       if (dto.role !== (currentRole as unknown as AuthRole)) {
-        throw new BadRequestException('Vai trò của tài khoản được gắn cố định và không thể thay đổi.');
+        throw new BadRequestException(
+          'Vai trò của tài khoản được gắn cố định và không thể thay đổi.',
+        );
       }
     }
 
@@ -228,9 +232,14 @@ export class AdminUsersService {
     return this.mapToSummary(updatedAccount);
   }
 
-  async deleteUser(id: string, currentAdminId?: string): Promise<{ success: boolean; message: string }> {
+  async deleteUser(
+    id: string,
+    currentAdminId?: string,
+  ): Promise<{ success: boolean; message: string }> {
     if (currentAdminId && id === currentAdminId) {
-      throw new BadRequestException('Bạn không thể tự xóa tài khoản của chính mình');
+      throw new BadRequestException(
+        'Bạn không thể tự xóa tài khoản của chính mình',
+      );
     }
 
     const account = await this.prisma.account.findUnique({
@@ -258,7 +267,9 @@ export class AdminUsersService {
         },
       });
       if (adminCount <= 1) {
-        throw new BadRequestException('Không thể xóa quản trị viên duy nhất còn lại trong hệ thống');
+        throw new BadRequestException(
+          'Không thể xóa quản trị viên duy nhất còn lại trong hệ thống',
+        );
       }
     }
 
@@ -277,13 +288,15 @@ export class AdminUsersService {
       include: {
         roles: {
           include: {
-            role: true,
-          },
-        },
-      },
+            role: true;
+          };
+        };
+      };
     }>,
   ): UserSummaryDto {
-    const role = this.selectRole(account.roles.map((item) => item.role.code)) ?? AuthRole.Patient;
+    const role =
+      this.selectRole(account.roles.map((item) => item.role.code)) ??
+      AuthRole.Patient;
     return {
       id: account.id,
       email: account.email,
@@ -300,7 +313,8 @@ export class AdminUsersService {
     return (
       codes
         .map((code) => code as unknown as AuthRole)
-        .sort((left, right) => ROLE_PRIORITY[left] - ROLE_PRIORITY[right])[0] ?? null
+        .sort((left, right) => ROLE_PRIORITY[left] - ROLE_PRIORITY[right])[0] ??
+      null
     );
   }
 }

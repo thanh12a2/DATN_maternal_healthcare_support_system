@@ -78,12 +78,19 @@ interface ServiceDetailResponse {
   name: string;
   summary?: string | null;
   description?: string | null;
-  kind: 'CONSULTATION' | 'DIAGNOSTIC' | 'PROCEDURE' | 'PACKAGE' | 'VACCINATION' | 'OTHER';
+  kind:
+    | 'CONSULTATION'
+    | 'DIAGNOSTIC'
+    | 'PROCEDURE'
+    | 'PACKAGE'
+    | 'VACCINATION'
+    | 'OTHER';
   specialtyId?: string | null;
   thumbnailUrl?: string | null;
   durationMinutes?: number | null;
   bookingEnabled: boolean;
-  doctorRankSelectionPolicy: 'NOT_REQUIRED' | 'BASIC_INCLUDED' | 'RANK_UPGRADE_ALLOWED';
+  doctorRankSelectionPolicy:
+    'NOT_REQUIRED' | 'BASIC_INCLUDED' | 'RANK_UPGRADE_ALLOWED';
   status: 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
   content?: ServiceContent | null;
   specialty?: SpecialtyInfo | null;
@@ -130,14 +137,17 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Accordion state cho Package groups
-  const [openPackageGroups, setOpenPackageGroups] = useState<Record<number, boolean>>({ 0: true });
+  const [openPackageGroups, setOpenPackageGroups] = useState<
+    Record<number, boolean>
+  >({ 0: true });
 
   // Sticky nav scroll spy state
   const [activeSection, setActiveSection] = useState<string>('gioi-thieu');
 
   // Mobile CTA visibility: hiển thị khi Hero CTA ra khỏi viewport
   const heroCtaRef = useRef<HTMLDivElement | null>(null);
-  const [showMobileStickyCta, setShowMobileStickyCta] = useState<boolean>(false);
+  const [showMobileStickyCta, setShowMobileStickyCta] =
+    useState<boolean>(false);
 
   // Load dữ liệu dịch vụ
   useEffect(() => {
@@ -145,7 +155,9 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
     setLoading(true);
     setError(null);
 
-    apiRequest<{ data: ServiceDetailResponse }>(`/api/catalog/services/${encodeURIComponent(serviceId)}`)
+    apiRequest<{ data: ServiceDetailResponse }>(
+      `/api/catalog/services/${encodeURIComponent(serviceId)}`,
+    )
       .then((res) => {
         if (!isCancelled) {
           if (res?.data) {
@@ -176,7 +188,7 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
         // Nếu nút Hero đang nhìn thấy thì ẩn bar dưới, ngược lại thì hiện
         setShowMobileStickyCta(!entry.isIntersecting);
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     observer.observe(heroCtaRef.current);
     return () => observer.disconnect();
@@ -190,8 +202,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
     document.title = `${service.name} | Bệnh viện Phụ sản Tâm An`;
 
     // Robots meta
-    const shouldNoIndex = service.status !== 'ACTIVE' || service.content?.seo?.noindex;
-    let robotsMeta = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    const shouldNoIndex =
+      service.status !== 'ACTIVE' || service.content?.seo?.noindex;
+    let robotsMeta = document.querySelector(
+      'meta[name="robots"]',
+    ) as HTMLMetaElement | null;
     if (shouldNoIndex) {
       if (!robotsMeta) {
         robotsMeta = document.createElement('meta');
@@ -205,7 +220,9 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
 
     // JSON-LD structured data
     const scriptId = 'service-jsonld-schema';
-    let scriptTag = document.getElementById(scriptId) as HTMLScriptElement | null;
+    let scriptTag = document.getElementById(
+      scriptId,
+    ) as HTMLScriptElement | null;
     if (!scriptTag) {
       scriptTag = document.createElement('script');
       scriptTag.id = scriptId;
@@ -215,7 +232,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
 
     const schemaData = {
       '@context': 'https://schema.org',
-      '@type': service.kind === 'PROCEDURE' ? 'MedicalProcedure' : 'MedicalWebPage',
+      '@type':
+        service.kind === 'PROCEDURE' ? 'MedicalProcedure' : 'MedicalWebPage',
       name: service.name,
       description: service.summary || service.name,
       url: window.location.href,
@@ -282,7 +300,10 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
     const content = service.content;
     const items: { id: string; label: string }[] = [];
 
-    if (content?.intro || (content?.highlights && content.highlights.length > 0)) {
+    if (
+      content?.intro ||
+      (content?.highlights && content.highlights.length > 0)
+    ) {
       items.push({ id: 'gioi-thieu', label: 'Giới thiệu' });
     }
     if (content?.package && content.package.included_groups?.length > 0) {
@@ -291,13 +312,19 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
     if (content?.parameters && content.parameters.length > 0) {
       items.push({ id: 'chi-so', label: 'Chỉ số đánh giá' });
     }
-    if ((content?.suitable_for && content.suitable_for.length > 0) || (content?.not_suitable_for && content.not_suitable_for.length > 0)) {
+    if (
+      (content?.suitable_for && content.suitable_for.length > 0) ||
+      (content?.not_suitable_for && content.not_suitable_for.length > 0)
+    ) {
       items.push({ id: 'doi-tuong', label: 'Phù hợp với ai' });
     }
     if (content?.process_steps && content.process_steps.length > 0) {
       items.push({ id: 'quy-trinh', label: 'Quy trình' });
     }
-    if ((content?.preparation && content.preparation.length > 0) || (content?.aftercare && content.aftercare.length > 0)) {
+    if (
+      (content?.preparation && content.preparation.length > 0) ||
+      (content?.aftercare && content.aftercare.length > 0)
+    ) {
       items.push({ id: 'chuan-bi', label: 'Chuẩn bị' });
     }
     items.push({ id: 'bang-gia', label: 'Bảng giá' });
@@ -313,10 +340,22 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
       <div className="service-detail-page">
         <PublicPortalHeader />
         <div className="service-skeleton-wrapper portal-container">
-          <div className="skeleton-box" style={{ height: '24px', width: '280px', marginBottom: '24px' }} />
-          <div className="skeleton-box" style={{ height: '320px', width: '100%', marginBottom: '28px' }} />
-          <div className="skeleton-box" style={{ height: '60px', width: '100%', marginBottom: '24px' }} />
-          <div className="skeleton-box" style={{ height: '400px', width: '100%' }} />
+          <div
+            className="skeleton-box"
+            style={{ height: '24px', width: '280px', marginBottom: '24px' }}
+          />
+          <div
+            className="skeleton-box"
+            style={{ height: '320px', width: '100%', marginBottom: '28px' }}
+          />
+          <div
+            className="skeleton-box"
+            style={{ height: '60px', width: '100%', marginBottom: '24px' }}
+          />
+          <div
+            className="skeleton-box"
+            style={{ height: '400px', width: '100%' }}
+          />
         </div>
         <PublicPortalFooter />
       </div>
@@ -330,10 +369,15 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
         <PublicPortalHeader />
         <div className="service-detail-container">
           <div className="service-not-found-box">
-            <AlertCircle size={48} color="#e06d10" style={{ margin: '0 auto 16px' }} />
+            <AlertCircle
+              size={48}
+              color="#e06d10"
+              style={{ margin: '0 auto 16px' }}
+            />
             <h2>Không tìm thấy dịch vụ y tế</h2>
             <p>
-              Dịch vụ y tế bạn đang tìm kiếm không tồn tại, đã ngưng cung cấp hoặc chưa được xuất bản công khai.
+              Dịch vụ y tế bạn đang tìm kiếm không tồn tại, đã ngưng cung cấp
+              hoặc chưa được xuất bản công khai.
             </p>
             <AppLink href="/dich-vu" className="btn-book-primary">
               Xem bảng giá dịch vụ
@@ -379,7 +423,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
           <div className="banner-content-box">
             <div className="banner-title">Dịch vụ đã ngừng cung cấp</div>
             <div className="banner-body">
-              Hồ sơ dịch vụ này đã được lưu trữ và hiện không tiếp nhận khách hàng mới. Quý khách vui lòng tham khảo các dịch vụ tương đương.
+              Hồ sơ dịch vụ này đã được lưu trữ và hiện không tiếp nhận khách
+              hàng mới. Quý khách vui lòng tham khảo các dịch vụ tương đương.
             </div>
           </div>
         </div>
@@ -388,12 +433,16 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
 
     if (service.status === 'INACTIVE') {
       return (
-        <div className="service-status-banner banner-temp_suspended" role="alert">
+        <div
+          className="service-status-banner banner-temp_suspended"
+          role="alert"
+        >
           <AlertTriangle size={20} className="banner-icon" />
           <div className="banner-content-box">
             <div className="banner-title">Dịch vụ tạm ngưng tiếp nhận</div>
             <div className="banner-body">
-              Hiện tại dịch vụ đang tạm dừng nhận lịch hẹn mới để bảo trì nâng cấp trang thiết bị.
+              Hiện tại dịch vụ đang tạm dừng nhận lịch hẹn mới để bảo trì nâng
+              cấp trang thiết bị.
             </div>
           </div>
         </div>
@@ -405,9 +454,12 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
         <div className="service-status-banner banner-warning" role="alert">
           <Info size={20} className="banner-icon" />
           <div className="banner-content-box">
-            <div className="banner-title">Dịch vụ chỉ tiếp nhận qua Hotline tư vấn</div>
+            <div className="banner-title">
+              Dịch vụ chỉ tiếp nhận qua Hotline tư vấn
+            </div>
             <div className="banner-body">
-              Dịch vụ này hiện chưa mở đăng ký trực tuyến. Vui lòng gọi trực tiếp hotline 1900 6868 để được hướng dẫn chi tiết.
+              Dịch vụ này hiện chưa mở đăng ký trực tuyến. Vui lòng gọi trực
+              tiếp hotline 1900 6868 để được hướng dẫn chi tiết.
             </div>
           </div>
         </div>
@@ -478,10 +530,14 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   {KIND_LABEL_MAP[service.kind] || 'Dịch vụ y tế'}
                 </span>
                 {service.status === 'INACTIVE' && (
-                  <span className="badge-status status-inactive">Tạm ngưng</span>
+                  <span className="badge-status status-inactive">
+                    Tạm ngưng
+                  </span>
                 )}
                 {service.status === 'ARCHIVED' && (
-                  <span className="badge-status status-archived">Đã lưu trữ</span>
+                  <span className="badge-status status-archived">
+                    Đã lưu trữ
+                  </span>
                 )}
               </div>
 
@@ -519,7 +575,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   className="btn-book-primary"
                   disabled={!isBookingActive}
                   onClick={handleBookingClick}
-                  title={!isBookingActive ? 'Dịch vụ hiện chưa mở đặt lịch trực tuyến' : 'Đặt lịch ngay'}
+                  title={
+                    !isBookingActive
+                      ? 'Dịch vụ hiện chưa mở đặt lịch trực tuyến'
+                      : 'Đặt lịch ngay'
+                  }
                 >
                   <Sparkles size={16} />
                   Đặt lịch khám
@@ -534,7 +594,10 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
               {!isBookingActive && (
                 <div className="booking-locked-hint">
                   <AlertCircle size={14} />
-                  <span>Dịch vụ tạm ngưng nhận đặt lịch trực tuyến. Vui lòng gọi hotline để được hỗ trợ.</span>
+                  <span>
+                    Dịch vụ tạm ngưng nhận đặt lịch trực tuyến. Vui lòng gọi
+                    hotline để được hỗ trợ.
+                  </span>
                 </div>
               )}
             </div>
@@ -578,7 +641,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
         )}
 
         {/* 6. Section: Giới thiệu & Điểm nổi bật */}
-        {(content?.intro || (content?.highlights && content.highlights.length > 0)) && (
+        {(content?.intro ||
+          (content?.highlights && content.highlights.length > 0)) && (
           <section id="gioi-thieu" className="detail-content-section">
             <div className="section-header-box">
               <h2 className="section-heading-title">
@@ -586,7 +650,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Giới thiệu chi tiết dịch vụ
               </h2>
               <p className="section-heading-subtitle">
-                Thông tin chuyên khoa đầy đủ chuẩn y khoa được thẩm định bởi Hội đồng chuyên môn Bệnh viện Phụ sản Tâm An.
+                Thông tin chuyên khoa đầy đủ chuẩn y khoa được thẩm định bởi Hội
+                đồng chuyên môn Bệnh viện Phụ sản Tâm An.
               </p>
             </div>
 
@@ -629,7 +694,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Dịch vụ gồm những gì trong gói
               </h2>
               <p className="section-heading-subtitle">
-                Chi tiết danh mục quyền lợi y tế được thiết kế tối ưu, minh bạch và toàn diện cho sản phụ.
+                Chi tiết danh mục quyền lợi y tế được thiết kế tối ưu, minh bạch
+                và toàn diện cho sản phụ.
               </p>
             </div>
 
@@ -652,7 +718,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                       <span>
                         {grp.group} ({grp.items?.length || 0} quyền lợi)
                       </span>
-                      {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      {isOpen ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
                     </button>
 
                     {isOpen && (
@@ -661,9 +731,13 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                           <div key={iIdx} className="package-item-row">
                             <div>
                               <div className="pkg-item-name">{item.name}</div>
-                              {item.note && <div className="pkg-item-note">{item.note}</div>}
+                              {item.note && (
+                                <div className="pkg-item-note">{item.note}</div>
+                              )}
                             </div>
-                            {item.qty && <span className="pkg-item-qty">{item.qty}</span>}
+                            {item.qty && (
+                              <span className="pkg-item-qty">{item.qty}</span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -674,44 +748,55 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
             </div>
 
             <div className="package-extra-grid">
-              {content.package.excluded && content.package.excluded.length > 0 && (
-                <div className="package-excluded-box">
-                  <h4>
-                    <X size={18} color="#dc2626" />
-                    Không bao gồm trong gói
-                  </h4>
-                  <ul className="checklist-compact">
-                    {content.package.excluded.map((exc, idx) => (
-                      <li key={idx}>
-                        <X size={15} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <span>{exc}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {content.package.excluded &&
+                content.package.excluded.length > 0 && (
+                  <div className="package-excluded-box">
+                    <h4>
+                      <X size={18} color="#dc2626" />
+                      Không bao gồm trong gói
+                    </h4>
+                    <ul className="checklist-compact">
+                      {content.package.excluded.map((exc, idx) => (
+                        <li key={idx}>
+                          <X
+                            size={15}
+                            color="#dc2626"
+                            style={{ marginTop: '2px', flexShrink: 0 }}
+                          />
+                          <span>{exc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-              {content.package.conditions && content.package.conditions.length > 0 && (
-                <div className="package-conditions-box">
-                  <h4>
-                    <Check size={18} color="#16a34a" />
-                    Điều kiện áp dụng gói
-                  </h4>
-                  <ul className="checklist-compact">
-                    {content.package.conditions.map((c, idx) => (
-                      <li key={idx}>
-                        <Check size={15} color="#16a34a" style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <span>{c}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {content.package.conditions &&
+                content.package.conditions.length > 0 && (
+                  <div className="package-conditions-box">
+                    <h4>
+                      <Check size={18} color="#16a34a" />
+                      Điều kiện áp dụng gói
+                    </h4>
+                    <ul className="checklist-compact">
+                      {content.package.conditions.map((c, idx) => (
+                        <li key={idx}>
+                          <Check
+                            size={15}
+                            color="#16a34a"
+                            style={{ marginTop: '2px', flexShrink: 0 }}
+                          />
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
 
             {content.package.needs_confirmation && (
               <div className="package-confirm-notice">
-                * Ghi chú: Danh mục quyền lợi chi tiết theo hợp đồng gói ký kết tại viện.
+                * Ghi chú: Danh mục quyền lợi chi tiết theo hợp đồng gói ký kết
+                tại viện.
               </div>
             )}
           </section>
@@ -726,7 +811,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Chỉ số y khoa được đánh giá
               </h2>
               <p className="section-heading-subtitle">
-                Các thông số chuyên sâu được đo lường, phân tích trên hệ thống máy xét nghiệm và chẩn đoán tiêu chuẩn quốc tế.
+                Các thông số chuyên sâu được đo lường, phân tích trên hệ thống
+                máy xét nghiệm và chẩn đoán tiêu chuẩn quốc tế.
               </p>
             </div>
 
@@ -746,7 +832,9 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                     <td>{param.desc}</td>
                     <td>
                       {param.reference ? (
-                        <span className="param-reference-badge">{param.reference}</span>
+                        <span className="param-reference-badge">
+                          {param.reference}
+                        </span>
                       ) : (
                         <span style={{ color: '#94a3b8' }}>Theo phác đồ</span>
                       )}
@@ -764,10 +852,18 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   <div className="param-mobile-desc">{param.desc}</div>
                   {param.reference && (
                     <div>
-                      <span style={{ fontSize: '12px', color: '#64748b', marginRight: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          marginRight: '6px',
+                        }}
+                      >
                         Tham chiếu:
                       </span>
-                      <span className="param-reference-badge">{param.reference}</span>
+                      <span className="param-reference-badge">
+                        {param.reference}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -778,7 +874,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
 
         {/* 9. Section: Phù hợp với ai */}
         {((content?.suitable_for && content.suitable_for.length > 0) ||
-          (content?.not_suitable_for && content.not_suitable_for.length > 0)) && (
+          (content?.not_suitable_for &&
+            content.not_suitable_for.length > 0)) && (
           <section id="doi-tuong" className="detail-content-section">
             <div className="section-header-box">
               <h2 className="section-heading-title">
@@ -786,7 +883,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Đối tượng phù hợp & Chống chỉ định
               </h2>
               <p className="section-heading-subtitle">
-                Khuyến cáo y khoa từ bác sĩ chuyên khoa giúp quý khách lựa chọn đúng thời điểm thực hiện.
+                Khuyến cáo y khoa từ bác sĩ chuyên khoa giúp quý khách lựa chọn
+                đúng thời điểm thực hiện.
               </p>
             </div>
 
@@ -800,7 +898,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   <ul className="checklist-compact">
                     {content.suitable_for.map((item, idx) => (
                       <li key={idx}>
-                        <Check size={16} color="#16a34a" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <Check
+                          size={16}
+                          color="#16a34a"
+                          style={{ marginTop: '2px', flexShrink: 0 }}
+                        />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -808,22 +910,27 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 </div>
               )}
 
-              {content?.not_suitable_for && content.not_suitable_for.length > 0 && (
-                <div className="suitability-col col-unsuitable">
-                  <h3 className="suitability-col-title">
-                    <AlertTriangle size={18} color="#d97706" />
-                    Cần tư vấn trước / Chưa phù hợp khi:
-                  </h3>
-                  <ul className="checklist-compact">
-                    {content.not_suitable_for.map((item, idx) => (
-                      <li key={idx}>
-                        <AlertTriangle size={16} color="#d97706" style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {content?.not_suitable_for &&
+                content.not_suitable_for.length > 0 && (
+                  <div className="suitability-col col-unsuitable">
+                    <h3 className="suitability-col-title">
+                      <AlertTriangle size={18} color="#d97706" />
+                      Cần tư vấn trước / Chưa phù hợp khi:
+                    </h3>
+                    <ul className="checklist-compact">
+                      {content.not_suitable_for.map((item, idx) => (
+                        <li key={idx}>
+                          <AlertTriangle
+                            size={16}
+                            color="#d97706"
+                            style={{ marginTop: '2px', flexShrink: 0 }}
+                          />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
           </section>
         )}
@@ -837,7 +944,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Quy trình thực hiện chuyên nghiệp
               </h2>
               <p className="section-heading-subtitle">
-                Trải nghiệm thăm khám khép kín, an toàn và tinh gọn, được chuẩn hóa theo tiêu chuẩn quốc tế.
+                Trải nghiệm thăm khám khép kín, an toàn và tinh gọn, được chuẩn
+                hóa theo tiêu chuẩn quốc tế.
               </p>
             </div>
 
@@ -867,7 +975,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Hướng dẫn chuẩn bị & Lưu ý sau thực hiện
               </h2>
               <p className="section-heading-subtitle">
-                Tuân thủ đúng các hướng dẫn dưới đây giúp kết quả thăm khám chuẩn xác và quá trình hồi phục an toàn nhất.
+                Tuân thủ đúng các hướng dẫn dưới đây giúp kết quả thăm khám
+                chuẩn xác và quá trình hồi phục an toàn nhất.
               </p>
             </div>
 
@@ -881,7 +990,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   <ul className="checklist-compact">
                     {content.preparation.map((prep, idx) => (
                       <li key={idx}>
-                        <CheckCircle size={16} color="#0f4c81" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <CheckCircle
+                          size={16}
+                          color="#0f4c81"
+                          style={{ marginTop: '2px', flexShrink: 0 }}
+                        />
                         <span>{prep}</span>
                       </li>
                     ))}
@@ -898,7 +1011,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                   <ul className="checklist-compact">
                     {content.aftercare.map((care, idx) => (
                       <li key={idx}>
-                        <Check size={16} color="#16a34a" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <Check
+                          size={16}
+                          color="#16a34a"
+                          style={{ marginTop: '2px', flexShrink: 0 }}
+                        />
                         <span>{care}</span>
                       </li>
                     ))}
@@ -911,7 +1028,10 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
 
         {/* 12. Section: Dấu hiệu cần đi khám ngay (Warning Signs) */}
         {content?.warning_signs && content.warning_signs.length > 0 && (
-          <section className="detail-content-section" style={{ background: '#fef2f2', borderColor: '#fecdd3' }}>
+          <section
+            className="detail-content-section"
+            style={{ background: '#fef2f2', borderColor: '#fecdd3' }}
+          >
             <div className="warning-signs-alert-card">
               <h3 className="warning-alert-title">
                 <AlertCircle size={20} color="#e11d48" />
@@ -920,7 +1040,11 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
               <ul className="warning-list">
                 {content.warning_signs.map((sign, idx) => (
                   <li key={idx}>
-                    <AlertTriangle size={16} color="#e11d48" style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <AlertTriangle
+                      size={16}
+                      color="#e11d48"
+                      style={{ marginTop: '2px', flexShrink: 0 }}
+                    />
                     <span>{sign}</span>
                   </li>
                 ))}
@@ -942,26 +1066,40 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
             <div className="technology-card-box">
               <h3 className="tech-title">{content.technology.title}</h3>
               <p className="tech-desc">{content.technology.desc}</p>
-              {content.technology.items && content.technology.items.length > 0 && (
-                <div className="tech-items-grid">
-                  {content.technology.items.map((item, idx) => (
-                    <span key={idx} className="tech-item-pill">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {content.technology.items &&
+                content.technology.items.length > 0 && (
+                  <div className="tech-items-grid">
+                    {content.technology.items.map((item, idx) => (
+                      <span key={idx} className="tech-item-pill">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           </section>
         )}
 
         {/* 14. Section: Độ chính xác & Giới hạn */}
         {content?.accuracy_note && (
-          <section className="detail-content-section" style={{ padding: '20px' }}>
+          <section
+            className="detail-content-section"
+            style={{ padding: '20px' }}
+          >
             <div className="accuracy-note-card">
-              <Info size={22} color="#0284c7" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <Info
+                size={22}
+                color="#0284c7"
+                style={{ flexShrink: 0, marginTop: '2px' }}
+              />
               <div>
-                <strong style={{ display: 'block', marginBottom: '4px', color: '#0369a1' }}>
+                <strong
+                  style={{
+                    display: 'block',
+                    marginBottom: '4px',
+                    color: '#0369a1',
+                  }}
+                >
                   Độ chính xác và giới hạn y khoa của phương pháp:
                 </strong>
                 <span>{content.accuracy_note}</span>
@@ -978,7 +1116,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
               Bảng giá dịch vụ & Chính sách bác sĩ
             </h2>
             <p className="section-heading-subtitle">
-              Giá niêm yết công khai theo quy định của Bệnh viện Phụ sản Tâm An, cam kết không phát sinh chi phí ẩn.
+              Giá niêm yết công khai theo quy định của Bệnh viện Phụ sản Tâm An,
+              cam kết không phát sinh chi phí ẩn.
             </p>
           </div>
 
@@ -998,13 +1137,22 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
             {/* Chính sách chọn bác sĩ */}
             {service.doctorRankSelectionPolicy === 'BASIC_INCLUDED' && (
               <div className="rank-policy-card">
-                <strong>Chính sách bác sĩ:</strong> Đã bao gồm bác sĩ chuyên khoa phụ trách thăm khám, quý khách không phải đóng thêm phụ phí.
+                <strong>Chính sách bác sĩ:</strong> Đã bao gồm bác sĩ chuyên
+                khoa phụ trách thăm khám, quý khách không phải đóng thêm phụ
+                phí.
               </div>
             )}
 
             {service.doctorRankSelectionPolicy === 'RANK_UPGRADE_ALLOWED' && (
               <div>
-                <h4 style={{ fontSize: '15px', color: '#183153', marginBottom: '10px', fontWeight: 700 }}>
+                <h4
+                  style={{
+                    fontSize: '15px',
+                    color: '#183153',
+                    marginBottom: '10px',
+                    fontWeight: 700,
+                  }}
+                >
                   Biểu phí phụ thu theo hạng bác sĩ (Tùy chọn):
                 </h4>
                 <div className="surcharges-table-wrapper">
@@ -1021,14 +1169,17 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                         const baseAmt = service.basePrice?.amountMinor || 0;
                         const surchargeAmt = sc.amountMinor;
                         const totalAmt = baseAmt + surchargeAmt;
-                        const rankLabel = DOCTOR_RANK_LABELS[sc.rankCode] || sc.rankCode;
+                        const rankLabel =
+                          DOCTOR_RANK_LABELS[sc.rankCode] || sc.rankCode;
 
                         return (
                           <tr key={sc.id || sc.rankCode}>
                             <td className="rank-name-bold">{rankLabel}</td>
                             <td className="surcharge-amount">
                               {surchargeAmt === 0 ? (
-                                <span style={{ color: '#16a34a' }}>Đã bao gồm</span>
+                                <span style={{ color: '#16a34a' }}>
+                                  Đã bao gồm
+                                </span>
                               ) : (
                                 `+${formatVnd(surchargeAmt)}`
                               )}
@@ -1056,7 +1207,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Câu hỏi thường gặp
               </h2>
               <p className="section-heading-subtitle">
-                Giải đáp nhanh những băn khoăn phổ biến nhất của quý khách về dịch vụ.
+                Giải đáp nhanh những băn khoăn phổ biến nhất của quý khách về
+                dịch vụ.
               </p>
             </div>
 
@@ -1095,14 +1247,16 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                 Dịch vụ y tế liên quan
               </h2>
               <p className="section-heading-subtitle">
-                Các gói khám và kỹ thuật thăm dò thường được chỉ định phối hợp cùng dịch vụ này.
+                Các gói khám và kỹ thuật thăm dò thường được chỉ định phối hợp
+                cùng dịch vụ này.
               </p>
             </div>
 
             <div className="related-services-grid">
               {service.relatedServices.map((rel) => {
                 const activeRelPrice =
-                  rel.prices?.find((p) => p.status === 'ACTIVE') ?? rel.prices?.[0];
+                  rel.prices?.find((p) => p.status === 'ACTIVE') ??
+                  rel.prices?.[0];
 
                 return (
                   <AppLink
@@ -1116,7 +1270,8 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
                         alt={rel.name}
                         className="related-img"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = FALLBACK_THUMBNAIL;
+                          (e.target as HTMLImageElement).src =
+                            FALLBACK_THUMBNAIL;
                         }}
                       />
                     </div>
@@ -1142,7 +1297,10 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
         )}
 
         {/* 18. Section: Tài liệu tham khảo & Miễn trừ trách nhiệm */}
-        <section className="detail-content-section" style={{ background: '#f8fafc' }}>
+        <section
+          className="detail-content-section"
+          style={{ background: '#f8fafc' }}
+        >
           {content?.references && content.references.length > 0 && (
             <div className="references-list-box">
               <h4>Tài liệu & Hướng dẫn y khoa tham khảo:</h4>
@@ -1165,7 +1323,9 @@ export function PatientServiceDetailPage({ serviceId }: { serviceId: string }) {
       </main>
 
       {/* 19. Mobile Bottom Sticky CTA */}
-      <div className={`mobile-sticky-bottom-bar ${showMobileStickyCta ? 'visible' : ''}`}>
+      <div
+        className={`mobile-sticky-bottom-bar ${showMobileStickyCta ? 'visible' : ''}`}
+      >
         <div className="mobile-cta-price-box">
           <span className="mobile-cta-label">Giá niêm yết</span>
           <span className="mobile-cta-val">

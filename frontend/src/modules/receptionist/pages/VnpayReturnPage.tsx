@@ -15,18 +15,26 @@ export function VnpayReturnPage() {
     const params = new URLSearchParams(window.location.search);
     const txnRef = params.get('vnp_TxnRef');
     const pending = readVnpayContext(PENDING_VNPAY_RETURN_KEY);
-    const target = pending && txnRef === pending.txnRef ? safeReceptionistReturnPath(pending.returnPath) : null;
+    const target =
+      pending && txnRef === pending.txnRef
+        ? safeReceptionistReturnPath(pending.returnPath)
+        : null;
 
     if (!pending || !target) {
-      setMessage('Không tìm thấy trang thanh toán ban đầu trên trình duyệt này.');
+      setMessage(
+        'Không tìm thấy trang thanh toán ban đầu trên trình duyệt này.',
+      );
       return;
     }
 
     try {
-      window.sessionStorage.setItem(COMPLETED_VNPAY_RETURN_KEY, JSON.stringify({
-        ...pending,
-        responseCode: params.get('vnp_ResponseCode') ?? undefined,
-      }));
+      window.sessionStorage.setItem(
+        COMPLETED_VNPAY_RETURN_KEY,
+        JSON.stringify({
+          ...pending,
+          responseCode: params.get('vnp_ResponseCode') ?? undefined,
+        }),
+      );
       window.sessionStorage.removeItem(PENDING_VNPAY_RETURN_KEY);
       navigate(target, { replace: true });
     } catch {
@@ -43,7 +51,16 @@ export function VnpayReturnPage() {
       status="warning"
       title="Không thể khôi phục phiên thanh toán"
       subTitle={message}
-      extra={<Button type="primary" onClick={() => navigate('/workspace/receptionist/overview', { replace: true })}>Về bàn tiếp đón</Button>}
+      extra={
+        <Button
+          type="primary"
+          onClick={() =>
+            navigate('/workspace/receptionist/overview', { replace: true })
+          }
+        >
+          Về bàn tiếp đón
+        </Button>
+      }
     />
   );
 }

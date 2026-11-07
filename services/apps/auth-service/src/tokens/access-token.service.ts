@@ -1,5 +1,9 @@
 import { randomUUID } from 'crypto';
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import {
@@ -17,8 +21,14 @@ export class AccessTokenService {
 
   signAccessToken(subject: AccessTokenSubject): SignedAccessToken {
     const privateKey = this.getRequiredConfig('AUTH_JWT_PRIVATE_KEY');
-    const issuer = this.getConfigOrDefault('AUTH_JWT_ISSUER', 'maternal-healthcare-auth');
-    const audience = this.getConfigOrDefault('AUTH_JWT_AUDIENCE', 'maternal-healthcare-api');
+    const issuer = this.getConfigOrDefault(
+      'AUTH_JWT_ISSUER',
+      'maternal-healthcare-auth',
+    );
+    const audience = this.getConfigOrDefault(
+      'AUTH_JWT_AUDIENCE',
+      'maternal-healthcare-api',
+    );
     const keyId = this.getConfigOrDefault('AUTH_JWT_KEY_ID', 'local-dev-key');
     const expiresIn = this.getAccessTokenTtlSeconds();
     const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -46,8 +56,14 @@ export class AccessTokenService {
 
   verifyAccessToken(accessToken: string): VerifiedAccessToken {
     const publicKey = this.getRequiredConfig('AUTH_JWT_PUBLIC_KEY');
-    const issuer = this.getConfigOrDefault('AUTH_JWT_ISSUER', 'maternal-healthcare-auth');
-    const audience = this.getConfigOrDefault('AUTH_JWT_AUDIENCE', 'maternal-healthcare-api');
+    const issuer = this.getConfigOrDefault(
+      'AUTH_JWT_ISSUER',
+      'maternal-healthcare-auth',
+    );
+    const audience = this.getConfigOrDefault(
+      'AUTH_JWT_AUDIENCE',
+      'maternal-healthcare-api',
+    );
 
     try {
       const claims = jwt.verify(accessToken, this.normalizePem(publicKey), {
@@ -75,7 +91,9 @@ export class AccessTokenService {
   }
 
   private getAccessTokenTtlSeconds(): number {
-    const configuredTtl = this.configService.get<string>('AUTH_ACCESS_TOKEN_TTL_SECONDS');
+    const configuredTtl = this.configService.get<string>(
+      'AUTH_ACCESS_TOKEN_TTL_SECONDS',
+    );
 
     if (!configuredTtl) {
       return DEFAULT_ACCESS_TOKEN_TTL_SECONDS;
@@ -84,7 +102,9 @@ export class AccessTokenService {
     const ttl = Number(configuredTtl);
 
     if (!Number.isInteger(ttl) || ttl <= 0) {
-      throw new InternalServerErrorException('Invalid AUTH_ACCESS_TOKEN_TTL_SECONDS configuration');
+      throw new InternalServerErrorException(
+        'Invalid AUTH_ACCESS_TOKEN_TTL_SECONDS configuration',
+      );
     }
 
     return ttl;
@@ -94,7 +114,9 @@ export class AccessTokenService {
     const value = this.configService.get<string>(key);
 
     if (!value) {
-      throw new InternalServerErrorException(`Missing required configuration: ${key}`);
+      throw new InternalServerErrorException(
+        `Missing required configuration: ${key}`,
+      );
     }
 
     return value;
@@ -112,6 +134,9 @@ export class AccessTokenService {
         ? trimmedValue.slice(1, -1)
         : trimmedValue;
 
-    return unquotedValue.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+    return unquotedValue
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\r\n/g, '\n');
   }
 }

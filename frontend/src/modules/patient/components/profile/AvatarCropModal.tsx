@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw, Check, Move } from 'lucide-react';
 
 interface AvatarCropModalProps {
@@ -20,7 +26,10 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const dragStartRef = useRef({ x: 0, y: 0 });
   const positionStartRef = useRef({ x: 0, y: 0 });
@@ -50,9 +59,13 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
 
   // Tính toán kích thước hiển thị cơ sở để ảnh vừa vặn đẹp mắt với khung tròn (không bị zoom quá to)
   const { displayBaseWidth, displayBaseHeight } = useMemo(() => {
-    if (!naturalSize) return { displayBaseWidth: CROP_SIZE, displayBaseHeight: CROP_SIZE };
+    if (!naturalSize)
+      return { displayBaseWidth: CROP_SIZE, displayBaseHeight: CROP_SIZE };
     // Tỷ lệ bao phủ toàn bộ khung tròn 220px
-    const fitScale = Math.max(CROP_SIZE / naturalSize.width, CROP_SIZE / naturalSize.height);
+    const fitScale = Math.max(
+      CROP_SIZE / naturalSize.width,
+      CROP_SIZE / naturalSize.height,
+    );
     return {
       displayBaseWidth: Math.round(naturalSize.width * fitScale),
       displayBaseHeight: Math.round(naturalSize.height * fitScale),
@@ -124,12 +137,26 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
     const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
     onSave(croppedDataUrl);
     onClose();
-  }, [naturalSize, displayBaseWidth, displayBaseHeight, scale, position, rotation, onSave, onClose]);
+  }, [
+    naturalSize,
+    displayBaseWidth,
+    displayBaseHeight,
+    scale,
+    position,
+    rotation,
+    onSave,
+    onClose,
+  ]);
 
   if (!isOpen || !imageSrc) return null;
 
   return (
-    <div className="avatar-crop-backdrop" role="dialog" aria-modal="true" aria-labelledby="crop-modal-title">
+    <div
+      className="avatar-crop-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="crop-modal-title"
+    >
       <div className="avatar-crop-dialog">
         <header className="avatar-crop-header">
           <div>
@@ -137,10 +164,16 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               Chỉnh sửa khung ảnh đại diện
             </h2>
             <p className="avatar-crop-desc">
-              Kéo để di chuyển vị trí và dùng thanh trượt để phóng to/thu nhỏ vào khung tròn.
+              Kéo để di chuyển vị trí và dùng thanh trượt để phóng to/thu nhỏ
+              vào khung tròn.
             </p>
           </div>
-          <button type="button" className="avatar-crop-btn-close" onClick={onClose} aria-label="Đóng cửa sổ">
+          <button
+            type="button"
+            className="avatar-crop-btn-close"
+            onClick={onClose}
+            aria-label="Đóng cửa sổ"
+          >
             <X className="w-5 h-5" />
           </button>
         </header>
@@ -192,7 +225,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               className="avatar-control-btn"
-              onClick={() => setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))}
+              onClick={() =>
+                setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))
+              }
               title="Thu nhỏ"
             >
               <ZoomOut className="w-4 h-4" />
@@ -210,7 +245,9 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               className="avatar-control-btn"
-              onClick={() => setScale((s) => Math.min(3, +(s + 0.1).toFixed(2)))}
+              onClick={() =>
+                setScale((s) => Math.min(3, +(s + 0.1).toFixed(2)))
+              }
               title="Phóng to"
             >
               <ZoomIn className="w-4 h-4" />

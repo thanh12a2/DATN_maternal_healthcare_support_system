@@ -22,37 +22,58 @@ function getInitials(name: string): string {
 
 function roleLabel(role?: Role): string {
   switch (role) {
-    case 'PATIENT': return 'Bệnh nhân';
-    case 'DOCTOR': return 'Bác sĩ';
-    case 'RECEPTIONIST': return 'Lễ tân';
-    case 'NURSE': return 'Điều dưỡng';
-    case 'CLINIC_MANAGER': return 'Quản lý';
-    case 'ADMIN': return 'Quản trị viên';
-    default: return 'Thành viên';
+    case 'PATIENT':
+      return 'Bệnh nhân';
+    case 'DOCTOR':
+      return 'Bác sĩ';
+    case 'RECEPTIONIST':
+      return 'Lễ tân';
+    case 'NURSE':
+      return 'Điều dưỡng';
+    case 'CLINIC_MANAGER':
+      return 'Quản lý';
+    case 'ADMIN':
+      return 'Quản trị viên';
+    default:
+      return 'Thành viên';
   }
 }
 
 function roleHome(role?: Role): string {
   switch (role) {
-    case 'PATIENT': return '/';
-    case 'DOCTOR': return '/workspace/doctor/overview';
-    case 'RECEPTIONIST': return '/workspace/receptionist/overview';
-    case 'NURSE': return '/workspace/nurse/overview';
-    case 'CLINIC_MANAGER': return '/workspace/clinic_manager/overview';
-    case 'ADMIN': return '/workspace/admin/overview';
-    default: return '/';
+    case 'PATIENT':
+      return '/';
+    case 'DOCTOR':
+      return '/workspace/doctor/overview';
+    case 'RECEPTIONIST':
+      return '/workspace/receptionist/overview';
+    case 'NURSE':
+      return '/workspace/nurse/overview';
+    case 'CLINIC_MANAGER':
+      return '/workspace/clinic_manager/overview';
+    case 'ADMIN':
+      return '/workspace/admin/overview';
+    default:
+      return '/';
   }
 }
 
 function roleHomeLabel(role?: Role): string {
   switch (role) {
-    case 'PATIENT': return 'Cổng Bệnh nhân';
-    case 'DOCTOR': return 'Bàn làm việc Bác sĩ';
-    case 'RECEPTIONIST': return 'Bàn tiếp đón Lễ tân';
-    case 'NURSE': return 'Bàn làm việc Điều dưỡng';
-    case 'CLINIC_MANAGER': return 'Khu Quản lý phòng khám';
-    case 'ADMIN': return 'Trang Quản trị hệ thống';
-    default: return 'Vào Workspace';
+    case 'PATIENT':
+      return 'Cổng Bệnh nhân';
+    case 'DOCTOR':
+      return 'Bàn làm việc Bác sĩ';
+    case 'RECEPTIONIST':
+      return 'Bàn tiếp đón Lễ tân';
+    case 'NURSE':
+      return 'Bàn làm việc Điều dưỡng';
+    case 'CLINIC_MANAGER':
+      return 'Khu Quản lý phòng khám';
+    case 'ADMIN':
+      return 'Trang Quản trị hệ thống';
+    default:
+      return 'Vào Workspace';
   }
 }
 
@@ -129,8 +150,16 @@ export function UserChip({
           if (data?.fullName) {
             setPatientName(data.fullName);
             try {
-              if (user.userId) localStorage.setItem(`patient_name_${user.userId}`, data.fullName);
-              if (user.email) localStorage.setItem(`patient_name_${user.email}`, data.fullName);
+              if (user.userId)
+                localStorage.setItem(
+                  `patient_name_${user.userId}`,
+                  data.fullName,
+                );
+              if (user.email)
+                localStorage.setItem(
+                  `patient_name_${user.email}`,
+                  data.fullName,
+                );
             } catch {
               // ignore
             }
@@ -180,21 +209,30 @@ export function UserChip({
     window.addEventListener('patient_avatar_updated', handleAvatarUpdate);
     window.addEventListener('storage', handleStorageChange);
     return () => {
-      window.removeEventListener('patient_profile_updated', handleProfileUpdate);
+      window.removeEventListener(
+        'patient_profile_updated',
+        handleProfileUpdate,
+      );
       window.removeEventListener('patient_avatar_updated', handleAvatarUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [user?.userId, user?.email]);
 
   // Resolve display name: ưu tiên prop > tên hồ sơ bệnh nhân > email prefix
-  const fallbackEmailName = user?.email ? user.email.split('@')[0] : 'Người dùng';
-  const finalName = displayName?.trim() || patientName?.trim() || fallbackEmailName;
+  const fallbackEmailName = user?.email
+    ? user.email.split('@')[0]
+    : 'Người dùng';
+  const finalName =
+    displayName?.trim() || patientName?.trim() || fallbackEmailName;
   const initials = getInitials(finalName);
 
   // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -242,9 +280,15 @@ export function UserChip({
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <div className="user-chip-avatar-wrap">
-          <div className={`user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}>
+          <div
+            className={`user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}
+          >
             {avatarUrl ? (
-              <img src={avatarUrl} alt={finalName} className="user-chip-avatar-img" />
+              <img
+                src={avatarUrl}
+                alt={finalName}
+                className="user-chip-avatar-img"
+              />
             ) : (
               initials
             )}
@@ -277,9 +321,15 @@ export function UserChip({
       {isOpen && (
         <div className="user-chip-dropdown" role="menu">
           <div className="user-chip-dropdown-header">
-            <div className={`user-chip-dropdown-avatar user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}>
+            <div
+              className={`user-chip-dropdown-avatar user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}
+            >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={finalName} className="user-chip-avatar-img" />
+                <img
+                  src={avatarUrl}
+                  alt={finalName}
+                  className="user-chip-avatar-img"
+                />
               ) : (
                 initials
               )}
@@ -298,7 +348,13 @@ export function UserChip({
                   className="user-chip-menu-link"
                   onClick={() => setIsOpen(false)}
                 >
-                  <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="user-chip-menu-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <rect x="2" y="3" width="20" height="14" rx="2" />
                     <line x1="8" y1="21" x2="16" y2="21" />
                     <line x1="12" y1="17" x2="12" y2="21" />
@@ -316,7 +372,13 @@ export function UserChip({
                     className="user-chip-menu-link"
                     onClick={() => setIsOpen(false)}
                   >
-                    <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      className="user-chip-menu-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
@@ -329,7 +391,13 @@ export function UserChip({
                     className="user-chip-menu-link"
                     onClick={() => setIsOpen(false)}
                   >
-                    <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      className="user-chip-menu-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <rect x="3" y="4" width="18" height="18" rx="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
@@ -344,7 +412,13 @@ export function UserChip({
                     className="user-chip-menu-link"
                     onClick={() => setIsOpen(false)}
                   >
-                    <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      className="user-chip-menu-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <line x1="16" y1="13" x2="8" y2="13" />
                       <line x1="16" y1="17" x2="8" y2="17" />
@@ -362,7 +436,13 @@ export function UserChip({
                   className="user-chip-menu-link"
                   onClick={() => setIsOpen(false)}
                 >
-                  <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="user-chip-menu-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                   </svg>
@@ -379,7 +459,13 @@ export function UserChip({
                 className="user-chip-menu-btn logout-action"
                 onClick={() => void handleLogout()}
               >
-                <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  className="user-chip-menu-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />

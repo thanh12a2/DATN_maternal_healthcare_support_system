@@ -208,7 +208,9 @@ export function EditPatientModal({
           name="address"
           label={
             <span>
-              <EnvironmentOutlined style={{ color: '#0B5CAD', marginRight: 4 }} />
+              <EnvironmentOutlined
+                style={{ color: '#0B5CAD', marginRight: 4 }}
+              />
               Địa chỉ thường trú
             </span>
           }

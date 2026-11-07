@@ -9,7 +9,9 @@ interface ChatbotWidgetProps {
 }
 
 let msgIdCounter = 0;
-function newId() { return `msg-${++msgIdCounter}`; }
+function newId() {
+  return `msg-${++msgIdCounter}`;
+}
 
 const GREETING: ChatbotMessage = {
   id: 'greeting',
@@ -44,7 +46,9 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
   // Close on Escape
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
@@ -53,8 +57,13 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
 
-    const userMsg: ChatbotMessage = { id: newId(), role: 'user', text: trimmed, timestamp: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    const userMsg: ChatbotMessage = {
+      id: newId(),
+      role: 'user',
+      text: trimmed,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setError(null);
     setLoading(true);
@@ -70,9 +79,10 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
         insufficient: response.insufficient_evidence,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, botMsg]);
+      setMessages((prev) => [...prev, botMsg]);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra. Vui lòng thử lại.';
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi xảy ra. Vui lòng thử lại.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -107,7 +117,11 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
       {/* Header */}
       <div className="chatbot-widget-header">
         <div className="chatbot-widget-header-info">
-          <div className="chatbot-widget-avatar" aria-hidden="true" style={{ overflow: 'hidden' }}>
+          <div
+            className="chatbot-widget-avatar"
+            aria-hidden="true"
+            style={{ overflow: 'hidden' }}
+          >
             <span
               style={{
                 width: 32,
@@ -136,9 +150,14 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
             title="Cuộc trò chuyện mới"
             aria-label="Cuộc trò chuyện mới"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
             </svg>
           </button>
           <button
@@ -148,37 +167,63 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
             title="Đóng"
             aria-label="Đóng trợ lý ảo"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6 6 18M6 6l12 12"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="chatbot-widget-messages" role="log" aria-live="polite" aria-label="Tin nhắn">
-        {messages.map(msg => (
+      <div
+        className="chatbot-widget-messages"
+        role="log"
+        aria-live="polite"
+        aria-label="Tin nhắn"
+      >
+        {messages.map((msg) => (
           <div key={msg.id} className={`chatbot-msg chatbot-msg--${msg.role}`}>
             {msg.role === 'assistant' && (
               <div className="chatbot-msg-avatar" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2Z"/>
-                  <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2Z" />
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
                 </svg>
               </div>
             )}
-            <div className={`chatbot-msg-bubble ${msg.insufficient ? 'chatbot-msg-bubble--warn' : ''}`}>
+            <div
+              className={`chatbot-msg-bubble ${msg.insufficient ? 'chatbot-msg-bubble--warn' : ''}`}
+            >
               {msg.insufficient && (
                 <span className="chatbot-msg-warn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                 </span>
               )}
               <p>{msg.text}</p>
               <time className="chatbot-msg-time">
-                {msg.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                {msg.timestamp.toLocaleTimeString('vi-VN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </time>
             </div>
           </div>
@@ -186,15 +231,28 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
 
         {/* Loading indicator */}
         {loading && (
-          <div className="chatbot-msg chatbot-msg--assistant" aria-label="Đang xử lý">
+          <div
+            className="chatbot-msg chatbot-msg--assistant"
+            aria-label="Đang xử lý"
+          >
             <div className="chatbot-msg-avatar" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2Z"/>
-                <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2Z" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
               </svg>
             </div>
-            <div className="chatbot-msg-bubble chatbot-msg-bubble--loading" aria-hidden="true">
-              <span /><span /><span />
+            <div
+              className="chatbot-msg-bubble chatbot-msg-bubble--loading"
+              aria-hidden="true"
+            >
+              <span />
+              <span />
+              <span />
             </div>
           </div>
         )}
@@ -202,9 +260,16 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
         {/* Error message */}
         {error && (
           <div className="chatbot-error" role="alert">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <span>{error}</span>
           </div>
@@ -220,7 +285,7 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
           className="chatbot-widget-input"
           placeholder="Nhập câu hỏi của bạn... (Enter để gửi)"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
           disabled={loading}
@@ -234,13 +299,33 @@ export function ChatbotWidget({ open, onClose }: ChatbotWidgetProps) {
           disabled={loading || !input.trim()}
           aria-label="Gửi câu hỏi"
         >
-          {loading
-            ? <svg className="chatbot-send-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
-            : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-          }
+          {loading ? (
+            <svg
+              className="chatbot-send-spinner"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="m22 2-7 20-4-9-9-4Z" />
+              <path d="M22 2 11 13" />
+            </svg>
+          )}
         </button>
       </div>
-      <p className="chatbot-widget-disclaimer">Trợ lý ảo có thể mắc lỗi. Hãy kiểm tra với bác sĩ cho các quyết định y tế.</p>
+      <p className="chatbot-widget-disclaimer">
+        Trợ lý ảo có thể mắc lỗi. Hãy kiểm tra với bác sĩ cho các quyết định y
+        tế.
+      </p>
     </div>
   );
 }

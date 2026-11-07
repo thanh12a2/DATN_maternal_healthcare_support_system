@@ -8,7 +8,10 @@ interface LoadingPlaceholderProps {
 
 const FADE_DURATION_MS = 380;
 
-export function LoadingPlaceholder({ visible, label = 'Đang tải nội dung' }: LoadingPlaceholderProps) {
+export function LoadingPlaceholder({
+  visible,
+  label = 'Đang tải nội dung',
+}: LoadingPlaceholderProps) {
   const [mounted, setMounted] = useState(visible);
   const [shown, setShown] = useState(false);
 
@@ -31,8 +34,16 @@ export function LoadingPlaceholder({ visible, label = 'Đang tải nội dung' }
   if (!mounted) return null;
 
   return (
-    <div className={`loading-placeholder ${shown ? 'is-visible' : ''}`} role="status" aria-live="polite" aria-busy={visible} aria-label={label}>
-      <div className="loading-spinner" aria-hidden="true"><span /></div>
+    <div
+      className={`loading-placeholder ${shown ? 'is-visible' : ''}`}
+      role="status"
+      aria-live="polite"
+      aria-busy={visible}
+      aria-label={label}
+    >
+      <div className="loading-spinner" aria-hidden="true">
+        <span />
+      </div>
       <span className="loading-skeleton-label">{label}</span>
     </div>
   );

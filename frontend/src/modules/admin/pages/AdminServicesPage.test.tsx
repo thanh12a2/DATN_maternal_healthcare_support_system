@@ -44,7 +44,8 @@ const mockServices: adminCatalogService.MedicalServiceItem[] = [
     doctorRankSelectionPolicy: 'RANK_UPGRADE_ALLOWED',
     status: 'ACTIVE',
     version: 1,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982',
+    thumbnailUrl:
+      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982',
     categories: [
       {
         id: 'cat-kham-thai',
@@ -128,18 +129,35 @@ describe('AdminServicesPage', () => {
       items: mockServices,
       total: 1,
     });
-    vi.spyOn(adminCatalogService, 'getAdminService').mockResolvedValue(mockServices[0]);
-    vi.spyOn(adminCatalogService, 'listAdminCategories').mockResolvedValue(mockCategories);
+    vi.spyOn(adminCatalogService, 'getAdminService').mockResolvedValue(
+      mockServices[0],
+    );
+    vi.spyOn(adminCatalogService, 'listAdminCategories').mockResolvedValue(
+      mockCategories,
+    );
     vi.spyOn(adminCatalogService, 'listAdminTags').mockResolvedValue(mockTags);
-    vi.spyOn(adminCatalogService, 'listRankSurcharges').mockResolvedValue(mockSurcharges);
+    vi.spyOn(adminCatalogService, 'listRankSurcharges').mockResolvedValue(
+      mockSurcharges,
+    );
     vi.spyOn(adminCatalogService, 'listServicePrices').mockResolvedValue([
       mockServices[0].prices[0],
     ]);
     vi.spyOn(adminDoctorsService, 'listSpecialties').mockResolvedValue([
-      { id: 'sp-obgyn-01', code: 'OBGYN', name: 'Sản phụ khoa', status: 'ACTIVE' },
+      {
+        id: 'sp-obgyn-01',
+        code: 'OBGYN',
+        name: 'Sản phụ khoa',
+        status: 'ACTIVE',
+      },
     ]);
     vi.spyOn(adminDoctorsService, 'listConsultationRanks').mockResolvedValue([
-      { id: 'rk-01', code: 'SPECIALIST_I', name: 'Bác sĩ Chuyên khoa I (CKI)', experienceYearsMin: 5, status: 'ACTIVE' },
+      {
+        id: 'rk-01',
+        code: 'SPECIALIST_I',
+        name: 'Bác sĩ Chuyên khoa I (CKI)',
+        experienceYearsMin: 5,
+        status: 'ACTIVE',
+      },
     ]);
     vi.spyOn(adminDoctorsService, 'listDoctors').mockResolvedValue({
       data: [],
@@ -150,7 +168,9 @@ describe('AdminServicesPage', () => {
     render(<AdminServicesPage />);
 
     expect(screen.getByText('Tổng số dịch vụ')).toBeInTheDocument();
-    expect(await screen.findByText('Khám thai định kỳ tiêu chuẩn')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Khám thai định kỳ tiêu chuẩn'),
+    ).toBeInTheDocument();
     expect(screen.getByText('KHAM_THAI_01')).toBeInTheDocument();
     expect(screen.getByText(/250\.000/)).toBeInTheDocument();
   });
@@ -162,18 +182,26 @@ describe('AdminServicesPage', () => {
     const tr = nameEl.closest('tr') || nameEl;
     await userEvent.click(tr);
 
-    expect(await screen.findByText('Bảng giá viện phí dịch vụ')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Bảng giá viện phí dịch vụ'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Lên lịch mức giá mới')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Chỉnh sửa/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Chỉnh sửa/i }),
+    ).toBeInTheDocument();
   });
 
   it('opens create service modal when clicking Thêm dịch vụ mới', async () => {
     render(<AdminServicesPage />);
 
-    const createBtn = await screen.findByRole('button', { name: /Thêm dịch vụ mới/i });
+    const createBtn = await screen.findByRole('button', {
+      name: /Thêm dịch vụ mới/i,
+    });
     await userEvent.click(createBtn);
 
-    expect(await screen.findByText(/Thêm mới dịch vụ y tế & bảng giá/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Thêm mới dịch vụ y tế & bảng giá/i),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Tên dịch vụ y tế/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Mã dịch vụ y tế/i)).toBeInTheDocument();
   });
@@ -181,17 +209,23 @@ describe('AdminServicesPage', () => {
   it('navigates to categories tab and displays categories list', async () => {
     render(<AdminServicesPage />);
 
-    const catTab = (await screen.findByText(/Nhóm danh mục \(/)).closest('.ant-tabs-tab')!;
+    const catTab = (await screen.findByText(/Nhóm danh mục \(/)).closest(
+      '.ant-tabs-tab',
+    )!;
     await userEvent.click(catTab);
 
     expect(await screen.findByText('KHAM_THAI')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Thêm nhóm dịch vụ/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Thêm nhóm dịch vụ/i }),
+    ).toBeInTheDocument();
   });
 
   it('navigates to tags tab and displays tags list', async () => {
     render(<AdminServicesPage />);
 
-    const tagTab = (await screen.findByText(/Thẻ tag dịch vụ/)).closest('.ant-tabs-tab')!;
+    const tagTab = (await screen.findByText(/Thẻ tag dịch vụ/)).closest(
+      '.ant-tabs-tab',
+    )!;
     await userEvent.click(tagTab);
 
     expect(await screen.findByText('ME_BAU_3_THANG_DAU')).toBeInTheDocument();
@@ -201,10 +235,14 @@ describe('AdminServicesPage', () => {
   it('navigates to surcharges tab and displays rank surcharge list', async () => {
     render(<AdminServicesPage />);
 
-    const surchargeTab = (await screen.findByText(/Hạng bác sĩ & Phụ thu/)).closest('.ant-tabs-tab')!;
+    const surchargeTab = (
+      await screen.findByText(/Hạng bác sĩ & Phụ thu/)
+    ).closest('.ant-tabs-tab')!;
     await userEvent.click(surchargeTab);
 
-    expect(await screen.findByText('Bác sĩ Chuyên khoa I (CKI)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Bác sĩ Chuyên khoa I (CKI)'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/100\.000/)).toBeInTheDocument();
   });
 });

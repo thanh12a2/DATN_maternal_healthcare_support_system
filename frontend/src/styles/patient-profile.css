@@ -62,13 +62,13 @@
 }
 
 .patient-hero-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: #0B4F9C;
+  background: #0b4f9c;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
 }
@@ -375,13 +375,13 @@
 }
 
 .profile-unified-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: #0B4F9C;
+  background: #0b4f9c;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
 }
@@ -1385,7 +1385,6 @@
   }
 }
 
-
 /* ==========================================================================
    FLOATING TOAST NOTIFICATION (KHÔNG ĐẨY MODAL, TỰ MẤT SAU 3 GIÂY)
    ========================================================================== */
@@ -1402,7 +1401,9 @@
   padding: 16px 20px;
   background: #ffffff;
   border-radius: 14px;
-  box-shadow: 0 16px 40px -10px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 16px 40px -10px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1506,20 +1507,22 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #0B4F9C;
+  background: #0b4f9c;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
   z-index: 2;
 }
 
 .patient-avatar-circle:hover .patient-avatar-edit-badge {
   transform: scale(1.15);
-  background: #1677FF;
+  background: #1677ff;
 }
 
 /* ==========================================================================
@@ -1539,8 +1542,12 @@
 }
 
 @keyframes backdropFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .avatar-crop-dialog {
@@ -1557,8 +1564,14 @@
 }
 
 @keyframes dialogZoomIn {
-  from { transform: scale(0.94); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .avatar-crop-header {
@@ -1713,7 +1726,7 @@
 .avatar-zoom-slider {
   flex: 1;
   height: 6px;
-  accent-color: #0B4F9C;
+  accent-color: #0b4f9c;
   cursor: pointer;
 }
 
@@ -1765,7 +1778,7 @@
 .btn-crop-apply {
   padding: 10px 22px;
   border: none;
-  background: #0B4F9C;
+  background: #0b4f9c;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 700;
@@ -1779,7 +1792,7 @@
 }
 
 .btn-crop-apply:hover {
-  background: #1677FF;
+  background: #1677ff;
   transform: translateY(-1px);
 }
 
@@ -1837,7 +1850,7 @@
 
 .profile-unified-input:focus {
   background: #ffffff;
-  border-color: #0B4F9C;
+  border-color: #0b4f9c;
   box-shadow: 0 0 0 3px rgba(11, 79, 156, 0.12);
 }
 
@@ -1948,7 +1961,7 @@
 .btn-unified-save {
   padding: 10px 24px;
   border: none;
-  background: #0B4F9C;
+  background: #0b4f9c;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 700;
@@ -1962,7 +1975,7 @@
 }
 
 .btn-unified-save:hover {
-  background: #1677FF;
+  background: #1677ff;
   transform: translateY(-1px);
 }
 

@@ -8,7 +8,10 @@ export interface GrpcServerDefinition {
   url: string;
 }
 
-export function connectGrpcServer(app: INestApplication, definition: GrpcServerDefinition): void {
+export function connectGrpcServer(
+  app: INestApplication,
+  definition: GrpcServerDefinition,
+): void {
   const proto = Array.isArray(definition.proto)
     ? definition.proto.map((item) => protoPath(item))
     : protoPath(definition.proto);

@@ -104,17 +104,11 @@ export class DoctorController {
     return this.service.createRoom(dto, this.identity(req), key);
   }
   @Get('rooms')
-  rooms(
-    @Query() query: RoomListQueryDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  rooms(@Query() query: RoomListQueryDto, @Req() req: AuthenticatedRequest) {
     return this.service.listRooms(query, req.identity);
   }
   @Get('rooms/:roomId')
-  getRoom(
-    @Param('roomId') roomId: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  getRoom(@Param('roomId') roomId: string, @Req() req: AuthenticatedRequest) {
     return this.service.getRoom(roomId, req.identity);
   }
   @Get('me')

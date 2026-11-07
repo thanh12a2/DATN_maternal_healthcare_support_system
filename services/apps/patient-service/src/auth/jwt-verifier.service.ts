@@ -1,7 +1,4 @@
-import {
-  createPublicKey,
-  type KeyObject,
-} from 'crypto';
+import { createPublicKey, type KeyObject } from 'crypto';
 import {
   Injectable,
   InternalServerErrorException,
@@ -139,17 +136,13 @@ export class JwtVerifierService {
     const keys = this.parseJwks(document);
     this.jwksCache.clear();
     for (const key of keys) {
-      this.jwksCache.set(
-        key.kid,
-        createPublicKey({ key, format: 'jwk' }),
-      );
+      this.jwksCache.set(key.kid, createPublicKey({ key, format: 'jwk' }));
     }
     const configuredTtl = Number(
       this.configService.get<string>('AUTH_JWKS_CACHE_TTL_SECONDS') ?? '300',
     );
-    const ttl = Number.isFinite(configuredTtl) && configuredTtl > 0
-      ? configuredTtl
-      : 300;
+    const ttl =
+      Number.isFinite(configuredTtl) && configuredTtl > 0 ? configuredTtl : 300;
     this.jwksExpiresAt = Date.now() + ttl * 1000;
   }
 

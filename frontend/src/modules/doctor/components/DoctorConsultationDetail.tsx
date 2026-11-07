@@ -107,10 +107,13 @@ export function DoctorConsultationDetail({
 }: DoctorConsultationDetailProps) {
   const [activeTab, setActiveTab] = useState('vitals');
   const [busy, setBusy] = useState(false);
-  const [encounter, setEncounter] = useState<Encounter | null>(initialEncounter);
+  const [encounter, setEncounter] = useState<Encounter | null>(
+    initialEncounter,
+  );
 
   // Modal xem chi tiết lượt khám cũ
-  const [selectedPastVisit, setSelectedPastVisit] = useState<Appointment | null>(null);
+  const [selectedPastVisit, setSelectedPastVisit] =
+    useState<Appointment | null>(null);
 
   // Vitals inputs
   const [systolic, setSystolic] = useState<number | null>(null);
@@ -134,13 +137,16 @@ export function DoctorConsultationDetail({
 
   const canStart = encState === 'DRAFT' || appointment.status === 'CHECKED_IN';
   const canEdit = encState === 'IN_PROGRESS';
-  const isFinalized = encState === 'FINALIZED' || appointment.status === 'COMPLETED';
+  const isFinalized =
+    encState === 'FINALIZED' || appointment.status === 'COMPLETED';
 
   // Nạp lại encounter chi tiết khi mount hoặc khi encId đổi
   useEffect(() => {
     let live = true;
     if (encId) {
-      request<Encounter | { data: Encounter }>(`/api/medical-records/encounters/${encodeURIComponent(encId)}`)
+      request<Encounter | { data: Encounter }>(
+        `/api/medical-records/encounters/${encodeURIComponent(encId)}`,
+      )
         .then((res: any) => {
           if (live && res) {
             setEncounter(res.data || res);
@@ -154,7 +160,10 @@ export function DoctorConsultationDetail({
   }, [encId, request]);
 
   // Bộ điều hướng gọi API chuyên môn
-  const sendAction = async (path: string, body: Record<string, unknown> = {}) => {
+  const sendAction = async (
+    path: string,
+    body: Record<string, unknown> = {},
+  ) => {
     if (!encId) {
       message.error('Không tìm thấy mã hồ sơ khám bệnh (Encounter ID).');
       return;
@@ -166,7 +175,7 @@ export function DoctorConsultationDetail({
         {
           method: 'POST',
           body: JSON.stringify({ ...body, expectedVersion: version }),
-        }
+        },
       );
       message.success('Thao tác thành công.');
 
@@ -175,7 +184,7 @@ export function DoctorConsultationDetail({
         setEncounter(res.data || res);
       } else {
         const refreshed: any = await request(
-          `/api/medical-records/encounters/${encodeURIComponent(encId)}`
+          `/api/medical-records/encounters/${encodeURIComponent(encId)}`,
         ).catch(() => null);
         if (refreshed) setEncounter(refreshed.data || refreshed);
       }
@@ -224,7 +233,10 @@ export function DoctorConsultationDetail({
       message.warning('Vui lòng nhập đầy đủ Mã chẩn đoán và Mô tả bệnh.');
       return;
     }
-    await sendAction('diagnoses', { code: icdCode.trim(), description: diagnosisDesc.trim() });
+    await sendAction('diagnoses', {
+      code: icdCode.trim(),
+      description: diagnosisDesc.trim(),
+    });
     setIcdCode('');
     setDiagnosisDesc('');
   };
@@ -240,15 +252,22 @@ export function DoctorConsultationDetail({
   };
 
   // Danh sách sinh hiệu, chẩn đoán, ghi chú trong lượt khám này
-  const vitalsList = Array.isArray(encounter?.vitalSigns) ? encounter.vitalSigns : [];
-  const latestVital = vitalsList.length > 0 ? vitalsList[vitalsList.length - 1] : null;
-  const diagnosesList = Array.isArray(encounter?.diagnoses) ? encounter.diagnoses : [];
+  const vitalsList = Array.isArray(encounter?.vitalSigns)
+    ? encounter.vitalSigns
+    : [];
+  const latestVital =
+    vitalsList.length > 0 ? vitalsList[vitalsList.length - 1] : null;
+  const diagnosesList = Array.isArray(encounter?.diagnoses)
+    ? encounter.diagnoses
+    : [];
   const notesList = Array.isArray(encounter?.notes) ? encounter.notes : [];
 
   // Lọc lịch sử các lần khám cũ của bệnh nhân này
   const patientId = appointment.patientId;
   const pastAppointments = useMemo(() => {
-    return allAppointments.filter((a) => a.patientId === patientId && a.id !== appointment.id);
+    return allAppointments.filter(
+      (a) => a.patientId === patientId && a.id !== appointment.id,
+    );
   }, [allAppointments, patientId, appointment.id]);
 
   // Tính tuổi bệnh nhân
@@ -293,9 +312,18 @@ export function DoctorConsultationDetail({
       width: 150,
       render: (_, row) => (
         <div>
-          <strong>{row.startAt ? new Date(row.startAt).toLocaleDateString('vi-VN') : '—'}</strong>
+          <strong>
+            {row.startAt
+              ? new Date(row.startAt).toLocaleDateString('vi-VN')
+              : '—'}
+          </strong>
           <div style={{ fontSize: 11, color: '#64748b' }}>
-            {row.startAt ? new Date(row.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
+            {row.startAt
+              ? new Date(row.startAt).toLocaleTimeString('vi-VN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : ''}
           </div>
         </div>
       ),
@@ -305,7 +333,9 @@ export function DoctorConsultationDetail({
       key: 'service',
       render: (_, row) => (
         <div>
-          <strong style={{ color: '#0f172a' }}>{row.pricing?.serviceName || 'Khám chuyên khoa'}</strong>
+          <strong style={{ color: '#0f172a' }}>
+            {row.pricing?.serviceName || 'Khám chuyên khoa'}
+          </strong>
           <div style={{ fontSize: 12, color: '#64748b' }}>
             {row.roomCode || 'P.201'} - {row.roomName || 'Sản Phụ khoa'}
           </div>
@@ -360,12 +390,26 @@ export function DoctorConsultationDetail({
               </span>
             </h2>
             <p>
-              Mã lịch hẹn: <strong>{appointment.appointmentCode}</strong> · Khung giờ:{' '}
+              Mã lịch hẹn: <strong>{appointment.appointmentCode}</strong> ·
+              Khung giờ:{' '}
               {appointment.startAt
-                ? new Date(appointment.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-                : ''} - {appointment.endAt
-                ? new Date(appointment.endAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-                : ''} ({appointment.startAt ? new Date(appointment.startAt).toLocaleDateString('vi-VN') : 'Hôm nay'})
+                ? new Date(appointment.startAt).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''}{' '}
+              -{' '}
+              {appointment.endAt
+                ? new Date(appointment.endAt).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''}{' '}
+              (
+              {appointment.startAt
+                ? new Date(appointment.startAt).toLocaleDateString('vi-VN')
+                : 'Hôm nay'}
+              )
             </p>
           </div>
         </div>
@@ -411,7 +455,12 @@ export function DoctorConsultationDetail({
               type="primary"
               icon={<PlayCircleOutlined />}
               loading={busy}
-              style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 700, height: 38 }}
+              style={{
+                background: '#10b981',
+                borderColor: '#10b981',
+                fontWeight: 700,
+                height: 38,
+              }}
               onClick={handleStartEncounter}
             >
               Bắt đầu khám bệnh
@@ -439,7 +488,12 @@ export function DoctorConsultationDetail({
                   type="primary"
                   icon={<CheckCircleOutlined />}
                   loading={busy}
-                  style={{ background: '#0B5CAD', borderColor: '#0B5CAD', fontWeight: 700, height: 38 }}
+                  style={{
+                    background: '#0B5CAD',
+                    borderColor: '#0B5CAD',
+                    fontWeight: 700,
+                    height: 38,
+                  }}
                 >
                   Hoàn tất ca khám
                 </Button>
@@ -448,7 +502,15 @@ export function DoctorConsultationDetail({
           )}
 
           {isFinalized && (
-            <Tag color="green" style={{ padding: '6px 14px', fontSize: 13, fontWeight: 700, borderRadius: 8 }}>
+            <Tag
+              color="green"
+              style={{
+                padding: '6px 14px',
+                fontSize: 13,
+                fontWeight: 700,
+                borderRadius: 8,
+              }}
+            >
               ✓ Đã hoàn tất ca khám
             </Tag>
           )}
@@ -463,12 +525,18 @@ export function DoctorConsultationDetail({
               <UserOutlined />
             </div>
             <div className="patient-name-box">
-              <h3>{patientInfo?.name || appointment.patientName || 'Bệnh nhân'}</h3>
-              
+              <h3>
+                {patientInfo?.name || appointment.patientName || 'Bệnh nhân'}
+              </h3>
+
               {/* Chips Group Matching Patient Portal */}
               <div className="patient-chips-wrap">
                 <span className="portal-chip chip-blue">
-                  🎂 {patientAge} tuổi ({patientInfo?.dob ? new Date(patientInfo.dob).toLocaleDateString('vi-VN') : '—'})
+                  🎂 {patientAge} tuổi (
+                  {patientInfo?.dob
+                    ? new Date(patientInfo.dob).toLocaleDateString('vi-VN')
+                    : '—'}
+                  )
                 </span>
                 <span className="portal-chip chip-slate">
                   ♀ Giới tính: {patientInfo?.gender || 'Nữ'}
@@ -478,31 +546,53 @@ export function DoctorConsultationDetail({
                 </span>
                 <span
                   className={`portal-chip ${
-                    patientInfo?.allergies && patientInfo.allergies !== 'Chưa ghi nhận dị ứng' && patientInfo.allergies !== 'Không dị ứng'
+                    patientInfo?.allergies &&
+                    patientInfo.allergies !== 'Chưa ghi nhận dị ứng' &&
+                    patientInfo.allergies !== 'Không dị ứng'
                       ? 'chip-danger'
                       : 'chip-green'
                   }`}
                 >
-                  {patientInfo?.allergies && patientInfo.allergies !== 'Chưa ghi nhận dị ứng' && patientInfo.allergies !== 'Không dị ứng'
+                  {patientInfo?.allergies &&
+                  patientInfo.allergies !== 'Chưa ghi nhận dị ứng' &&
+                  patientInfo.allergies !== 'Không dị ứng'
                     ? `⚠️ ${patientInfo.allergies}`
                     : '🛡 Chưa ghi nhận dị ứng'}
                 </span>
                 <span className="portal-chip chip-amber">
-                  👶 Para: {patientInfo?.para || '0000'} {patientInfo?.para === '0000' ? '(Con so)' : '(Con rạ)'}
+                  👶 Para: {patientInfo?.para || '0000'}{' '}
+                  {patientInfo?.para === '0000' ? '(Con so)' : '(Con rạ)'}
                 </span>
                 <span className="portal-chip chip-cyan">
-                  🩺 {appointment.pricing?.serviceName || 'Khám thai chuyên gia & tư vấn dinh dưỡng'}
+                  🩺{' '}
+                  {appointment.pricing?.serviceName ||
+                    'Khám thai chuyên gia & tư vấn dinh dưỡng'}
                 </span>
               </div>
             </div>
           </div>
 
-          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-            <span className="portal-chip chip-green" style={{ fontSize: 12.5, fontWeight: 700 }}>
+          <div
+            style={{
+              textAlign: 'right',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              alignItems: 'flex-end',
+            }}
+          >
+            <span
+              className="portal-chip chip-green"
+              style={{ fontSize: 12.5, fontWeight: 700 }}
+            >
               💳 Đã thanh toán viện phí tiếp đón
             </span>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Phòng khám: <strong>{doctor?.roomCode || appointment.roomCode || 'P.201'} - {doctor?.roomName || 'Sản Phụ khoa'}</strong>
+              Phòng khám:{' '}
+              <strong>
+                {doctor?.roomCode || appointment.roomCode || 'P.201'} -{' '}
+                {doctor?.roomName || 'Sản Phụ khoa'}
+              </strong>
             </Text>
           </div>
         </div>
@@ -511,19 +601,27 @@ export function DoctorConsultationDetail({
         <div className="patient-admin-grid">
           <div className="patient-admin-item">
             <span className="meta-label">CCCD / Định danh công dân</span>
-            <strong className="meta-val">{patientInfo?.nationalId || '001200000111'}</strong>
+            <strong className="meta-val">
+              {patientInfo?.nationalId || '001200000111'}
+            </strong>
           </div>
           <div className="patient-admin-item">
             <span className="meta-label">Số điện thoại liên hệ</span>
-            <strong className="meta-val">{patientInfo?.phone || appointment.patientPhone || '0901234021'}</strong>
+            <strong className="meta-val">
+              {patientInfo?.phone || appointment.patientPhone || '0901234021'}
+            </strong>
           </div>
           <div className="patient-admin-item">
             <span className="meta-label">Địa chỉ thường trú</span>
-            <strong className="meta-val">{patientInfo?.address || 'Hà Nội'}</strong>
+            <strong className="meta-val">
+              {patientInfo?.address || 'Hà Nội'}
+            </strong>
           </div>
           <div className="patient-admin-item">
             <span className="meta-label">Người thân liên hệ khẩn cấp</span>
-            <strong className="meta-val">{patientInfo?.emergencyContact || 'Chưa cập nhật'}</strong>
+            <strong className="meta-val">
+              {patientInfo?.emergencyContact || 'Chưa cập nhật'}
+            </strong>
           </div>
         </div>
       </div>
@@ -548,14 +646,17 @@ export function DoctorConsultationDetail({
                   <div className="consultation-vitals-grid">
                     <div
                       className={`consultation-vital-card ${
-                        latestVital?.systolic && (latestVital.systolic >= 140 || latestVital.systolic <= 90)
+                        latestVital?.systolic &&
+                        (latestVital.systolic >= 140 ||
+                          latestVital.systolic <= 90)
                           ? 'is-alert'
                           : ''
                       }`}
                     >
                       <span className="v-label">Huyết áp</span>
                       <strong className="v-value">
-                        {latestVital?.systolic != null || latestVital?.diastolic != null
+                        {latestVital?.systolic != null ||
+                        latestVital?.diastolic != null
                           ? `${latestVital.systolic || '—'}/${latestVital.diastolic || '—'}`
                           : '—/—'}
                       </strong>
@@ -564,19 +665,27 @@ export function DoctorConsultationDetail({
 
                     <div className="consultation-vital-card">
                       <span className="v-label">Nhịp tim</span>
-                      <strong className="v-value">{latestVital?.heartRate ? latestVital.heartRate : '—'}</strong>
+                      <strong className="v-value">
+                        {latestVital?.heartRate ? latestVital.heartRate : '—'}
+                      </strong>
                       <span className="v-unit">nhịp/phút</span>
                     </div>
 
                     <div className="consultation-vital-card">
                       <span className="v-label">Thân nhiệt</span>
-                      <strong className="v-value">{latestVital?.temperature ? latestVital.temperature : '—'}</strong>
+                      <strong className="v-value">
+                        {latestVital?.temperature
+                          ? latestVital.temperature
+                          : '—'}
+                      </strong>
                       <span className="v-unit">°C</span>
                     </div>
 
                     <div className="consultation-vital-card">
                       <span className="v-label">Cân nặng</span>
-                      <strong className="v-value">{latestVital?.weight ? latestVital.weight : '—'}</strong>
+                      <strong className="v-value">
+                        {latestVital?.weight ? latestVital.weight : '—'}
+                      </strong>
                       <span className="v-unit">kg</span>
                     </div>
 
@@ -602,7 +711,13 @@ export function DoctorConsultationDetail({
                     </div>
                     <Space wrap size="middle">
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Huyết áp tâm thu (mmHg):
                         </Text>
                         <InputNumber
@@ -615,7 +730,13 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Huyết áp tâm trương (mmHg):
                         </Text>
                         <InputNumber
@@ -628,7 +749,13 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Nhịp tim (lần/phút):
                         </Text>
                         <InputNumber
@@ -641,7 +768,13 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Nhiệt độ (°C):
                         </Text>
                         <InputNumber
@@ -655,7 +788,13 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Cân nặng (kg):
                         </Text>
                         <InputNumber
@@ -669,7 +808,13 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Chiều cao (cm):
                         </Text>
                         <InputNumber
@@ -695,7 +840,10 @@ export function DoctorConsultationDetail({
                         Lưu dấu hiệu sinh tồn
                       </Button>
                       {!canEdit && (
-                        <Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
+                        <Text
+                          type="secondary"
+                          style={{ marginLeft: 12, fontSize: 12 }}
+                        >
                           (Cần ấn "Bắt đầu khám bệnh" để cập nhật số liệu)
                         </Text>
                       )}
@@ -709,18 +857,25 @@ export function DoctorConsultationDetail({
                         Lịch sử các lần đo trong buổi khám hôm nay:
                       </Text>
                       {vitalsList.map((v: any, idx: number) => (
-                        <div key={v.id || idx} className="consultation-record-card">
+                        <div
+                          key={v.id || idx}
+                          className="consultation-record-card"
+                        >
                           <div className="consultation-record-head">
                             <span>
                               <strong>
                                 Huyết áp: {v.systolic}/{v.diastolic} mmHg
                               </strong>{' '}
-                              · Nhịp tim: <strong>{v.heartRate} bpm</strong> · Thân nhiệt:{' '}
-                              <strong>{v.temperature} °C</strong> · Cân nặng:{' '}
-                              <strong>{v.weight} kg</strong>
+                              · Nhịp tim: <strong>{v.heartRate} bpm</strong> ·
+                              Thân nhiệt: <strong>{v.temperature} °C</strong> ·
+                              Cân nặng: <strong>{v.weight} kg</strong>
                             </span>
                             <span className="consultation-record-time">
-                              {v.recordedAt ? new Date(v.recordedAt).toLocaleTimeString('vi-VN') : ''}
+                              {v.recordedAt
+                                ? new Date(v.recordedAt).toLocaleTimeString(
+                                    'vi-VN',
+                                  )
+                                : ''}
                             </span>
                           </div>
                         </div>
@@ -756,7 +911,7 @@ export function DoctorConsultationDetail({
                       {String(
                         encounter?.chiefComplaint ||
                           appointment.pricing?.serviceName ||
-                          'Khám thai định kỳ chuyên gia & kiểm tra sức khỏe mẹ và bé'
+                          'Khám thai định kỳ chuyên gia & kiểm tra sức khỏe mẹ và bé',
                       )}
                     </Paragraph>
                   </div>
@@ -768,7 +923,10 @@ export function DoctorConsultationDetail({
                     </div>
 
                     <div style={{ marginBottom: 12 }}>
-                      <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 12, marginRight: 8 }}
+                      >
                         Gợi ý nhanh mã bệnh:
                       </Text>
                       <div className="icd-quick-chips">
@@ -822,18 +980,30 @@ export function DoctorConsultationDetail({
                         Chẩn đoán đã ghi trong hồ sơ:
                       </Text>
                       {diagnosesList.map((d: any, idx: number) => (
-                        <div key={d.id || idx} className="consultation-record-card">
+                        <div
+                          key={d.id || idx}
+                          className="consultation-record-card"
+                        >
                           <div className="consultation-record-head">
                             <div>
-                              <Tag color="geekblue" style={{ fontWeight: 700, fontSize: 13 }}>
+                              <Tag
+                                color="geekblue"
+                                style={{ fontWeight: 700, fontSize: 13 }}
+                              >
                                 {d.code}
                               </Tag>
-                              <strong style={{ fontSize: 14, color: '#0f172a' }}>
+                              <strong
+                                style={{ fontSize: 14, color: '#0f172a' }}
+                              >
                                 {d.description}
                               </strong>
                             </div>
                             <span className="consultation-record-time">
-                              {d.createdAt ? new Date(d.createdAt).toLocaleTimeString('vi-VN') : ''}
+                              {d.createdAt
+                                ? new Date(d.createdAt).toLocaleTimeString(
+                                    'vi-VN',
+                                  )
+                                : ''}
                             </span>
                           </div>
                         </div>
@@ -882,8 +1052,17 @@ export function DoctorConsultationDetail({
                         Các ghi chú đã lưu trong ca khám:
                       </Text>
                       {notesList.map((n: any, idx: number) => (
-                        <div key={n.id || idx} className="consultation-record-card">
-                          <Paragraph style={{ margin: 0, color: '#1e293b', fontSize: 13.5 }}>
+                        <div
+                          key={n.id || idx}
+                          className="consultation-record-card"
+                        >
+                          <Paragraph
+                            style={{
+                              margin: 0,
+                              color: '#1e293b',
+                              fontSize: 13.5,
+                            }}
+                          >
                             {n.content || n.text}
                           </Paragraph>
                           <span
@@ -891,7 +1070,9 @@ export function DoctorConsultationDetail({
                             style={{ display: 'block', marginTop: 6 }}
                           >
                             Ghi nhận lúc:{' '}
-                            {n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''}
+                            {n.createdAt
+                              ? new Date(n.createdAt).toLocaleString('vi-VN')
+                              : ''}
                           </span>
                         </div>
                       ))}
@@ -919,8 +1100,12 @@ export function DoctorConsultationDetail({
 
                     <div className="history-profile-grid">
                       <div className="history-profile-card">
-                        <span className="hp-title">Tiền sử sản khoa (Para)</span>
-                        <strong className="hp-val">Para: {patientInfo?.para || '0000'}</strong>
+                        <span className="hp-title">
+                          Tiền sử sản khoa (Para)
+                        </span>
+                        <strong className="hp-val">
+                          Para: {patientInfo?.para || '0000'}
+                        </strong>
                         <p className="hp-desc">
                           {patientInfo?.para === '0000'
                             ? 'Mang thai lần đầu (Con so), chưa có tiền căn sảy thai, sinh non hay nạo hút.'
@@ -929,21 +1114,29 @@ export function DoctorConsultationDetail({
                       </div>
 
                       <div className="history-profile-card">
-                        <span className="hp-title">Bệnh lý mạn tính trước mang thai</span>
-                        <strong className="hp-val">Không ghi nhận bệnh nền mạn tính</strong>
+                        <span className="hp-title">
+                          Bệnh lý mạn tính trước mang thai
+                        </span>
+                        <strong className="hp-val">
+                          Không ghi nhận bệnh nền mạn tính
+                        </strong>
                         <p className="hp-desc">
-                          Huyết áp cơ bản bình thường, không có tiền sử đái tháo đường, tim mạch hay bệnh lý tuyến giáp.
+                          Huyết áp cơ bản bình thường, không có tiền sử đái tháo
+                          đường, tim mạch hay bệnh lý tuyến giáp.
                         </p>
                       </div>
 
                       <div className="history-profile-card">
-                        <span className="hp-title">Tiền sử dị ứng & Cảnh báo an toàn</span>
+                        <span className="hp-title">
+                          Tiền sử dị ứng & Cảnh báo an toàn
+                        </span>
                         <strong
                           className="hp-val"
                           style={{
                             color:
                               patientInfo?.allergies &&
-                              patientInfo.allergies !== 'Chưa ghi nhận dị ứng' &&
+                              patientInfo.allergies !==
+                                'Chưa ghi nhận dị ứng' &&
                               patientInfo.allergies !== 'Không dị ứng'
                                 ? '#dc2626'
                                 : '#10b981',
@@ -959,10 +1152,15 @@ export function DoctorConsultationDetail({
                       </div>
 
                       <div className="history-profile-card">
-                        <span className="hp-title">Tiền sử phẫu thuật & Can thiệp</span>
-                        <strong className="hp-val">Chưa có vết mổ lấy thai cũ</strong>
+                        <span className="hp-title">
+                          Tiền sử phẫu thuật & Can thiệp
+                        </span>
+                        <strong className="hp-val">
+                          Chưa có vết mổ lấy thai cũ
+                        </strong>
                         <p className="hp-desc">
-                          Chưa từng phẫu thuật vùng chậu, bóc u xơ tử cung hay u nang buồng trứng.
+                          Chưa từng phẫu thuật vùng chậu, bóc u xơ tử cung hay u
+                          nang buồng trứng.
                         </p>
                       </div>
                     </div>
@@ -972,7 +1170,8 @@ export function DoctorConsultationDetail({
                   <div className="consultation-section-box">
                     <div className="consultation-section-title">
                       <HistoryOutlined style={{ color: '#0B5CAD' }} />
-                      Lịch sử các lần khám trước tại viện ({pastAppointments.length} lần):
+                      Lịch sử các lần khám trước tại viện (
+                      {pastAppointments.length} lần):
                     </div>
 
                     {pastAppointments.length > 0 ? (
@@ -986,13 +1185,30 @@ export function DoctorConsultationDetail({
                         />
                       </div>
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '36px 16px', background: '#f8fafc', borderRadius: 10 }}>
-                        <FileDoneOutlined style={{ fontSize: 36, color: '#94a3b8', marginBottom: 12 }} />
-                        <Title level={5} style={{ margin: 0, color: '#334155' }}>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          padding: '36px 16px',
+                          background: '#f8fafc',
+                          borderRadius: 10,
+                        }}
+                      >
+                        <FileDoneOutlined
+                          style={{
+                            fontSize: 36,
+                            color: '#94a3b8',
+                            marginBottom: 12,
+                          }}
+                        />
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: '#334155' }}
+                        >
                           Chưa có lịch sử khám cũ tại chuyên khoa
                         </Title>
                         <Text type="secondary" style={{ fontSize: 13 }}>
-                          Đây là đợt khám đầu tiên của bệnh nhân tại Bệnh viện Phụ sản An Tâm Medical.
+                          Đây là đợt khám đầu tiên của bệnh nhân tại Bệnh viện
+                          Phụ sản An Tâm Medical.
                         </Text>
                       </div>
                     )}
@@ -1011,12 +1227,17 @@ export function DoctorConsultationDetail({
                 <DoctorClinicalResources
                   request={request}
                   encounterId={String(encId)}
-                  patientId={String(encounter?.patientId || appointment.patientId || '')}
+                  patientId={String(
+                    encounter?.patientId || appointment.patientId || '',
+                  )}
                   encounterState={encState}
                   kind="prescriptions"
                 />
               ) : (
-                <Alert message="Chưa tìm thấy hồ sơ khám để kê đơn thuốc." type="warning" />
+                <Alert
+                  message="Chưa tìm thấy hồ sơ khám để kê đơn thuốc."
+                  type="warning"
+                />
               ),
             },
             {
@@ -1030,12 +1251,17 @@ export function DoctorConsultationDetail({
                 <DoctorClinicalResources
                   request={request}
                   encounterId={String(encId)}
-                  patientId={String(encounter?.patientId || appointment.patientId || '')}
+                  patientId={String(
+                    encounter?.patientId || appointment.patientId || '',
+                  )}
                   encounterState={encState}
                   kind="plans"
                 />
               ) : (
-                <Alert message="Chưa tìm thấy hồ sơ khám để chỉ định điều trị." type="warning" />
+                <Alert
+                  message="Chưa tìm thấy hồ sơ khám để chỉ định điều trị."
+                  type="warning"
+                />
               ),
             },
             {
@@ -1052,7 +1278,10 @@ export function DoctorConsultationDetail({
                   request={request}
                 />
               ) : (
-                <Alert message="Chưa tìm thấy hồ sơ khám để tải file kết quả." type="warning" />
+                <Alert
+                  message="Chưa tìm thấy hồ sơ khám để tải file kết quả."
+                  type="warning"
+                />
               ),
             },
           ]}
@@ -1065,14 +1294,23 @@ export function DoctorConsultationDetail({
         open={Boolean(selectedPastVisit)}
         onCancel={() => setSelectedPastVisit(null)}
         footer={[
-          <Button key="close" type="primary" onClick={() => setSelectedPastVisit(null)}>
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => setSelectedPastVisit(null)}
+          >
             Đóng
           </Button>,
         ]}
         width={700}
       >
         {selectedPastVisit && (
-          <Descriptions bordered column={1} size="small" style={{ marginTop: 12 }}>
+          <Descriptions
+            bordered
+            column={1}
+            size="small"
+            style={{ marginTop: 12 }}
+          >
             <Descriptions.Item label="Mã lịch hẹn">
               <strong>{selectedPastVisit.appointmentCode}</strong>
             </Descriptions.Item>
@@ -1085,13 +1323,17 @@ export function DoctorConsultationDetail({
               {selectedPastVisit.pricing?.serviceName || 'Khám chuyên khoa'}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám">
-              {selectedPastVisit.roomCode || 'P.201'} - {selectedPastVisit.roomName || 'Sản Phụ khoa'}
+              {selectedPastVisit.roomCode || 'P.201'} -{' '}
+              {selectedPastVisit.roomName || 'Sản Phụ khoa'}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color="green">✓ Đã hoàn tất</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Tóm tắt chẩn đoán & Kết luận cũ">
-              Khám thai định kỳ chuẩn y khoa (Z34.8), thai nhi phát triển theo bách phân vị chuẩn, tim thai đều rõ 145 bpm, cử động thai tốt. Hướng dẫn thai phụ tiếp tục bổ sung vi chất và hẹn tái khám theo lịch.
+              Khám thai định kỳ chuẩn y khoa (Z34.8), thai nhi phát triển theo
+              bách phân vị chuẩn, tim thai đều rõ 145 bpm, cử động thai tốt.
+              Hướng dẫn thai phụ tiếp tục bổ sung vi chất và hẹn tái khám theo
+              lịch.
             </Descriptions.Item>
           </Descriptions>
         )}

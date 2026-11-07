@@ -15,7 +15,11 @@ describe('AuthController internal account lookup', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new AuthController(authService, accountsRepository as never, config);
+    controller = new AuthController(
+      authService,
+      accountsRepository as never,
+      config,
+    );
   });
 
   it('rejects an invalid internal service secret', async () => {

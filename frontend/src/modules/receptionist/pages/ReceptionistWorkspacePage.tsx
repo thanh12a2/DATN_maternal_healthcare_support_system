@@ -67,7 +67,9 @@ interface SearchState {
   appointments: DeskAppointment[];
 }
 const errText = (e: unknown) =>
-  e instanceof ApiError || e instanceof Error ? e.message : 'Có lỗi xảy ra, vui lòng thử lại.';
+  e instanceof ApiError || e instanceof Error
+    ? e.message
+    : 'Có lỗi xảy ra, vui lòng thử lại.';
 
 function Desk() {
   const { message } = AntApp.useApp();
@@ -82,20 +84,40 @@ function Desk() {
 
   const [catalog, setCatalog] = useState<DeskCatalog | null>(null);
   const [rows, setRows] = useState<DeskAppointment[]>([]);
-  const [patients, setPatients] = useState<PatientMap>(() => vnpayReturnContext?.patient ? { [vnpayReturnContext.patient.id]: vnpayReturnContext.patient } : {});
+  const [patients, setPatients] = useState<PatientMap>(() =>
+    vnpayReturnContext?.patient
+      ? { [vnpayReturnContext.patient.id]: vnpayReturnContext.patient }
+      : {},
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState(() => vnpayReturnContext?.page.query ?? '');
+  const [query, setQuery] = useState(
+    () => vnpayReturnContext?.page.query ?? '',
+  );
   const [search, setSearch] = useState<SearchState | null>(null);
   const [searching, setSearching] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
-  const [targetAppointmentId, setTargetAppointmentId] = useState<string | null>(null);
+  const [targetAppointmentId, setTargetAppointmentId] = useState<string | null>(
+    null,
+  );
   const skipSearchRef = useRef(false);
-  const [room, setRoom] = useState(() => vnpayReturnContext?.page.room ?? 'P.201');
-  const [date, setDate] = useState(() => vnpayReturnContext?.page.date ? dayjs(vnpayReturnContext.page.date) : dayjs());
-  const [status, setStatus] = useState<AppointmentStatus | undefined>(() => vnpayReturnContext?.page.status as AppointmentStatus | undefined);
-  const [source, setSource] = useState<AppointmentSource | undefined>(() => vnpayReturnContext?.page.source as AppointmentSource | undefined);
-  const [openId, setOpenId] = useState<string | null>(() => vnpayReturnContext?.appointment.id ?? null);
+  const [room, setRoom] = useState(
+    () => vnpayReturnContext?.page.room ?? 'P.201',
+  );
+  const [date, setDate] = useState(() =>
+    vnpayReturnContext?.page.date
+      ? dayjs(vnpayReturnContext.page.date)
+      : dayjs(),
+  );
+  const [status, setStatus] = useState<AppointmentStatus | undefined>(
+    () => vnpayReturnContext?.page.status as AppointmentStatus | undefined,
+  );
+  const [source, setSource] = useState<AppointmentSource | undefined>(
+    () => vnpayReturnContext?.page.source as AppointmentSource | undefined,
+  );
+  const [openId, setOpenId] = useState<string | null>(
+    () => vnpayReturnContext?.appointment.id ?? null,
+  );
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -185,7 +207,7 @@ function Desk() {
             };
           }
           return a;
-        })
+        }),
       );
       // Đồng thời cập nhật lại thống kê các ca hẹn
       setReload((n) => n + 1);
@@ -231,17 +253,19 @@ function Desk() {
 
   const dayRoomList = useMemo(
     () => obgynRows.filter((a) => room === 'ALL' || a.roomCode === room),
-    [obgynRows, room]
+    [obgynRows, room],
   );
 
   const tableData = useMemo(
     () =>
       sortByStart(
         dayRoomList.filter(
-          (a) => (!status || a.status === status) && (!source || a.source === source)
-        )
+          (a) =>
+            (!status || a.status === status) &&
+            (!source || a.source === source),
+        ),
       ),
-    [dayRoomList, status, source]
+    [dayRoomList, status, source],
   );
 
   const waiting = useMemo(() => {
@@ -272,17 +296,24 @@ function Desk() {
   }, [catalog, waiting]);
 
   useEffect(() => {
-    if (catalog?.rooms?.length && !catalog.rooms.some((r) => r.code === room) && room !== 'ALL') {
+    if (
+      catalog?.rooms?.length &&
+      !catalog.rooms.some((r) => r.code === room) &&
+      room !== 'ALL'
+    ) {
       setRoom(catalog.rooms[0].code);
     }
   }, [catalog, room]);
 
   const allPatients = useMemo(
     () => ({ ...patients, ...(search?.patients ?? {}) }),
-    [patients, search]
+    [patients, search],
   );
 
-  const [openAppointment, setOpenAppointment] = useState<DeskAppointment | null>(() => vnpayReturnContext?.appointment ?? null);
+  const [openAppointment, setOpenAppointment] =
+    useState<DeskAppointment | null>(
+      () => vnpayReturnContext?.appointment ?? null,
+    );
 
   const handleOpenAppointment = (a: DeskAppointment) => {
     setOpenAppointment(a);
@@ -291,8 +322,10 @@ function Desk() {
 
   const opened = useMemo(
     () =>
-      [...rows, ...(search?.appointments ?? [])].find((a) => a.id === openId || a.code === openId) ?? openAppointment,
-    [rows, search, openId, openAppointment]
+      [...rows, ...(search?.appointments ?? [])].find(
+        (a) => a.id === openId || a.code === openId,
+      ) ?? openAppointment,
+    [rows, search, openId, openAppointment],
   );
 
   const replace = (n: DeskAppointment) => {
@@ -303,7 +336,7 @@ function Desk() {
             ...cur,
             appointments: cur.appointments.map((a) => (a.id === n.id ? n : a)),
           }
-        : cur
+        : cur,
     );
   };
 
@@ -318,33 +351,56 @@ function Desk() {
           if (!live) return;
           setOpenAppointment(latest);
           replace(latest);
-          const settledInvoice = latest.invoices?.find((invoice) => invoice.id === vnpayReturnContext.invoiceId) ?? latest.invoice;
+          const settledInvoice =
+            latest.invoices?.find(
+              (invoice) => invoice.id === vnpayReturnContext.invoiceId,
+            ) ?? latest.invoice;
           if (settledInvoice && settledInvoice.balance <= 0) {
-            if (vnpayReturnContext.completeCheckInAfterPayment && latest.status === 'BOOKED') {
+            if (
+              vnpayReturnContext.completeCheckInAfterPayment &&
+              latest.status === 'BOOKED'
+            ) {
               const checkIn = await checkInAppointment(request, latest);
               latest = await refreshAppointment(request, catalog, latest);
               if (!live) return;
               setOpenAppointment(latest);
               replace(latest);
-              message.success(`VNPay đã xác nhận thanh toán; check-in hoàn tất${checkIn.ticketCode ? `, số thứ tự ${checkIn.ticketCode}` : ''}.`);
+              message.success(
+                `VNPay đã xác nhận thanh toán; check-in hoàn tất${checkIn.ticketCode ? `, số thứ tự ${checkIn.ticketCode}` : ''}.`,
+              );
             } else {
-              message.success('VNPay đã xác nhận thanh toán. Hóa đơn đã được cập nhật.');
+              message.success(
+                'VNPay đã xác nhận thanh toán. Hóa đơn đã được cập nhật.',
+              );
             }
             return;
           }
-          if (attempt < 4) await new Promise((resolve) => window.setTimeout(resolve, 2000));
+          if (attempt < 4)
+            await new Promise((resolve) => window.setTimeout(resolve, 2000));
         }
-        if (vnpayReturnContext.responseCode && vnpayReturnContext.responseCode !== '00') {
-          message.warning('VNPay trả về giao dịch chưa thành công. Hóa đơn vẫn chưa được ghi nhận đã thanh toán.');
+        if (
+          vnpayReturnContext.responseCode &&
+          vnpayReturnContext.responseCode !== '00'
+        ) {
+          message.warning(
+            'VNPay trả về giao dịch chưa thành công. Hóa đơn vẫn chưa được ghi nhận đã thanh toán.',
+          );
         } else {
-          message.info('Đã quay lại đúng hồ sơ. Hệ thống đang chờ VNPay xác nhận hóa đơn; bạn có thể làm mới để kiểm tra lại.');
+          message.info(
+            'Đã quay lại đúng hồ sơ. Hệ thống đang chờ VNPay xác nhận hóa đơn; bạn có thể làm mới để kiểm tra lại.',
+          );
         }
       } catch (error) {
-        if (live) message.error(`Không thể làm mới hóa đơn sau khi quay lại: ${errText(error)}`);
+        if (live)
+          message.error(
+            `Không thể làm mới hóa đơn sau khi quay lại: ${errText(error)}`,
+          );
       }
     };
     void refreshReturnedInvoice();
-    return () => { live = false; };
+    return () => {
+      live = false;
+    };
   }, [catalog, message, request, vnpayReturnContext]);
 
   const run = async (a: DeskAppointment, fn: () => Promise<void>) => {
@@ -364,7 +420,7 @@ function Desk() {
       const r = await checkInAppointment(request, a);
       if (r.awaitingPayment) {
         message.warning(
-          'Cần thanh toán hóa đơn trước khi check-in. Mở chi tiết → Hóa đơn để thu tiền.'
+          'Cần thanh toán hóa đơn trước khi check-in. Mở chi tiết → Hóa đơn để thu tiền.',
         );
         setOpenId(a.id);
       } else {
@@ -374,11 +430,18 @@ function Desk() {
 
   const cancel = (a: DeskAppointment) =>
     run(a, async () => {
-      await cancelAppointment(request, a, 'Lễ tân hủy lịch theo yêu cầu bệnh nhân');
+      await cancelAppointment(
+        request,
+        a,
+        'Lễ tân hủy lịch theo yêu cầu bệnh nhân',
+      );
       message.success('Đã hủy lịch hẹn');
     });
 
-  const collect = (a: DeskAppointment, invoice: DeskInvoice | undefined = a.invoice ?? undefined) =>
+  const collect = (
+    a: DeskAppointment,
+    invoice: DeskInvoice | undefined = a.invoice ?? undefined,
+  ) =>
     run(a, async () => {
       if (!invoice) return;
       await collectCash(request, invoice);
@@ -389,7 +452,11 @@ function Desk() {
     setBusy(true);
     try {
       const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-      const attempt = await createReceptionVnpayAttempt(request, invoice, returnPath);
+      const attempt = await createReceptionVnpayAttempt(
+        request,
+        invoice,
+        returnPath,
+      );
       const context: VnpayReturnContext = {
         txnRef: attempt.txnRef,
         returnPath,
@@ -398,7 +465,10 @@ function Desk() {
         patient: allPatients[a.patientId],
         page: { room, date: dateStr, status, source, query: trimmed },
       };
-      window.sessionStorage.setItem(PENDING_VNPAY_RETURN_KEY, JSON.stringify(context));
+      window.sessionStorage.setItem(
+        PENDING_VNPAY_RETURN_KEY,
+        JSON.stringify(context),
+      );
       window.location.assign(attempt.paymentUrl);
     } catch (error) {
       message.error(errText(error));
@@ -410,7 +480,7 @@ function Desk() {
     try {
       const res = await createWalkInAppointment(request, data);
       message.success(
-        `Đã tiếp nhận bệnh nhân vãng lai thành công! (Mã hẹn: ${res.appointmentCode || res.code || ''})`
+        `Đã tiếp nhận bệnh nhân vãng lai thành công! (Mã hẹn: ${res.appointmentCode || res.code || ''})`,
       );
       setWalkInOpen(false);
       setReload((n) => n + 1);
@@ -427,14 +497,17 @@ function Desk() {
     try {
       const res = await loadPatientWorkspace(request, catalog, a.patientId);
       const existing = res.appointments ?? [];
-      const hasClicked = existing.some((item) => item.id === a.id || item.code === a.code);
+      const hasClicked = existing.some(
+        (item) => item.id === a.id || item.code === a.code,
+      );
       const allAppts = hasClicked ? existing : [a, ...existing];
 
-      const patient = res.found[0] || allPatients[a.patientId] || {
-        id: a.patientId,
-        fullName: 'Bệnh nhân',
-        emergencyContacts: [],
-      };
+      const patient = res.found[0] ||
+        allPatients[a.patientId] || {
+          id: a.patientId,
+          fullName: 'Bệnh nhân',
+          emergencyContacts: [],
+        };
 
       const finalRes = {
         found: [patient],
@@ -476,7 +549,13 @@ function Desk() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F6FD', padding: '20px 16px' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#F0F6FD',
+        padding: '20px 16px',
+      }}
+    >
       <div
         style={{
           maxWidth: 1400,
@@ -510,13 +589,21 @@ function Desk() {
               minWidth: 320,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                flexShrink: 0,
+              }}
+            >
               <div
                 style={{
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: 'linear-gradient(135deg, #0B5CAD 0%, #1677ff 100%)',
+                  background:
+                    'linear-gradient(135deg, #0B5CAD 0%, #1677ff 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -528,21 +615,41 @@ function Desk() {
                 ✚
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', lineHeight: 1.2 }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: '#111827',
+                    lineHeight: 1.2,
+                  }}
+                >
                   An Tâm Medical
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7280' }}>Bàn Tiếp đón Lễ tân</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>
+                  Bàn Tiếp đón Lễ tân
+                </div>
               </div>
             </div>
 
             {/* Compact Search Bar */}
             <div style={{ maxWidth: 440, width: '100%' }}>
-              <PatientSearchBar onSearch={setQuery} resetSignal={resetSignal} value={query} />
+              <PatientSearchBar
+                onSearch={setQuery}
+                resetSignal={resetSignal}
+                value={query}
+              />
             </div>
           </div>
 
           {/* Right: + Tiếp nhận vãng lai & User Info Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexShrink: 0,
+            }}
+          >
             <span
               style={{
                 display: 'inline-flex',
@@ -557,7 +664,11 @@ function Desk() {
                 borderRadius: '20px',
                 userSelect: 'none',
               }}
-              title={isLive ? 'Đang kết nối luồng sự kiện trực tiếp với máy chủ' : 'Đang kết nối lại luồng sự kiện...'}
+              title={
+                isLive
+                  ? 'Đang kết nối luồng sự kiện trực tiếp với máy chủ'
+                  : 'Đang kết nối lại luồng sự kiện...'
+              }
             >
               <span
                 style={{
@@ -565,7 +676,9 @@ function Desk() {
                   height: '8px',
                   borderRadius: '50%',
                   background: isLive ? '#16a34a' : '#d97706',
-                  boxShadow: isLive ? '0 0 0 3px rgba(22, 163, 74, 0.25)' : 'none',
+                  boxShadow: isLive
+                    ? '0 0 0 3px rgba(22, 163, 74, 0.25)'
+                    : 'none',
                 }}
               />
               <span>{isLive ? 'Trực tuyến' : 'Đang kết nối...'}</span>
@@ -585,7 +698,11 @@ function Desk() {
               + Tiếp nhận vãng lai
             </Button>
 
-            <UserChip displayName={userName} showWorkspaceLink={false} onLogout={handleLogout} />
+            <UserChip
+              displayName={userName}
+              showWorkspaceLink={false}
+              onLogout={handleLogout}
+            />
           </div>
         </header>
 
@@ -628,10 +745,12 @@ function Desk() {
                   prev
                     ? {
                         ...prev,
-                        found: prev.found.map((p) => (p.id === updated.id ? updated : p)),
+                        found: prev.found.map((p) =>
+                          p.id === updated.id ? updated : p,
+                        ),
                         patients: { ...prev.patients, [updated.id]: updated },
                       }
-                    : prev
+                    : prev,
                 );
               }}
               onAppointmentUpdated={(updated) => {
@@ -656,7 +775,14 @@ function Desk() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#374151',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   Phòng khám:
                 </span>
                 <Select
@@ -668,7 +794,14 @@ function Desk() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#374151',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   Ngày:
                 </span>
                 <DatePicker
@@ -743,10 +876,12 @@ function Desk() {
             prev
               ? {
                   ...prev,
-                  found: prev.found.map((p) => (p.id === updated.id ? updated : p)),
+                  found: prev.found.map((p) =>
+                    p.id === updated.id ? updated : p,
+                  ),
                   patients: { ...prev.patients, [updated.id]: updated },
                 }
-              : prev
+              : prev,
           );
         }}
       />

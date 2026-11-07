@@ -202,7 +202,9 @@
   height: 16px;
   color: #64748b;
   flex-shrink: 0;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s ease;
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.18s ease;
 }
 
 .psc-dropdown-trigger.is-open .psc-dropdown-chevron {
@@ -218,7 +220,9 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  box-shadow: 0 16px 36px -4px rgba(11, 79, 156, 0.14), 0 4px 12px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 16px 36px -4px rgba(11, 79, 156, 0.14),
+    0 4px 12px rgba(15, 23, 42, 0.05);
   z-index: 120;
   padding: 6px;
   max-height: 290px;
@@ -633,7 +637,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .psc-service-card:hover {
@@ -1211,7 +1218,6 @@
     flex-wrap: wrap;
   }
 }
-
 
 .psc-empty-reset-btn {
   display: inline-flex;

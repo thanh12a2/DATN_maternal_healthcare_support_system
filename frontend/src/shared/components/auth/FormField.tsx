@@ -11,16 +11,30 @@ interface BaseProps {
   children: ReactNode;
 }
 
-export function FormField({ id, label, message, state = 'idle', full, icon, children }: BaseProps) {
+export function FormField({
+  id,
+  label,
+  message,
+  state = 'idle',
+  full,
+  icon,
+  children,
+}: BaseProps) {
   return (
-    <div className={`field ${full ? 'full' : ''} ${state !== 'idle' ? state : ''}`}>
-      <label className="field-label" htmlFor={id}>{label}</label>
+    <div
+      className={`field ${full ? 'full' : ''} ${state !== 'idle' ? state : ''}`}
+    >
+      <label className="field-label" htmlFor={id}>
+        {label}
+      </label>
       <div className="control-wrap">
         <span className="control-icon">{icon}</span>
         {children}
       </div>
       {message ? (
-        <p className="field-message" id={`${id}-message`} aria-live="polite">{message}</p>
+        <p className="field-message" id={`${id}-message`} aria-live="polite">
+          {message}
+        </p>
       ) : null}
     </div>
   );

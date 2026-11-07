@@ -459,15 +459,27 @@ export class PatientsService {
     this.uuid(patientId, 'INVALID_PATIENT_ID');
     const patient = await this.db.patient.findUnique({
       where: { id: patientId },
-      select: { id: true, fullName: true, dateOfBirth: true, phoneNumber: true, nationalIdCiphertext: true, version: true },
+      select: {
+        id: true,
+        fullName: true,
+        dateOfBirth: true,
+        phoneNumber: true,
+        nationalIdCiphertext: true,
+        version: true,
+      },
     });
     if (!patient) this.notFound();
     const maskedId = this.crypto.maskCiphertext(patient.nationalIdCiphertext);
     return {
       patientId: patient.id,
       fullName: patient.fullName,
-      dateOfBirth: { seconds: Math.floor(patient.dateOfBirth.getTime() / 1000).toString(), nanos: 0 },
-      maskedPhone: '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) + patient.phoneNumber.slice(-4),
+      dateOfBirth: {
+        seconds: Math.floor(patient.dateOfBirth.getTime() / 1000).toString(),
+        nanos: 0,
+      },
+      maskedPhone:
+        '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) +
+        patient.phoneNumber.slice(-4),
       nationalIdLast4: maskedId?.slice(-4) ?? '',
       active: true,
       profileVersion: patient.version,
@@ -481,24 +493,43 @@ export class PatientsService {
       orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
       take: take + 1,
       ...(pageToken ? { cursor: { id: pageToken }, skip: 1 } : {}),
-      select: { id: true, fullName: true, dateOfBirth: true, phoneNumber: true, nationalIdCiphertext: true, version: true },
+      select: {
+        id: true,
+        fullName: true,
+        dateOfBirth: true,
+        phoneNumber: true,
+        nationalIdCiphertext: true,
+        version: true,
+      },
     });
     const hasNext = rows.length > take;
     const items = rows.slice(0, take);
     return {
       patients: items.map((patient) => {
-        const maskedId = this.crypto.maskCiphertext(patient.nationalIdCiphertext);
+        const maskedId = this.crypto.maskCiphertext(
+          patient.nationalIdCiphertext,
+        );
         return {
           patientId: patient.id,
           fullName: patient.fullName,
-          dateOfBirth: { seconds: Math.floor(patient.dateOfBirth.getTime() / 1000).toString(), nanos: 0 },
-          maskedPhone: '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) + patient.phoneNumber.slice(-4),
+          dateOfBirth: {
+            seconds: Math.floor(
+              patient.dateOfBirth.getTime() / 1000,
+            ).toString(),
+            nanos: 0,
+          },
+          maskedPhone:
+            '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) +
+            patient.phoneNumber.slice(-4),
           nationalIdLast4: maskedId?.slice(-4) ?? '',
           active: true,
           profileVersion: patient.version,
         };
       }),
-      page: { nextPageToken: hasNext ? items[items.length - 1]?.id ?? '' : '', totalSize: '0' },
+      page: {
+        nextPageToken: hasNext ? (items[items.length - 1]?.id ?? '') : '',
+        totalSize: '0',
+      },
     };
   }
 

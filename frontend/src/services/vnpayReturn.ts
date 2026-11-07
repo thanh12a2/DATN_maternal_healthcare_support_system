@@ -26,17 +26,28 @@ export function readVnpayContext(key: string): VnpayReturnContext | null {
     const raw = window.sessionStorage.getItem(key);
     if (!raw) return null;
     const value = JSON.parse(raw) as VnpayReturnContext;
-    return value && typeof value.txnRef === 'string' && typeof value.returnPath === 'string' ? value : null;
+    return value &&
+      typeof value.txnRef === 'string' &&
+      typeof value.returnPath === 'string'
+      ? value
+      : null;
   } catch {
     return null;
   }
 }
 
 export function safeReceptionistReturnPath(value: string): string | null {
-  if (!value.startsWith('/workspace/receptionist') || value.startsWith('//') || value.includes('\\')) return null;
+  if (
+    !value.startsWith('/workspace/receptionist') ||
+    value.startsWith('//') ||
+    value.includes('\\')
+  )
+    return null;
   try {
     const parsed = new URL(value, window.location.origin);
-    return parsed.origin === window.location.origin ? parsed.pathname + parsed.search + parsed.hash : null;
+    return parsed.origin === window.location.origin
+      ? parsed.pathname + parsed.search + parsed.hash
+      : null;
   } catch {
     return null;
   }

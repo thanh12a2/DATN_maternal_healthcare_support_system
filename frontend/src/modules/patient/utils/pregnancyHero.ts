@@ -1,4 +1,8 @@
-import { PREGNANCY_MILESTONES, STAGE_TIPS, TIMELINE_POINTS } from '../config/pregnancyHeroConfig';
+import {
+  PREGNANCY_MILESTONES,
+  STAGE_TIPS,
+  TIMELINE_POINTS,
+} from '../config/pregnancyHeroConfig';
 
 export interface GestationalCalculationInput {
   estimatedDueDate?: string | Date | null;
@@ -10,7 +14,10 @@ export interface GestationalCalculationInput {
  * Chuyển đổi một thời điểm bất kỳ sang chuỗi ngày YYYY-MM-DD theo múi giờ Việt Nam (Asia/Ho_Chi_Minh).
  */
 export function toVietnamDateString(dateInput: Date | string | number): string {
-  const d = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput;
+  const d =
+    typeof dateInput === 'string' || typeof dateInput === 'number'
+      ? new Date(dateInput)
+      : dateInput;
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -23,7 +30,10 @@ export function toVietnamDateString(dateInput: Date | string | number): string {
 /**
  * Tính số ngày chênh lệch giữa 2 chuỗi ngày YYYY-MM-DD (d2 - d1).
  */
-export function daysBetweenVietnamDates(date1Str: string, date2Str: string): number {
+export function daysBetweenVietnamDates(
+  date1Str: string,
+  date2Str: string,
+): number {
   if (!date1Str || !date2Str) return 0;
   const [y1, m1, d1] = date1Str.split('-').map(Number);
   const [y2, m2, d2] = date2Str.split('-').map(Number);
@@ -123,7 +133,10 @@ export function getStageTip(week: number): string {
  * - X ngày (> 1): "Còn X ngày"
  * - Đã qua (< 0): "Hôm nay" hoặc "Đã diễn ra"
  */
-export function calculateDaysLeft(targetDate: string | Date, now: string | Date | number = new Date()): string {
+export function calculateDaysLeft(
+  targetDate: string | Date,
+  now: string | Date | number = new Date(),
+): string {
   const todayStr = toVietnamDateString(now);
   const targetStr = toVietnamDateString(targetDate);
   if (!todayStr || !targetStr) return 'Sắp diễn ra';
@@ -139,7 +152,10 @@ export function calculateDaysLeft(targetDate: string | Date, now: string | Date 
  * Rút trích tên thân mật của người bệnh để tạo lời chào ấm áp.
  * Ví dụ: "Lê Ngọc Mai" -> "Ngọc Mai", "Nguyễn Minh Anh" -> "Minh Anh", "Trần Thị Lan" -> "Lan".
  */
-export function extractGreetingName(fullName?: string | null, email?: string | null): string {
+export function extractGreetingName(
+  fullName?: string | null,
+  email?: string | null,
+): string {
   if (fullName && fullName.trim()) {
     const parts = fullName.trim().split(/\s+/);
     if (parts.length >= 3) {
@@ -156,4 +172,3 @@ export function extractGreetingName(fullName?: string | null, email?: string | n
 
   return 'mẹ';
 }
-

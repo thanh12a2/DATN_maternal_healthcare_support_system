@@ -29,17 +29,28 @@ export class RabbitMqPublisher implements OnModuleDestroy {
 
   async publish(routingKey: string, event: DomainEventEnvelope): Promise<void> {
     const url = this.config.get<string>('RABBITMQ_URL');
-    if (!url) throw new Error('RabbitMQ publisher is disabled: RABBITMQ_URL is missing');
+    if (!url)
+      throw new Error(
+        'RabbitMQ publisher is disabled: RABBITMQ_URL is missing',
+      );
     const channel = await this.getChannel(url);
-    const exchange = this.config.get<string>('RABBITMQ_DOMAIN_EXCHANGE') ?? 'maternal.domain.v1';
+    const exchange =
+      this.config.get<string>('RABBITMQ_DOMAIN_EXCHANGE') ??
+      'maternal.domain.v1';
     await channel.assertExchange(exchange, 'topic', { durable: true });
     const accepted = channel.publish(
       exchange,
       routingKey,
       Buffer.from(JSON.stringify(event)),
-      { persistent: true, contentType: 'application/json', messageId: event.eventId, timestamp: Date.now() },
+      {
+        persistent: true,
+        contentType: 'application/json',
+        messageId: event.eventId,
+        timestamp: Date.now(),
+      },
     );
-    if (!accepted) await new Promise<void>((resolve) => channel.once('drain', resolve));
+    if (!accepted)
+      await new Promise<void>((resolve) => channel.once('drain', resolve));
     await channel.waitForConfirms();
   }
 
@@ -51,7 +62,9 @@ export class RabbitMqPublisher implements OnModuleDestroy {
   private async getChannel(url: string): Promise<ConfirmChannel> {
     if (this.channel) return this.channel;
     this.connection = await amqp.connect(url);
-    this.connection.on('error', (error) => this.logger.error('RabbitMQ connection error', error));
+    this.connection.on('error', (error) =>
+      this.logger.error('RabbitMQ connection error', error),
+    );
     this.channel = await this.connection.createConfirmChannel();
     return this.channel;
   }

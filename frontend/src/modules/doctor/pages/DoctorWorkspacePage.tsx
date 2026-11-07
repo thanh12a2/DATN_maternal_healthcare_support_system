@@ -38,8 +38,14 @@ import 'dayjs/locale/vi';
 
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate, usePathname } from '../../../app/navigation';
-import { listAllDoctorAppointments, type Appointment } from '../../../services/appointment';
-import { listAllDoctorEncounters, type Encounter } from '../../../services/clinical';
+import {
+  listAllDoctorAppointments,
+  type Appointment,
+} from '../../../services/appointment';
+import {
+  listAllDoctorEncounters,
+  type Encounter,
+} from '../../../services/clinical';
 import {
   callReceptionNext,
   listReceptionQueueStages,
@@ -50,8 +56,14 @@ import {
 import { getMyDoctor, type MyDoctor } from '../../../services/doctor';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
 import { DoctorDeskStatsStrip } from '../components/DoctorDeskStatsStrip';
-import { DoctorDeskTable, type DoctorDeskRow } from '../components/DoctorDeskTable';
-import { DoctorConsultationDetail, type PatientDemographic } from '../components/DoctorConsultationDetail';
+import {
+  DoctorDeskTable,
+  type DoctorDeskRow,
+} from '../components/DoctorDeskTable';
+import {
+  DoctorConsultationDetail,
+  type PatientDemographic,
+} from '../components/DoctorConsultationDetail';
 import { DoctorProfileSchedule } from '../components/DoctorProfileSchedule';
 import { DoctorWorkspace } from '../components/DoctorWorkspace';
 import { useDoctorRealtime } from '../hooks/useDoctorRealtime';
@@ -241,7 +253,9 @@ function DoctorDesk() {
   // Xác định view từ pathname hoặc mặc định là desk
   const initialSection = pathname.split('/').filter(Boolean).at(-1) || 'desk';
   const [viewMode, setViewMode] = useState<string>(
-    ['schedule', 'profile', 'consultations'].includes(initialSection) ? initialSection : 'desk'
+    ['schedule', 'profile', 'consultations'].includes(initialSection)
+      ? initialSection
+      : 'desk',
   );
 
   // States dữ liệu
@@ -292,10 +306,14 @@ function DoctorDesk() {
 
       // Tìm stage của phòng bác sĩ
       const targetRoom = doctor?.roomCode || 'P.201';
-      const myStage = allStages.find((s) => s.roomCode === targetRoom) || allStages[0];
+      const myStage =
+        allStages.find((s) => s.roomCode === targetRoom) || allStages[0];
 
       if (myStage?.id) {
-        const stageTickets = await listReceptionStageTickets(request, myStage.id).catch(() => []);
+        const stageTickets = await listReceptionStageTickets(
+          request,
+          myStage.id,
+        ).catch(() => []);
         setTickets(stageTickets);
       }
     } catch (err) {
@@ -330,7 +348,7 @@ function DoctorDesk() {
             };
           }
           return a;
-        })
+        }),
       );
 
       // Tải lại toàn bộ dữ liệu bàn khám & số thứ tự ngay lập tức
@@ -352,7 +370,7 @@ function DoctorDesk() {
             };
           }
           return a;
-        })
+        }),
       );
       loadData();
     },
@@ -397,7 +415,9 @@ function DoctorDesk() {
     return deskRows.filter((r) => {
       // Lọc ngày
       const rowDate = r.startAt
-        ? new Date(r.startAt).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+        ? new Date(r.startAt).toLocaleDateString('sv-SE', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+          })
         : '';
       const dateMatches = !selectedDateStr || rowDate === selectedDateStr;
 
@@ -405,7 +425,8 @@ function DoctorDesk() {
       let statusMatches = true;
       if (statusFilter === 'checked_in_only') {
         // Chỉ lấy những ca đã check-in hoặc đang khám
-        statusMatches = r.status === 'CHECKED_IN' || r.status === 'IN_CLINICAL_CARE';
+        statusMatches =
+          r.status === 'CHECKED_IN' || r.status === 'IN_CLINICAL_CARE';
       } else if (statusFilter === 'in_care') {
         statusMatches = r.status === 'IN_CLINICAL_CARE';
       } else if (statusFilter === 'waiting') {
@@ -430,7 +451,9 @@ function DoctorDesk() {
   const stats = useMemo(() => {
     const todayRows = deskRows.filter((r) => {
       const rowDate = r.startAt
-        ? new Date(r.startAt).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+        ? new Date(r.startAt).toLocaleDateString('sv-SE', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+          })
         : '';
       return rowDate === selectedDateStr;
     });
@@ -440,7 +463,9 @@ function DoctorDesk() {
     const completed = todayRows.filter((r) => r.status === 'COMPLETED');
 
     // Vé đang được gọi trong hàng đợi
-    const calledTicket = tickets.find((t: any) => t.state === 'CALLED' || t.state === 'TICKET_STATE_CALLED');
+    const calledTicket = tickets.find(
+      (t: any) => t.state === 'CALLED' || t.state === 'TICKET_STATE_CALLED',
+    );
 
     let currentServing = null;
     if (inCare) {
@@ -450,7 +475,11 @@ function DoctorDesk() {
         status: 'IN_CLINICAL_CARE',
       };
     } else if (calledTicket) {
-      const matched = todayRows.find((r) => (r as any).ticketCode === calledTicket.ticketCode || r.id === (calledTicket as any).appointmentId);
+      const matched = todayRows.find(
+        (r) =>
+          (r as any).ticketCode === calledTicket.ticketCode ||
+          r.id === (calledTicket as any).appointmentId,
+      );
       currentServing = {
         ticketCode: calledTicket.ticketCode,
         patientName: matched?.patientName || 'Đang gọi vào phòng',
@@ -508,7 +537,9 @@ function DoctorDesk() {
     if (!selectedRow) return null;
     return (
       encounters.find(
-        (e) => e.id === selectedRow.encounterId || e.appointmentId === selectedRow.id
+        (e) =>
+          e.id === selectedRow.encounterId ||
+          e.appointmentId === selectedRow.id,
       ) || null
     );
   }, [selectedRow, encounters]);
@@ -547,7 +578,10 @@ function DoctorDesk() {
               {/* Room Pill */}
               <div className="doctor-room-pill">
                 <span>Phòng trực:</span>
-                <strong>{doctor?.roomCode || 'P.201'} - {doctor?.roomName || 'Sản Phụ khoa 201'}</strong>
+                <strong>
+                  {doctor?.roomCode || 'P.201'} -{' '}
+                  {doctor?.roomName || 'Sản Phụ khoa 201'}
+                </strong>
               </div>
 
               {/* Status Pill */}
@@ -567,7 +601,11 @@ function DoctorDesk() {
                   cursor: 'default',
                   userSelect: 'none',
                 }}
-                title={isLive ? 'Đang kết nối luồng sự kiện thời gian thực' : 'Đang kết nối lại luồng sự kiện...'}
+                title={
+                  isLive
+                    ? 'Đang kết nối luồng sự kiện thời gian thực'
+                    : 'Đang kết nối lại luồng sự kiện...'
+                }
               >
                 <span
                   style={{
@@ -648,7 +686,13 @@ function DoctorDesk() {
                       : 'BS'}
                   </Avatar>
                   <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: '#0f172a',
+                      }}
+                    >
                       {doctor?.profile?.fullName || 'BS. Trần Thanh Mai'}
                     </div>
                     <Text type="secondary" style={{ fontSize: 11 }}>
@@ -683,13 +727,18 @@ function DoctorDesk() {
                     buttonStyle="solid"
                   >
                     <Radio.Button value="checked_in_only">
-                      ⏳ Đang chờ & Đang khám ({stats.waitingCount + (stats.currentServing ? 1 : 0)})
+                      ⏳ Đang chờ & Đang khám (
+                      {stats.waitingCount + (stats.currentServing ? 1 : 0)})
                     </Radio.Button>
                     <Radio.Button value="waiting">
                       Chờ gọi ({stats.waitingCount})
                     </Radio.Button>
                     <Radio.Button value="in_care">
-                      Đang khám ({stats.currentServing?.status === 'IN_CLINICAL_CARE' ? 1 : 0})
+                      Đang khám (
+                      {stats.currentServing?.status === 'IN_CLINICAL_CARE'
+                        ? 1
+                        : 0}
+                      )
                     </Radio.Button>
                     <Radio.Button value="completed">
                       Đã hoàn tất ({stats.completedCount})
@@ -700,7 +749,9 @@ function DoctorDesk() {
                   </Radio.Group>
 
                   {/* Right: Date Picker & Search Input */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                  >
                     <DatePicker
                       value={selectedDate}
                       onChange={(d) => d && setSelectedDate(d)}
@@ -726,7 +777,6 @@ function DoctorDesk() {
                   onOpenClinical={handleOpenClinical}
                 />
               </div>
-
             </>
           )}
 
@@ -752,20 +802,30 @@ function DoctorDesk() {
           )}
 
           {viewMode === 'schedule' && (
-            <div style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}>
+            <div
+              style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}
+            >
               <DoctorProfileSchedule section="schedule" request={request} />
             </div>
           )}
 
           {viewMode === 'profile' && (
-            <div style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}>
+            <div
+              style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}
+            >
               <DoctorProfileSchedule section="profile" request={request} />
             </div>
           )}
 
           {viewMode === 'consultations' && (
-            <div style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}>
-              <DoctorWorkspace section="consultations" request={request} userId={auth.user?.userId} />
+            <div
+              style={{ background: '#ffffff', borderRadius: 14, padding: 24 }}
+            >
+              <DoctorWorkspace
+                section="consultations"
+                request={request}
+                userId={auth.user?.userId}
+              />
             </div>
           )}
         </div>

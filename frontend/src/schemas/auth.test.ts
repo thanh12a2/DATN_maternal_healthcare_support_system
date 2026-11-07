@@ -1,13 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { validateEmail, validateLogin, validatePassword, validateRegister } from './auth';
+import {
+  validateEmail,
+  validateLogin,
+  validatePassword,
+  validateRegister,
+} from './auth';
 
 describe('auth validation schemas', () => {
   it('validates login contract: email and password only', () => {
-    const result = validateLogin({ email: 'patient@example.com', password: 'Password123!' });
+    const result = validateLogin({
+      email: 'patient@example.com',
+      password: 'Password123!',
+    });
 
     expect(result.email.valid).toBe(true);
     expect(result.password.valid).toBe(true);
-    expect(validateLogin({ email: '0901234567', password: 'Password123!' }).email.valid).toBe(false);
+    expect(
+      validateLogin({ email: '0901234567', password: 'Password123!' }).email
+        .valid,
+    ).toBe(false);
   });
 
   it('validates password length', () => {

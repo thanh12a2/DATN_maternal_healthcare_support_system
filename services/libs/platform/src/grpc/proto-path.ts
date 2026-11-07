@@ -15,6 +15,7 @@ export function protoRoot(): string {
 export function protoPath(relativePath: string): string {
   const root = protoRoot();
   const path = resolve(root, relativePath);
-  if (!existsSync(path)) throw new Error(`Missing proto contract: ${relativePath}`);
+  if (!existsSync(path))
+    throw new Error(`Missing proto contract: ${relativePath}`);
   return path;
 }

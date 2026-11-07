@@ -12,7 +12,10 @@ import {
   UserCheck,
   Check,
 } from 'lucide-react';
-import type { Appointment, QueueTicketInfo } from '../../../services/appointment';
+import type {
+  Appointment,
+  QueueTicketInfo,
+} from '../../../services/appointment';
 
 export type ClinicalStatus =
   | 'BOOKED'
@@ -36,7 +39,9 @@ export interface ClinicalStatusMeta {
   icon: React.ReactNode;
 }
 
-export function getClinicalStatusMeta(status?: string | null): ClinicalStatusMeta {
+export function getClinicalStatusMeta(
+  status?: string | null,
+): ClinicalStatusMeta {
   switch (status) {
     case 'CHECKED_IN':
       return {
@@ -131,7 +136,7 @@ export interface PaymentMeta {
 
 export function getPaymentMeta(
   appointmentStatus?: string | null,
-  invoice?: any
+  invoice?: any,
 ): PaymentMeta {
   if (invoice) {
     const paid = Number(invoice.paid ?? invoice.paidMinor ?? 0);
@@ -271,8 +276,8 @@ export function ClinicalJourneyTracker({
         appointment.checkedInAt || appointment.checkInAt
           ? formatTime(appointment.checkedInAt || appointment.checkInAt)
           : currentStep >= 2
-          ? 'Đã tiếp đón'
-          : 'Chờ tại tầng 1',
+            ? 'Đã tiếp đón'
+            : 'Chờ tại tầng 1',
       icon: <UserCheck size={14} />,
     },
     {
@@ -281,10 +286,10 @@ export function ClinicalJourneyTracker({
       sub: appointment.clinicalStartedAt
         ? formatTime(appointment.clinicalStartedAt)
         : currentStep === 3
-        ? 'Đang khám'
-        : currentStep > 3
-        ? 'Đã khám'
-        : 'Đợi gọi số',
+          ? 'Đang khám'
+          : currentStep > 3
+            ? 'Đã khám'
+            : 'Đợi gọi số',
       icon: <Stethoscope size={14} />,
     },
     {
@@ -293,8 +298,8 @@ export function ClinicalJourneyTracker({
       sub: appointment.completedAt
         ? formatTime(appointment.completedAt)
         : currentStep === 4
-        ? 'Hoàn thành'
-        : 'Kết thúc ca',
+          ? 'Hoàn thành'
+          : 'Kết thúc ca',
       icon: <CheckCircle2 size={14} />,
     },
   ];
@@ -422,7 +427,8 @@ export function QueueTicketBadge({
 
   if (hasCode || isCheckedInOrBeyond) {
     const displayCode = queueCode || 'Đã phát số';
-    const displayRoom = roomName || (roomCode ? `Phòng ${roomCode}` : 'Phòng khám Sản Phụ khoa');
+    const displayRoom =
+      roomName || (roomCode ? `Phòng ${roomCode}` : 'Phòng khám Sản Phụ khoa');
 
     return (
       <div className={`pap-queue-badge is-issued size-${size}`}>
@@ -491,4 +497,3 @@ export function PaymentStatusBadge({
     </div>
   );
 }
-

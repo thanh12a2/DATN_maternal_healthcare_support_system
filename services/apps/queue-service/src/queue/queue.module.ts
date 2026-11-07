@@ -6,7 +6,11 @@ import { PatientDependencyGateway } from './patient-dependency.gateway';
 import { QueueRealtimeService } from './queue-realtime.service';
 @Module({
   controllers: [QueueController, QueueGrpcController],
-  providers: [QueueDomainService, PatientDependencyGateway, QueueRealtimeService],
+  providers: [
+    QueueDomainService,
+    PatientDependencyGateway,
+    QueueRealtimeService,
+  ],
   exports: [QueueDomainService],
 })
 export class QueueModule {}

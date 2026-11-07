@@ -23,7 +23,8 @@ export class DocumentService {
     idempotencyKeyHeader?: string,
     auth?: PublicAuthContext,
   ) {
-    if (b?.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (b?.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
     const idempotencyKey =
       idempotencyKeyHeader || b?.idempotencyKey || randomUUID();
     const old = await this.db.uploadSession.findUnique({
@@ -61,7 +62,8 @@ export class DocumentService {
 
     const sizeBytes = b.sizeBytes ? BigInt(b.sizeBytes) : BigInt(1024);
     const sha256 =
-      b.sha256 || '0000000000000000000000000000000000000000000000000000000000000000';
+      b.sha256 ||
+      '0000000000000000000000000000000000000000000000000000000000000000';
     await this.db.documentVersion.create({
       data: {
         documentId: d.id,
@@ -126,7 +128,8 @@ export class DocumentService {
     if (!session) {
       throw new NotFoundException('UPLOAD_SESSION_NOT_FOUND');
     }
-    if (session.document.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('UPLOAD_SESSION_NOT_FOUND');
+    if (session.document.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('UPLOAD_SESSION_NOT_FOUND');
 
     await this.db.uploadSession.update({
       where: { id: sessionId },
@@ -177,7 +180,8 @@ export class DocumentService {
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
     }
-    if (doc.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (doc.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
 
     const latest = doc.versions[0];
     const data = {
@@ -209,7 +213,8 @@ export class DocumentService {
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
     }
-    if (doc.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (doc.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
     const expiresAt = new Date(Date.now() + 300000).toISOString();
     const url = `http://localhost:8080/api/documents/${doc.id}/content`;
     return {
@@ -234,7 +239,8 @@ export class DocumentService {
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
     }
-    if (doc.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (doc.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
 
     const latest = doc.versions[0];
     const format = req.query?.format;
@@ -554,7 +560,8 @@ startxref
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
     }
-    if (doc.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (doc.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
 
     const nextVersion = doc.currentVersion + 1;
     await this.db.document.update({
@@ -564,7 +571,8 @@ startxref
 
     const sizeBytes = b.sizeBytes ? BigInt(b.sizeBytes) : BigInt(1024);
     const sha256 =
-      b.sha256 || '0000000000000000000000000000000000000000000000000000000000000000';
+      b.sha256 ||
+      '0000000000000000000000000000000000000000000000000000000000000000';
     await this.db.documentVersion.create({
       data: {
         documentId: doc.id,
@@ -617,7 +625,8 @@ startxref
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
     }
-    if (doc.purpose === 'CLINICAL_RESULT_FILE') throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    if (doc.purpose === 'CLINICAL_RESULT_FILE')
+      throw new NotFoundException('DOCUMENT_NOT_FOUND');
     const updated = await this.db.document.update({
       where: { id: documentId },
       data: { status: DocumentStatus.ARCHIVED },

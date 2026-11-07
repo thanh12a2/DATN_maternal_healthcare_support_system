@@ -1,0 +1,10 @@
+**/node_modules/
+**/dist/
+**/build/
+**/generated/
+**/coverage/
+**/package-lock.json
+**/.env
+**/.env.*
+scripts/keys/
+compose-dump.yml

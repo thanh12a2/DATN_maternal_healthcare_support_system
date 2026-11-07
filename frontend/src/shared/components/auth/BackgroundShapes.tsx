@@ -19,7 +19,8 @@ export function BackgroundShapes() {
             <span className="brand-badge">HOSPITAL</span>
           </div>
           <span className="brand-slogan-text">
-            Trọn vẹn yêu thương, vẹn toàn <strong className="slogan-accent">yên tâm</strong>
+            Trọn vẹn yêu thương, vẹn toàn{' '}
+            <strong className="slogan-accent">yên tâm</strong>
           </span>
         </div>
       </AppLink>

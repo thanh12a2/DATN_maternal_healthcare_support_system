@@ -49,7 +49,10 @@ import {
   AdminFeedbackModal,
   type AdminFeedbackState,
 } from '../components/AdminFeedbackModal';
-import { registerSpecialtyToCache, registerSpecialtyBatchToCache } from '../../../services/auditInterceptor';
+import {
+  registerSpecialtyToCache,
+  registerSpecialtyBatchToCache,
+} from '../../../services/auditInterceptor';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -60,19 +63,25 @@ export function AdminSpecialtiesPage() {
   const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    undefined,
+  );
 
   // Modal create/edit/delete states
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [specialtyToEdit, setSpecialtyToEdit] = useState<SpecialtyItem | null>(null);
+  const [specialtyToEdit, setSpecialtyToEdit] = useState<SpecialtyItem | null>(
+    null,
+  );
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [specialtyToDelete, setSpecialtyToDelete] = useState<SpecialtyItem | null>(null);
+  const [specialtyToDelete, setSpecialtyToDelete] =
+    useState<SpecialtyItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Drawer detail state
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
-  const [selectedSpecialty, setSelectedSpecialty] = useState<SpecialtyItem | null>(null);
+  const [selectedSpecialty, setSelectedSpecialty] =
+    useState<SpecialtyItem | null>(null);
 
   // Forms
   const [createForm] = Form.useForm<CreateSpecialtyPayload>();
@@ -114,7 +123,10 @@ export function AdminSpecialtiesPage() {
   const filteredSpecialties = useMemo(() => {
     return specialties.filter((sp) => {
       const q = searchQuery.toLowerCase().trim();
-      const matchSearch = !q || sp.name.toLowerCase().includes(q) || sp.code.toLowerCase().includes(q);
+      const matchSearch =
+        !q ||
+        sp.name.toLowerCase().includes(q) ||
+        sp.code.toLowerCase().includes(q);
       const matchStatus = !statusFilter || sp.status === statusFilter;
       return matchSearch && matchStatus;
     });
@@ -130,7 +142,12 @@ export function AdminSpecialtiesPage() {
       // Chuyển chuyên khoa vừa tạo về trạng thái Tạm khóa (INACTIVE/Bản nháp)
       // Dùng suppressAudit=true để không bị sinh lặp log thừa, chỉ lưu duy nhất 1 log tạo chuyên khoa (SPECIALTY_CREATED)
       try {
-        await updateSpecialty(request, created.id, { status: 'INACTIVE' }, { suppressAudit: true });
+        await updateSpecialty(
+          request,
+          created.id,
+          { status: 'INACTIVE' },
+          { suppressAudit: true },
+        );
         created.status = 'INACTIVE';
       } catch (statusErr) {
         console.warn('Could not set initial draft status:', statusErr);
@@ -150,7 +167,8 @@ export function AdminSpecialtiesPage() {
         open: true,
         type: 'error',
         title: 'Tạo chuyên khoa thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể tạo chuyên khoa mới.',
+        description:
+          err instanceof Error ? err.message : 'Không thể tạo chuyên khoa mới.',
       });
     } finally {
       setSubmitting(false);
@@ -170,10 +188,17 @@ export function AdminSpecialtiesPage() {
 
   const handleEdit = async (values: UpdateSpecialtyPayload) => {
     if (!specialtyToEdit) return;
-    registerSpecialtyToCache(specialtyToEdit.id, values.name || specialtyToEdit.name);
+    registerSpecialtyToCache(
+      specialtyToEdit.id,
+      values.name || specialtyToEdit.name,
+    );
     setSubmitting(true);
     try {
-      const updated = await updateSpecialty(request, specialtyToEdit.id, values);
+      const updated = await updateSpecialty(
+        request,
+        specialtyToEdit.id,
+        values,
+      );
       registerSpecialtyToCache(updated.id, updated.name);
       editForm.resetFields();
       setEditModalOpen(false);
@@ -193,7 +218,10 @@ export function AdminSpecialtiesPage() {
         open: true,
         type: 'error',
         title: 'Cập nhật thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể cập nhật chuyên khoa.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Không thể cập nhật chuyên khoa.',
       });
     } finally {
       setSubmitting(false);
@@ -228,8 +256,12 @@ export function AdminSpecialtiesPage() {
       });
       void loadData();
     } catch (err: unknown) {
-      const rawMsg = err instanceof Error ? err.message : 'Không thể xóa chuyên khoa.';
-      const cleanMsg = rawMsg.replace(/CANNOT_DELETE_SPECIALTY_IN_USE:\s*/i, '');
+      const rawMsg =
+        err instanceof Error ? err.message : 'Không thể xóa chuyên khoa.';
+      const cleanMsg = rawMsg.replace(
+        /CANNOT_DELETE_SPECIALTY_IN_USE:\s*/i,
+        '',
+      );
       setFeedback({
         open: true,
         type: 'error',
@@ -243,15 +275,18 @@ export function AdminSpecialtiesPage() {
 
   // Status toggle confirmation modal state
   const [statusConfirmModalOpen, setStatusConfirmModalOpen] = useState(false);
-  const [specialtyForStatusToggle, setSpecialtyForStatusToggle] = useState<SpecialtyItem | null>(null);
+  const [specialtyForStatusToggle, setSpecialtyForStatusToggle] =
+    useState<SpecialtyItem | null>(null);
   const [statusToggleLoading, setStatusToggleLoading] = useState(false);
 
   // Open confirmation modal for status toggle (Pause / Activate) with constraint check
   const handleToggleStatus = (sp: SpecialtyItem) => {
     registerSpecialtyToCache(sp.id, sp.name);
     if (sp.status === 'ACTIVE') {
-      const doctorsInSpecialty = doctors.filter((d) =>
-        d.status === 'ACTIVE' && d.specialties?.some((s) => s.id === sp.id || s.code === sp.code),
+      const doctorsInSpecialty = doctors.filter(
+        (d) =>
+          d.status === 'ACTIVE' &&
+          d.specialties?.some((s) => s.id === sp.id || s.code === sp.code),
       );
       if (doctorsInSpecialty.length > 0) {
         setFeedback({
@@ -269,7 +304,10 @@ export function AdminSpecialtiesPage() {
 
   const handleConfirmToggleStatus = async () => {
     if (!specialtyForStatusToggle) return;
-    registerSpecialtyToCache(specialtyForStatusToggle.id, specialtyForStatusToggle.name);
+    registerSpecialtyToCache(
+      specialtyForStatusToggle.id,
+      specialtyForStatusToggle.name,
+    );
     setStatusToggleLoading(true);
     const sp = specialtyForStatusToggle;
     const isActivating = sp.status !== 'ACTIVE';
@@ -277,7 +315,9 @@ export function AdminSpecialtiesPage() {
     const actionText = isActivating ? 'Kích hoạt' : 'Tạm khóa';
 
     try {
-      const updated = await updateSpecialty(request, sp.id, { status: nextStatus });
+      const updated = await updateSpecialty(request, sp.id, {
+        status: nextStatus,
+      });
       registerSpecialtyToCache(updated.id, updated.name);
       setStatusConfirmModalOpen(false);
       setSpecialtyForStatusToggle(null);
@@ -296,7 +336,10 @@ export function AdminSpecialtiesPage() {
         open: true,
         type: 'error',
         title: `${actionText} thất bại!`,
-        description: err instanceof Error ? err.message : `Không thể ${actionText.toLowerCase()} chuyên khoa.`,
+        description:
+          err instanceof Error
+            ? err.message
+            : `Không thể ${actionText.toLowerCase()} chuyên khoa.`,
       });
     } finally {
       setStatusToggleLoading(false);
@@ -307,7 +350,10 @@ export function AdminSpecialtiesPage() {
   const doctorsInSelectedSpecialty = useMemo(() => {
     if (!selectedSpecialty) return [];
     return doctors.filter((d) =>
-      d.specialties?.some((s) => s.id === selectedSpecialty.id || s.code === selectedSpecialty.code),
+      d.specialties?.some(
+        (s) =>
+          s.id === selectedSpecialty.id || s.code === selectedSpecialty.code,
+      ),
     );
   }, [doctors, selectedSpecialty]);
 
@@ -319,11 +365,16 @@ export function AdminSpecialtiesPage() {
       render: (_, record) => (
         <Space direction="vertical" size={2}>
           <div>
-            <span className="admin-code" style={{ fontWeight: 600, color: '#0284c7', fontSize: 12 }}>
+            <span
+              className="admin-code"
+              style={{ fontWeight: 600, color: '#0284c7', fontSize: 12 }}
+            >
               {record.code}
             </span>
           </div>
-          <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>{record.name}</span>
+          <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>
+            {record.name}
+          </span>
         </Space>
       ),
     },
@@ -334,12 +385,16 @@ export function AdminSpecialtiesPage() {
       align: 'center',
       render: (_, record) => {
         const count = doctors.filter((d) =>
-          d.specialties?.some((s) => s.id === record.id || s.code === record.code),
+          d.specialties?.some(
+            (s) => s.id === record.id || s.code === record.code,
+          ),
         ).length;
         return (
           <Tooltip title={`${count} bác sĩ phụ trách chuyên khoa này`}>
             <Space size={6}>
-              <TeamOutlined style={{ color: count > 0 ? '#0284c7' : '#94a3b8' }} />
+              <TeamOutlined
+                style={{ color: count > 0 ? '#0284c7' : '#94a3b8' }}
+              />
               <Badge
                 count={count}
                 showZero
@@ -361,7 +416,9 @@ export function AdminSpecialtiesPage() {
             <span style={{ color: '#475569', fontSize: 13 }}>{desc}</span>
           </Tooltip>
         ) : (
-          <span style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có mô tả</span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+            Chưa có mô tả
+          </span>
         ),
     },
     {
@@ -455,7 +512,11 @@ export function AdminSpecialtiesPage() {
                 { label: 'Tạm khóa (INACTIVE)', value: 'INACTIVE' },
               ]}
             />
-            <Button icon={<ReloadOutlined />} onClick={handleReset} loading={loading}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleReset}
+              loading={loading}
+            >
               Làm mới
             </Button>
           </Space>
@@ -506,13 +567,22 @@ export function AdminSpecialtiesPage() {
         destroyOnClose
         centered
       >
-        <Form form={createForm} layout="vertical" onFinish={handleCreate} style={{ marginTop: 16 }}>
+        <Form
+          form={createForm}
+          layout="vertical"
+          onFinish={handleCreate}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             name="code"
             label="Mã chuyên khoa (Viết hoa, không dấu)"
             rules={[
               { required: true, message: 'Vui lòng nhập mã chuyên khoa' },
-              { pattern: /^[A-Z0-9_]+$/, message: 'Mã chuyên khoa chỉ bao gồm chữ in hoa, số và dấu gạch dưới' },
+              {
+                pattern: /^[A-Z0-9_]+$/,
+                message:
+                  'Mã chuyên khoa chỉ bao gồm chữ in hoa, số và dấu gạch dưới',
+              },
             ]}
           >
             <Input placeholder="ví dụ: OBGYN, PEDIATRICS, CARDIOLOGY" />
@@ -521,13 +591,18 @@ export function AdminSpecialtiesPage() {
           <Form.Item
             name="name"
             label="Tên chuyên khoa"
-            rules={[{ required: true, message: 'Vui lòng nhập tên chuyên khoa' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên chuyên khoa' },
+            ]}
           >
             <Input placeholder="ví dụ: Sản Phụ Khoa, Nhi Khoa" />
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả chuyên khoa">
-            <Input.TextArea rows={3} placeholder="Mô tả phạm vi khám chữa bệnh của chuyên khoa..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Mô tả phạm vi khám chữa bệnh của chuyên khoa..."
+            />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -553,11 +628,18 @@ export function AdminSpecialtiesPage() {
         destroyOnClose
         centered
       >
-        <Form form={editForm} layout="vertical" onFinish={handleEdit} style={{ marginTop: 16 }}>
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEdit}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             name="name"
             label="Tên chuyên khoa"
-            rules={[{ required: true, message: 'Vui lòng nhập tên chuyên khoa' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên chuyên khoa' },
+            ]}
           >
             <Input />
           </Form.Item>
@@ -625,10 +707,12 @@ export function AdminSpecialtiesPage() {
       >
         <div style={{ padding: '8px 0' }}>
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-            Bạn có chắc chắn muốn xóa chuyên khoa <strong>{specialtyToDelete?.name}</strong>?
+            Bạn có chắc chắn muốn xóa chuyên khoa{' '}
+            <strong>{specialtyToDelete?.name}</strong>?
           </p>
           <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)' }}>
-            Hành động này sẽ xóa chuyên khoa khỏi hệ thống. Chỉ xóa được chuyên khoa khi không có bác sĩ nào trực thuộc.
+            Hành động này sẽ xóa chuyên khoa khỏi hệ thống. Chỉ xóa được chuyên
+            khoa khi không có bác sĩ nào trực thuộc.
           </p>
         </div>
       </Modal>
@@ -669,7 +753,9 @@ export function AdminSpecialtiesPage() {
               loading={statusToggleLoading}
               onClick={() => void handleConfirmToggleStatus()}
             >
-              {specialtyForStatusToggle?.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+              {specialtyForStatusToggle?.status === 'ACTIVE'
+                ? 'Tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={statusToggleLoading}
@@ -688,7 +774,9 @@ export function AdminSpecialtiesPage() {
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
             Bạn có chắc chắn muốn{' '}
             <strong>
-              {specialtyForStatusToggle?.status === 'ACTIVE' ? 'tạm khóa' : 'kích hoạt lại'}
+              {specialtyForStatusToggle?.status === 'ACTIVE'
+                ? 'tạm khóa'
+                : 'kích hoạt lại'}
             </strong>{' '}
             chuyên khoa <strong>{specialtyForStatusToggle?.name}</strong>?
           </p>
@@ -719,7 +807,9 @@ export function AdminSpecialtiesPage() {
                 {
                   key: 'code',
                   label: 'Mã chuyên khoa',
-                  children: <span className="admin-code">{selectedSpecialty.code}</span>,
+                  children: (
+                    <span className="admin-code">{selectedSpecialty.code}</span>
+                  ),
                 },
                 {
                   key: 'name',
@@ -734,7 +824,9 @@ export function AdminSpecialtiesPage() {
                 {
                   key: 'description',
                   label: 'Mô tả chuyên khoa',
-                  children: selectedSpecialty.description || <span style={{ color: 'var(--muted)' }}>Chưa có mô tả</span>,
+                  children: selectedSpecialty.description || (
+                    <span style={{ color: 'var(--muted)' }}>Chưa có mô tả</span>
+                  ),
                 },
                 {
                   key: 'doctorCount',
@@ -748,7 +840,9 @@ export function AdminSpecialtiesPage() {
               ]}
             />
 
-            <Divider style={{ margin: '20px 0 16px' }}>Danh sách bác sĩ trực thuộc ({doctorsInSelectedSpecialty.length})</Divider>
+            <Divider style={{ margin: '20px 0 16px' }}>
+              Danh sách bác sĩ trực thuộc ({doctorsInSelectedSpecialty.length})
+            </Divider>
 
             {doctorsInSelectedSpecialty.length > 0 ? (
               <Table<DoctorItem>
@@ -766,8 +860,12 @@ export function AdminSpecialtiesPage() {
                           {(d.profile?.fullName || 'B')[0].toUpperCase()}
                         </Avatar>
                         <div>
-                          <div style={{ fontWeight: 600 }}>{d.profile?.fullName}</div>
-                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{d.consultationRank || 'Bác sĩ'}</div>
+                          <div style={{ fontWeight: 600 }}>
+                            {d.profile?.fullName}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                            {d.consultationRank || 'Bác sĩ'}
+                          </div>
                         </div>
                       </Space>
                     ),
@@ -789,14 +887,22 @@ export function AdminSpecialtiesPage() {
                 ]}
               />
             ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)' }}>
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '24px 0',
+                  color: 'var(--muted)',
+                }}
+              >
                 Chưa có bác sĩ nào được phân công vào chuyên khoa này.
               </div>
             )}
 
             <Divider style={{ margin: '24px 0 16px' }} />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}
+            >
               {selectedSpecialty.status === 'ACTIVE' ? (
                 <Button
                   style={{ color: '#fa8c16', borderColor: '#fa8c16' }}

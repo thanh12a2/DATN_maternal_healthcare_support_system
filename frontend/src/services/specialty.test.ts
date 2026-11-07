@@ -10,8 +10,18 @@ describe('fetchSpecialties', () => {
   it('fetches specialties dynamically and returns non-empty list', async () => {
     const mockData = {
       data: [
-        { id: '1', code: 'PRENATAL', slug: 'kham-theo-doi-thai-ky', name: 'Khám & Theo dõi Thai kỳ' },
-        { id: '2', code: 'ULTRASOUND', slug: 'sieu-am-san-phu-khoa', name: 'Siêu âm Sản Phụ khoa Chẩn đoán' },
+        {
+          id: '1',
+          code: 'PRENATAL',
+          slug: 'kham-theo-doi-thai-ky',
+          name: 'Khám & Theo dõi Thai kỳ',
+        },
+        {
+          id: '2',
+          code: 'ULTRASOUND',
+          slug: 'sieu-am-san-phu-khoa',
+          name: 'Siêu âm Sản Phụ khoa Chẩn đoán',
+        },
       ],
     };
 
@@ -23,4 +33,3 @@ describe('fetchSpecialties', () => {
     expect(items[0].name).toBe('Khám & Theo dõi Thai kỳ');
   });
 });
-

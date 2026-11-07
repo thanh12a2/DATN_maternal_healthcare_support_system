@@ -69,7 +69,9 @@ export class MedicationCatalogService {
 
   async get(id: string, auth: PublicAuthContext) {
     this.allow(auth, ['ADMIN', 'DOCTOR', 'PATIENT']);
-    const medication = await this.db.medicationCatalog.findUnique({ where: { id } });
+    const medication = await this.db.medicationCatalog.findUnique({
+      where: { id },
+    });
     if (!medication || (!medication.isActive && auth.role !== 'ADMIN')) {
       throw new NotFoundException('MEDICATION_NOT_FOUND');
     }
@@ -109,7 +111,9 @@ export class MedicationCatalogService {
     const result = await this.db.medicationCatalog.updateMany({
       where: { id, version },
       data: {
-        ...(changes.name !== undefined ? { name: this.text(changes.name) } : {}),
+        ...(changes.name !== undefined
+          ? { name: this.text(changes.name) }
+          : {}),
         ...(changes.activeIngredient !== undefined
           ? { activeIngredient: this.text(changes.activeIngredient) }
           : {}),
@@ -119,7 +123,9 @@ export class MedicationCatalogService {
         ...(changes.dosageForm !== undefined
           ? { dosageForm: this.text(changes.dosageForm) }
           : {}),
-        ...(changes.route !== undefined ? { route: this.text(changes.route) } : {}),
+        ...(changes.route !== undefined
+          ? { route: this.text(changes.route) }
+          : {}),
         ...(changes.defaultDose !== undefined
           ? { defaultDose: this.optionalText(changes.defaultDose) }
           : {}),
@@ -127,7 +133,9 @@ export class MedicationCatalogService {
           ? { defaultFrequency: this.optionalText(changes.defaultFrequency) }
           : {}),
         ...(changes.defaultInstruction !== undefined
-          ? { defaultInstruction: this.optionalText(changes.defaultInstruction) }
+          ? {
+              defaultInstruction: this.optionalText(changes.defaultInstruction),
+            }
           : {}),
         ...(changes.pregnancyCategory !== undefined
           ? { pregnancyCategory: changes.pregnancyCategory }
@@ -171,9 +179,12 @@ export class MedicationCatalogService {
     const medications = await this.db.medicationCatalog.findMany({
       where: { code: { in: codes }, isActive: true },
     });
-    const byCode = new Map(medications.map((medication) => [medication.code, medication]));
+    const byCode = new Map(
+      medications.map((medication) => [medication.code, medication]),
+    );
     const missingCode = codes.find((code) => !byCode.has(code));
-    if (missingCode) throw new ConflictException(`MEDICATION_NOT_AVAILABLE:${missingCode}`);
+    if (missingCode)
+      throw new ConflictException(`MEDICATION_NOT_AVAILABLE:${missingCode}`);
 
     return items.map((item) => {
       if (!item.medicationCode) return item;
@@ -186,20 +197,25 @@ export class MedicationCatalogService {
         dosageForm: medication.dosageForm,
         route: item.route || medication.route,
         dose: item.dose || medication.defaultDose || '1 viên',
-        frequency: item.frequency || medication.defaultFrequency || '1 lần mỗi ngày',
+        frequency:
+          item.frequency || medication.defaultFrequency || '1 lần mỗi ngày',
         instruction: item.instruction || medication.defaultInstruction || '',
       };
     });
   }
 
   private async getForStaff(id: string) {
-    const medication = await this.db.medicationCatalog.findUnique({ where: { id } });
+    const medication = await this.db.medicationCatalog.findUnique({
+      where: { id },
+    });
     if (!medication) throw new NotFoundException('MEDICATION_NOT_FOUND');
     return { data: this.view(medication) };
   }
 
   private async notFoundOrConflict(id: string) {
-    const exists = await this.db.medicationCatalog.findUnique({ where: { id } });
+    const exists = await this.db.medicationCatalog.findUnique({
+      where: { id },
+    });
     if (!exists) throw new NotFoundException('MEDICATION_NOT_FOUND');
     throw new ConflictException('VERSION_CONFLICT');
   }
@@ -215,7 +231,8 @@ export class MedicationCatalogService {
   }
 
   private text(value: string) {
-    if (typeof value !== 'string') throw new BadRequestException('INVALID_MEDICATION_TEXT');
+    if (typeof value !== 'string')
+      throw new BadRequestException('INVALID_MEDICATION_TEXT');
     return value.trim().replace(/\s+/g, ' ');
   }
 
@@ -247,7 +264,8 @@ export class MedicationCatalogService {
   }
 
   private mapDatabaseError(error: any): never {
-    if (error?.code === 'P2002') throw new ConflictException('MEDICATION_CODE_EXISTS');
+    if (error?.code === 'P2002')
+      throw new ConflictException('MEDICATION_CODE_EXISTS');
     throw error;
   }
 }
