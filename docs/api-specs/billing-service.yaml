@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Maternal Billing Service API
   version: 1.0.0
-  description: Public REST contract for private-pay invoice reads, one-payment collection, manual transfer decisions, credit approval, and unpaid cancellation. Refunds are deliberately unsupported.
+  description: Public REST contract for private-pay invoice reads, cashier-initiated VNPay attempts, one-payment collection, manual transfer decisions, credit approval, and unpaid cancellation. Refunds are deliberately unsupported.
 servers:
   - url: /api/v1
 security:
@@ -91,6 +91,72 @@ paths:
         '404': {$ref: '#/components/responses/InvoiceNotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/Unprocessable'}
+  /invoices/{id}/vnpay-attempts:
+    post:
+      tags: [Payments]
+      operationId: createVnpayPaymentAttempt
+      summary: Create a VNPay payment attempt and return its signed checkout URL
+      description: Staff only. The amount and currency are read from the invoice. The endpoint accepts one internal return path so the receptionist can be returned to the originating screen after checkout. Only one unexpired pending attempt is allowed per invoice.
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateVnpayAttemptRequest'}
+      responses:
+        '201':
+          description: Attempt recorded and signed VNPay checkout URL returned.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CreateVnpayAttemptResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/InvoiceNotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/DependencyUnavailable'}
+  /ipn:
+    get:
+      servers:
+        - url: /api/payment-callbacks/vnpay
+      security: []
+      tags: [Payments]
+      operationId: receiveVnpayIpn
+      summary: Receive and verify a VNPay server-to-server payment result
+      description: Public callback route; verifies VNPay HMAC, merchant, transaction reference, and amount. It is separate from JWT-protected Billing routes.
+      parameters:
+        - name: vnp_TxnRef
+          in: query
+          required: true
+          schema: {type: string, maxLength: 100}
+        - name: vnp_Amount
+          in: query
+          required: true
+          schema: {type: string, pattern: '^[0-9]{1,12}$'}
+        - name: vnp_TmnCode
+          in: query
+          required: true
+          schema: {type: string, maxLength: 16}
+        - name: vnp_ResponseCode
+          in: query
+          required: true
+          schema: {type: string, maxLength: 2}
+        - name: vnp_TransactionStatus
+          in: query
+          required: true
+          schema: {type: string, maxLength: 2}
+        - name: vnp_SecureHash
+          in: query
+          required: true
+          schema: {type: string, pattern: '^[A-Fa-f0-9]{128}$'}
+      responses:
+        '200':
+          description: VNPay acknowledgement body; RspCode 00/02 means handled, other values request a retry or report invalid input.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VnpayIpnResponse'}
   /payments/{id}/verify:
     post:
       tags: [Payments]
@@ -323,7 +389,13 @@ components:
       enum: [OPEN, PAYMENT_PENDING_VERIFICATION, PAID, CREDIT_APPROVED, OUTSTANDING, CANCELLED]
     PaymentMethod:
       type: string
+      enum: [CASH, MANUAL_BANK_TRANSFER, VNPAY]
+    DirectPaymentMethod:
+      type: string
       enum: [CASH, MANUAL_BANK_TRANSFER]
+    PaymentAttemptStatus:
+      type: string
+      enum: [PENDING, SUCCEEDED, FAILED, CANCELLED, EXPIRED, RECONCILIATION_REQUIRED]
     PaymentStatus:
       type: string
       enum: [RECORDED, VERIFIED, REJECTED]
@@ -423,7 +495,7 @@ components:
       type: object
       required: [method, amountMinor, receivedAt, expectedInvoiceVersion]
       properties:
-        method: {$ref: '#/components/schemas/PaymentMethod'}
+        method: {$ref: '#/components/schemas/DirectPaymentMethod'}
         amountMinor: {type: integer, format: int64, minimum: 0}
         manualTransferReference:
           type: string
@@ -432,6 +504,35 @@ components:
           description: Required only for MANUAL_BANK_TRANSFER; ignored values are rejected for CASH.
         receivedAt: {type: string, format: date-time}
         expectedInvoiceVersion: {type: integer, format: int64, minimum: 1}
+    CreateVnpayAttemptRequest:
+      type: object
+      required: [expectedInvoiceVersion, returnPath]
+      properties:
+        expectedInvoiceVersion: {type: integer, minimum: 1}
+        returnPath:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          pattern: '^/(?!/).*'
+          description: Internal application path only. Absolute URLs and protocol-relative paths are rejected.
+    CreateVnpayAttemptResponse:
+      type: object
+      required: [paymentAttemptId, txnRef, status, amountMinor, currency, paymentUrl, expiresAt, returnPath]
+      properties:
+        paymentAttemptId: {type: string, format: uuid}
+        txnRef: {type: string, maxLength: 100}
+        status: {$ref: '#/components/schemas/PaymentAttemptStatus'}
+        amountMinor: {type: string, pattern: '^[0-9]+$'}
+        currency: {type: string, enum: [VND]}
+        paymentUrl: {type: string, format: uri}
+        expiresAt: {type: string, format: date-time}
+        returnPath: {type: string, maxLength: 1024}
+    VnpayIpnResponse:
+      type: object
+      required: [RspCode, Message]
+      properties:
+        RspCode: {type: string, enum: ['00', '01', '02', '04', '97', '99']}
+        Message: {type: string, maxLength: 255}
     PaymentDecisionRequest:
       type: object
       required: [expectedInvoiceVersion]

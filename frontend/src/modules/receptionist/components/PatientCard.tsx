@@ -9,6 +9,7 @@ import {
   MedicineBoxOutlined,
   PhoneOutlined,
   PrinterOutlined,
+  QrcodeOutlined,
   SwapOutlined,
   UserOutlined,
   FileTextOutlined,
@@ -40,6 +41,7 @@ import { useAuthSession } from '../../../app/AuthSessionProvider';
 import type { Requester } from '../../../services/catalog';
 import {
   amountTotalOf,
+  createAppointmentVnpayAttempt,
   paymentStatusOf,
   payAndCheckInAppointment,
   refreshAppointment,
@@ -48,6 +50,7 @@ import {
   type DeskPatient,
   type PatientMap,
 } from '../../../services/receptionDesk';
+import { PENDING_VNPAY_RETURN_KEY, type VnpayReturnContext } from '../../../services/vnpayReturn';
 import {
   age,
   channelText,
@@ -99,7 +102,7 @@ export function PatientCard({
   const [editPatientOpen, setEditPatientOpen] = useState(false);
   const [reschedulingApp, setReschedulingApp] = useState<DeskAppointment | null>(null);
   const [paymentModalApp, setPaymentModalApp] = useState<DeskAppointment | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'VNPAY'>('CASH');
   const [paymentRef, setPaymentRef] = useState<string>('');
   const [payingAndCheckingIn, setPayingAndCheckingIn] = useState<boolean>(false);
   const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(null);
@@ -108,6 +111,27 @@ export function PatientCard({
     if (!paymentModalApp) return;
     setPayingAndCheckingIn(true);
     try {
+      if (paymentMethod === 'VNPAY') {
+        const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        const { invoice, attempt } = await createAppointmentVnpayAttempt(request, paymentModalApp, returnPath);
+        const context: VnpayReturnContext = {
+          txnRef: attempt.txnRef,
+          returnPath,
+          invoiceId: invoice.id,
+          appointment: { ...paymentModalApp, invoice, invoices: paymentModalApp.invoices?.length ? paymentModalApp.invoices : [invoice] },
+          patient: currentPatient,
+          page: {
+            room: paymentModalApp.roomCode,
+            date: paymentModalApp.date,
+            query: currentPatient.phone ?? currentPatient.fullName,
+          },
+          completeCheckInAfterPayment: true,
+        };
+        window.sessionStorage.setItem(PENDING_VNPAY_RETURN_KEY, JSON.stringify(context));
+        window.location.assign(attempt.paymentUrl);
+        return;
+      }
+
       const res = await payAndCheckInAppointment(
         request,
         paymentModalApp,
@@ -1036,7 +1060,7 @@ export function PatientCard({
               key="submit"
               type="primary"
               loading={payingAndCheckingIn}
-              icon={<CheckCircleOutlined />}
+              icon={paymentMethod === 'VNPAY' ? <QrcodeOutlined /> : <CheckCircleOutlined />}
               onClick={handleConfirmPayAndCheckIn}
               style={{
                 backgroundColor: '#16A34A',
@@ -1046,7 +1070,7 @@ export function PatientCard({
                 padding: '0 18px',
               }}
             >
-              Xác nhận Thu tiền & Cấp số thứ tự
+              {paymentMethod === 'VNPAY' ? 'Tiếp tục thanh toán VNPay' : 'Xác nhận Thu tiền & Cấp số thứ tự'}
             </Button>,
           ]}
           width={540}
@@ -1131,6 +1155,12 @@ export function PatientCard({
                       Bệnh nhân quét mã QR ngân hàng tại quầy
                     </span>
                   </Radio>
+                  <Radio value="VNPAY">
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>Thanh toán VNPay / QR</span>
+                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
+                      Mở trang VNPay để bệnh nhân quét mã hoặc chọn ngân hàng thanh toán
+                    </span>
+                  </Radio>
                 </Space>
               </Radio.Group>
             </div>
@@ -1144,6 +1174,11 @@ export function PatientCard({
                   style={{ borderRadius: 6 }}
                 />
               </div>
+            )}
+            {paymentMethod === 'VNPAY' && (
+              <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                Check-in và cấp số thứ tự chỉ hoàn tất sau khi hệ thống nhận xác nhận thanh toán từ VNPay.
+              </Typography.Text>
             )}
           </div>
         </Modal>

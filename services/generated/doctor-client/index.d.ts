@@ -5507,6 +5507,7 @@ export namespace Prisma {
   export type SpecialtyMinAggregateOutputType = {
     id: string | null
     code: string | null
+    slug: string | null
     name: string | null
     description: string | null
     status: $Enums.SpecialtyStatus | null
@@ -5517,6 +5518,7 @@ export namespace Prisma {
   export type SpecialtyMaxAggregateOutputType = {
     id: string | null
     code: string | null
+    slug: string | null
     name: string | null
     description: string | null
     status: $Enums.SpecialtyStatus | null
@@ -5527,8 +5529,10 @@ export namespace Prisma {
   export type SpecialtyCountAggregateOutputType = {
     id: number
     code: number
+    slug: number
     name: number
     description: number
+    overview: number
     status: number
     createdAt: number
     updatedAt: number
@@ -5539,6 +5543,7 @@ export namespace Prisma {
   export type SpecialtyMinAggregateInputType = {
     id?: true
     code?: true
+    slug?: true
     name?: true
     description?: true
     status?: true
@@ -5549,6 +5554,7 @@ export namespace Prisma {
   export type SpecialtyMaxAggregateInputType = {
     id?: true
     code?: true
+    slug?: true
     name?: true
     description?: true
     status?: true
@@ -5559,8 +5565,10 @@ export namespace Prisma {
   export type SpecialtyCountAggregateInputType = {
     id?: true
     code?: true
+    slug?: true
     name?: true
     description?: true
+    overview?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -5642,8 +5650,10 @@ export namespace Prisma {
   export type SpecialtyGroupByOutputType = {
     id: string
     code: string
+    slug: string | null
     name: string
     description: string | null
+    overview: JsonValue | null
     status: $Enums.SpecialtyStatus
     createdAt: Date
     updatedAt: Date
@@ -5669,8 +5679,10 @@ export namespace Prisma {
   export type SpecialtySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     code?: boolean
+    slug?: boolean
     name?: boolean
     description?: boolean
+    overview?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -5681,8 +5693,10 @@ export namespace Prisma {
   export type SpecialtySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     code?: boolean
+    slug?: boolean
     name?: boolean
     description?: boolean
+    overview?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -5691,8 +5705,10 @@ export namespace Prisma {
   export type SpecialtySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     code?: boolean
+    slug?: boolean
     name?: boolean
     description?: boolean
+    overview?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -5701,14 +5717,16 @@ export namespace Prisma {
   export type SpecialtySelectScalar = {
     id?: boolean
     code?: boolean
+    slug?: boolean
     name?: boolean
     description?: boolean
+    overview?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SpecialtyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "code" | "name" | "description" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["specialty"]>
+  export type SpecialtyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "code" | "slug" | "name" | "description" | "overview" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["specialty"]>
   export type SpecialtyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctors?: boolean | Specialty$doctorsArgs<ExtArgs>
     _count?: boolean | SpecialtyCountOutputTypeDefaultArgs<ExtArgs>
@@ -5724,8 +5742,10 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       code: string
+      slug: string | null
       name: string
       description: string | null
+      overview: Prisma.JsonValue | null
       status: $Enums.SpecialtyStatus
       createdAt: Date
       updatedAt: Date
@@ -6155,8 +6175,10 @@ export namespace Prisma {
   interface SpecialtyFieldRefs {
     readonly id: FieldRef<"Specialty", 'String'>
     readonly code: FieldRef<"Specialty", 'String'>
+    readonly slug: FieldRef<"Specialty", 'String'>
     readonly name: FieldRef<"Specialty", 'String'>
     readonly description: FieldRef<"Specialty", 'String'>
+    readonly overview: FieldRef<"Specialty", 'Json'>
     readonly status: FieldRef<"Specialty", 'SpecialtyStatus'>
     readonly createdAt: FieldRef<"Specialty", 'DateTime'>
     readonly updatedAt: FieldRef<"Specialty", 'DateTime'>
@@ -13609,8 +13631,10 @@ export namespace Prisma {
   export const SpecialtyScalarFieldEnum: {
     id: 'id',
     code: 'code',
+    slug: 'slug',
     name: 'name',
     description: 'description',
+    overview: 'overview',
     status: 'status',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -13722,19 +13746,19 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-  export const JsonNullValueInput: {
-    JsonNull: typeof JsonNull
-  };
-
-  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
-
-
   export const NullableJsonNullValueInput: {
     DbNull: typeof DbNull,
     JsonNull: typeof JsonNull
   };
 
   export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
   export const QueryMode: {
@@ -13852,6 +13876,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueryMode'
+   */
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+  /**
    * Reference to a field of type 'SpecialtyStatus'
    */
   export type EnumSpecialtyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SpecialtyStatus'>
@@ -13925,20 +13963,6 @@ export namespace Prisma {
    * Reference to a field of type 'AvailabilityStatus[]'
    */
   export type ListEnumAvailabilityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AvailabilityStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-  /**
-   * Reference to a field of type 'QueryMode'
-   */
-  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -14195,8 +14219,10 @@ export namespace Prisma {
     NOT?: SpecialtyWhereInput | SpecialtyWhereInput[]
     id?: UuidFilter<"Specialty"> | string
     code?: StringFilter<"Specialty"> | string
+    slug?: StringNullableFilter<"Specialty"> | string | null
     name?: StringFilter<"Specialty"> | string
     description?: StringNullableFilter<"Specialty"> | string | null
+    overview?: JsonNullableFilter<"Specialty">
     status?: EnumSpecialtyStatusFilter<"Specialty"> | $Enums.SpecialtyStatus
     createdAt?: DateTimeFilter<"Specialty"> | Date | string
     updatedAt?: DateTimeFilter<"Specialty"> | Date | string
@@ -14206,8 +14232,10 @@ export namespace Prisma {
   export type SpecialtyOrderByWithRelationInput = {
     id?: SortOrder
     code?: SortOrder
+    slug?: SortOrderInput | SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    overview?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -14217,22 +14245,26 @@ export namespace Prisma {
   export type SpecialtyWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     code?: string
+    slug?: string
     name?: string
     AND?: SpecialtyWhereInput | SpecialtyWhereInput[]
     OR?: SpecialtyWhereInput[]
     NOT?: SpecialtyWhereInput | SpecialtyWhereInput[]
     description?: StringNullableFilter<"Specialty"> | string | null
+    overview?: JsonNullableFilter<"Specialty">
     status?: EnumSpecialtyStatusFilter<"Specialty"> | $Enums.SpecialtyStatus
     createdAt?: DateTimeFilter<"Specialty"> | Date | string
     updatedAt?: DateTimeFilter<"Specialty"> | Date | string
     doctors?: DoctorSpecialtyListRelationFilter
-  }, "id" | "code" | "name">
+  }, "id" | "code" | "slug" | "name">
 
   export type SpecialtyOrderByWithAggregationInput = {
     id?: SortOrder
     code?: SortOrder
+    slug?: SortOrderInput | SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    overview?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -14247,8 +14279,10 @@ export namespace Prisma {
     NOT?: SpecialtyScalarWhereWithAggregatesInput | SpecialtyScalarWhereWithAggregatesInput[]
     id?: UuidWithAggregatesFilter<"Specialty"> | string
     code?: StringWithAggregatesFilter<"Specialty"> | string
+    slug?: StringNullableWithAggregatesFilter<"Specialty"> | string | null
     name?: StringWithAggregatesFilter<"Specialty"> | string
     description?: StringNullableWithAggregatesFilter<"Specialty"> | string | null
+    overview?: JsonNullableWithAggregatesFilter<"Specialty">
     status?: EnumSpecialtyStatusWithAggregatesFilter<"Specialty"> | $Enums.SpecialtyStatus
     createdAt?: DateTimeWithAggregatesFilter<"Specialty"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Specialty"> | Date | string
@@ -15010,8 +15044,10 @@ export namespace Prisma {
   export type SpecialtyCreateInput = {
     id?: string
     code: string
+    slug?: string | null
     name: string
     description?: string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.SpecialtyStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -15021,8 +15057,10 @@ export namespace Prisma {
   export type SpecialtyUncheckedCreateInput = {
     id?: string
     code: string
+    slug?: string | null
     name: string
     description?: string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.SpecialtyStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -15032,8 +15070,10 @@ export namespace Prisma {
   export type SpecialtyUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15043,8 +15083,10 @@ export namespace Prisma {
   export type SpecialtyUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15054,8 +15096,10 @@ export namespace Prisma {
   export type SpecialtyCreateManyInput = {
     id?: string
     code: string
+    slug?: string | null
     name: string
     description?: string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.SpecialtyStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -15064,8 +15108,10 @@ export namespace Prisma {
   export type SpecialtyUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15074,8 +15120,10 @@ export namespace Prisma {
   export type SpecialtyUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16026,6 +16074,29 @@ export namespace Prisma {
     _min?: NestedIntNullableFilter<$PrismaModel>
     _max?: NestedIntNullableFilter<$PrismaModel>
   }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type EnumSpecialtyStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.SpecialtyStatus | EnumSpecialtyStatusFieldRefInput<$PrismaModel>
@@ -16037,8 +16108,10 @@ export namespace Prisma {
   export type SpecialtyCountOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
+    slug?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    overview?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -16047,6 +16120,7 @@ export namespace Prisma {
   export type SpecialtyMaxOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
+    slug?: SortOrder
     name?: SortOrder
     description?: SortOrder
     status?: SortOrder
@@ -16057,11 +16131,38 @@ export namespace Prisma {
   export type SpecialtyMinOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
+    slug?: SortOrder
     name?: SortOrder
     description?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type EnumSpecialtyStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -16462,29 +16563,6 @@ export namespace Prisma {
     _min?: NestedJsonFilter<$PrismaModel>
     _max?: NestedJsonFilter<$PrismaModel>
   }
-  export type JsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type AuditRecordCountOrderByAggregateInput = {
     id?: SortOrder
@@ -16515,32 +16593,6 @@ export namespace Prisma {
     resourceId?: SortOrder
     requestId?: SortOrder
     createdAt?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type OutboxEventCountOrderByAggregateInput = {
@@ -17473,6 +17525,29 @@ export namespace Prisma {
     notIn?: $Enums.SpecialtyStatus[] | ListEnumSpecialtyStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumSpecialtyStatusFilter<$PrismaModel> | $Enums.SpecialtyStatus
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedEnumSpecialtyStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.SpecialtyStatus | EnumSpecialtyStatusFieldRefInput<$PrismaModel>
@@ -17622,29 +17697,6 @@ export namespace Prisma {
     | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
 
   export type NestedJsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
-  export type NestedJsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string[]
     mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
@@ -18394,8 +18446,10 @@ export namespace Prisma {
   export type SpecialtyCreateWithoutDoctorsInput = {
     id?: string
     code: string
+    slug?: string | null
     name: string
     description?: string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.SpecialtyStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -18404,8 +18458,10 @@ export namespace Prisma {
   export type SpecialtyUncheckedCreateWithoutDoctorsInput = {
     id?: string
     code: string
+    slug?: string | null
     name: string
     description?: string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.SpecialtyStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -18475,8 +18531,10 @@ export namespace Prisma {
   export type SpecialtyUpdateWithoutDoctorsInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18485,8 +18543,10 @@ export namespace Prisma {
   export type SpecialtyUncheckedUpdateWithoutDoctorsInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    overview?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumSpecialtyStatusFieldUpdateOperationsInput | $Enums.SpecialtyStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

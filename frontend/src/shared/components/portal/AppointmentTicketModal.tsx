@@ -6,9 +6,19 @@ import {
   Copy,
   Printer,
   X,
+  CreditCard,
+  Building2,
+  Stethoscope,
 } from 'lucide-react';
-import type { Appointment } from '../../../services/appointment';
+import type { Appointment, QueueTicketInfo } from '../../../services/appointment';
 import type { PatientProfile } from '../../../services/patient';
+import {
+  ClinicalJourneyTracker,
+  QueueTicketBadge,
+  PaymentStatusBadge,
+  getClinicalStatusMeta,
+  getPaymentMeta,
+} from './ClinicalJourneyTracker';
 import '../../../styles/patient-appointments.css';
 
 const WEEKDAYS = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -70,6 +80,8 @@ export interface AppointmentTicketModalProps {
   fallbackServiceName?: string;
   fallbackRoomName?: string;
   fallbackPriceMinor?: number;
+  queueInfo?: QueueTicketInfo | null;
+  invoice?: any;
   onGoToAppointments?: () => void;
   showGoToAppointmentsBtn?: boolean;
 }
@@ -88,6 +100,8 @@ export function AppointmentTicketModal({
   fallbackServiceName,
   fallbackRoomName,
   fallbackPriceMinor,
+  queueInfo,
+  invoice,
   onGoToAppointments,
   showGoToAppointmentsBtn = false,
 }: AppointmentTicketModalProps) {
@@ -160,6 +174,31 @@ export function AppointmentTicketModal({
               {copiedCode ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
               <span>{copiedCode ? 'Đã sao chép' : 'Sao chép mã'}</span>
             </button>
+          </div>
+
+          {/* Banner Số thứ tự & Trạng thái thanh toán */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '12px', marginBottom: '12px' }}>
+            <QueueTicketBadge
+              queueCode={appointment.queueCode || queueInfo?.ticketCode}
+              roomCode={appointment.roomCode || queueInfo?.roomCode}
+              roomName={fallbackRoomName || appointment.roomName}
+              appointmentStatus={appointment.status}
+              size="md"
+            />
+            <PaymentStatusBadge
+              appointmentStatus={appointment.status}
+              invoice={invoice}
+              showDesc={false}
+            />
+          </div>
+
+          {/* Tiến trình khám bệnh trực quan khi đi khám */}
+          <div style={{ marginBottom: '16px' }}>
+            <ClinicalJourneyTracker
+              appointment={appointment}
+              queueInfo={queueInfo}
+              compact={false}
+            />
           </div>
 
           {/* Bố cục 2 cột không phải cuộn trang: Cột trái to hơn hiển thị 1. Thông tin lịch hẹn y tế; Cột phải là 2. Thông tin người khám bệnh */}

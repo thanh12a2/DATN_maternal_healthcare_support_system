@@ -4,12 +4,13 @@
 | Version | Date | Change | Impact |
 |---|---|---|---|
 | Draft-2026-10-17-changelog | 2026-10-17 | Bổ sung version và change log chuẩn hóa theo format của Doctor Service Specification. Không thay đổi business contract trong tài liệu. | Chỉ thay đổi metadata/documentation; dùng section này để theo dõi các lần cập nhật tiếp theo. |
+| VNPay-2026-11-04 | 2026-11-04 | Thêm khởi tạo PaymentAttempt do lễ tân thực hiện và IPN VNPay xác thực qua HMAC; Payment chỉ được ghi khi settlement hợp lệ. | Triển khai bước đầu; checkout/API callback đã có, cấu hình merchant và migration DB cần được áp dụng trước khi chạy. |
 
 ---
 # Billing Service — Service Specification
 
-> **Status:** DESIGN — implementation-ready, chưa có source/config trong repository tại ngày 2026-10-03.  
-> **Approved decisions:** không BHYT; **không refund dưới mọi hình thức**; đúng một Payment/Invoice; không partial/mixed/gateway; payment `CASH | MANUAL_BANK_TRANSFER`; base charge trước queue hoặc approved credit; supplementary chỉ dịch vụ PERFORMED; thuốc không charge; nợ bổ sung không khóa clinical completion.  
+> **Status:** IMPLEMENTATION IN PROGRESS — Billing Service đã có source; tích hợp VNPay đang triển khai từng bước.  
+> **Approved decisions:** không BHYT; **không refund dưới mọi hình thức**; đúng một Payment/Invoice thành công; không partial/mixed; payment `CASH | MANUAL_BANK_TRANSFER | VNPAY`; lễ tân khởi tạo VNPay cho cả BASE và SUPPLEMENTARY; base charge trước queue hoặc approved credit; supplementary chỉ dịch vụ PERFORMED; thuốc không charge; nợ bổ sung không khóa clinical completion.  
 > Contract chuẩn: [OpenAPI](../api-specs/billing-service.yaml) · [gRPC](../grpc/billing/v1/billing_internal.proto).
 
 ## 1. Tổng quan và boundary
@@ -84,6 +85,14 @@ Separation of duties: requester không approve credit của cùng invoice; appro
 - CASH created directly VERIFIED; MANUAL_BANK_TRANSFER starts RECORDED/PAYMENT_PENDING_VERIFICATION, ADMIN/authorized cashier verifies -> VERIFIED/PAID or REJECTED -> invoice OPEN/OUTSTANDING.
 - Exactly one Payment row per Invoice **ever**, kể cả REJECTED; nếu rejected thì không tạo payment thứ hai trong MVP—ADMIN phải xử lý ngoài hệ thống/mark invoice outstanding. This makes one-payment invariant unambiguous.
 
+### PaymentAttempt (VNPay)
+`id,invoiceId,txnRef,amountMinor,currency,status,returnPath,gatewayTransactionNo,bankTransactionNo,responseCode,createdBy,expiresAt,completedAt,createdAt,updatedAt`.
+- Mỗi attempt là một lần thử thanh toán VNPay riêng; amount/currency được snapshot từ invoice. `txnRef` là duy nhất.
+- Status: `PENDING | SUCCEEDED | FAILED | CANCELLED | EXPIRED | RECONCILIATION_REQUIRED`.
+- Attempt thất bại/hủy không tạo Payment. Chỉ callback IPN đã xác thực mới tạo đúng một `Payment(method=VNPAY,status=VERIFIED)` và đánh dấu invoice PAID.
+- Callback báo debit/rủi ro nhưng invoice không thể settle an toàn thì giữ attempt ở `RECONCILIATION_REQUIRED`; không đánh dấu invoice PAID.
+- `returnPath` chỉ lưu đường dẫn nội bộ đã kiểm tra để quay về màn hình lễ tân; không phải callback xác nhận thanh toán.
+
 ### CreditApproval
 `id,invoiceId,status,reasonCode,reasonText(max500),approvedBy,approvedAt,expiresAt?,revokedBy?,revokedAt?,version`. Không phải Payment, không set paidMinor; invoice CREDIT_APPROVED và admission condition APPROVED_CREDIT.
 
@@ -93,6 +102,9 @@ Separation of duties: requester không approve credit của cùng invoice; appro
 | invoice | UNIQUE | appointmentId,type (mỗi appointment tối đa một BASE và một SUPPLEMENTARY) |
 | invoice | UNIQUE | invoiceNumber |
 | payment | UNIQUE | invoiceId; idempotencyKey scope |
+| payment_attempt | UNIQUE | txnRef |
+| payment_attempt | INDEX | invoiceId,status,createdAt; status,expiresAt |
+| payment_attempt | DOMAIN/LOCK | At most one unexpired PENDING attempt per invoice; serialized by invoice row lock |
 | credit_approval | UNIQUE | invoiceId |
 | invoice_line | UNIQUE | invoiceId,lineNo; source+sourceReferenceId cho performed line |
 | invoice | CHECK | total=sum maintained transactionally; paidMinor IN (0,total); balance=total-paid; currency=VND |
@@ -138,6 +150,8 @@ Base `/api/v1`; detail in OpenAPI.
 | BILL-006 | POST `/invoices/{id}/credit-approvals` | ADMIN | required; SoD |
 | BILL-007 | POST `/invoices/{id}/credit-approvals/{creditId}/revoke` | ADMIN | required + reason |
 | BILL-008 | POST `/invoices/{id}/cancel` | ADMIN | required + reason; unpaid only |
+| BILL-009 | POST `/invoices/{id}/vnpay-attempts` | RECEPTIONIST/ADMIN | required; creates attempt and returns signed checkout URL |
+| BILL-010 | GET `/ipn` qua route công khai riêng | VNPay server | signed/idempotent callback; no application JWT |
 
 Payment request amount must equal invoice total/balance exactly; no client currency override, no payment method outside enum. Manual transfer reference 3–100 chars and unique-normalized when present. There is deliberately no refund endpoint.
 
@@ -169,7 +183,7 @@ Billing does **not** call Catalog for booking base amount and does not call Queu
 | BILL-BR-002 | Không refund/void paid amount/negative adjustment dưới mọi hình thức | API absent + DB checks |
 | BILL-BR-003 | Tối đa đúng một Payment/Invoice ever | DB UNIQUE/PAYMENT_ALREADY_EXISTS |
 | BILL-BR-004 | Không partial/mixed: amount == total and one method | App+DB/AMOUNT_MUST_EQUAL_TOTAL |
-| BILL-BR-005 | Chỉ CASH hoặc MANUAL_BANK_TRANSFER; không gateway | Enum/PAYMENT_METHOD_NOT_SUPPORTED |
+| BILL-BR-005 | CASH, MANUAL_BANK_TRANSFER hoặc VNPay; VNPay chỉ được xác nhận qua IPN hợp lệ | Enum/domain/HMAC verification |
 | BILL-BR-006 | CASH verified atomically; transfer cần explicit verify | State machine |
 | BILL-BR-007 | Base invoice dùng immutable Appointment pricing snapshot | App/SNAPSHOT_MISMATCH |
 | BILL-BR-008 | Base condition trước queue là PAID hoặc APPROVED_CREDIT | Domain |

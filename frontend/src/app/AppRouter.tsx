@@ -24,6 +24,7 @@ import { DoctorWorkspacePage } from '../modules/doctor/pages/DoctorWorkspacePage
 import { ReceptionistWorkspacePage } from '../modules/receptionist/pages/ReceptionistWorkspacePage';
 import { ClinicManagerWorkspacePage } from '../modules/clinic-manager/pages/ClinicManagerWorkspacePage';
 import { NurseWorkspacePage } from '../modules/nurse/pages/NurseWorkspacePage';
+import { VnpayReturnPage } from '../modules/receptionist/pages/VnpayReturnPage';
 
 import { ChatbotLauncher } from '../modules/patient/components/chatbot/ChatbotLauncher';
 
@@ -79,12 +80,13 @@ function Routes() {
   const path = (rawPath.split('?')[0].replace(/\/+$/, '') || '/').toLowerCase();
   const auth = useAuthSession();
   const isAdminPort = typeof window !== 'undefined' && window.location.port === '3001';
-
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash === '#cam-nang-thai-ky') {
       navigate('/cam-nang-thai-ky', { replace: true });
     }
   }, []);
+
+  if (path === '/vnpay/return') return <VnpayReturnPage />;
 
   if (auth.status === 'loading') return <main className="app-loading" role="status">Đang khôi phục phiên đăng nhập…</main>;
   // 1. Phân quyền và cách ly Workspace độc lập cho Nhân viên y tế & Lễ tân:

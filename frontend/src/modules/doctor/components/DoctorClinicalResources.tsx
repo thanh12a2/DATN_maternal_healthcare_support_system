@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { CheckCircleOutlined as CheckCircle2, RightOutlined as ChevronRight, ProfileOutlined as ClipboardList, FileTextOutlined as FileText, LoadingOutlined as LoaderCircle, PlusOutlined as Plus, SearchOutlined as Search, DeleteOutlined as Trash2, WarningOutlined as TriangleAlert, CloseOutlined as X } from '@ant-design/icons';
 import { createPrescription, createTreatmentPlan, listMedications, listPrescriptions, listTreatmentPlans, prescriptionAction, treatmentPlanAction, updatePrescription, updateTreatmentPlan } from '../../../services/clinical';
 import type { Medication, Prescription, TreatmentPlan } from '../../../services/clinical';
@@ -234,3 +234,4 @@ export function DoctorClinicalResources({ request, encounterId, patientId, encou
     </div>
   </section>;
 }
+

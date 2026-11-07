@@ -711,18 +711,22 @@ export function PatientBookingPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // Bước A: Tạo Slot Hold (giữ chỗ)
-      const targetMode = selectedSlot.selectionMode || doctorMode;
-      const hold = await createSlotHold(auth.request, {
-        serviceId: selectedService.id!,
-        selectionMode: targetMode,
-        requestedDoctorId: targetMode === 'DOCTOR' ? (selectedSlot.doctorId || selectedDoctorId || undefined) : undefined,
-        requestedRankCode: targetMode === 'RANK' ? (selectedSlot.rankCode || 'BASIC') : undefined,
-        startAt: selectedSlot.startAt,
-        endAt: selectedSlot.endAt,
-      });
+      setIsSubmitting(true);
+      try {
+        // Bước A: Tạo Slot Hold (giữ chỗ 5 phút)
+        const holdSelectionMode = selectedSlot.selectionMode || doctorMode;
+        const hold = await createSlotHold(auth.request, {
+          serviceId: selectedService.id!,
+          selectionMode: holdSelectionMode,
+          requestedDoctorId: holdSelectionMode === 'DOCTOR'
+            ? selectedSlot.doctorId || (doctorMode === 'DOCTOR' ? selectedDoctorId : undefined)
+            : undefined,
+          requestedRankCode: holdSelectionMode === 'RANK'
+            ? selectedSlot.rankCode || (doctorMode === 'RANK' ? 'BASIC' : undefined)
+            : undefined,
+          startAt: selectedSlot.startAt,
+          endAt: selectedSlot.endAt,
+        });
 
       if (!hold || !hold.id) {
         throw new Error('Khung giờ này vừa có người giữ chỗ. Vui lòng chọn khung giờ khác.');
