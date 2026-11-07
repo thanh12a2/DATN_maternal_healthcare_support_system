@@ -157,7 +157,7 @@ export class VnpayIpnService {
             where: { id: attempt.id },
             data: {
               status: PaymentAttemptStatus.RECONCILIATION_REQUIRED,
-              responseCode: 'SETTLEMENT_CONFLICT',
+              responseCode: 'CONFLICT',
               gatewayTransactionNo: this.optional(fields.vnp_TransactionNo),
               bankTransactionNo: this.optional(fields.vnp_BankTranNo),
               completedAt: now,
@@ -233,7 +233,7 @@ export class VnpayIpnService {
           },
           data: {
             status: PaymentAttemptStatus.EXPIRED,
-            responseCode: 'OTHER_ATTEMPT_SETTLED',
+            responseCode: 'OTHER_PAID',
             completedAt: now,
           },
         });

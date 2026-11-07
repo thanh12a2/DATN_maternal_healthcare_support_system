@@ -74,6 +74,7 @@ interface Props {
   request?: Requester;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  autoPrintAppointment?: DeskAppointment | null;
   onOpen?: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -90,6 +91,7 @@ export function PatientCard({
   request: propRequest,
   busy,
   targetAppointmentId,
+  autoPrintAppointment,
   onOpen,
   onCheckIn,
   onCancel,
@@ -116,6 +118,15 @@ export function PatientCard({
   const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(
     null,
   );
+
+  useEffect(() => {
+    if (
+      autoPrintAppointment?.patientId === p.id &&
+      autoPrintAppointment.queueCode
+    ) {
+      setPrintTicketApp(autoPrintAppointment);
+    }
+  }, [autoPrintAppointment, p.id]);
 
   const handleConfirmPayAndCheckIn = async () => {
     if (!paymentModalApp) return;

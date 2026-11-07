@@ -77,10 +77,15 @@ function Desk() {
   const { request } = auth;
 
   const [vnpayReturnContext] = useState<VnpayReturnContext | null>(() => {
-    const value = readVnpayContext(COMPLETED_VNPAY_RETURN_KEY);
-    if (value) window.sessionStorage.removeItem(COMPLETED_VNPAY_RETURN_KEY);
-    return value;
+    return readVnpayContext(COMPLETED_VNPAY_RETURN_KEY);
   });
+  const [vnpayPrintAppointment, setVnpayPrintAppointment] =
+    useState<DeskAppointment | null>(null);
+
+  useEffect(() => {
+    if (vnpayReturnContext)
+      window.sessionStorage.removeItem(COMPLETED_VNPAY_RETURN_KEY);
+  }, [vnpayReturnContext]);
 
   const [catalog, setCatalog] = useState<DeskCatalog | null>(null);
   const [rows, setRows] = useState<DeskAppointment[]>([]);
@@ -115,9 +120,7 @@ function Desk() {
   const [source, setSource] = useState<AppointmentSource | undefined>(
     () => vnpayReturnContext?.page.source as AppointmentSource | undefined,
   );
-  const [openId, setOpenId] = useState<string | null>(
-    () => vnpayReturnContext?.appointment.id ?? null,
-  );
+  const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [walkInOpen, setWalkInOpen] = useState(false);
@@ -311,9 +314,7 @@ function Desk() {
   );
 
   const [openAppointment, setOpenAppointment] =
-    useState<DeskAppointment | null>(
-      () => vnpayReturnContext?.appointment ?? null,
-    );
+    useState<DeskAppointment | null>(null);
 
   const handleOpenAppointment = (a: DeskAppointment) => {
     setOpenAppointment(a);
@@ -349,7 +350,6 @@ function Desk() {
         for (let attempt = 0; attempt < 5; attempt += 1) {
           latest = await refreshAppointment(request, catalog, latest);
           if (!live) return;
-          setOpenAppointment(latest);
           replace(latest);
           const settledInvoice =
             latest.invoices?.find(
@@ -363,12 +363,13 @@ function Desk() {
               const checkIn = await checkInAppointment(request, latest);
               latest = await refreshAppointment(request, catalog, latest);
               if (!live) return;
-              setOpenAppointment(latest);
               replace(latest);
+              if (latest.queueCode) setVnpayPrintAppointment(latest);
               message.success(
                 `VNPay đã xác nhận thanh toán; check-in hoàn tất${checkIn.ticketCode ? `, số thứ tự ${checkIn.ticketCode}` : ''}.`,
               );
             } else {
+              if (latest.queueCode) setVnpayPrintAppointment(latest);
               message.success(
                 'VNPay đã xác nhận thanh toán. Hóa đơn đã được cập nhật.',
               );
@@ -732,6 +733,7 @@ function Desk() {
               catalog={catalog}
               busy={busy}
               targetAppointmentId={targetAppointmentId}
+              autoPrintAppointment={vnpayPrintAppointment}
               onOpen={handleOpenAppointment}
               onCheckIn={checkIn}
               onCancel={cancel}

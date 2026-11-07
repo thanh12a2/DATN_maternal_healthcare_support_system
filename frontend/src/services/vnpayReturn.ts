@@ -1,4 +1,5 @@
 import type { DeskAppointment, DeskPatient } from './receptionDesk';
+import { apiRequest } from './api';
 
 export const PENDING_VNPAY_RETURN_KEY = 'billing.vnpay.pending-return';
 export const COMPLETED_VNPAY_RETURN_KEY = 'billing.vnpay.completed-return';
@@ -33,6 +34,19 @@ export function readVnpayContext(key: string): VnpayReturnContext | null {
       : null;
   } catch {
     return null;
+  }
+}
+
+export async function processVnpayBrowserReturn(search: string): Promise<void> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 5000);
+  try {
+    await apiRequest(
+      `/api/payment-callbacks/vnpay/return${search}`,
+      { signal: controller.signal },
+    );
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 

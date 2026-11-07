@@ -15,6 +15,7 @@ interface Props {
   catalog?: DeskCatalog | null;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  autoPrintAppointment?: DeskAppointment | null;
   onOpen: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -33,6 +34,7 @@ export function SearchResults({
   catalog,
   busy,
   targetAppointmentId,
+  autoPrintAppointment,
   onOpen,
   onCheckIn,
   onCancel,
@@ -80,6 +82,7 @@ export function SearchResults({
             catalog={catalog}
             busy={busy}
             targetAppointmentId={targetAppointmentId}
+            autoPrintAppointment={autoPrintAppointment}
             onOpen={onOpen}
             onCheckIn={onCheckIn}
             onCancel={onCancel}

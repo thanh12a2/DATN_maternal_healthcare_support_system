@@ -37,6 +37,12 @@ export class BillingController {
   @PublicHttp() @Get('ipn') ipn(@Query() q: Record<string, unknown>) {
     return this.vnpayIpn.handle(q);
   }
+  @PublicHttp() @Get('return') vnpayReturn(@Query() q: Record<string, unknown>) {
+    // VNPay may send a signed browser return for a canceled payment without
+    // sending an IPN. Process the same signed result so the pending attempt is
+    // closed and another attempt can be created for this invoice.
+    return this.vnpayIpn.handle(q);
+  }
   @Get('invoices') list(
     @Query() q: InvoiceListDto,
     @CurrentAuth() a: PublicAuthContext,

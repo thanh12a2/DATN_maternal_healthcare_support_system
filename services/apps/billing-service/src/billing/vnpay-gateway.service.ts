@@ -133,8 +133,22 @@ export class VnpayGatewayService {
   private canonical(params: Record<string, string>): string {
     return Object.keys(params)
       .sort()
-      .map((key) => `${key}=${params[key]}`)
+      .map(
+        (key) =>
+          `${this.encodeVnpayValue(key)}=${this.encodeVnpayValue(params[key])}`,
+      )
       .join('&');
+  }
+
+  /**
+   * VNPay API 2.1.0 signs the URL-encoded field names and values. Use the
+   * application/x-www-form-urlencoded encoding also used by URLSearchParams
+   * below (not encodeURIComponent, which leaves a few characters untouched).
+   */
+  private encodeVnpayValue(value: string): string {
+    const encoded = new URLSearchParams();
+    encoded.append('value', value);
+    return encoded.toString().slice('value='.length);
   }
 
   private formatVnpayDate(value: Date): string {
