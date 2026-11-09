@@ -41,6 +41,8 @@ export interface DeskInvoice {
   paid: number;
   balance: number;
   payments: Array<{ at?: string; method: string; amount: number }>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface DeskAppointment {
   id: string;
@@ -69,7 +71,9 @@ export interface DeskAppointment {
   updatedAt?: string;
   estimatedTotal: number;
   invoice?: DeskInvoice | null;
+  supplementaryInvoice?: DeskInvoice | null;
   invoices?: DeskInvoice[];
+  encounterId?: string | null;
 }
 export interface DeskDoctorInfo {
   id: string;
@@ -88,7 +92,7 @@ export type PatientMap = Record<string, DeskPatient>;
 export interface DeskCatalog {
   rooms: DeskRoom[];
   doctors: DeskDoctorInfo[];
-  services: Array<{ id: string; name: string }>;
+  services: Array<{ id: string; name: string; price?: number }>;
   doctorById: Map<string, string>;
   specialtyById: Map<string, string>;
   doctorInfoById: Map<string, DeskDoctorInfo>;
@@ -268,9 +272,10 @@ export async function fetchCatalog(request: Requester): Promise<DeskCatalog> {
     .sort((a, b) => a.code.localeCompare(b.code));
 
   const svcData = Array.isArray(rawServices) ? rawServices : rawServices?.data || rawServices?.items || [];
-  const servicesList: Array<{ id: string; name: string }> = svcData.map((s: any) => ({
+  const servicesList: Array<{ id: string; name: string; price?: number }> = svcData.map((s: any) => ({
     id: String(s.id),
     name: String(s.name),
+    price: s.prices?.[0]?.amountMinor ? Number(s.prices[0].amountMinor) : 0,
   }));
 
   return { rooms: list, doctors: doctorsList, services: servicesList, doctorById, specialtyById, doctorInfoById };
@@ -321,7 +326,7 @@ function cachePatient(raw: Record<string, unknown>): DeskPatient {
   return p;
 }
 
-function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null {
+export function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null {
   if (!raw) return null;
   const lines = Array.isArray(raw.lines) ? raw.lines as Array<Record<string, unknown>> : [];
   const payRaw = Array.isArray(raw.payments) ? raw.payments as Array<Record<string, unknown>> : raw.payment ? [raw.payment as Record<string, unknown>] : [];
@@ -330,6 +335,8 @@ function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null
     number: str(raw.invoiceNumber) ?? '',
     type: raw.type === 'SUPPLEMENTARY' ? 'SUPPLEMENTARY' : 'BASE',
     version: num(raw.version) || 1,
+    createdAt: str(raw.createdAt) ?? undefined,
+    updatedAt: str(raw.updatedAt) ?? undefined,
     lines: lines.map((l) => ({
       name: (str(l.descriptionSnapshot) ?? '').replace(': undefined', ': Khám theo yêu cầu'),
       qty: num(l.quantity),
@@ -370,9 +377,46 @@ async function enrich(request: Requester, cat: DeskCatalog, raws: ReceptionAppoi
     const pricing = (x.pricing ?? {}) as Record<string, unknown>;
     const channel = String(x.channel ?? '');
     const t = tickets.get(id);
-    const deskInvoices = invoices
+    let deskInvoices = invoices
       .map((invoice) => toInvoice(invoice as Record<string, unknown>))
       .filter((invoice): invoice is DeskInvoice => invoice !== null);
+
+    const encId = str(x.encounterId) ?? str(r.encounterId);
+    // Nếu ca khám đang diễn ra hoặc đã có encounter nhưng chưa tạo hóa đơn phát sinh CLS, tự động đồng bộ
+    if (encId && !deskInvoices.some((inv) => inv.type === 'SUPPLEMENTARY')) {
+      try {
+        const encRaw: any = await request(`/api/medical-records/encounters/${encodeURIComponent(encId)}`).catch(() => null);
+        const encData = encRaw?.data || encRaw;
+        const orders = Array.isArray(encData?.orders) ? encData.orders : [];
+        if (orders.length > 0) {
+          for (const ord of orders) {
+            const svc = cat.services.find((s) => s.id === ord.catalogServiceId);
+            const price = svc?.price || 0;
+            await request('/api/billing/invoices/service-order', {
+              method: 'POST',
+              body: JSON.stringify({
+                appointmentId: id,
+                patientId: String(r.patientId ?? ''),
+                encounterId: encId,
+                orderId: ord.id,
+                serviceId: ord.catalogServiceId,
+                serviceName: svc?.name || 'Dịch vụ cận lâm sàng',
+                amountMinor: price,
+              }),
+            }).catch(() => null);
+          }
+          const freshInvoices = await listReceptionInvoices(request, { appointmentId: id }).catch(() => []);
+          deskInvoices = freshInvoices
+            .map((invoice) => toInvoice(invoice as Record<string, unknown>))
+            .filter((invoice): invoice is DeskInvoice => invoice !== null);
+        }
+      } catch (syncErr) {
+        console.warn('Lỗi kiểm tra y lệnh CLS cho quầy tiếp đón:', syncErr);
+      }
+    }
+
+    const baseInvoice = deskInvoices.find((invoice) => invoice.type === 'BASE') ?? deskInvoices[0] ?? null;
+    const suppInvoice = deskInvoices.find((invoice) => invoice.type === 'SUPPLEMENTARY') ?? null;
     const doctorId = str(x.assignedDoctorId);
     const serviceId = str(r.serviceId) ?? str(x.serviceId);
     return {
@@ -401,8 +445,10 @@ async function enrich(request: Requester, cat: DeskCatalog, raws: ReceptionAppoi
       createdAt: str(x.createdAt),
       updatedAt: str(x.updatedAt),
       estimatedTotal: num(pricing.estimatedTotalMinor),
-      invoice: deskInvoices.find((invoice) => invoice.type === 'BASE') ?? deskInvoices[0] ?? null,
+      invoice: baseInvoice,
+      supplementaryInvoice: suppInvoice,
       invoices: deskInvoices,
+      encounterId: encId,
     };
   }));
 }
@@ -720,13 +766,19 @@ export async function payAndCheckInAppointment(
   a: DeskAppointment,
   reference?: string
 ): Promise<{ success: boolean; ticketCode?: string }> {
-  let invoice = a.invoice;
+  let invoice = a.invoices?.find((i) => i.type === 'BASE') ?? a.invoice ?? null;
 
-  // 1. Nếu chưa có invoice (lịch hẹn tạo trước đó), kích hoạt tạo Base Invoice
+  // 1. Nếu chưa có invoice (lịch hẹn tạo trước đó), tìm từ API hoặc kích hoạt tạo Base Invoice
+  if (!invoice) {
+    const invs = await listReceptionInvoices(request, { appointmentId: a.id }).catch(() => []);
+    const deskInvs = invs.map((inv) => toInvoice(inv as Record<string, unknown> | undefined)).filter(Boolean) as DeskInvoice[];
+    invoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
+  }
   if (!invoice) {
     await checkInAppointment(request, a).catch(() => {});
     const invs = await listReceptionInvoices(request, { appointmentId: a.id }).catch(() => []);
-    invoice = toInvoice(invs[0] as Record<string, unknown> | undefined);
+    const deskInvs = invs.map((inv) => toInvoice(inv as Record<string, unknown> | undefined)).filter(Boolean) as DeskInvoice[];
+    invoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
   }
 
   // 2. Ghi nhận thanh toán tiền mặt tại quầy để chuyển sang PAID

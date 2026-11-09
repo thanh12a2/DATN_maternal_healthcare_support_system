@@ -4,6 +4,7 @@ export interface Encounter { id?: string; patientId?: string; appointmentId?: st
 export interface PregnancyEpisode { id?: string; patientId?: string; status?: string; [key: string]: unknown; }
 export interface Prescription { id?: string; patientId?: string; encounterId?: string; status?: string; [key: string]: unknown; }
 export interface TreatmentPlan { id?: string; patientId?: string; status?: string; title?: string; [key: string]: unknown; }
+export interface TreatmentPlanTemplate { id: string; category: string; title: string; content: string; sortOrder?: number; isActive?: boolean; }
 export interface Medication { id: string; code: string; name: string; activeIngredient: string; strength: string; dosageForm: string; route: string; defaultDose?: string | null; defaultFrequency?: string | null; defaultInstruction?: string | null; pregnancyCategory: string; pregnancyWarning?: string | null; isActive: boolean; }
 const list = <T,>(raw: unknown): T[] => Array.isArray(raw) ? raw as T[] : Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: T[] }).items : Array.isArray((raw as { data?: unknown })?.data) ? (raw as { data: T[] }).data : [];
 const post = <T>(request: Requester, path: string, body?: unknown) => request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -27,6 +28,18 @@ export function recordVitalSigns(request: Requester, id: string, body: unknown) 
 export function addClinicalNote(request: Requester, id: string, body: unknown) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/notes`, body); }
 export function addDiagnosis(request: Requester, id: string, body: unknown) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/diagnoses`, body); }
 export function createServiceOrder(request: Requester, id: string, body: unknown) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/orders`, body); }
+export function deleteServiceOrder(request: Requester, orderId: string) {
+  return request<any>(`/api/medical-records/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+}
+export function updateServiceOrderResult(request: Requester, orderId: string, structuredResult: any) {
+  return request<any>(`/api/medical-records/orders/${encodeURIComponent(orderId)}/results`, {
+    method: 'POST',
+    body: JSON.stringify({ structuredResult }),
+  });
+}
+export function removeServiceOrderCharge(request: Requester, orderId: string) {
+  return request<any>(`/api/billing/invoices/service-order/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+}
 export function finalizeEncounter(request: Requester, id: string, body?: unknown) { return post<Encounter>(request, `/api/medical-records/encounters/${encodeURIComponent(id)}/finalize`, body); }
 export async function listPregnancyEpisodes(request: Requester) { return list<PregnancyEpisode>(await request<unknown>('/api/medical-records/pregnancy-episodes')); }
 
@@ -49,6 +62,11 @@ export function updatePrescription(request: Requester, id: string, body: unknown
 export function prescriptionAction(request: Requester, id: string, action: string, body: unknown) { return post<Prescription>(request, `/api/prescriptions/${encodeURIComponent(id)}/${encodeURIComponent(action)}`, body); }
 
 export async function listTreatmentPlans(request: Requester, query = '') { return list<TreatmentPlan>(await request<unknown>(`/api/treatment-plans${query ? `?${query}` : ''}`)); }
+export async function listTreatmentPlanTemplates(request: Requester, category?: string): Promise<TreatmentPlanTemplate[]> {
+  const query = category ? `?category=${encodeURIComponent(category)}` : '';
+  const raw = await request<unknown>(`/api/treatment-plans/templates${query}`);
+  return list<TreatmentPlanTemplate>(raw);
+}
 export function getTreatmentPlan(request: Requester, id: string) { return request<TreatmentPlan>(`/api/treatment-plans/${encodeURIComponent(id)}`); }
 export function createTreatmentPlan(request: Requester, body: unknown) { return post<TreatmentPlan>(request, '/api/treatment-plans', body); }
 export function activateTreatmentPlan(request: Requester, id: string, body?: unknown) { return post<TreatmentPlan>(request, `/api/treatment-plans/${encodeURIComponent(id)}/activate`, body); }

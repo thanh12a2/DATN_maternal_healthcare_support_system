@@ -4,11 +4,19 @@ import { AppLink, navigate } from '../../../app/navigation';
 import type { Role } from './PatientSidebar';
 import '../../../styles/user-chip.css';
 
+export interface UserChipMenuItem {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+}
+
 interface UserChipProps {
   displayName?: string;
+  avatarUrl?: string | null;
   className?: string;
   showWorkspaceLink?: boolean;
   onLogout?: () => void;
+  extraMenuItems?: UserChipMenuItem[];
 }
 
 function getInitials(name: string): string {
@@ -84,9 +92,11 @@ function getSavedName(userId?: string, email?: string): string | null {
 
 export function UserChip({
   displayName,
+  avatarUrl: avatarUrlProp,
   className = '',
   showWorkspaceLink = true,
   onLogout,
+  extraMenuItems,
 }: UserChipProps) {
   const auth = useAuthSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -141,6 +151,22 @@ export function UserChip({
         });
     }
 
+    // Nếu là bác sĩ, fetch ảnh đại diện và hồ sơ từ /api/doctors/me
+    if (role === 'DOCTOR' && import.meta.env.MODE !== 'test') {
+      auth
+        .request<{ data: { profile?: { photoUrl?: string; fullName?: string } } }>('/api/doctors/me')
+        .then(({ data }) => {
+          if (!active) return;
+          if (data?.profile?.photoUrl) {
+            setAvatarUrl(data.profile.photoUrl);
+          }
+          if (data?.profile?.fullName) {
+            setPatientName(data.profile.fullName);
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       active = false;
     };
@@ -186,10 +212,11 @@ export function UserChip({
     };
   }, [user?.userId, user?.email]);
 
-  // Resolve display name: ưu tiên prop > tên hồ sơ bệnh nhân > email prefix
+  // Resolve display name & avatar: ưu tiên prop > tên hồ sơ > email prefix
   const fallbackEmailName = user?.email ? user.email.split('@')[0] : 'Người dùng';
   const finalName = displayName?.trim() || patientName?.trim() || fallbackEmailName;
   const initials = getInitials(finalName);
+  const finalAvatarUrl = avatarUrlProp !== undefined ? avatarUrlProp : avatarUrl;
 
   // Close when clicking outside
   useEffect(() => {
@@ -242,9 +269,9 @@ export function UserChip({
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <div className="user-chip-avatar-wrap">
-          <div className={`user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={finalName} className="user-chip-avatar-img" />
+          <div className={`user-chip-avatar role-${roleKey} ${finalAvatarUrl ? 'has-image' : ''}`}>
+            {finalAvatarUrl ? (
+              <img src={finalAvatarUrl} alt={finalName} className="user-chip-avatar-img" />
             ) : (
               initials
             )}
@@ -277,9 +304,9 @@ export function UserChip({
       {isOpen && (
         <div className="user-chip-dropdown" role="menu">
           <div className="user-chip-dropdown-header">
-            <div className={`user-chip-dropdown-avatar user-chip-avatar role-${roleKey} ${avatarUrl ? 'has-image' : ''}`}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={finalName} className="user-chip-avatar-img" />
+            <div className={`user-chip-dropdown-avatar user-chip-avatar role-${roleKey} ${finalAvatarUrl ? 'has-image' : ''}`}>
+              {finalAvatarUrl ? (
+                <img src={finalAvatarUrl} alt={finalName} className="user-chip-avatar-img" />
               ) : (
                 initials
               )}
@@ -355,7 +382,7 @@ export function UserChip({
               </>
             ) : null}
 
-            {role !== 'PATIENT' && (
+            {role !== 'PATIENT' && role !== 'DOCTOR' && (
               <li className="user-chip-menu-item">
                 <AppLink
                   href="/"
@@ -369,6 +396,33 @@ export function UserChip({
                   <span>Về Trang chủ Bệnh viện</span>
                 </AppLink>
               </li>
+            )}
+
+            {extraMenuItems && extraMenuItems.length > 0 && (
+              <>
+                {extraMenuItems.map((item, idx) => (
+                  <li key={idx} className="user-chip-menu-item">
+                    <button
+                      type="button"
+                      className="user-chip-menu-link"
+                      style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+                      onClick={() => {
+                        setIsOpen(false);
+                        item.onClick();
+                      }}
+                    >
+                      {item.icon || (
+                        <svg className="user-chip-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                      )}
+                      <span>{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </>
             )}
 
             <li className="user-chip-menu-divider" role="separator" />

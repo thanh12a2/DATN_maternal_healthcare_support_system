@@ -49,6 +49,7 @@ export function getClinicalStatusMeta(status?: string | null): ClinicalStatusMet
         stepIndex: 2,
         icon: <UserCheck size={13} />,
       };
+    case 'IN_PROGRESS':
     case 'IN_CLINICAL_CARE':
       return {
         label: 'Đang khám',

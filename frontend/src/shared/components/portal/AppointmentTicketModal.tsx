@@ -9,6 +9,8 @@ import {
   CreditCard,
   Building2,
   Stethoscope,
+  FileCheck,
+  FileText,
 } from 'lucide-react';
 import type { Appointment, QueueTicketInfo } from '../../../services/appointment';
 import type { PatientProfile } from '../../../services/patient';
@@ -84,6 +86,8 @@ export interface AppointmentTicketModalProps {
   invoice?: any;
   onGoToAppointments?: () => void;
   showGoToAppointmentsBtn?: boolean;
+  onViewReport?: (appointment: Appointment) => void;
+  onViewClsResults?: (appointment: Appointment) => void;
 }
 
 export function AppointmentTicketModal({
@@ -104,6 +108,8 @@ export function AppointmentTicketModal({
   invoice,
   onGoToAppointments,
   showGoToAppointmentsBtn = false,
+  onViewReport,
+  onViewClsResults,
 }: AppointmentTicketModalProps) {
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -132,7 +138,9 @@ export function AppointmentTicketModal({
     ? `${formatWeekday(appointment.startAt)}, ${formatDateDisplay(appointment.startAt)}`
     : '--/--/----';
 
-  const totalPrice = appointment.pricing?.estimatedTotalMinor || appointment.pricing?.totalMinor || fallbackPriceMinor || 0;
+  const initialPrice = Number(invoice?.initialFeeMinor ?? appointment.pricing?.estimatedTotalMinor ?? appointment.pricing?.totalMinor ?? fallbackPriceMinor ?? 0);
+  const totalPrice = Number(invoice?.totalMinor ?? invoice?.total ?? initialPrice);
+  const extraPrice = Number(invoice?.extraFeeMinor ?? (totalPrice > initialPrice ? totalPrice - initialPrice : 0));
 
   return (
     <div className="pap-modal-backdrop" onClick={onClose}>
@@ -239,15 +247,23 @@ export function AppointmentTicketModal({
                 </div>
               </div>
 
-              {/* Chi phí tạm tính */}
+              {/* Chi phí tạm tính hoặc tổng viện phí thực tế */}
               <div>
                 <div className="pap-ticket-price-box">
-                  <span className="pap-ticket-price-label">Tổng chi phí tạm tính:</span>
+                  <span className="pap-ticket-price-label">
+                    {extraPrice > 0 ? 'Tổng viện phí thực tế:' : 'Tổng chi phí tạm tính:'}
+                  </span>
                   <span className="pap-ticket-price-num">{formatVnd(totalPrice)}</span>
                 </div>
-                <div className="pap-ticket-price-note">
-                  * Quý khách thanh toán trực tiếp tại Quầy tiếp đón khi đến khám.
-                </div>
+                {extraPrice > 0 ? (
+                  <div className="pap-ticket-price-breakdown-sub" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    Gồm {formatVnd(initialPrice)} phí khám + {formatVnd(extraPrice)} chỉ định cận lâm sàng phát sinh
+                  </div>
+                ) : (
+                  <div className="pap-ticket-price-note">
+                    * Quý khách thanh toán trực tiếp tại Quầy tiếp đón khi đến khám.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -292,6 +308,42 @@ export function AppointmentTicketModal({
 
         {/* Footer Modal */}
         <div className="pap-modal-footer">
+          {onViewClsResults && (appointment?.status === 'COMPLETED' || appointment?.completedAt) && (
+            <button
+              type="button"
+              className="pap-btn-secondary"
+              onClick={() => onViewClsResults(appointment)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#0d9488',
+                borderColor: '#99f6e4',
+                background: '#f0fdfa',
+                fontWeight: 600,
+              }}
+            >
+              <FileText size={15} />
+              <span>Xem Kết Quả Cận Lâm Sàng</span>
+            </button>
+          )}
+          {onViewReport && (appointment?.status === 'COMPLETED' || appointment?.completedAt) && (
+            <button
+              type="button"
+              className="pap-btn-primary"
+              onClick={() => onViewReport(appointment)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#059669',
+                borderColor: '#059669',
+              }}
+            >
+              <FileCheck size={15} />
+              <span>Xem Kết Quả Khám (PDF)</span>
+            </button>
+          )}
           <button
             type="button"
             className="pap-btn-secondary"

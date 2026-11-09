@@ -137,6 +137,7 @@ model VitalSign {
   heartRate   Int?              @map("heart_rate")
   temperature Decimal?          @db.Decimal(4, 1)
   weight      Decimal?          @db.Decimal(6, 2)
+  height      Decimal?          @db.Decimal(5, 1)
   recordedBy  String            @map("recorded_by") @db.Uuid
   recordedAt  DateTime          @default(now()) @map("recorded_at") @db.Timestamptz(6)
   encounter   ClinicalEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)

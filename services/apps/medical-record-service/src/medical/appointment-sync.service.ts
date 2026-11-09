@@ -27,9 +27,10 @@ export class AppointmentSyncService implements OnModuleInit, OnModuleDestroy {
         try {
           await this.gateway.reconcileAppointment(job);
           await this.db.encounterAppointmentSync.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { status: 'DONE', completedAt: new Date(), lastError: null } });
-        } catch {
+        } catch (err: any) {
+          this.logger.error(`Reconcile appointment error for job ${job.id}: ${err?.message || err}`);
           const delay = Math.min(300000, 10000 * (2 ** Math.min(job.attempts, 5)));
-          await this.db.encounterAppointmentSync.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { attempts: { increment: 1 }, nextAttemptAt: new Date(Date.now() + delay), lastError: 'RECONCILIATION_FAILED' } });
+          await this.db.encounterAppointmentSync.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { attempts: { increment: 1 }, nextAttemptAt: new Date(Date.now() + delay), lastError: err?.message || 'RECONCILIATION_FAILED' } });
         }
       }
     } catch (error) {

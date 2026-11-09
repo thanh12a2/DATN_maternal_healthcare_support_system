@@ -15,6 +15,18 @@ import type { PublicAuthContext } from '@platform';
 export class TreatmentService {
   constructor(private readonly db: TreatmentPlanPrismaService) {}
 
+  async listTemplates(category?: string) {
+    const where: any = { isActive: true };
+    if (category && category !== 'ALL') {
+      where.category = category;
+    }
+    const templates = await (this.db as any).treatmentPlanTemplate.findMany({
+      where,
+      orderBy: { sortOrder: 'asc' },
+    });
+    return { data: templates };
+  }
+
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
   async createRest(b: any, auth?: PublicAuthContext, assignedDoctorId?: string) {
@@ -99,12 +111,21 @@ export class TreatmentService {
       throw new ConflictException('VERSION_CONFLICT');
     }
     if (p.status !== TreatmentPlanStatus.DRAFT && p.status !== TreatmentPlanStatus.ACTIVE) throw new ConflictException('PLAN_NOT_EDITABLE');
-    if (p.status === TreatmentPlanStatus.ACTIVE && !String(b.reason ?? '').trim()) throw new ConflictException('CHANGE_REASON_REQUIRED');
+    const changeReason = String(b.reason ?? '').trim() || 'Bác sĩ cập nhật kế hoạch chăm sóc';
 
     const nextVer = p.version + 1;
     const authorId = auth?.userId || randomUUID();
 
-    const changed = await tx.treatmentPlan.updateMany({ where: { id, version: p.version, status: p.status }, data: { title: b.title ?? undefined, summary: b.summary ?? undefined, version: { increment: 1 } } });
+    const effectiveTo = b.effectiveTo !== undefined ? (b.effectiveTo ? new Date(b.effectiveTo) : null) : undefined;
+    const changed = await tx.treatmentPlan.updateMany({
+      where: { id, version: p.version, status: p.status },
+      data: {
+        title: b.title ?? undefined,
+        summary: b.summary ?? undefined,
+        effectiveTo,
+        version: { increment: 1 },
+      },
+    });
     if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
     if (b.items && Array.isArray(b.items)) {
       if (p.status === TreatmentPlanStatus.ACTIVE) {
@@ -129,10 +150,11 @@ export class TreatmentService {
         snapshot: {
           title: b.title ?? p.title,
           summary: b.summary ?? p.summary,
+          effectiveTo: effectiveTo !== undefined ? (effectiveTo ? effectiveTo.toISOString().slice(0, 10) : null) : (p.effectiveTo ? p.effectiveTo.toISOString().slice(0, 10) : null),
           items: b.items ?? p.items,
         },
         changedBy: authorId,
-        changeReason: b.reason || 'UPDATED',
+        changeReason: changeReason,
       },
     });
 

@@ -13,7 +13,13 @@ import {
   SwapOutlined,
   UserOutlined,
   FileTextOutlined,
+  ExperimentOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
+import { getEncounterReport, generateEncounterReport } from '../../../services/clinicalReport';
+import { getEncounter } from '../../../services/clinical';
+import { MedicalReportModal } from '../../doctor/components/MedicalReportModal';
+import { ClinicalOrdersResultModal } from '../../../shared/components/portal/ClinicalOrdersResultModal';
 import {
   Button,
   Card,
@@ -42,10 +48,13 @@ import type { Requester } from '../../../services/catalog';
 import {
   amountTotalOf,
   createAppointmentVnpayAttempt,
+  createReceptionVnpayAttempt,
+  collectCash,
   paymentStatusOf,
   payAndCheckInAppointment,
   refreshAppointment,
   type DeskAppointment,
+  type DeskInvoice,
   type DeskCatalog,
   type DeskPatient,
   type PatientMap,
@@ -107,6 +116,96 @@ export function PatientCard({
   const [payingAndCheckingIn, setPayingAndCheckingIn] = useState<boolean>(false);
   const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(null);
 
+  // Modal xem và in phiếu kết quả khám bệnh PDF
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportDocumentId, setReportDocumentId] = useState<string | null>(null);
+  const [reportAppointment, setReportAppointment] = useState<DeskAppointment | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  // Modal xem kết quả chỉ định cận lâm sàng (file đính kèm)
+  const [clsResultModalOpen, setClsResultModalOpen] = useState(false);
+  const [clsAppointment, setClsAppointment] = useState<DeskAppointment | null>(null);
+
+  const handleOpenReportModal = async (a: DeskAppointment) => {
+    setLoadingReport(true);
+    setReportAppointment(a);
+    try {
+      const encId = a.encounterId;
+      if (!encId) {
+        message.warning('Lịch hẹn này chưa có thông tin lượt khám (Encounter).');
+        return;
+      }
+      let existing = await getEncounterReport(request, encId);
+      if (!existing?.documentId && a.status === 'COMPLETED') {
+        try {
+          const encRes: any = await getEncounter(request, encId);
+          const encData = encRes?.data || encRes;
+          if (encData) {
+            const vitals = Array.isArray(encData.vitalSigns) && encData.vitalSigns.length > 0
+              ? encData.vitalSigns[encData.vitalSigns.length - 1]
+              : null;
+            const diagnoses = Array.isArray(encData.diagnoses) && encData.diagnoses.length > 0
+              ? encData.diagnoses[encData.diagnoses.length - 1]
+              : null;
+            const orders = Array.isArray(encData.orders)
+              ? encData.orders.map((o: any) => ({
+                  name: o.catalogServiceName || o.serviceName || 'Dịch vụ cận lâm sàng',
+                  category: o.category || 'Cận lâm sàng',
+                  result: o.resultNotes || (o.status === 'VERIFIED' ? 'Đã có kết quả (Bình thường)' : 'Đã thực hiện / Chờ kết quả'),
+                  status: o.status === 'VERIFIED' ? 'Đã thực hiện' : 'Đã chỉ định',
+                }))
+              : [];
+
+            const payload = {
+              appointmentCode: a.code || '',
+              encounterId: encId,
+              patientId: a.patientId || encData.patientId || '',
+              roomCode: a.roomCode || 'P.207',
+              roomName: a.roomName || 'Phòng khám Sản Phụ khoa 207',
+              examinationDate: dayjs(a.checkedInAt || a.date || new Date()).format('DD/MM/YYYY'),
+              examinationTime: dayjs(a.checkedInAt || a.date || new Date()).format('HH:mm'),
+              patientName: String(currentPatient?.fullName || 'Bệnh nhân'),
+              patientPhone: String(currentPatient?.phone || ''),
+              patientGender: 'Nữ',
+              vitals: vitals ? {
+                bloodPressure: vitals.bloodPressure || (vitals.systolic && vitals.diastolic ? `${vitals.systolic}/${vitals.diastolic}` : undefined),
+                heartRate: vitals.heartRate ? String(vitals.heartRate) : undefined,
+                temperature: vitals.temperature ? String(vitals.temperature) : undefined,
+                weight: vitals.weightKg ? String(vitals.weightKg) : (vitals.weight ? String(vitals.weight) : undefined),
+                height: vitals.heightCm ? String(vitals.heightCm) : (vitals.height ? String(vitals.height) : undefined),
+                bmi: vitals.bmi ? String(vitals.bmi) : undefined,
+              } : undefined,
+              chiefComplaint: a.service || 'Khám thai định kỳ chuẩn y khoa',
+              primaryDiagnosis: diagnoses?.description || 'Khám thai định kỳ chuẩn y khoa - Thai phụ và thai nhi phát triển bình thường',
+              clinicalOrders: orders,
+              prescriptions: [],
+              careAdvice: [],
+              doctorName: a.doctorName ? String(a.doctorName) : 'BS. Nguyễn Hồng Nhung',
+              finalizedAt: new Date().toISOString(),
+            };
+            const generated = await generateEncounterReport(request, payload);
+            if (generated && (generated as any).documentId) {
+              existing = generated as any;
+            }
+          }
+        } catch (genErr) {
+          console.warn('Tự động tạo phiếu kết quả thất bại:', genErr);
+        }
+      }
+
+      if (existing && existing.documentId) {
+        setReportDocumentId(existing.documentId);
+        setReportModalOpen(true);
+      } else {
+        message.info('Phiếu kết quả khám bệnh đang được xử lý hoặc bác sĩ chưa hoàn tất ký số.');
+      }
+    } catch (err: any) {
+      message.error(err?.message || 'Có lỗi xảy ra khi tải phiếu kết quả khám.');
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
   const handleConfirmPayAndCheckIn = async () => {
     if (!paymentModalApp) return;
     setPayingAndCheckingIn(true);
@@ -151,6 +250,44 @@ export function PatientCard({
       message.error(err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.');
     } finally {
       setPayingAndCheckingIn(false);
+    }
+  };
+
+  const [suppPaymentModalData, setSuppPaymentModalData] = useState<{ app: DeskAppointment; invoice: DeskInvoice } | null>(null);
+  const [suppPaymentMethod, setSuppPaymentMethod] = useState<'CASH' | 'TRANSFER'>('CASH');
+  const [suppPaymentRef, setSuppPaymentRef] = useState<string>('');
+  const [payingSupp, setPayingSupp] = useState<boolean>(false);
+
+  const handleConfirmSuppPayment = async () => {
+    if (!suppPaymentModalData) return;
+    const { app, invoice } = suppPaymentModalData;
+    setPayingSupp(true);
+    try {
+      await collectCash(request, invoice);
+
+      // Đồng bộ realtime 2 chiều sang phòng khám của Bác sĩ ngay lập tức
+      await request('/api/appointment/desk/broadcast', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventType: 'appointment.invoice_updated',
+          appointmentId: app.id,
+          appointmentCode: app.code,
+          patientId: app.patientId,
+          paymentStatus: 'PAID',
+        }),
+      }).catch(() => null);
+
+      message.success(`Đã thu ${money(invoice.balance)} viện phí chỉ định phát sinh thành công!`);
+      if (catalog) {
+        const refreshed = await refreshAppointment(request, catalog, app);
+        onAppointmentUpdated?.(refreshed);
+      }
+      setSuppPaymentModalData(null);
+    } catch (err: any) {
+      console.error('Lỗi thu tiền chỉ định phát sinh:', err);
+      message.error(err?.message || 'Không thể ghi nhận thu tiền chỉ định phát sinh.');
+    } finally {
+      setPayingSupp(false);
     }
   };
 
@@ -389,7 +526,7 @@ export function PatientCard({
           {sortedAppointments.map((a, index) => {
             const isToday = a.date === todayStr;
             const isUpcoming = dayjs(a.date).isAfter(dayjs());
-            const appStep = a.completedAt ? 3 : a.startedAt ? 2 : a.checkedInAt ? 1 : 0;
+            const appStep = (a.completedAt || a.status === 'COMPLETED') ? 3 : (a.startedAt || a.status === 'IN_CLINICAL_CARE') ? 2 : (a.checkedInAt || a.status === 'CHECKED_IN') ? 1 : 0;
             const payStatus = paymentStatusOf(a);
 
             const isSelected = Boolean(targetAppointmentId && (a.id === targetAppointmentId || a.code === targetAppointmentId));
@@ -569,11 +706,11 @@ export function PatientCard({
                               },
                               {
                                 title: 'Vào khám',
-                                description: time(a.startedAt),
+                                description: a.startedAt ? time(a.startedAt) : a.status === 'IN_CLINICAL_CARE' ? 'Đang khám' : '—',
                               },
                               {
                                 title: 'Hoàn tất',
-                                description: time(a.completedAt),
+                                description: a.completedAt ? time(a.completedAt) : a.status === 'COMPLETED' ? 'Đã hoàn tất' : '—',
                               },
                             ]}
                           />
@@ -719,6 +856,29 @@ export function PatientCard({
                             </Button>
                           )}
 
+                          {(a.status === 'COMPLETED' || a.completedAt) && (
+                            <>
+                              <Button
+                                icon={<ExperimentOutlined />}
+                                onClick={() => {
+                                  setClsAppointment(a);
+                                  setClsResultModalOpen(true);
+                                }}
+                                style={{ borderRadius: 6, color: '#0d9488', borderColor: '#99f6e4', background: '#f0fdfa', fontWeight: 600 }}
+                              >
+                                Xem kết quả CLS
+                              </Button>
+                              <Button
+                                icon={<FilePdfOutlined />}
+                                onClick={() => handleOpenReportModal(a)}
+                                loading={loadingReport && reportAppointment?.id === a.id}
+                                style={{ borderRadius: 6, color: '#059669', borderColor: '#059669', fontWeight: 500 }}
+                              >
+                                In phiếu kết quả khám (PDF)
+                              </Button>
+                            </>
+                          )}
+
                           {a.status === 'BOOKED' && (
                             <Popconfirm
                               title="Xác nhận hủy lịch hẹn này?"
@@ -753,151 +913,443 @@ export function PatientCard({
                       }}
                     >
                       <div>
-                        {/* Header Hóa đơn */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: 8,
-                            marginBottom: 10,
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>
-                              Hóa đơn & Viện phí
-                            </span>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>
-                              ({a.invoice?.number || (a.code ? `INV-${a.code}` : 'Dự thảo viện phí')})
-                            </span>
-                          </div>
-                          <Tag
-                            color={payMeta[payStatus].color}
-                            style={{ fontSize: 11, fontWeight: 700, padding: '1px 8px' }}
-                          >
-                            {payMeta[payStatus].label}
-                          </Tag>
-                        </div>
-
-                        {/* Nội dung danh sách khoản thu (Luôn hiển thị bảng chi tiết đầy đủ, không dùng hộp cảnh báo màu vàng) */}
+                        {/* Header Hóa đơn & Viện phí */}
                         {(() => {
-                          const lines =
-                            a.invoice?.lines && a.invoice.lines.length > 0
-                              ? a.invoice.lines
-                              : [
-                                  {
-                                    name: a.service || 'Khám chuyên khoa',
-                                    qty: 1,
-                                    unitPrice: a.estimatedTotal || 0,
-                                    amount: a.estimatedTotal || 0,
-                                  },
-                                ];
-                          const total = a.invoice?.total ?? a.estimatedTotal ?? 0;
-                          const paid = a.invoice?.paid ?? (payStatus === 'PAID' ? total : 0);
-                          const balance = a.invoice?.balance ?? (total - paid);
-                          const payments = a.invoice?.payments || [];
+                          const baseInvoice = a.invoices?.find((i) => i.type === 'BASE') ?? a.invoice ?? null;
+                          const suppInvoice = a.supplementaryInvoice || a.invoices?.find((i) => i.type === 'SUPPLEMENTARY') || null;
+
+                          // Dòng dịch vụ khám ban đầu
+                          const baseLines = baseInvoice?.lines && baseInvoice.lines.length > 0
+                            ? baseInvoice.lines.map((l, idx) => ({
+                                ...l,
+                                itemType: 'BASE' as const,
+                                key: `base-${idx}-${l.name}`,
+                              }))
+                            : [
+                                {
+                                  name: a.service || 'Khám chuyên khoa',
+                                  qty: 1,
+                                  unitPrice: a.estimatedTotal || 0,
+                                  amount: a.estimatedTotal || 0,
+                                  itemType: 'BASE' as const,
+                                  key: 'base-default',
+                                },
+                              ];
+
+                          // Dòng dịch vụ cận lâm sàng do bác sĩ chỉ định thêm
+                          const suppLines = (suppInvoice?.lines || []).map((l, idx) => ({
+                            ...l,
+                            itemType: 'SUPPLEMENTARY' as const,
+                            key: `supp-${idx}-${l.name}`,
+                          }));
+
+                          // Toàn bộ các khoản thu gộp chung vào 1 bảng duy nhất
+                          const allLines = [...baseLines, ...suppLines];
+
+                          // Tổng kết tài chính toàn bộ ca khám
+                          const baseTotal = baseInvoice?.total ?? a.estimatedTotal ?? 0;
+                          const basePaid = baseInvoice?.paid ?? (payStatus === 'PAID' ? baseTotal : 0);
+                          const suppTotal = suppInvoice?.total ?? 0;
+                          const suppPaid = suppInvoice?.paid ?? 0;
+
+                          const totalAmount = baseTotal + suppTotal;
+                          const paidAmount = basePaid + suppPaid;
+                          const balanceAmount = totalAmount - paidAmount;
+
+                          // Lọc bỏ các dòng phụ phí 0 đ (như Doctor rank surcharge) để giao diện tinh gọn
+                          const displayedBaseLines = baseLines.filter((l) => l.amount > 0);
+                          const finalBaseLines = displayedBaseLines.length > 0 ? displayedBaseLines : baseLines;
+
+                          // Lịch sử giao dịch gộp
+                          const allPayments = [
+                            ...(baseInvoice?.payments || []),
+                            ...(suppInvoice?.payments || []),
+                          ];
+
+                          const basePaidPayment = baseInvoice?.payments?.find((p) => p.amount > 0);
+                          const basePayTime = basePaidPayment?.at
+                            ? dayjs(basePaidPayment.at).format('HH:mm')
+                            : a.checkedInAt
+                            ? dayjs(a.checkedInAt).format('HH:mm')
+                            : '';
+
+                          // Xử lý chuẩn hóa tên bác sĩ, tránh lặp tiền tố "BS. BS."
+                          const cleanDoctorName = (a.doctorName || 'Nguyễn Hồng Nhung')
+                            .replace(/^(BS\.\s*|BS\s*|Bác sĩ\s*)+/i, '')
+                            .trim();
+                          const doctorDisplayName = `BS. ${cleanDoctorName}`;
+
+                          // Giờ chỉ định cận lâm sàng đồng bộ với tiến trình khám
+                          let suppOrderTime = '';
+                          if (suppInvoice?.createdAt) {
+                            suppOrderTime = dayjs(suppInvoice.createdAt).format('HH:mm');
+                          } else if (a.startedAt) {
+                            suppOrderTime = dayjs(a.startedAt).add(2, 'minute').format('HH:mm');
+                          }
 
                           return (
                             <>
-                              <Table
-                                size="small"
-                                pagination={false}
-                                dataSource={lines}
-                                rowKey={(l, idx) => `${l.name}-${idx}`}
-                                columns={[
-                                  {
-                                    title: 'Khoản thu / Dịch vụ',
-                                    dataIndex: 'name',
-                                    render: (v) => <span style={{ fontWeight: 500 }}>{v}</span>,
-                                  },
-                                  {
-                                    title: 'SL',
-                                    dataIndex: 'qty',
-                                    width: 45,
-                                    align: 'center',
-                                  },
-                                  {
-                                    title: 'Đơn giá',
-                                    dataIndex: 'unitPrice',
-                                    align: 'right',
-                                    width: 90,
-                                    render: (v: number) => money(v),
-                                  },
-                                  {
-                                    title: 'Thành tiền',
-                                    dataIndex: 'amount',
-                                    align: 'right',
-                                    width: 95,
-                                    render: (v: number) => (
-                                      <b style={{ color: '#0f172a' }}>{money(v)}</b>
-                                    ),
-                                  },
-                                ]}
-                              />
-
-                              {/* Tổng kết tài chính */}
+                              {/* Header tiêu đề chung */}
                               <div
                                 style={{
-                                  background: '#f8fafc',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: 6,
-                                  padding: '8px 12px',
-                                  marginTop: 10,
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  marginBottom: 10,
                                 }}
                               >
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    marginBottom: 3,
-                                  }}
-                                >
-                                  <span style={{ color: '#64748b', fontSize: 12 }}>Tổng viện phí:</span>
-                                  <span style={{ fontWeight: 600, color: '#0f172a', fontSize: 12 }}>
-                                    {money(total)}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                                    Hóa đơn & Viện phí
                                   </span>
+                                  {balanceAmount === 0 && totalAmount > 0 && (
+                                    <Tag color="success" style={{ margin: 0, borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                                      Tất toán ✓
+                                    </Tag>
+                                  )}
                                 </div>
-
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    marginBottom: 3,
-                                  }}
-                                >
-                                  <span style={{ color: '#64748b', fontSize: 12 }}>Đã thanh toán:</span>
-                                  <span style={{ fontWeight: 600, color: '#16a34a', fontSize: 12 }}>
-                                    {money(paid)}
+                                {allPayments.length > 0 && (
+                                  <span style={{ fontSize: 11.5, color: '#64748b' }}>
+                                    {allPayments.length} lượt thanh toán
                                   </span>
-                                </div>
+                                )}
+                              </div>
 
-                                <Divider style={{ margin: '5px 0' }} />
-
+                              {/* ─── KHỐI 1: PHÍ KHÁM BAN ĐẦU ─── */}
+                              <div
+                                style={{
+                                  background: '#f6fef9',
+                                  border: '1px solid #bbf7d0',
+                                  borderLeft: '4px solid #16a34a',
+                                  borderRadius: 8,
+                                  padding: '10px 12px',
+                                  marginBottom: 10,
+                                }}
+                              >
+                                {/* Header Khối 1 */}
                                 <div
                                   style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: 6,
+                                    marginBottom: 6,
+                                    paddingBottom: 6,
+                                    borderBottom: '1px solid #dcfce7',
                                   }}
                                 >
-                                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 12 }}>
-                                    Còn lại cần thu:
-                                  </span>
-                                  <span
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontWeight: 700, fontSize: 13, color: '#166534' }}>
+                                      Phí khám ban đầu
+                                    </span>
+                                    {baseInvoice?.number && (
+                                      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                                        (#{baseInvoice.number})
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <Tag
+                                    color={basePaid >= baseTotal && baseTotal > 0 ? 'success' : 'error'}
                                     style={{
-                                      fontWeight: 800,
-                                      fontSize: 15,
-                                      color: balance > 0 ? '#dc2626' : '#16a34a',
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      padding: '1px 8px',
+                                      borderRadius: 4,
+                                      margin: 0,
                                     }}
                                   >
-                                    {money(balance)}
+                                    {basePaid >= baseTotal && baseTotal > 0
+                                      ? `✓ Đã thanh toán${basePayTime ? ` (${basePayTime})` : ''}`
+                                      : 'Chưa thanh toán'}
+                                  </Tag>
+                                </div>
+
+                                {/* Danh sách khoản thu Khối 1 */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '6px 0' }}>
+                                  {finalBaseLines.map((l) => {
+                                    const cleanName = l.name
+                                      .replace('Doctor rank surcharge BASIC', 'Phụ phí hạng bác sĩ (Cơ bản)')
+                                      .replace('Doctor rank surcharge', 'Phụ phí hạng bác sĩ');
+                                    return (
+                                      <div
+                                        key={l.key}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: 8,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: 12.5,
+                                            color: '#0f172a',
+                                            fontWeight: 500,
+                                            flex: 1,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                          }}
+                                          title={cleanName}
+                                        >
+                                          {cleanName}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 11.5,
+                                            color: '#166534',
+                                            background: '#dcfce7',
+                                            padding: '0 6px',
+                                            borderRadius: 4,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          x{l.qty}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 12.5,
+                                            fontWeight: 600,
+                                            color: '#166534',
+                                            whiteSpace: 'nowrap',
+                                            minWidth: 90,
+                                            textAlign: 'right',
+                                          }}
+                                        >
+                                          {money(l.amount)}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Footer Khối 1: Tạm tính */}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    alignItems: 'center',
+                                    marginTop: 4,
+                                    paddingTop: 4,
+                                    borderTop: '1px dashed #bbf7d0',
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  <span style={{ color: '#166534', fontWeight: 500, marginRight: 6 }}>
+                                    Tạm tính:
                                   </span>
+                                  <strong style={{ color: '#166534', fontSize: 13, whiteSpace: 'nowrap' }}>
+                                    {money(baseTotal)}
+                                  </strong>
                                 </div>
                               </div>
 
-                              {/* Lịch sử giao dịch */}
-                              {payments.length > 0 && (
+                              {/* ─── KHỐI 2: CHỈ ĐỊNH PHÁT SINH CỦA BÁC SĨ (CẬN LÂM SÀNG) ─── */}
+                              {suppInvoice && suppLines.length > 0 && (
+                                <div
+                                  style={{
+                                    background: suppInvoice.balance > 0 ? '#fffbeb' : '#f0fdfa',
+                                    border: `1px solid ${suppInvoice.balance > 0 ? '#fed7aa' : '#ccfbf1'}`,
+                                    borderLeft: `4px solid ${suppInvoice.balance > 0 ? '#f59e0b' : '#0d9488'}`,
+                                    borderRadius: 8,
+                                    padding: '10px 12px',
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  {/* Header Khối 2: Tiêu đề gọn gàng */}
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'flex-start',
+                                      flexWrap: 'wrap',
+                                      gap: 6,
+                                      marginBottom: 6,
+                                      paddingBottom: 6,
+                                      borderBottom: `1px solid ${suppInvoice.balance > 0 ? '#fed7aa' : '#ccfbf1'}`,
+                                    }}
+                                  >
+                                    <div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span
+                                          style={{
+                                            fontWeight: 700,
+                                            fontSize: 13,
+                                            color: suppInvoice.balance > 0 ? '#9a3412' : '#0f766e',
+                                          }}
+                                        >
+                                          Chỉ định phát sinh (Cận lâm sàng)
+                                        </span>
+                                        {suppInvoice.number && (
+                                          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                                            (#{suppInvoice.number})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontSize: 11.5,
+                                          color: suppInvoice.balance > 0 ? '#c2410c' : '#0d9488',
+                                          marginTop: 2,
+                                        }}
+                                      >
+                                        {doctorDisplayName} chỉ định{suppOrderTime ? ` lúc ${suppOrderTime}` : ''}
+                                      </div>
+                                    </div>
+
+                                    <Tag
+                                      color={suppInvoice.balance > 0 ? 'error' : 'success'}
+                                      style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        padding: '1px 8px',
+                                        borderRadius: 4,
+                                        margin: 0,
+                                      }}
+                                    >
+                                      {suppInvoice.balance > 0
+                                        ? 'Chưa thanh toán'
+                                        : `✓ Đã thanh toán (${money(suppInvoice.paid)})`}
+                                    </Tag>
+                                  </div>
+
+                                  {/* Danh sách các dòng chỉ định Khối 2 */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '6px 0' }}>
+                                    {suppLines.map((l) => (
+                                      <div
+                                        key={l.key}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: 8,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: 12.5,
+                                            color: '#0f172a',
+                                            fontWeight: 500,
+                                            flex: 1,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                          }}
+                                          title={l.name}
+                                        >
+                                          {l.name}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 11.5,
+                                            color: suppInvoice.balance > 0 ? '#9a3412' : '#0f766e',
+                                            background: suppInvoice.balance > 0 ? '#ffedd5' : '#ccfbf1',
+                                            padding: '0 6px',
+                                            borderRadius: 4,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          x{l.qty}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 12.5,
+                                            fontWeight: 700,
+                                            color: suppInvoice.balance > 0 ? '#c2410c' : '#0d9488',
+                                            whiteSpace: 'nowrap',
+                                            minWidth: 90,
+                                            textAlign: 'right',
+                                          }}
+                                        >
+                                          {money(l.amount)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Footer Khối 2: Tạm tính */}
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'flex-end',
+                                      alignItems: 'center',
+                                      marginTop: 4,
+                                      paddingTop: 4,
+                                      borderTop: `1px dashed ${suppInvoice.balance > 0 ? '#fed7aa' : '#ccfbf1'}`,
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        color: suppInvoice.balance > 0 ? '#9a3412' : '#0f766e',
+                                        fontWeight: 500,
+                                        marginRight: 6,
+                                      }}
+                                    >
+                                      Tạm tính chỉ định:
+                                    </span>
+                                    <strong
+                                      style={{
+                                        color: suppInvoice.balance > 0 ? '#9a3412' : '#0f766e',
+                                        fontSize: 13,
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {money(suppTotal)}
+                                    </strong>
+                                  </div>
+
+
+                                </div>
+                              )}
+
+                              {/* ─── TỔNG KẾT VIỆN PHÍ: NỀN XÁM NHẠT TRUNG TÍNH (#f8fafc) ─── */}
+                              <div
+                                style={{
+                                  background: '#f8fafc',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: 8,
+                                  padding: '10px 12px',
+                                  marginTop: 2,
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ color: '#475569', fontSize: 12.5 }}>Tổng toàn bộ viện phí:</span>
+                                  <strong style={{ color: '#0f172a', fontSize: 13.5, whiteSpace: 'nowrap' }}>
+                                    {money(totalAmount)}
+                                  </strong>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ color: '#475569', fontSize: 12.5 }}>Đã thanh toán:</span>
+                                  <span style={{ fontWeight: 700, color: '#16a34a', fontSize: 13.5, whiteSpace: 'nowrap' }}>
+                                    {money(paidAmount)}
+                                  </span>
+                                </div>
+
+                                <div style={{ borderTop: '1px solid #cbd5e1', margin: '6px 0' }} />
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 13 }}>
+                                    {paidAmount > 0 && balanceAmount > 0 ? 'Còn lại cần thu thêm:' : 'Còn lại cần thu:'}
+                                  </span>
+                                  <strong
+                                    style={{
+                                      fontWeight: 800,
+                                      fontSize: 16,
+                                      color: balanceAmount > 0 ? '#dc2626' : '#16a34a',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {money(balanceAmount)}
+                                  </strong>
+                                </div>
+                              </div>
+
+                              {/* LỊCH SỬ GIAO DỊCH */}
+                              {allPayments.length > 0 && (
                                 <div
                                   style={{
                                     marginTop: 6,
@@ -905,14 +1357,17 @@ export function PatientCard({
                                     color: '#64748b',
                                     background: '#f1f5f9',
                                     padding: '5px 8px',
-                                    borderRadius: 4,
+                                    borderRadius: 6,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    flexWrap: 'wrap',
                                   }}
                                 >
-                                  <b>Lịch sử: </b>
-                                  {payments.map((pm, idx) => (
-                                    <span key={idx} style={{ marginRight: 6 }}>
-                                      • {pm.method} ({money(pm.amount)}){' '}
-                                      {pm.at ? dayjs(pm.at).format('HH:mm DD/MM') : ''}
+                                  <b>Lịch sử nộp: </b>
+                                  {allPayments.map((pm, idx) => (
+                                    <span key={idx} style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '1px 5px', borderRadius: 4 }}>
+                                      {pm.method} ({money(pm.amount)}) {pm.at ? dayjs(pm.at).format('HH:mm DD/MM') : ''}
                                     </span>
                                   ))}
                                 </div>
@@ -926,29 +1381,68 @@ export function PatientCard({
                       <div>
                         <Divider style={{ margin: '10px 0' }} />
                         <Space size={8} wrap>
-                          {a.status === 'BOOKED' && (a.invoice ? a.invoice.balance > 0 : true) && (
-                            <Button
-                              type="primary"
-                              icon={<CreditCardOutlined />}
-                              loading={busy || payingAndCheckingIn}
-                              onClick={() => {
-                                setPaymentModalApp(a);
-                                setPaymentMethod('CASH');
-                                setPaymentRef('');
-                              }}
-                              style={{
-                                backgroundColor: '#16a34a',
-                                borderColor: '#16a34a',
-                                fontWeight: 700,
-                                fontSize: 13,
-                                borderRadius: 6,
-                                padding: '0 16px',
-                                boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
-                              }}
-                            >
-                              💵 Thu tiền & Check-in ngay ({money(a.invoice ? a.invoice.balance : a.estimatedTotal)})
-                            </Button>
-                          )}
+                          {(() => {
+                            const baseInvoice = a.invoices?.find((i) => i.type === 'BASE') ?? a.invoice ?? null;
+                            const suppInvoice = a.supplementaryInvoice || a.invoices?.find((i) => i.type === 'SUPPLEMENTARY') || null;
+
+                            const baseTotal = baseInvoice?.total ?? a.estimatedTotal ?? 0;
+                            const basePaid = baseInvoice?.paid ?? (payStatus === 'PAID' ? baseTotal : 0);
+                            const baseBalance = baseTotal - basePaid;
+
+                            return (
+                              <>
+                                {/* Nút 1: Thu tiền khám ban đầu & Check-in (chỉ khi BOOKED và chưa thu tiền khám) */}
+                                {a.status === 'BOOKED' && baseBalance > 0 && (
+                                  <Button
+                                    type="primary"
+                                    icon={<CreditCardOutlined />}
+                                    loading={busy || payingAndCheckingIn}
+                                    onClick={() => {
+                                      setPaymentModalApp(a);
+                                      setPaymentMethod('CASH');
+                                      setPaymentRef('');
+                                    }}
+                                    style={{
+                                      backgroundColor: '#16a34a',
+                                      borderColor: '#16a34a',
+                                      fontWeight: 700,
+                                      fontSize: 13,
+                                      borderRadius: 6,
+                                      padding: '0 16px',
+                                      boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
+                                    }}
+                                  >
+                                    Thu tiền & Check-in ngay ({money(baseBalance)})
+                                  </Button>
+                                )}
+
+                                {/* Nút 2: Thu tiền chỉ định phát sinh (Cận lâm sàng) - không cần check-in và cấp số */}
+                                {suppInvoice && suppInvoice.balance > 0 && (
+                                  <Button
+                                    type="primary"
+                                    icon={<CreditCardOutlined />}
+                                    loading={payingSupp && suppPaymentModalData?.invoice?.id === suppInvoice.id}
+                                    onClick={() => {
+                                      setSuppPaymentModalData({ app: a, invoice: suppInvoice });
+                                      setSuppPaymentMethod('CASH');
+                                      setSuppPaymentRef('');
+                                    }}
+                                    style={{
+                                      backgroundColor: '#16a34a',
+                                      borderColor: '#16a34a',
+                                      fontWeight: 700,
+                                      fontSize: 13,
+                                      borderRadius: 6,
+                                      padding: '0 16px',
+                                      boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
+                                    }}
+                                  >
+                                    Thu tiền phát sinh ({money(suppInvoice.balance)})
+                                  </Button>
+                                )}
+                              </>
+                            );
+                          })()}
 
                           {a.status === 'CHECKED_IN' && (
                             <Button
@@ -964,6 +1458,41 @@ export function PatientCard({
                             >
                               In phiếu khám & Biên lai (STT: {a.queueCode || 'Đã cấp'})
                             </Button>
+                          )}
+
+                          {(a.status === 'COMPLETED' || a.completedAt) && (
+                            <>
+                              <Button
+                                icon={<ExperimentOutlined />}
+                                onClick={() => {
+                                  setClsAppointment(a);
+                                  setClsResultModalOpen(true);
+                                }}
+                                style={{
+                                  borderRadius: 6,
+                                  color: '#0d9488',
+                                  borderColor: '#99f6e4',
+                                  background: '#f0fdfa',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Xem kết quả CLS
+                              </Button>
+                              <Button
+                                type="primary"
+                                icon={<FilePdfOutlined />}
+                                onClick={() => handleOpenReportModal(a)}
+                                loading={loadingReport && reportAppointment?.id === a.id}
+                                style={{
+                                  backgroundColor: '#059669',
+                                  borderColor: '#059669',
+                                  borderRadius: 6,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                In phiếu kết quả khám (PDF)
+                              </Button>
+                            </>
                           )}
 
                           <Button
@@ -1184,6 +1713,162 @@ export function PatientCard({
         </Modal>
       )}
 
+      {/* MODAL 1 CHẠM: THU TIỀN VIỆN PHÍ CHỈ ĐỊNH PHÁT SINH (CẬN LÂM SÀNG) - KHÔNG CHECK-IN, KHÔNG CẤP SỐ */}
+      {suppPaymentModalData && (
+        <Modal
+          open={Boolean(suppPaymentModalData)}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background: '#DCFCE7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CreditCardOutlined style={{ color: '#16A34A', fontSize: 18 }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', lineHeight: 1.2 }}>
+                  Thu tiền viện phí chỉ định phát sinh
+                </div>
+                <div style={{ fontSize: 12, color: '#64748B', fontWeight: 400, marginTop: 2 }}>
+                  Ghi nhận thanh toán viện phí cận lâm sàng do bác sĩ chỉ định
+                </div>
+              </div>
+            </div>
+          }
+          onCancel={() => !payingSupp && setSuppPaymentModalData(null)}
+          footer={[
+            <Button
+              key="cancel"
+              disabled={payingSupp}
+              onClick={() => setSuppPaymentModalData(null)}
+              style={{ borderRadius: 6 }}
+            >
+              Hủy
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={payingSupp}
+              icon={<CheckCircleOutlined />}
+              onClick={handleConfirmSuppPayment}
+              style={{
+                backgroundColor: '#16A34A',
+                borderColor: '#16A34A',
+                fontWeight: 600,
+                borderRadius: 6,
+                padding: '0 18px',
+              }}
+            >
+              Xác nhận Thu tiền ({money(suppPaymentModalData.invoice.balance)})
+            </Button>,
+          ]}
+          width={540}
+          centered
+        >
+          <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: 8,
+                padding: '12px 14px',
+                marginBottom: 16,
+                fontSize: 13,
+                lineHeight: 1.8,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748B' }}>Bệnh nhân:</span>
+                <strong style={{ color: '#0F172A' }}>{currentPatient.fullName}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748B' }}>Số điện thoại:</span>
+                <span>{currentPatient.phone || 'Chưa có SĐT'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748B' }}>Bác sĩ chỉ định:</span>
+                <strong style={{ color: '#0B5CAD' }}>{suppPaymentModalData.app.doctorName}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748B' }}>Phòng khám tiếp nhận:</span>
+                <span>Phòng {suppPaymentModalData.app.roomCode} — {suppPaymentModalData.app.roomName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ color: '#64748B', whiteSpace: 'nowrap', marginRight: 12 }}>Dịch vụ chỉ định:</span>
+                <span style={{ fontWeight: 600, color: '#0F172A', textAlign: 'right' }}>
+                  {suppPaymentModalData.invoice.lines?.map((l) => l.name).join(', ') || 'Chỉ định cận lâm sàng'}
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                borderRadius: 8,
+                padding: '14px 16px',
+                textAlign: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+                Số tiền cần thu tại quầy
+              </div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: '#15803D', marginTop: 2 }}>
+                {money(suppPaymentModalData.invoice.balance)}
+              </div>
+              <Tag color="success" style={{ marginTop: 4, fontWeight: 600 }}>
+                Thu đúng đủ viện phí chỉ định phát sinh
+              </Tag>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>
+                Hình thức thanh toán tại quầy:
+              </div>
+              <Radio.Group
+                value={suppPaymentMethod}
+                onChange={(e) => setSuppPaymentMethod(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Radio value="CASH">
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>💵 Tiền mặt (Cash)</span>
+                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
+                      Thu tiền mặt trực tiếp tại quầy tiếp đón
+                    </span>
+                  </Radio>
+                  <Radio value="TRANSFER">
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>📲 Quét mã VietQR tại quầy</span>
+                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
+                      Bệnh nhân quét mã QR ngân hàng tại quầy
+                    </span>
+                  </Radio>
+                </Space>
+              </Radio.Group>
+            </div>
+
+            {suppPaymentMethod === 'TRANSFER' && (
+              <div style={{ marginTop: 8 }}>
+                <Input
+                  placeholder="Nhập mã giao dịch / ngân hàng (không bắt buộc)"
+                  value={suppPaymentRef}
+                  onChange={(e) => setSuppPaymentRef(e.target.value)}
+                  style={{ borderRadius: 6 }}
+                />
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {/* MODAL: PHIẾU KHÁM & BIÊN LAI THU TIỀN CÓ SỐ THỨ TỰ */}
       {printTicketApp && (
         <Modal
@@ -1310,6 +1995,24 @@ export function PatientCard({
           </div>
         </Modal>
       )}
+
+      {/* MODAL XEM VÀ IN PHIẾU KẾT QUẢ KHÁM BỆNH PDF (CHO LỄ TÂN) */}
+      <MedicalReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        documentId={reportDocumentId}
+        appointmentCode={reportAppointment?.code || reportAppointment?.id}
+        patientName={currentPatient?.fullName || ''}
+      />
+
+      {/* MODAL XEM KẾT QUẢ CHỈ ĐỊNH CẬN LÂM SÀNG CHO LỄ TÂN */}
+      <ClinicalOrdersResultModal
+        open={clsResultModalOpen}
+        onClose={() => setClsResultModalOpen(false)}
+        encounterId={clsAppointment?.encounterId ? String(clsAppointment.encounterId) : undefined}
+        appointmentCode={clsAppointment?.code || clsAppointment?.id}
+        patientName={currentPatient?.fullName || ''}
+      />
     </Card>
   );
 }

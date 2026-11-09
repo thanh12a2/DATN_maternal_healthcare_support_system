@@ -56,6 +56,19 @@ model TreatmentPlanItem {
   @@index([planId,sortOrder])
   @@map("treatment_plan_items")
 }
+model TreatmentPlanTemplate {
+  id String @id @default(uuid()) @db.Uuid
+  category String @db.VarChar(50)
+  title String @db.VarChar(200)
+  content String @db.VarChar(2000)
+  sortOrder Int @default(0) @map("sort_order")
+  isActive Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([category, sortOrder])
+  @@map("treatment_plan_templates")
+}
 model TreatmentPlanVersion {
   id String @id @default(uuid()) @db.Uuid
   planId String @map("plan_id") @db.Uuid

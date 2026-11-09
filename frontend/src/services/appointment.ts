@@ -151,9 +151,73 @@ export async function fetchAppointmentInvoicesMap(request: Requester, appointmen
     const list = await Promise.all(
       appointmentIds.map(async (id) => {
         try {
-          const res = await request<any>(`/api/billing/invoices?appointmentId=${encodeURIComponent(id)}&limit=1`);
+          const res = await request<any>(`/api/billing/invoices?appointmentId=${encodeURIComponent(id)}&limit=10`);
           const items = Array.isArray(res) ? res : res?.items || res?.data || [];
-          return { id, invoice: items[0] || null };
+          if (!items || items.length === 0) return { id, invoice: null };
+
+          if (items.length === 1) {
+            const single = items[0];
+            const t = Number(single.totalMinor ?? single.total ?? 0);
+            const isBase = single.type === 'BASE';
+            return {
+              id,
+              invoice: {
+                ...single,
+                invoices: items,
+                totalMinor: t,
+                total: t,
+                initialFeeMinor: isBase ? t : 0,
+                extraFeeMinor: isBase ? 0 : t,
+                hasAdditionalOrders: !isBase,
+              },
+            };
+          }
+
+          // Phân loại và tổng hợp viện phí khi có nhiều hóa đơn (Khám ban đầu + Chỉ định phát sinh)
+          let totalMinor = 0;
+          let paidMinor = 0;
+          let balanceMinor = 0;
+          let allPaid = true;
+          let initialFeeMinor = 0;
+          let extraFeeMinor = 0;
+
+          const baseInvoice = items.find((inv: any) => inv.type === 'BASE') || items[items.length - 1] || items[0];
+          initialFeeMinor = Number(baseInvoice?.totalMinor ?? baseInvoice?.total ?? 0);
+
+          for (const inv of items) {
+            const t = Number(inv.totalMinor ?? inv.total ?? 0);
+            const p = Number(inv.paidMinor ?? inv.paid ?? 0);
+            const b = Number(inv.balanceMinor ?? inv.balance ?? 0);
+            totalMinor += t;
+            paidMinor += p;
+            balanceMinor += b;
+            if (inv.status !== 'PAID') {
+              allPaid = false;
+            }
+            if (inv.id !== baseInvoice?.id || inv.type !== 'BASE') {
+              extraFeeMinor += t;
+            }
+          }
+
+          if (extraFeeMinor === 0 && totalMinor > initialFeeMinor) {
+            extraFeeMinor = totalMinor - initialFeeMinor;
+          }
+
+          const aggregated = {
+            ...baseInvoice,
+            invoices: items,
+            totalMinor,
+            total: totalMinor,
+            paidMinor,
+            paid: paidMinor,
+            balanceMinor,
+            balance: balanceMinor,
+            status: allPaid ? 'PAID' : (paidMinor > 0 ? 'PARTIAL' : 'UNPAID'),
+            initialFeeMinor,
+            extraFeeMinor,
+            hasAdditionalOrders: extraFeeMinor > 0,
+          };
+          return { id, invoice: aggregated };
         } catch {
           return { id, invoice: null };
         }

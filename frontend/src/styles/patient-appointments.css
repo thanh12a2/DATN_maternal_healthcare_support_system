@@ -565,7 +565,7 @@
   border-radius: 16px;
   padding: 20px 24px;
   display: grid;
-  grid-template-columns: 140px minmax(0, 1.8fr) minmax(220px, 1fr);
+  grid-template-columns: 140px minmax(0, 1.3fr) minmax(340px, auto);
   gap: 24px;
   align-items: center;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
@@ -719,14 +719,23 @@
   align-items: flex-end;
   justify-content: center;
   gap: 10px;
+  min-width: 0;
 }
 
 @media (max-width: 980px) {
   .pap-card-actions-col {
     align-items: flex-start;
-    padding-top: 12px;
+    padding-top: 14px;
     border-top: 1px dashed #e2e8f0;
   }
+}
+
+.pap-card-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .pap-status-badge {
@@ -738,6 +747,7 @@
   font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .pap-status-badge.booked {
@@ -770,59 +780,201 @@
   border: 1px solid #fecaca;
 }
 
-.pap-card-price {
-  font-size: 15px;
-  font-weight: 850;
-  color: #0b4f9c;
+/* Phần hiển thị chi phí / viện phí */
+.pap-card-price-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 3px;
 }
 
+@media (max-width: 980px) {
+  .pap-card-price-wrap {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+.pap-card-price-main {
+  font-size: 17px;
+  font-weight: 850;
+  color: #0b4f9c;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+}
+
+.pap-card-price-breakdown {
+  font-size: 11.5px;
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 2.5px 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.pap-card-price-pending {
+  font-size: 11.5px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 2.5px 8px;
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* Cụm nút bấm thao tác trên thẻ */
 .pap-card-btns-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
-.pap-btn-view-ticket {
-  background: #f0f7ff;
-  color: #0b4f9c;
-  border: 1px solid #bae6fd;
-  border-radius: 9px;
-  padding: 7px 14px;
+@media (max-width: 980px) {
+  .pap-card-btns-wrap {
+    justify-content: flex-start;
+  }
+}
+
+/* Nút 1: Xem kết quả khám PDF (Primary Emerald Pill) */
+.pap-btn-report {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  border: none;
+  border-radius: 10px;
+  height: 38px;
+  padding: 0 16px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pap-btn-report:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff !important;
+  box-shadow: 0 5px 15px rgba(5, 150, 105, 0.38);
+  transform: translateY(-2px);
+}
+
+.pap-btn-report:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(5, 150, 105, 0.2);
+}
+
+.pap-btn-report:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Nút 2: Phiếu hẹn khám (Secondary Blue Pill) */
+.pap-btn-ticket {
+  background: #f0f9ff;
+  color: #0284c7 !important;
+  border: 1.5px solid #bae6fd;
+  border-radius: 10px;
+  height: 38px;
+  padding: 0 15px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.06);
+}
+
+.pap-btn-ticket:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+}
+
+.pap-btn-ticket:active {
+  transform: translateY(0);
+}
+
+/* Nút 3: Đặt lại (Clean Re-book Pill) */
+.pap-btn-rebook {
+  background: #ffffff;
+  color: #475569 !important;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  height: 38px;
+  padding: 0 15px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.pap-btn-rebook:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.pap-btn-rebook:active {
+  transform: translateY(0);
+}
+
+.pap-btn-rebook:active {
+  transform: translateY(0);
+}
+
+/* Alias tương thích ngược cho view-ticket */
+.pap-btn-view-ticket {
+  background: #f8fafc;
+  color: #0b4f9c;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  height: 35px;
+  padding: 0 13px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .pap-btn-view-ticket:hover {
-  background: #0b4f9c;
-  color: #ffffff;
-  border-color: #0b4f9c;
-}
-
-.pap-btn-rebook {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-  border-radius: 9px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.pap-btn-rebook:hover {
-  background: #16a34a;
-  color: #ffffff;
-  border-color: #16a34a;
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0284c7;
 }
 
 /* 6. EMPTY STATE */

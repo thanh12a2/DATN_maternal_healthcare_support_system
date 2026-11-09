@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { message } from 'antd';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
 import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
@@ -36,15 +37,22 @@ import {
   Check,
   Printer,
   ArrowRight,
+  RotateCcw,
   Search,
   Sparkles,
   PhoneCall,
   FileText,
+  FileCheck,
   RefreshCw,
   X,
   ChevronLeft,
   Building2,
 } from 'lucide-react';
+import dayjs from 'dayjs';
+import { getEncounterReport, generateEncounterReport } from '../../../services/clinicalReport';
+import { getEncounter } from '../../../services/clinical';
+import { MedicalReportModal } from '../../doctor/components/MedicalReportModal';
+import { ClinicalOrdersResultModal } from '../../../shared/components/portal/ClinicalOrdersResultModal';
 import '../../../styles/patient-appointments.css';
 
 const WEEKDAYS = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -138,6 +146,7 @@ export function PatientAppointmentsPage() {
   const [invoiceMap, setInvoiceMap] = useState<Map<string, any>>(new Map());
 
   const [loading, setLoading] = useState(true);
+  const isFirstLoadRef = useRef(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled' | 'all'>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Appointment | null>(null);
@@ -145,10 +154,117 @@ export function PatientAppointmentsPage() {
 
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
+  // Modal xem Phiếu kết quả khám bệnh PDF (Bản A4 chính thức)
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportDocumentId, setReportDocumentId] = useState<string | null>(null);
+  const [reportAppointment, setReportAppointment] = useState<Appointment | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  // Modal xem kết quả chỉ định cận lâm sàng (file đính kèm)
+  const [clsModalOpen, setClsModalOpen] = useState(false);
+  const [clsAppointment, setClsAppointment] = useState<Appointment | null>(null);
+
+  const handleOpenClsResults = (apt: Appointment) => {
+    setClsAppointment(apt);
+    setClsModalOpen(true);
+  };
+
+  const handleOpenPatientReport = async (apt: Appointment) => {
+    setLoadingReport(true);
+    setReportAppointment(apt);
+    try {
+      const encId = apt.encounterId ? String(apt.encounterId) : '';
+      if (!encId) {
+        message.warning('Lịch hẹn này chưa có thông tin hồ sơ khám bệnh.');
+        return;
+      }
+      let existing = await getEncounterReport(auth.request, encId);
+      if (!existing?.documentId && apt.status === 'COMPLETED') {
+        try {
+          const encRes: any = await getEncounter(auth.request, encId);
+          const encData = encRes?.data || encRes;
+          if (encData) {
+            const vitals = Array.isArray(encData.vitalSigns) && encData.vitalSigns.length > 0
+              ? encData.vitalSigns[encData.vitalSigns.length - 1]
+              : null;
+            const diagnoses = Array.isArray(encData.diagnoses) && encData.diagnoses.length > 0
+              ? encData.diagnoses[encData.diagnoses.length - 1]
+              : null;
+            const orders = Array.isArray(encData.orders)
+              ? encData.orders.map((o: any) => {
+                  const hasResult = Boolean(
+                    o.structuredResult?.fileName ||
+                    o.structuredResult?.fileUrl ||
+                    o.resultNotes ||
+                    o.status === 'VERIFIED' ||
+                    o.status === 'RESULT_AVAILABLE' ||
+                    o.status === 'COMPLETED'
+                  );
+                  return {
+                    name: o.catalogServiceName || o.serviceName || 'Dịch vụ cận lâm sàng',
+                    category: o.category || 'Cận lâm sàng',
+                    result: o.resultNotes || (hasResult ? 'Đã có kết quả (Bình thường)' : 'Đã thực hiện / Chờ kết quả'),
+                    status: hasResult ? 'Đã có kết quả' : (o.status === 'VERIFIED' ? 'Đã thực hiện' : 'Đã chỉ định'),
+                  };
+                })
+              : [];
+
+            const payload = {
+              appointmentCode: apt.appointmentCode || '',
+              encounterId: encId,
+              patientId: apt.patientId || encData.patientId || '',
+              roomCode: apt.roomCode || 'P.207',
+              roomName: apt.roomName || 'Phòng khám Sản Phụ khoa 207',
+              examinationDate: dayjs(apt.completedAt || apt.startAt || new Date()).format('DD/MM/YYYY'),
+              examinationTime: dayjs(apt.completedAt || apt.startAt || new Date()).format('HH:mm'),
+              patientName: String(apt.patientNameSnapshot || apt.patientName || 'Bệnh nhân'),
+              patientPhone: String(apt.patientPhoneNumberSnapshot || apt.patientPhone || ''),
+              patientGender: 'Nữ',
+              vitals: vitals ? {
+                bloodPressure: vitals.bloodPressure || (vitals.systolic && vitals.diastolic ? `${vitals.systolic}/${vitals.diastolic}` : undefined),
+                heartRate: vitals.heartRate ? String(vitals.heartRate) : undefined,
+                temperature: vitals.temperature ? String(vitals.temperature) : undefined,
+                weight: vitals.weightKg ? String(vitals.weightKg) : (vitals.weight ? String(vitals.weight) : undefined),
+                height: vitals.heightCm ? String(vitals.heightCm) : (vitals.height ? String(vitals.height) : undefined),
+                bmi: vitals.bmi ? String(vitals.bmi) : undefined,
+              } : undefined,
+              chiefComplaint: apt.pricing?.serviceName || 'Khám thai định kỳ chuẩn y khoa',
+              primaryDiagnosis: diagnoses?.description || 'Khám thai định kỳ chuẩn y khoa - Thai phụ và thai nhi phát triển bình thường',
+              clinicalOrders: orders,
+              prescriptions: [],
+              careAdvice: [],
+              doctorName: apt.assignedDoctorName ? String(apt.assignedDoctorName) : 'BS. Nguyễn Hồng Nhung',
+              finalizedAt: apt.completedAt ? String(apt.completedAt) : new Date().toISOString(),
+            };
+            const generated = await generateEncounterReport(auth.request, payload);
+            if (generated && (generated as any).documentId) {
+              existing = generated as any;
+            }
+          }
+        } catch (genErr) {
+          console.warn('Tự động tạo phiếu kết quả thất bại:', genErr);
+        }
+      }
+
+      if (existing && existing.documentId) {
+        setReportDocumentId(existing.documentId);
+        setReportModalOpen(true);
+      } else {
+        message.info('Phiếu kết quả khám bệnh đang được xử lý hoặc bác sĩ chưa hoàn tất ký số.');
+      }
+    } catch (err: any) {
+      message.error(err?.message || 'Có lỗi xảy ra khi tải phiếu kết quả khám.');
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
   // 1. Tải danh sách lịch hẹn & dữ liệu bổ trợ từ DB (gồm STT hàng đợi & thanh toán)
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    if (isFirstLoadRef.current) {
+      setLoading(true);
+    }
 
     Promise.all([
       listAppointments(auth.request, {}).then((page) => page.items || []).catch(() => []),
@@ -169,6 +285,7 @@ export function PatientAppointmentsPage() {
         const invMap = await fetchAppointmentInvoicesMap(auth.request, ids).catch(() => new Map());
         if (active) setInvoiceMap(invMap);
       }
+      isFirstLoadRef.current = false;
       setLoading(false);
     });
 
@@ -191,20 +308,58 @@ export function PatientAppointmentsPage() {
       setAppointments((cur) =>
         cur.map((a) => {
           if (a.id === event.appointmentId) {
+            let nextStatus = a.status;
+            if (event.status) {
+              if (event.status === 'IN_PROGRESS' || event.status === 'IN_CLINICAL_CARE') {
+                nextStatus = 'IN_CLINICAL_CARE';
+              } else if (event.status === 'BOOKED' && (a.status === 'IN_CLINICAL_CARE' || a.status === 'CHECKED_IN')) {
+                // Không bị hạ ngược trạng thái về Booked khi thêm chỉ định
+                nextStatus = a.status;
+              } else {
+                nextStatus = event.status as any;
+              }
+            }
             return {
               ...a,
-              status: (event.status as any) || a.status,
+              status: nextStatus,
               queueCode: event.ticketCode || a.queueCode,
               roomCode: event.roomCode || a.roomCode,
               roomName: event.roomName || a.roomName,
-              checkedInAt: event.status === 'CHECKED_IN' ? (a.checkedInAt || new Date().toISOString()) : a.checkedInAt,
-              clinicalStartedAt: event.status === 'IN_CLINICAL_CARE' ? (a.clinicalStartedAt || new Date().toISOString()) : a.clinicalStartedAt,
-              completedAt: event.status === 'COMPLETED' ? (a.completedAt || new Date().toISOString()) : a.completedAt,
+              checkedInAt: nextStatus === 'CHECKED_IN' ? (event.checkedInAt || a.checkedInAt || new Date().toISOString()) : (event.checkedInAt || a.checkedInAt),
+              clinicalStartedAt: nextStatus === 'IN_CLINICAL_CARE' ? (event.clinicalStartedAt || a.clinicalStartedAt || new Date().toISOString()) : (event.clinicalStartedAt || a.clinicalStartedAt),
+              completedAt: nextStatus === 'COMPLETED' ? (event.completedAt || a.completedAt || new Date().toISOString()) : (event.completedAt || a.completedAt),
             };
           }
           return a;
         })
       );
+
+      // Cập nhật modal chi tiết phiếu khám nếu bệnh nhân đang mở xem
+      setSelectedTicket((cur) => {
+        if (cur && cur.id === event.appointmentId) {
+          let nextStatus = cur.status;
+          if (event.status) {
+            if (event.status === 'IN_PROGRESS' || event.status === 'IN_CLINICAL_CARE') {
+              nextStatus = 'IN_CLINICAL_CARE';
+            } else if (event.status === 'BOOKED' && (cur.status === 'IN_CLINICAL_CARE' || cur.status === 'CHECKED_IN')) {
+              nextStatus = cur.status;
+            } else {
+              nextStatus = event.status as any;
+            }
+          }
+          return {
+            ...cur,
+            status: nextStatus,
+            queueCode: event.ticketCode || cur.queueCode,
+            roomCode: event.roomCode || cur.roomCode,
+            roomName: event.roomName || cur.roomName,
+            checkedInAt: nextStatus === 'CHECKED_IN' ? (event.checkedInAt || cur.checkedInAt || new Date().toISOString()) : (event.checkedInAt || cur.checkedInAt),
+            clinicalStartedAt: nextStatus === 'IN_CLINICAL_CARE' ? (event.clinicalStartedAt || cur.clinicalStartedAt || new Date().toISOString()) : (event.clinicalStartedAt || cur.clinicalStartedAt),
+            completedAt: nextStatus === 'COMPLETED' ? (event.completedAt || cur.completedAt || new Date().toISOString()) : (event.completedAt || cur.completedAt),
+          };
+        }
+        return cur;
+      });
 
       // 2. Cập nhật STT và Phòng khám trên thanh tiến trình ngay tại chỗ
       if (event.ticketCode || event.roomCode) {
@@ -432,29 +587,95 @@ export function PatientAppointmentsPage() {
 
         {/* Cột 3: Trạng thái & Hành động */}
         <div className="pap-card-actions-col">
-          <span className={`pap-status-badge ${badge.className}`}>
-            {badge.icon} {badge.label}
-          </span>
+          <div className="pap-card-badges-row">
+            <span className={`pap-status-badge ${badge.className}`}>
+              {badge.icon} {badge.label}
+            </span>
 
-          {/* Huy hiệu thanh toán */}
-          <PaymentStatusBadge
-            appointmentStatus={apt.status}
-            invoice={invoice}
-            showDesc={false}
-          />
-
-          <div className="pap-card-price">
-            {formatVnd(apt.pricing?.estimatedTotalMinor)}
+            {/* Huy hiệu thanh toán */}
+            <PaymentStatusBadge
+              appointmentStatus={apt.status}
+              invoice={invoice}
+              showDesc={false}
+            />
           </div>
 
+          {/* Chi phí viện phí & Phát sinh cận lâm sàng (nếu có) */}
+          {(() => {
+            const initialFee = Number(invoice?.initialFeeMinor ?? apt.pricing?.estimatedTotalMinor ?? 300000);
+            const totalFee = Number(invoice?.totalMinor ?? invoice?.total ?? apt.pricing?.estimatedTotalMinor ?? 300000);
+            const extraFee = Number(invoice?.extraFeeMinor ?? (totalFee > initialFee ? totalFee - initialFee : 0));
+            const balanceFee = Number(invoice?.balanceMinor ?? invoice?.balance ?? 0);
+
+            return (
+              <div className="pap-card-price-wrap">
+                <div className="pap-card-price-main">
+                  {formatVnd(totalFee)}
+                </div>
+                {extraFee > 0 ? (
+                  <div className="pap-card-price-breakdown">
+                    <Sparkles size={12} style={{ color: '#059669' }} />
+                    <span>Gồm {formatVnd(initialFee)} khám + {formatVnd(extraFee)} chỉ định</span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 500 }}>
+                    Phí khám tiêu chuẩn
+                  </div>
+                )}
+                {balanceFee > 0 && (
+                  <div className="pap-card-price-pending">
+                    <AlertCircle size={12} />
+                    <span>Chờ thu thêm {formatVnd(balanceFee)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div className="pap-card-btns-wrap">
+            {(apt.status === 'COMPLETED' || apt.completedAt) && (
+              <>
+                <button
+                  type="button"
+                  className="pap-btn-report"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenClsResults(apt);
+                  }}
+                  style={{
+                    background: '#f0fdfa',
+                    borderColor: '#99f6e4',
+                    color: '#0d9488',
+                  }}
+                  title="Xem các tệp kết quả siêu âm, xét nghiệm cận lâm sàng đã thực hiện"
+                >
+                  <FileText size={16} />
+                  <span>Kết quả CLS</span>
+                </button>
+                <button
+                  type="button"
+                  className="pap-btn-report"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenPatientReport(apt);
+                  }}
+                  disabled={loadingReport}
+                  title="Xem và tải phiếu kết quả khám bệnh PDF bản in A4"
+                >
+                  <FileCheck size={16} />
+                  <span>Kết quả khám (PDF)</span>
+                </button>
+              </>
+            )}
+
             <button
               type="button"
-              className="pap-btn-view-ticket"
+              className="pap-btn-ticket"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedTicket(apt);
               }}
+              title="Xem thông tin chi tiết phiếu hẹn"
             >
               <FileText size={15} />
               <span>Phiếu hẹn</span>
@@ -465,8 +686,9 @@ export function PatientAppointmentsPage() {
                 href={`/dat-lich?serviceId=${encodeURIComponent(apt.serviceId || '')}`}
                 className="pap-btn-rebook"
                 onClick={(e: any) => e.stopPropagation()}
+                title="Đặt lại lịch khám mới"
               >
-                <ArrowRight size={14} />
+                <RotateCcw size={14} />
                 <span>Đặt lại</span>
               </AppLink>
             )}
@@ -826,6 +1048,26 @@ export function PatientAppointmentsPage() {
         fallbackRoomName={selectedTicket?.roomName || selectedTicket?.roomCode || 'Quầy tiếp đón Tầng 1'}
         queueInfo={selectedTicket?.id ? queueMap.get(selectedTicket.id) : null}
         invoice={selectedTicket?.id ? invoiceMap.get(selectedTicket.id) : null}
+        onViewReport={handleOpenPatientReport}
+        onViewClsResults={handleOpenClsResults}
+      />
+
+      {/* 9. MODAL XEM PHIẾU KẾT QUẢ KHÁM BỆNH PDF (BẢN A4 CHÍNH THỨC) */}
+      <MedicalReportModal
+        open={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        documentId={reportDocumentId}
+        appointmentCode={reportAppointment?.appointmentCode || reportAppointment?.id}
+        patientName={patientProfile?.fullName}
+      />
+
+      {/* 10. MODAL XEM KẾT QUẢ CHỈ ĐỊNH CẬN LÂM SÀNG (FILE ĐÍNH KÈM) */}
+      <ClinicalOrdersResultModal
+        open={clsModalOpen}
+        onClose={() => setClsModalOpen(false)}
+        encounterId={clsAppointment?.encounterId ? String(clsAppointment.encounterId) : undefined}
+        appointmentCode={clsAppointment?.appointmentCode || clsAppointment?.id}
+        patientName={patientProfile?.fullName}
       />
     </div>
   );

@@ -44,7 +44,10 @@ export interface RealtimeAppointmentEvent {
     | 'appointment.clinical_started'
     | 'appointment.completed'
     | 'appointment.cancelled'
-    | 'appointment.rescheduled';
+    | 'appointment.rescheduled'
+    | 'appointment.order_created'
+    | 'appointment.invoice_updated'
+    | string;
   appointmentId: string;
   patientId: string;
   status: string;
@@ -59,6 +62,9 @@ export interface RealtimeAppointmentEvent {
   roomName?: string;
   ticketCode?: string;
   paymentStatus?: 'PAID' | 'UNPAID' | 'PARTIAL';
+  checkedInAt?: string;
+  clinicalStartedAt?: string;
+  completedAt?: string;
   updatedAt: string;
 }
 

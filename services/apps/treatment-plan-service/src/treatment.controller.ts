@@ -57,7 +57,11 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR' && (!String(b.title ?? '').trim() || !Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.title ?? '').trim()))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    const hasItems = Array.isArray(b.items) && b.items.length > 0;
+    const hasValidItems = hasItems && b.items.every((x: any) => String(x.title ?? '').trim());
+    if (a.role === 'DOCTOR' && (!String(b.title ?? '').trim() || (!b.effectiveTo && !hasValidItems))) {
+      throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    }
     const doctorId = await this.authorizeWrite(a, b.sourceEncounterId || b.encounterId, b.patientId);
     return this.s.createRest(b, a, doctorId);
   }
@@ -67,6 +71,12 @@ export class TreatmentController {
   async listTreatmentPlans(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
     if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
+  }
+
+  @UseGuards(PublicJwtGuard)
+  @Get(['templates', 'treatment-plans/templates'])
+  async listTemplates(@Query('category') category: string) {
+    return this.s.listTemplates(category);
   }
 
   @UseGuards(PublicJwtGuard)
@@ -84,7 +94,7 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR' && ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || !b.items.length || b.items.some((x: any) => !String(x.title ?? '').trim()))))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    if (a.role === 'DOCTOR' && ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || b.items.some((x: any) => !String(x.title ?? '').trim()))))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
     await this.authorizeExisting(a, id, b);
     return this.s.updateRest(id, b, a);
   }

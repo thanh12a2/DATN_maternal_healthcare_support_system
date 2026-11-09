@@ -1,38 +1,477 @@
-.doctor-files{display:grid;gap:20px;color:#17345b}
-.doctor-files-upload{padding:20px;border:1px solid #deebf7;border-radius:16px;background:linear-gradient(135deg,#f8fcff 0%,#eef7ff 100%)}
-.doctor-files-upload-heading{display:flex;align-items:center;gap:13px}
-.doctor-files-upload-icon,.doctor-files-picker-icon,.doctor-files-item-icon{display:grid;place-items:center;flex:none;color:#1f70be;background:#e4f2ff}
-.doctor-files-upload-icon{width:44px;height:44px;border-radius:13px;font-size:21px}
-.doctor-files-upload-heading h4,.doctor-files-library-heading h4{margin:0;color:#183d68;font-size:14px;font-weight:800}
-.doctor-files-upload-heading p,.doctor-files-library-heading p{margin:5px 0 0;color:#748ca4;font-size:11px;line-height:1.5}
-.doctor-files-picker{display:flex;align-items:center;gap:12px;margin-top:17px;padding:14px;border:1px dashed #a8cce9;border-radius:12px;background:#fff;transition:border-color .18s,background .18s,box-shadow .18s}
-.doctor-files-picker:focus-within{border-color:#2b81d2;box-shadow:0 0 0 3px #d6ebfc}
-.doctor-files-picker.has-file{border-style:solid;border-color:#c4e1f5;background:#fbfdff}
-.doctor-files-picker-icon{width:37px;height:37px;border-radius:10px;font-size:17px}
-.doctor-files-picker-copy,.doctor-files-item-copy{display:grid;flex:1;gap:5px;min-width:0}
-.doctor-files-picker-copy strong,.doctor-files-item-copy strong{overflow:hidden;color:#244c75;font-size:11px;font-weight:800;line-height:1.45;text-overflow:ellipsis;white-space:nowrap}
-.doctor-files-picker-copy span,.doctor-files-item-copy span{color:#8398ac;font-size:10px;line-height:1.4}
-.doctor-files-choose,.doctor-files-primary,.doctor-files-download{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:none;min-height:36px;padding:0 13px;border:1px solid transparent;border-radius:9px;font:700 11px var(--font-display);cursor:pointer;transition:background .18s,color .18s,border-color .18s,box-shadow .18s,transform .18s}
-.doctor-files-choose{position:relative;overflow:hidden;border-color:#c9dff1;background:#fff;color:#1d68ae}
-.doctor-files-choose input{position:absolute;width:1px;height:1px;opacity:0}
-.doctor-files-choose:hover:not(.is-disabled),.doctor-files-download:hover:not(:disabled){border-color:#a9d3f4;background:#eaf6ff;color:#145a9f;transform:translateY(-1px)}
-.doctor-files-choose:active:not(.is-disabled),.doctor-files-download:active:not(:disabled),.doctor-files-primary:active:not(:disabled){transform:translateY(0)}
-.doctor-files-choose:focus-within,.doctor-files button:focus-visible{outline:3px solid #a4cff5;outline-offset:2px}
-.doctor-files-choose.is-disabled,.doctor-files button:disabled{opacity:.5;cursor:not-allowed}
-.doctor-files-upload-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px}
-.doctor-files-upload-footer p,.doctor-files-locked{margin:0;color:#718ba3;font-size:10px;line-height:1.5}
-.doctor-files-upload-footer p{display:flex;align-items:flex-start;gap:6px}.doctor-files-upload-footer p .anticon{margin-top:2px;color:#5595c9}
-.doctor-files-primary{background:#176cc4;color:#fff;box-shadow:0 3px 8px #176cc420}
-.doctor-files-primary:hover:not(:disabled){background:#105aa8;box-shadow:0 5px 12px #176cc433;transform:translateY(-1px)}
-.doctor-files-locked{margin-top:10px;color:#986f27}
-.doctor-files-library{padding-top:2px}.doctor-files-library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.doctor-files-library-heading>span{padding:6px 9px;border-radius:7px;background:#edf6ff;color:#2776ba;font-size:10px;font-weight:800;white-space:nowrap}
-.doctor-files-list{display:grid;gap:9px}.doctor-files-item{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #e4edf6;border-radius:12px;background:#fff;transition:border-color .18s,box-shadow .18s}
-.doctor-files-item:hover{border-color:#c4dff3;box-shadow:0 5px 16px #1a62960b}.doctor-files-item-icon{width:39px;height:39px;border-radius:10px;font-size:17px}
-.doctor-files-item-copy span i{padding:0 3px;color:#b6c4d1;font-style:normal}.doctor-files-download{border-color:#d8e7f3;background:#fff;color:#1f68a9}
-.doctor-files-loading,.doctor-files-empty{display:flex;align-items:center;justify-content:center;gap:10px;min-height:105px;border:1px dashed #d4e5f4;border-radius:12px;background:#fbfdff;color:#7791aa;font-size:11px}
-.doctor-files-empty{flex-direction:column;gap:6px;padding:22px;text-align:center}.doctor-files-empty>.anticon{color:#78a9d3;font-size:24px}.doctor-files-empty strong{color:#42688b;font-size:12px}.doctor-files-empty p{margin:0;color:#8a9fb2;font-size:10px;line-height:1.5}
-.doctor-files-privacy{display:flex;align-items:center;gap:6px;margin-top:12px;color:#8a9caf;font-size:10px}.doctor-files-privacy .anticon{color:#6b9bc0}
-.doctor-files-message{display:flex;align-items:center;gap:8px;padding:11px 13px;border-radius:10px;font-size:11px;line-height:1.45}.doctor-files-message.is-error{border:1px solid #f1d7d1;background:#fff8f5;color:#a64531}.doctor-files-message.is-success{border:1px solid #cfe9df;background:#f2fbf7;color:#237b5a}.doctor-files-message button{margin-left:auto;border:0;background:none;color:inherit;font:700 11px var(--font-display);cursor:pointer;text-decoration:underline}
-@media(max-width:600px){.doctor-files-upload{padding:16px}.doctor-files-picker{flex-wrap:wrap}.doctor-files-choose{width:100%}.doctor-files-upload-footer{align-items:stretch;flex-direction:column}.doctor-files-primary{width:100%}.doctor-files-item{flex-wrap:wrap}.doctor-files-item-copy{min-width:calc(100% - 55px)}.doctor-files-download{width:100%}}
-@media(prefers-reduced-motion:reduce){.doctor-files *{transition:none!important}}
+/* ==========================================================================
+   DOCTOR CLINICAL FILES (EMR) STYLES - TÂM AN HOSPITAL
+   ========================================================================== */
+
+.clinical-files-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.clinical-files-card:hover {
+  border-color: #cbd5e1;
+}
+
+/* Header */
+.clinical-files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.files-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #1e293b;
+}
+
+/* Upload Container */
+.clinical-upload-container {
+  width: 100%;
+}
+
+.clinical-dropzone {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clinical-dropzone:hover {
+  border-color: #0B5CAD;
+  background: #eff6ff;
+}
+
+.clinical-dropzone.is-dragging {
+  border-color: #0B5CAD;
+  background: #e0f2fe;
+}
+
+.clinical-dropzone.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dropzone-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dropzone-icon {
+  font-size: 24px;
+  color: #0B5CAD;
+  background: #ffffff;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  flex-shrink: 0;
+}
+
+.dropzone-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.dropzone-text strong {
+  font-size: 12.5px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.dropzone-text span {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* Staged File Box (Khi bác sĩ đã chọn file) */
+.clinical-file-staged-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  flex-wrap: wrap;
+}
+
+.staged-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.staged-file-icon {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.staged-file-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.staged-file-name {
+  font-size: 12.5px;
+  color: #166534;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.staged-file-size {
+  font-size: 11px;
+  color: #15803d;
+}
+
+.staged-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Files List Section */
+.clinical-files-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.files-list-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.clinical-files-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.clinical-files-scroll-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.clinical-files-scroll-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Individual File Item */
+.clinical-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.clinical-file-item:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.file-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-type-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.file-type-badge.type-pdf {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.file-type-badge.type-word {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.file-type-badge.type-img {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.file-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.file-item-title {
+  font-size: 12px;
+  color: #1e293b;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-item-meta {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.file-item-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-delete-file {
+  color: #ef4444;
+  border-radius: 6px;
+  height: 28px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-file:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+.dropzone-icon.uploading-icon {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0B5CAD;
+}
+
+.btn-preview-file {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0B5CAD;
+  border-color: #cbd5e1;
+  border-radius: 6px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.btn-preview-file:hover {
+  color: #0B5CAD;
+  border-color: #0B5CAD;
+  background: #eff6ff;
+}
+
+.btn-download-file {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0B5CAD;
+  border-color: #cbd5e1;
+  border-radius: 6px;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.btn-download-file:hover {
+  color: #0B5CAD;
+  border-color: #0B5CAD;
+  background: #ffffff;
+}
+
+/* Empty State */
+.clinical-files-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+}
+
+.clinical-files-empty .empty-icon {
+  font-size: 28px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.clinical-files-empty .empty-title {
+  font-size: 12.5px;
+  color: #334155;
+  font-weight: 700;
+}
+
+.clinical-files-empty .empty-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+  max-width: 280px;
+}
+
+/* Preview Modal Styles */
+.preview-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-modal-icon {
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.preview-modal-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.preview-modal-filename {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 650px;
+}
+
+.preview-modal-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.preview-modal-body {
+  margin-top: 12px;
+  min-height: 480px;
+  max-height: 75vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-image-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #0f172a;
+}
+
+.preview-image-content {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.preview-pdf-wrap {
+  width: 100%;
+  height: 72vh;
+  background: #ffffff;
+}
+
+.preview-pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #525659;
+}
+
+.preview-doc-wrap {
+  background: #ffffff;
+  width: 100%;
+  height: 100%;
+  padding: 48px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.preview-doc-wrap h3 {
+  font-size: 16px;
+  color: #1e293b;
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+
+.preview-doc-wrap p {
+  font-size: 13px;
+  color: #64748b;
+  max-width: 520px;
+  line-height: 1.6;
+  margin: 0;
+}

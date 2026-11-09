@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,13 +9,20 @@ import {
   ScanStatus,
   UploadStatus,
 } from '../../../generated/document-client';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { DocumentPrismaService } from './database/prisma.service';
 import type { PublicAuthContext } from '@platform';
+import {
+  MedicalReportPdfService,
+  type MedicalReportData,
+} from './medical-report-pdf.service';
 
 @Injectable()
 export class DocumentService {
-  constructor(private readonly db: DocumentPrismaService) {}
+  constructor(
+    private readonly db: DocumentPrismaService,
+    private readonly reportPdfService: MedicalReportPdfService,
+  ) {}
 
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
@@ -224,6 +232,129 @@ export class DocumentService {
     };
   }
 
+  async generateEncounterReportRest(data: MedicalReportData, auth?: PublicAuthContext) {
+    if (!data.encounterId) throw new BadRequestException('ENCOUNTER_ID_REQUIRED');
+
+    // 1. Sinh file PDF chuẩn y tế
+    const pdfBuffer = await this.reportPdfService.generateReportPdf(data);
+
+    // 2. Tên file chuẩn hóa
+    const safeName = (data.patientName || 'Benh_nhan')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_');
+    const dateStr = (data.examinationDate || '').replace(/\D/g, '') || new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const fileName = `Phieu_Kham_${safeName}_${dateStr}.pdf`;
+
+    // 3. Kiểm tra xem đã có document report nào cho ca khám này chưa
+    const existing = await this.db.document.findFirst({
+      where: {
+        ownerType: 'ENCOUNTER',
+        ownerId: data.encounterId,
+        purpose: 'CONSULTATION_REPORT',
+      },
+      include: {
+        versions: { orderBy: { version: 'desc' }, take: 1 },
+      },
+    });
+
+    const sha256 = createHash('sha256').update(pdfBuffer).digest('hex');
+    const creatorId = auth?.userId || randomUUID();
+    let docId: string;
+
+    if (existing) {
+      docId = existing.id;
+      const nextVer = existing.currentVersion + 1;
+      await this.db.documentVersion.create({
+        data: {
+          documentId: docId,
+          version: nextVer,
+          storageKey: `reports/${docId}/${nextVer}`,
+          fileName,
+          mediaType: 'application/pdf',
+          sizeBytes: BigInt(pdfBuffer.length),
+          sha256,
+          content: pdfBuffer,
+          scanStatus: ScanStatus.CLEAN,
+          uploadedAt: new Date(),
+          scannedAt: new Date(),
+        },
+      });
+      await this.db.document.update({
+        where: { id: docId },
+        data: {
+          currentVersion: nextVer,
+          status: DocumentStatus.CLEAN,
+        },
+      });
+    } else {
+      docId = randomUUID();
+      await this.db.document.create({
+        data: {
+          id: docId,
+          ownerType: 'ENCOUNTER',
+          ownerId: data.encounterId,
+          patientId: data.patientId || data.encounterId,
+          purpose: 'CONSULTATION_REPORT',
+          status: DocumentStatus.CLEAN,
+          createdByAccountId: creatorId,
+          versions: {
+            create: {
+              version: 1,
+              storageKey: `reports/${docId}/1`,
+              fileName,
+              mediaType: 'application/pdf',
+              sizeBytes: BigInt(pdfBuffer.length),
+              sha256,
+              content: pdfBuffer,
+              scanStatus: ScanStatus.CLEAN,
+              uploadedAt: new Date(),
+              scannedAt: new Date(),
+            },
+          },
+        },
+      });
+    }
+
+    const res = {
+      documentId: docId,
+      fileName,
+      sizeBytes: pdfBuffer.length,
+      viewUrl: `/api/documents/${docId}/content?format=pdf`,
+      downloadUrl: `/api/documents/${docId}/content?download=true`,
+    };
+
+    return { data: res, ...res };
+  }
+
+  async getEncounterReportRest(encounterId: string, auth?: PublicAuthContext) {
+    const doc = await this.db.document.findFirst({
+      where: {
+        ownerType: 'ENCOUNTER',
+        ownerId: encounterId,
+        purpose: 'CONSULTATION_REPORT',
+      },
+      include: {
+        versions: { orderBy: { version: 'desc' }, take: 1 },
+      },
+    });
+
+    if (!doc) {
+      return { data: null };
+    }
+
+    const latest = doc.versions[0];
+    const res = {
+      documentId: doc.id,
+      fileName: latest?.fileName || 'document.pdf',
+      sizeBytes: latest?.sizeBytes ? Number(latest.sizeBytes) : 0,
+      viewUrl: `/api/documents/${doc.id}/content?format=pdf`,
+      downloadUrl: `/api/documents/${doc.id}/content?download=true`,
+    };
+    return { data: res, ...res };
+  }
+
   async getContent(documentId: string, req: any, res: any) {
     const doc = await this.db.document.findUnique({
       where: { id: documentId },
@@ -275,6 +406,21 @@ export class DocumentService {
     }
 
     if (format === 'pdf' || req.query?.download === 'true') {
+      const contentBuffer = latest?.content
+        ? (Buffer.isBuffer(latest.content) ? latest.content : Buffer.from(latest.content))
+        : null;
+
+      if (contentBuffer && contentBuffer.length > 0) {
+        const isDownload = req.query?.download === 'true';
+        res.setHeader('Content-Type', latest.mediaType || 'application/pdf');
+        res.setHeader(
+          'Content-Disposition',
+          `${isDownload ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(latest.fileName)}`
+        );
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        return res.send(contentBuffer);
+      }
+
       const pdfBuffer = this.generateSamplePdf(
         latest?.fileName ?? 'document.pdf',
         'KET QUA SIEU AM THAI NHI',
