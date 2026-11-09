@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
+import { openReceptionCase } from '../../../services/operations';
 import {
   cancelAppointment,
   checkInAppointment,
@@ -56,6 +57,7 @@ import { SearchResults } from '../components/SearchResults';
 import { StatsStrip } from '../components/StatsStrip';
 import { WalkInModal } from '../components/WalkInModal';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
+import { ReceptionWorkBell } from '../components/ReceptionWorkBell';
 import { useReceptionRealtime } from '../hooks/useReceptionRealtime';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
@@ -70,7 +72,7 @@ const errText = (e: unknown) =>
   e instanceof ApiError || e instanceof Error ? e.message : 'Có lỗi xảy ra, vui lòng thử lại.';
 
 function Desk() {
-  const { message } = AntApp.useApp();
+  const { message, modal } = AntApp.useApp();
   const auth = useAuthSession();
   const { request } = auth;
 
@@ -353,7 +355,9 @@ function Desk() {
       await fn();
       if (catalog) replace(await refreshAppointment(request, catalog, a));
     } catch (e) {
-      message.error(errText(e));
+      const detail = errText(e);
+      if (detail.includes('Case đã có người nhận hoặc đang xử lý') || detail.includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) modal.warning({ title: 'Không thể thao tác', content: detail });
+      else message.error(detail);
     } finally {
       setBusy(false);
     }
@@ -361,15 +365,8 @@ function Desk() {
 
   const checkIn = (a: DeskAppointment) =>
     run(a, async () => {
-      const r = await checkInAppointment(request, a);
-      if (r.awaitingPayment) {
-        message.warning(
-          'Cần thanh toán hóa đơn trước khi check-in. Mở chi tiết → Hóa đơn để thu tiền.'
-        );
-        setOpenId(a.id);
-      } else {
-        message.success('Check-in thành công, bệnh nhân đã vào hàng đợi.');
-      }
+      await openReceptionCase(request, { appointmentId: a.id, patientId: a.patientId, arrivalAt: new Date().toISOString() });
+      message.success('Đã ghi nhận bệnh nhân đến. Mở case ở chuông công việc để tiếp tục.');
     });
 
   const cancel = (a: DeskAppointment) =>
@@ -377,6 +374,21 @@ function Desk() {
       await cancelAppointment(request, a, 'Lễ tân hủy lịch theo yêu cầu bệnh nhân');
       message.success('Đã hủy lịch hẹn');
     });
+
+  const requestReassignment = async (a: DeskAppointment, reason: string) => {
+    setBusy(true);
+    try {
+      await request(`/api/appointment/appointments/${encodeURIComponent(a.id)}/reassignment-required`, { method: 'POST', body: JSON.stringify({ reason, expectedVersion: a.version }) });
+      if (catalog) replace(await refreshAppointment(request, catalog, a));
+      message.success('Đã đưa lịch vào danh sách cần phân công lại.');
+    } catch (e) {
+      const detail = errText(e);
+      if (detail.includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) modal.warning({ title: 'Không thể thay đổi lịch', content: detail });
+      else message.error(detail);
+      throw e;
+    }
+    finally { setBusy(false); }
+  };
 
   const collect = (a: DeskAppointment, invoice: DeskInvoice | undefined = a.invoice ?? undefined) =>
     run(a, async () => {
@@ -401,7 +413,9 @@ function Desk() {
       window.sessionStorage.setItem(PENDING_VNPAY_RETURN_KEY, JSON.stringify(context));
       window.location.assign(attempt.paymentUrl);
     } catch (error) {
-      message.error(errText(error));
+      const detail = errText(error);
+      if (detail.includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) modal.warning({ title: 'Không thể xử lý thanh toán', content: detail });
+      else message.error(detail);
       setBusy(false);
     }
   };
@@ -409,9 +423,8 @@ function Desk() {
   const handleCreateWalkIn = async (data: WalkInInput) => {
     try {
       const res = await createWalkInAppointment(request, data);
-      message.success(
-        `Đã tiếp nhận bệnh nhân vãng lai thành công! (Mã hẹn: ${res.appointmentCode || res.code || ''})`
-      );
+      if (res.receptionWarning) message.warning(`${res.receptionWarning} Mã lịch: ${res.appointmentCode || res.code || ''}`);
+      else message.success(`Đã ghi nhận bệnh nhân vãng lai. Mở case ở chuông công việc để tiếp tục. Mã lịch: ${res.appointmentCode || res.code || ''}`);
       setWalkInOpen(false);
       setReload((n) => n + 1);
     } catch (err: any) {
@@ -543,6 +556,7 @@ function Desk() {
 
           {/* Right: + Tiếp nhận vãng lai & User Info Dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <ReceptionWorkBell onFindAppointment={setQuery} />
             <span
               style={{
                 display: 'inline-flex',
@@ -761,6 +775,7 @@ function Desk() {
         }}
         onCheckIn={checkIn}
         onCancel={cancel}
+        onRequestReassignment={requestReassignment}
         onCollect={collect}
         onPayVnpay={payVnpay}
         onPrint={(w) => message.info(`Đang gửi lệnh in ${w}...`)}

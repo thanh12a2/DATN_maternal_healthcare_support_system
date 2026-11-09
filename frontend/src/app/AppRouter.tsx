@@ -7,6 +7,7 @@ import { NotFoundPage } from '../shared/pages/NotFoundPage';
 import { PatientHomePage } from '../modules/patient/pages/PatientHomePage';
 import { PortalLandingPage } from '../modules/patient/pages/PortalLandingPage';
 import { PatientProfilePage } from '../modules/patient/pages/PatientProfilePage';
+import { EmailVerificationPage } from '../modules/patient/components/EmailVerification';
 import { PatientBookingPage } from '../modules/patient/pages/PatientBookingPage';
 import { PatientServiceCatalogPage } from '../modules/patient/pages/PatientServiceCatalogPage';
 import { AppointmentDetailPage, PatientAppointmentsPage } from '../modules/patient/pages/PatientAppointmentsPage';
@@ -149,6 +150,7 @@ function Routes() {
   }
 
   if (path === '/tong-quan') return <Redirect to="/" />;
+  if (path === '/xac-minh-email') return <EmailVerificationPage />;
   if (path === '/ho-so/hoan-thien' || path === '/ho-so') return <Protected><PatientProfilePage /></Protected>;
   const serviceDetailMatch = rawPath.match(/^\/dich-vu\/([^/]+)$/i);
   if (serviceDetailMatch) return <PatientServiceDetailPage serviceId={decodeURIComponent(serviceDetailMatch[1])} />;

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package maternal.receptionist.v1;
+
+service ReceptionWorkInternalService {
+  rpc GetAppointmentOwner(GetAppointmentOwnerRequest) returns (GetAppointmentOwnerResponse);
+  rpc BeginOperation(BeginOperationRequest) returns (BeginOperationResponse);
+  rpc EndOperation(EndOperationRequest) returns (EndOperationResponse);
+}
+
+message BeginOperationRequest { string appointment_id = 1; string account_id = 2; }
+message BeginOperationResponse { bool allowed = 1; bool has_active_case = 2; string token = 3; }
+message EndOperationRequest { string token = 1; }
+message EndOperationResponse { bool released = 1; }
+
+message GetAppointmentOwnerRequest {
+  string appointment_id = 1;
+}
+
+message GetAppointmentOwnerResponse {
+  bool has_active_case = 1;
+  string owner_account_id = 2;
+}

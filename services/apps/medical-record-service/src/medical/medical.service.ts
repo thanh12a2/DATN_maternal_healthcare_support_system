@@ -13,6 +13,7 @@ import {
 } from '../../../../generated/medical-record-client';
 import { MedicalPrismaService } from '../database/prisma.service';
 import { DoctorIdentityGateway } from './doctor-identity.gateway';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class MedicalDomainService {
@@ -718,6 +719,10 @@ export class MedicalDomainService {
     const versionToUse =
       v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : current.version;
     return this.db.$transaction(async (tx) => {
+      if (to === EncounterState.READY_FOR_REVIEW || to === EncounterState.FINALIZED) {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${id}, 0))::text`;
+        if (await tx.clinicalFileUploadLock.findUnique({ where: { encounterId: id } })) throw new ConflictException('CLINICAL_FILE_UPLOAD_IN_PROGRESS');
+      }
       const u = await tx.clinicalEncounter.updateMany({
         where: { id, version: versionToUse, state: { in: from }, ...(assignedDoctorId ? { assignments: { some: { staffId: assignedDoctorId, status: AssignmentStatus.ACTIVE } } } : {}), ...(to === EncounterState.READY_FOR_REVIEW || to === EncounterState.FINALIZED ? { appointmentSyncJobs: { none: { status: 'PENDING' } } } : {}) },
         data: { ...data, state: to, version: { increment: 1 } },
@@ -740,6 +745,23 @@ export class MedicalDomainService {
       }
       return x!;
     });
+  }
+
+  async beginClinicalFileUpload(encounterId: string, patientId: string) {
+    return this.db.$transaction(async tx => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${encounterId}, 0))::text`;
+      const encounter = await tx.clinicalEncounter.findFirst({ where: { id: encounterId, patientId, state: EncounterState.IN_PROGRESS }, select: { id: true } });
+      if (!encounter) throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
+      const token = randomUUID();
+      const created = await tx.clinicalFileUploadLock.createMany({ data: [{ encounterId, token }], skipDuplicates: true });
+      if (!created.count) throw new ConflictException('CLINICAL_FILE_UPLOAD_IN_PROGRESS');
+      return { token };
+    });
+  }
+
+  async endClinicalFileUpload(token: string) {
+    const result = await this.db.clinicalFileUploadLock.deleteMany({ where: { token } });
+    return { released: result.count === 1 };
   }
 
   private async event(tx: any, x: any, type: string) {

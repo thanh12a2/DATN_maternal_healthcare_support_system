@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { CurrentAuth, PublicJwtGuard, type PublicAuthContext } from '@platform';
+import { CurrentAuth, PublicJwtGuard, ReceptionWorkAccess, type PublicAuthContext } from '@platform';
 import { AppointmentDomainService } from './appointment.service';
 import { AppointmentRealtimeService } from './appointment-realtime.service';
 import { AppointmentListDto, CreateAppointmentDto, CreateHoldDto, DoctorOccupancyDto, ReassignDto, ReasonVersionDto, RescheduleDto, SlotQueryDto } from './dto';
@@ -11,6 +11,7 @@ export class AppointmentController {
   constructor(
     private readonly service: AppointmentDomainService,
     private readonly realtime: AppointmentRealtimeService,
+    private readonly receptionWork: ReceptionWorkAccess,
   ) {}
 
   @Get('desk/stream')
@@ -119,16 +120,21 @@ export class AppointmentController {
 
   @Post('appointments/:id/cancel')
   cancel(@Param('id') id: string, @Body() d: ReasonVersionDto, @CurrentAuth() a: PublicAuthContext, @Headers('idempotency-key') k?: string) {
-    return this.service.cancel(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () => this.service.cancel(id, d, a, k));
   }
 
   @Post('appointments/:id/reschedule')
   reschedule(@Param('id') id: string, @Body() d: RescheduleDto, @CurrentAuth() a: PublicAuthContext, @Headers('idempotency-key') k?: string) {
-    return this.service.reschedule(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () => this.service.reschedule(id, d, a, k));
   }
 
   @Post('appointments/:id/reassign')
   reassign(@Param('id') id: string, @Body() d: ReassignDto, @CurrentAuth() a: PublicAuthContext, @Headers('idempotency-key') k?: string) {
-    return this.service.reassign(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () => this.service.reassign(id, d, a, k));
+  }
+
+  @Post('appointments/:id/reassignment-required')
+  requestReassignment(@Param('id') id: string, @Body() d: ReasonVersionDto, @CurrentAuth() a: PublicAuthContext) {
+    return this.receptionWork.run(id, a.userId, () => this.service.requestReassignment(id, d, a));
   }
 }

@@ -8,6 +8,15 @@ datasource db {
   url      = env("NOTIFICATION_DATABASE_URL")
 }
 
+model PersonalInboxSignalOutbox {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientAccountId String   @map("recipient_account_id") @db.Uuid
+  occurredAt         DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@index([occurredAt, id], map: "personal_inbox_signal_due_idx")
+  @@map("personal_inbox_signal_outbox")
+}
+
 enum NotificationCategory {
   BOOKING
   REMINDER
@@ -83,4 +92,25 @@ model NotificationPendingEvent {
   receivedAt    DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
   @@index([status, nextAttemptAt])
   @@map("notification_pending_events")
+}
+
+model NotificationEmailJob {
+  id            String   @id @default(uuid()) @db.Uuid
+  eventId       String   @map("event_id") @db.Uuid
+  kind          String   @db.VarChar(40)
+  appointmentId String   @map("appointment_id") @db.Uuid
+  patientId     String   @map("patient_id") @db.Uuid
+  encounterId   String?  @map("encounter_id") @db.Uuid
+  occurredAt    DateTime @map("occurred_at") @db.Timestamptz(6)
+  status        String   @default("PENDING") @db.VarChar(30)
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError     String?  @map("last_error") @db.VarChar(100)
+  providerMessageId String? @map("provider_message_id") @db.VarChar(200)
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([eventId, kind])
+  @@index([status, nextAttemptAt])
+  @@map("notification_email_jobs")
 }

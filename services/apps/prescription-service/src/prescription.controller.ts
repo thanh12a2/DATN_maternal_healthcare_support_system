@@ -17,7 +17,9 @@ import {
   PublicHttp,
   PublicJwtGuard,
   ServiceJwtGuard,
+  ServiceCallers,
   ServiceScopes,
+  timestampToDate,
   type PublicAuthContext,
 } from '@platform';
 import { PrescriptionStatus } from '../../../generated/prescription-client';
@@ -112,6 +114,16 @@ export class PrescriptionController {
   }
 
   // ─── gRPC Endpoints ────────────────────────────────────────────────────────
+
+  @UseGuards(ServiceJwtGuard)
+  @ServiceCallers('notification-service')
+  @ServiceScopes('prescription:email:read')
+  @GrpcMethod('PrescriptionInternalService', 'ListIssuedForEmail')
+  listIssuedForEmail(r: { encounterId: string; patientId: string; cutoff: { seconds: string; nanos: number } }) {
+    const cutoff = timestampToDate(r.cutoff);
+    if (!cutoff || !Number.isFinite(cutoff.getTime())) throw new BadRequestException('INVALID_CUTOFF');
+    return this.s.listIssuedForEmail(r.encounterId, r.patientId, cutoff);
+  }
 
   @UseGuards(ServiceJwtGuard)
   @ServiceScopes('prescription:clinical')

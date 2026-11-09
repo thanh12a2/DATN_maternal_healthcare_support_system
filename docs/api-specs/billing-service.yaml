@@ -162,6 +162,7 @@ paths:
       tags: [Payments]
       operationId: verifyManualBankTransfer
       summary: Verify a recorded manual bank transfer
+      description: A receptionist must own the active reception case; the case is reserved while the decision is processed.
       parameters:
         - $ref: '#/components/parameters/PaymentId'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -186,6 +187,7 @@ paths:
       tags: [Payments]
       operationId: rejectManualBankTransfer
       summary: Reject a recorded manual bank transfer
+      description: A receptionist must own the active reception case; the case is reserved while the decision is processed.
       parameters:
         - $ref: '#/components/parameters/PaymentId'
         - $ref: '#/components/parameters/IdempotencyKey'

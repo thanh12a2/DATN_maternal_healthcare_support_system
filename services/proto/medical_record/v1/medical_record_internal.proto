@@ -9,7 +9,13 @@ service MedicalRecordInternalService {
   rpc ValidateEncounterAccess(ValidateEncounterAccessRequest) returns (ValidateEncounterAccessResponse);
   rpc LinkExternalClinicalResource(LinkExternalClinicalResourceRequest) returns (EncounterSummary);
   rpc GetPregnancyEpisodeContext(GetPregnancyEpisodeContextRequest) returns (PregnancyEpisodeContext);
+  rpc BeginClinicalFileUpload(BeginClinicalFileUploadRequest) returns (BeginClinicalFileUploadResponse);
+  rpc EndClinicalFileUpload(EndClinicalFileUploadRequest) returns (EndClinicalFileUploadResponse);
 }
+message BeginClinicalFileUploadRequest { string encounter_id = 1; string patient_id = 2; }
+message BeginClinicalFileUploadResponse { string token = 1; }
+message EndClinicalFileUploadRequest { string token = 1; }
+message EndClinicalFileUploadResponse { bool released = 1; }
 
 enum EncounterState {
   ENCOUNTER_STATE_UNSPECIFIED = 0;

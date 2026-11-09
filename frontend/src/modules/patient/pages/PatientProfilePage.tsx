@@ -30,6 +30,7 @@ import {
 import { useAuthSession } from "../../../app/AuthSessionProvider";
 import { AppLink } from "../../../app/navigation";
 import { PatientPortalLayout } from "../components/PatientPortalLayout";
+import { EmailVerificationPanel } from "../components/EmailVerification";
 import { LoadingPlaceholder } from "../../../shared/components/ui/LoadingPlaceholder";
 import { ProfileField } from "../components/profile/ProfileField";
 import { ProfileProgress } from "../components/profile/ProfileProgress";
@@ -819,6 +820,7 @@ export function PatientProfilePage() {
                   <span className="detail-label">Địa chỉ thường trú / Nơi ở hiện tại</span>
                   <strong className="detail-value">{profile.address || "Chưa cập nhật"}</strong>
                 </div>
+                <EmailVerificationPanel />
                 <div className="detail-item is-full detail-meta-box">
                   <div className="flex items-center gap-2 text-slate-600 text-sm">
                     <ShieldCheck className="w-5 h-5 text-sky-600 shrink-0" />

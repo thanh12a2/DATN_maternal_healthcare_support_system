@@ -13,7 +13,7 @@ export class PatientGrpcController {
   @ServiceScopes('patient:notification-account:read')
   async resolveNotificationAccount(request: { patientId?: string }) {
     const patient = await this.patients.notificationAccount(request.patientId ?? '');
-    return { found: Boolean(patient?.authAccountId), accountId: patient?.authAccountId ?? '' };
+    return { found: Boolean(patient?.authAccountId), accountId: patient?.authAccountId ?? '', patientName: patient?.fullName ?? '', dateOfBirth: patient?.dateOfBirth?.toISOString().slice(0, 10) ?? '', address: patient?.address ?? '' };
   }
 
   @GrpcMethod('PatientInternalService', 'GetPatientEligibility')

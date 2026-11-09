@@ -1,8 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GrpcClientFactory, RabbitMqConsumer, type DomainEventEnvelope } from '@platform';
 import { createHash } from 'node:crypto';
 import { AppPrismaService } from './database/prisma.service';
+import { EmailDeliveryService } from './email/email-delivery.service';
 
 const titles: Record<string, string> = {
   'appointment.booked.v1': 'Đặt lịch thành công',
@@ -24,27 +25,32 @@ export class NotificationService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NotificationService.name);
   private timer?: ReturnType<typeof setInterval>;
   private running = false;
-  constructor(private readonly db: AppPrismaService, private readonly mq: RabbitMqConsumer, private readonly cfg: ConfigService, private readonly grpc: GrpcClientFactory) {}
+  private rerun = false;
+  constructor(private readonly db: AppPrismaService, private readonly mq: RabbitMqConsumer, private readonly cfg: ConfigService, private readonly grpc: GrpcClientFactory, @Optional() private readonly email?: EmailDeliveryService) {}
   async onModuleInit() {
-    if (this.cfg.get('RABBITMQ_URL')) await this.mq.subscribe({ queue: 'maternal.notification.delivery.v1', routingKeys: Object.keys(titles), requeueOnError: true, handler: e => this.consume(e) });
+    if (this.cfg.get('RABBITMQ_URL')) await this.mq.subscribe({ queue: 'maternal.notification.delivery.v1', routingKeys: [...Object.keys(titles), 'medical.encounter_finalized.v1'], requeueOnError: true, handler: e => this.consume(e) });
     this.timer = setInterval(() => void this.flush(), 10000);
     this.timer.unref();
   }
   onModuleDestroy() { if (this.timer) clearInterval(this.timer); }
   async consume(e: DomainEventEnvelope) {
+    if (e?.eventType === 'medical.encounter_finalized.v1') { await this.email?.enqueueClinical(e); return; }
     const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(e?.eventId ?? '');
     const hash = createHash('sha256').update(JSON.stringify(e)).digest('hex');
     const id = validId ? e.eventId : `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}`;
     const eventType = String(e?.eventType ?? 'unknown').slice(0, 120);
     const supported = Boolean(validId && titles[eventType] && e.eventVersion === 1);
+    if (supported && eventType === 'billing.payment_recorded.v1') await this.email?.enqueuePayment(e);
     const payload = supported ? e : { eventType, eventVersion: e?.eventVersion ?? null };
     await this.db.notificationPendingEvent.upsert({ where: { eventId: id }, create: { eventId: id, eventType, payload: payload as any, status: supported ? 'PENDING' : 'UNSUPPORTED', lastError: supported ? null : validId ? 'UNSUPPORTED_EVENT' : 'INVALID_EVENT_ID' }, update: {} });
+    if (supported) void this.flush();
   }
   async flush() {
-    if (this.running) return;
+    if (this.running) { this.rerun = true; return; }
     this.running = true;
     try {
       const items = await this.db.notificationPendingEvent.findMany({ where: { status: 'PENDING', nextAttemptAt: { lte: new Date() } }, orderBy: { receivedAt: 'asc' }, take: 25 });
+      if (items.length === 25) this.rerun = true;
       for (const item of items) {
         try {
           const event = item.payload as unknown as DomainEventEnvelope<{ patientId?: string; doctorId?: string; previousDoctorId?: string; expiresAt?: string }>;
@@ -86,7 +92,7 @@ export class NotificationService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } catch (error) { this.logger.warn(`Notification worker unavailable: ${error instanceof Error ? error.name : 'unknown'}`); }
-    finally { this.running = false; }
+    finally { this.running = false; if (this.rerun) { this.rerun = false; void this.flush(); } }
   }
   async status(id?:string,eventId?:string){const n=await this.db.notification.findFirst({where:id?{id}:{sourceEventId:eventId},include:{deliveries:true}});return{deliveries:(n?.deliveries??[]).map(d=>this.view(n!,d))};}
   async list(recipient:string,page=1,size=20){const [items,total]=await Promise.all([this.db.deliveryAttempt.findMany({where:{notification:{recipientAccountId:recipient}},include:{notification:true},skip:(page-1)*size,take:size,orderBy:{attemptedAt:'desc'}}),this.db.deliveryAttempt.count({where:{notification:{recipientAccountId:recipient}}})]);return{deliveries:items.map(x=>this.view(x.notification,x)),page:{page,pageSize:size,totalItems:String(total),totalPages:Math.ceil(total/size)}};}

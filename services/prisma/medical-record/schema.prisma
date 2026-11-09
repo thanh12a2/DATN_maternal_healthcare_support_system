@@ -255,3 +255,10 @@ model MedicalOutbox {
   @@index([status, occurredAt])
   @@map("medical_outbox")
 }
+
+model ClinicalFileUploadLock {
+  encounterId String   @id @map("encounter_id") @db.Uuid
+  token       String   @unique @db.Uuid
+  startedAt   DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  @@map("clinical_file_upload_locks")
+}

@@ -15,7 +15,6 @@ import {
   PlayCircleOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
-  SendOutlined,
   ThunderboltOutlined,
   UploadOutlined,
   UserOutlined,
@@ -108,6 +107,7 @@ export function DoctorConsultationDetail({
   const [activeTab, setActiveTab] = useState('vitals');
   const [busy, setBusy] = useState(false);
   const [encounter, setEncounter] = useState<Encounter | null>(initialEncounter);
+  const [refreshError, setRefreshError] = useState(false);
 
   // Modal xem chi tiết lượt khám cũ
   const [selectedPastVisit, setSelectedPastVisit] = useState<Appointment | null>(null);
@@ -132,8 +132,8 @@ export function DoctorConsultationDetail({
   const version = Number(encounter?.version || 1);
   const encState = String(encounter?.state || 'DRAFT');
 
-  const canStart = encState === 'DRAFT' || appointment.status === 'CHECKED_IN';
-  const canEdit = encState === 'IN_PROGRESS';
+  const canStart = !refreshError && encState === 'DRAFT' && appointment.status === 'CHECKED_IN';
+  const canEdit = encState === 'IN_PROGRESS' && !refreshError;
   const isFinalized = encState === 'FINALIZED' || appointment.status === 'COMPLETED';
 
   // Nạp lại encounter chi tiết khi mount hoặc khi encId đổi
@@ -154,35 +154,35 @@ export function DoctorConsultationDetail({
   }, [encId, request]);
 
   // Bộ điều hướng gọi API chuyên môn
-  const sendAction = async (path: string, body: Record<string, unknown> = {}) => {
+  const refreshEncounter = async () => {
+    const response = await request<Encounter | { data: Encounter }>(`/api/medical-records/encounters/${encodeURIComponent(encId)}`);
+    const current = (response as { data?: Encounter }).data ?? response as Encounter;
+    if (String(current.id || '') !== encId || !current.state || !Number.isInteger(Number(current.version))) throw new Error('INVALID_ENCOUNTER_RESPONSE');
+    setEncounter(current);
+    setRefreshError(false);
+  };
+
+  const sendAction = async (path: string, body: Record<string, unknown> = {}): Promise<boolean> => {
     if (!encId) {
       message.error('Không tìm thấy mã hồ sơ khám bệnh (Encounter ID).');
-      return;
+      return false;
     }
     setBusy(true);
     try {
-      const res: any = await request(
+      await request(
         `/api/medical-records/encounters/${encodeURIComponent(encId)}/${path}`,
         {
           method: 'POST',
           body: JSON.stringify({ ...body, expectedVersion: version }),
         }
       );
-      message.success('Thao tác thành công.');
-
-      // Cập nhật lại encounter tại chỗ
-      if (res && (res.data || res.id)) {
-        setEncounter(res.data || res);
-      } else {
-        const refreshed: any = await request(
-          `/api/medical-records/encounters/${encodeURIComponent(encId)}`
-        ).catch(() => null);
-        if (refreshed) setEncounter(refreshed.data || refreshed);
-      }
-
+      try { await refreshEncounter(); message.success('Thao tác thành công.'); }
+      catch { setRefreshError(true); message.warning('Đã lưu, nhưng chưa tải lại được hồ sơ. Vui lòng thử tải lại trước khi tiếp tục.'); }
       onReload();
+      return true;
     } catch (err: any) {
       message.error(err?.message || 'Có lỗi xảy ra khi lưu dữ liệu.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -191,11 +191,34 @@ export function DoctorConsultationDetail({
   // 1. Bắt đầu ca khám
   const handleStartEncounter = () => sendAction('start');
 
-  // 2. Chuyển duyệt
-  const handleReadyForReview = () => sendAction('ready-for-review');
-
-  // 3. Hoàn tất ca khám
-  const handleFinalize = () => sendAction('finalize');
+  const handleFinalize = async () => {
+    if (!encId || busy || refreshError || !['IN_PROGRESS', 'READY_FOR_REVIEW'].includes(encState)) return;
+    setBusy(true);
+    const base = `/api/medical-records/encounters/${encodeURIComponent(encId)}`;
+    let nextVersion = Number(encounter?.version);
+    let readyCompleted = false;
+    try {
+      if (!Number.isInteger(nextVersion) || nextVersion < 1) throw new Error('Chưa tải được phiên bản hồ sơ. Vui lòng tải lại.');
+      if (encState === 'IN_PROGRESS') {
+        const ready = await request<{ data: Encounter }>(`${base}/ready-for-review`, { method: 'POST', body: JSON.stringify({ expectedVersion: nextVersion }) });
+        readyCompleted = true;
+        const next = ready.data;
+        if (next) setEncounter(next);
+        nextVersion = Number(next?.version);
+        if (next?.state !== 'READY_FOR_REVIEW' || !Number.isInteger(nextVersion) || nextVersion < 1) throw new Error('Không xác định được trạng thái hồ sơ. Vui lòng tải lại.');
+      }
+      const result = await request<{ data: Encounter }>(`${base}/finalize`, { method: 'POST', body: JSON.stringify({ expectedVersion: nextVersion }) });
+      if (result.data) setEncounter(result.data);
+      message.success('Đã hoàn tất ca khám.');
+      onReload();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Không thể hoàn tất ca khám.';
+      message.error(detail.includes('REQUIRED_RESULTS_PENDING') ? 'Còn kết quả bắt buộc chưa được xác minh.' : readyCompleted ? `Hồ sơ đã chuyển trạng thái nhưng chưa hoàn tất: ${detail}` : detail);
+      const current = await request<Encounter | { data: Encounter }>(base).catch(() => null);
+      if (current) setEncounter((current as { data?: Encounter }).data ?? current as Encounter);
+      onReload();
+    } finally { setBusy(false); }
+  };
 
   // 4. Lưu dấu hiệu sinh tồn
   const handleSaveVitals = async () => {
@@ -210,7 +233,7 @@ export function DoctorConsultationDetail({
     if (temperature != null) payload.temperature = temperature;
     if (weight != null) payload.weight = weight;
 
-    await sendAction('vital-signs', payload);
+    if (!await sendAction('vital-signs', payload)) return;
     setSystolic(null);
     setDiastolic(null);
     setHeartRate(null);
@@ -224,7 +247,7 @@ export function DoctorConsultationDetail({
       message.warning('Vui lòng nhập đầy đủ Mã chẩn đoán và Mô tả bệnh.');
       return;
     }
-    await sendAction('diagnoses', { code: icdCode.trim(), description: diagnosisDesc.trim() });
+    if (!await sendAction('diagnoses', { code: icdCode.trim(), description: diagnosisDesc.trim() })) return;
     setIcdCode('');
     setDiagnosisDesc('');
   };
@@ -235,7 +258,7 @@ export function DoctorConsultationDetail({
       message.warning('Vui lòng nhập nội dung ghi chú.');
       return;
     }
-    await sendAction('notes', { content: noteContent.trim() });
+    if (!await sendAction('notes', { content: noteContent.trim() })) return;
     setNoteContent('');
   };
 
@@ -418,16 +441,7 @@ export function DoctorConsultationDetail({
             </Button>
           )}
 
-          {canEdit && (
-            <Space>
-              <Button
-                icon={<SendOutlined />}
-                loading={busy}
-                onClick={handleReadyForReview}
-                style={{ height: 38 }}
-              >
-                Chuyển duyệt
-              </Button>
+          {!isFinalized && !refreshError && (canEdit || encState === 'READY_FOR_REVIEW') && (
               <Popconfirm
                 title="Xác nhận hoàn tất ca khám?"
                 description="Hồ sơ bệnh án sẽ được khóa và lưu trữ chính thức."
@@ -444,7 +458,6 @@ export function DoctorConsultationDetail({
                   Hoàn tất ca khám
                 </Button>
               </Popconfirm>
-            </Space>
           )}
 
           {isFinalized && (
@@ -454,6 +467,8 @@ export function DoctorConsultationDetail({
           )}
         </div>
       </div>
+
+      {refreshError && <Alert type="warning" showIcon message="Đã lưu nhưng chưa tải lại được hồ sơ khám." description="Hãy tải lại hồ sơ trước khi tiếp tục để đảm bảo sử dụng phiên bản mới nhất." action={<Button size="small" loading={busy} onClick={() => { setBusy(true); void refreshEncounter().catch(() => message.error('Không thể tải lại hồ sơ. Vui lòng thử lại.')).finally(() => setBusy(false)); }}>Tải lại hồ sơ</Button>} />}
 
       {/* ─── 2. PATIENT MASTER DEMOGRAPHIC CARD WITH USER-WEB STYLE CHIPS ─── */}
       <div className="consultation-patient-card">
@@ -1012,7 +1027,7 @@ export function DoctorConsultationDetail({
                   request={request}
                   encounterId={String(encId)}
                   patientId={String(encounter?.patientId || appointment.patientId || '')}
-                  encounterState={encState}
+                  encounterState={refreshError ? '' : encState}
                   kind="prescriptions"
                 />
               ) : (
@@ -1031,7 +1046,7 @@ export function DoctorConsultationDetail({
                   request={request}
                   encounterId={String(encId)}
                   patientId={String(encounter?.patientId || appointment.patientId || '')}
-                  encounterState={encState}
+                  encounterState={refreshError ? '' : encState}
                   kind="plans"
                 />
               ) : (
@@ -1048,7 +1063,7 @@ export function DoctorConsultationDetail({
               children: encId ? (
                 <DoctorClinicalFiles
                   encounterId={String(encId)}
-                  encounterState={encState}
+                  encounterState={refreshError ? '' : encState}
                   request={request}
                 />
               ) : (

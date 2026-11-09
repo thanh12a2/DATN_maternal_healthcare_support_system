@@ -11,7 +11,11 @@ service AuthInternalService {
   // Dùng khi tạo/kích hoạt business profile; không dùng để verify mọi user request.
   rpc GetAccountAuthorization(GetAccountAuthorizationRequest) returns (GetAccountAuthorizationResponse);
   rpc BatchGetAccountAuthorization(BatchGetAccountAuthorizationRequest) returns (BatchGetAccountAuthorizationResponse);
+  rpc GetVerifiedPatientEmail(GetVerifiedPatientEmailRequest) returns (GetVerifiedPatientEmailResponse);
 }
+
+message GetVerifiedPatientEmailRequest { string account_id = 1; }
+message GetVerifiedPatientEmailResponse { bool found = 1; string email = 2; }
 
 enum AccountStatus {
   ACCOUNT_STATUS_UNSPECIFIED = 0;

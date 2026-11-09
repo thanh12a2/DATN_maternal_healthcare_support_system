@@ -233,6 +233,7 @@ services:
       - AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS=${AUTH_PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS:-60}
       - AUTH_PASSWORD_RESET_TTL_MINUTES=${AUTH_PASSWORD_RESET_TTL_MINUTES:-15}
       - AUTH_PASSWORD_RESET_URL=${AUTH_PASSWORD_RESET_URL:-http://localhost:3000/reset-password}
+      - AUTH_EMAIL_VERIFICATION_URL=${AUTH_EMAIL_VERIFICATION_URL:-http://localhost:3000/xac-minh-email}
       - AUTH_REFRESH_TOKEN_PEPPER=${AUTH_REFRESH_TOKEN_PEPPER:-}
       - AUTH_REFRESH_TOKEN_TTL_DAYS=${AUTH_REFRESH_TOKEN_TTL_DAYS:-30}
       - AUTH_SMTP_HOST=${AUTH_SMTP_HOST:-}
@@ -876,6 +877,7 @@ services:
       CATALOG_GRPC_TARGET: service-catalog-service:6007
       DOCTOR_GRPC_TARGET: doctor-service:6005
       GRPC_PORT: 6016
+      DOCUMENT_GRPC_TARGET: document-service:6013
       INTERNAL_SERVICE_JWT_AUDIENCE: notification-service
       INTERNAL_SERVICE_JWT_ISSUER: ${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
       INTERNAL_SERVICE_JWT_KEY_ID: ${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
@@ -883,9 +885,17 @@ services:
       INTERNAL_SERVICE_JWT_PUBLIC_KEY: ${INTERNAL_SERVICE_JWT_PUBLIC_KEY:-}
       MEDICAL_RECORD_GRPC_TARGET: medical-record-service:6011
       NOTIFICATION_DATABASE_URL: postgresql://${NOTIFICATION_DB_USER:-notification}:${NOTIFICATION_DB_PASSWORD:-notificationpass}@notification-database:5432/${NOTIFICATION_DB_NAME:-notification}?schema=public
+      NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-}
+      NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-587}
+      NOTIFICATION_SMTP_SECURE: ${NOTIFICATION_SMTP_SECURE:-false}
+      NOTIFICATION_SMTP_USER: ${NOTIFICATION_SMTP_USER:-}
+      NOTIFICATION_SMTP_PASSWORD: ${NOTIFICATION_SMTP_PASSWORD:-}
+      NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-}
       PATIENT_GRPC_TARGET: patient-service:6004
+      PRESCRIPTION_GRPC_TARGET: prescription-service:6014
       PORT: 5016
       QUEUE_GRPC_TARGET: queue-service:6012
+      TREATMENT_PLAN_GRPC_TARGET: treatment-plan-service:6015
       RABBITMQ_DOMAIN_EXCHANGE: maternal.domain.v1
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
       SERVICE_ID: notification-service
@@ -1234,6 +1244,7 @@ services:
       - AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID:-local-dev-key}
       - AUTH_JWT_PUBLIC_KEY=${AUTH_JWT_PUBLIC_KEY:-}
       - BILLING_GRPC_TARGET=billing-service:6009
+      - GRPC_PORT=6006
       - INTERNAL_SERVICE_JWT_AUDIENCE=receptionist-service
       - INTERNAL_SERVICE_JWT_ISSUER=${INTERNAL_SERVICE_JWT_ISSUER:-maternal-healthcare-internal}
       - INTERNAL_SERVICE_JWT_KEY_ID=${INTERNAL_SERVICE_JWT_KEY_ID:-internal-dev-key}
@@ -1244,6 +1255,8 @@ services:
       - PORT=5006
       - QUEUE_GRPC_TARGET=queue-service:6012
       - RECEPTIONIST_DATABASE_URL=postgresql://${RECEPTIONIST_DB_USER:-receptionist}:${RECEPTIONIST_DB_PASSWORD:-receptionistpass}@receptionist-database:5432/${RECEPTIONIST_DB_NAME:-receptionist}?schema=public
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-maternal}:${RABBITMQ_PASSWORD:-maternalpass}@rabbitmq:5672
+      - RABBITMQ_DOMAIN_EXCHANGE=maternal.domain.v1
       - RECEPTION_IDEMPOTENCY_TTL_HOURS=${RECEPTION_IDEMPOTENCY_TTL_HOURS:-24}
       - SERVICE_ID=receptionist-service
     networks:

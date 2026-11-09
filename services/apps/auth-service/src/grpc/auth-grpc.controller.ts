@@ -13,6 +13,14 @@ interface BatchRequest { accountIds: string[] }
 export class AuthGrpcController {
   constructor(private readonly accounts: AccountsRepository) {}
 
+  @GrpcMethod('AuthInternalService', 'GetVerifiedPatientEmail')
+  @ServiceCallers('notification-service')
+  @ServiceScopes('auth:verified-patient-email:read')
+  async getVerifiedPatientEmail(request: GetRequest) {
+    const email = await this.accounts.findVerifiedPatientEmail(request.accountId);
+    return { found: Boolean(email), email: email ?? '' };
+  }
+
   @GrpcMethod('AuthInternalService', 'GetAccountAuthorization')
   async getAccountAuthorization(request: GetRequest) {
     const account = await this.accounts.findInternalAccountById(request.accountId);

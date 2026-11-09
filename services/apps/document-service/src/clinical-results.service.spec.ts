@@ -10,7 +10,7 @@ describe('ClinicalResultsService', () => {
   const pdf = Buffer.from('%PDF-1.4 example');
   beforeEach(() => {
     jest.clearAllMocks();
-    grpc.unary.mockImplementation((_client, method) => method === 'resolveDoctorByAccount' ? Promise.resolve({ found: true, doctorId: 'doctor-id' }) : Promise.resolve({ allowed: true, encounter: { patientId: 'patient-id', state: 'ENCOUNTER_STATE_IN_PROGRESS' } }));
+    grpc.unary.mockImplementation((_client, method) => method === 'resolveDoctorByAccount' ? Promise.resolve({ found: true, doctorId: 'doctor-id' }) : method === 'beginClinicalFileUpload' ? Promise.resolve({ token: '30000000-0000-4000-8000-000000000001' }) : Promise.resolve({ allowed: true, encounter: { patientId: 'patient-id', state: 'ENCOUNTER_STATE_IN_PROGRESS' } }));
   });
 
   it('stores actual bytes under the patient and encounter returned by medical service', async () => {
@@ -21,6 +21,13 @@ describe('ClinicalResultsService', () => {
     expect(data.ownerId).toBe(encounterId);
     expect(data.versions.create.content).toEqual(pdf);
     expect(data.versions.create.scanStatus).toBe('PENDING');
+    expect(grpc.unary).toHaveBeenCalledWith(expect.anything(), 'endClinicalFileUpload', expect.objectContaining({ token: '30000000-0000-4000-8000-000000000001' }), expect.anything());
+  });
+
+  it('releases the upload reservation if storing the file fails', async () => {
+    db.document.create.mockRejectedValueOnce(new Error('database unavailable'));
+    await expect(service.upload(encounterId, { fileName: 'ket-qua.pdf', mediaType: 'application/pdf', contentBase64: pdf.toString('base64') }, doctor)).rejects.toThrow('database unavailable');
+    expect(grpc.unary).toHaveBeenCalledWith(expect.anything(), 'endClinicalFileUpload', expect.anything(), expect.anything());
   });
 
   it('rejects unassigned doctors without saving bytes', async () => {

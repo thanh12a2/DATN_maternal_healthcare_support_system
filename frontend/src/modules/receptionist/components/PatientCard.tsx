@@ -44,6 +44,7 @@ import {
   createAppointmentVnpayAttempt,
   paymentStatusOf,
   payAndCheckInAppointment,
+  recordPendingTransfer,
   refreshAppointment,
   type DeskAppointment,
   type DeskCatalog,
@@ -132,6 +133,14 @@ export function PatientCard({
         return;
       }
 
+      if (paymentMethod === 'TRANSFER') {
+        await recordPendingTransfer(request, paymentModalApp, paymentRef);
+        message.success('Đã ghi nhận chuyển khoản. Giao dịch đang chờ lễ tân xác minh trước khi check-in.');
+        if (catalog) onAppointmentUpdated?.(await refreshAppointment(request, catalog, paymentModalApp));
+        setPaymentModalApp(null);
+        return;
+      }
+
       const res = await payAndCheckInAppointment(
         request,
         paymentModalApp,
@@ -148,7 +157,8 @@ export function PatientCard({
       }
     } catch (err: any) {
       console.error('Lỗi thu tiền và check-in:', err);
-      message.error(err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.');
+      if (String(err?.message ?? '').includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) Modal.warning({ title: 'Không thể xử lý thanh toán', content: err.message });
+      else message.error(err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.');
     } finally {
       setPayingAndCheckingIn(false);
     }
@@ -674,27 +684,18 @@ export function PatientCard({
                               size="middle"
                               icon={<CheckCircleOutlined />}
                               loading={busy || payingAndCheckingIn}
-                              onClick={() => {
-                                const isPaid = paymentStatusOf(a) === 'PAID';
-                                if (!isPaid) {
-                                  setPaymentModalApp(a);
-                                  setPaymentMethod('CASH');
-                                  setPaymentRef('');
-                                } else {
-                                  onCheckIn(a);
-                                }
-                              }}
+                              onClick={() => onCheckIn(a)}
                               style={{
                                 backgroundColor: '#0B5CAD',
                                 fontWeight: 600,
                                 borderRadius: 6,
                               }}
                             >
-                              Check-in tiếp đón
+                              Ghi nhận đến
                             </Button>
                           )}
 
-                          {a.status === 'BOOKED' && (
+                          {['BOOKED', 'REASSIGNMENT_REQUIRED'].includes(a.status) && (
                             <Button
                               icon={<CalendarOutlined />}
                               onClick={() => setReschedulingApp(a)}
@@ -1070,7 +1071,7 @@ export function PatientCard({
                 padding: '0 18px',
               }}
             >
-              {paymentMethod === 'VNPAY' ? 'Tiếp tục thanh toán VNPay' : 'Xác nhận Thu tiền & Cấp số thứ tự'}
+              {paymentMethod === 'VNPAY' ? 'Tiếp tục thanh toán VNPay' : paymentMethod === 'TRANSFER' ? 'Ghi nhận chờ xác minh' : 'Xác nhận Thu tiền & Cấp số thứ tự'}
             </Button>,
           ]}
           width={540}
@@ -1167,8 +1168,9 @@ export function PatientCard({
 
             {paymentMethod === 'TRANSFER' && (
               <div style={{ marginTop: 8 }}>
+                <Typography.Text type="secondary">Giao dịch cần được xác minh trước khi tiếp nhận và cấp số.</Typography.Text>
                 <Input
-                  placeholder="Nhập mã giao dịch / ngân hàng (không bắt buộc)"
+                  placeholder="Nhập mã giao dịch chuyển khoản"
                   value={paymentRef}
                   onChange={(e) => setPaymentRef(e.target.value)}
                   style={{ borderRadius: 6 }}

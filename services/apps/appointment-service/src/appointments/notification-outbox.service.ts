@@ -11,7 +11,7 @@ export class NotificationOutboxService implements OnModuleInit, OnModuleDestroy 
   private timer?: ReturnType<typeof setInterval>;
   private running = false;
   constructor(private readonly db: AppointmentPrismaService, private readonly publisher: RabbitMqPublisher) {}
-  onModuleInit() { if (this.publisher.isEnabled()) { this.timer = setInterval(() => void this.flush(), 10000); this.timer.unref(); } }
+  onModuleInit() { if (this.publisher.isEnabled()) { this.timer = setInterval(() => void this.flush(), 1000); this.timer.unref(); } }
   onModuleDestroy() { if (this.timer) clearInterval(this.timer); }
   async flush() {
     if (this.running) return;

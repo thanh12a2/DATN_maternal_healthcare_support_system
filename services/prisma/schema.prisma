@@ -30,13 +30,28 @@ model Account {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   lastLoginAt DateTime?     @map("last_login_at") @db.Timestamptz(6)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  verifiedEmail String?     @map("verified_email") @db.VarChar(255)
 
   credential         Credential?
   roles              AccountRole[]
   sessions           AuthSession[]
   passwordResetToken PasswordResetToken?
+  emailVerificationToken EmailVerificationToken?
 
   @@map("accounts")
+}
+
+model EmailVerificationToken {
+  accountId String   @id @map("account_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  email     String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
 }
 
 model Credential {

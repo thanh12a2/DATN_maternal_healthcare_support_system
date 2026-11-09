@@ -25,7 +25,7 @@ export class DoctorGrpcController {
   }
 
   @GrpcMethod('DoctorInternalService', 'GetDoctorEligibility')
-  @ServiceCallers('appointment-service', 'medical-record-service')
+  @ServiceCallers('appointment-service', 'medical-record-service', 'notification-service')
   async getDoctorEligibility(request: { doctorId: string; requiredSpecialtyId?: string; at?: any }) {
     return { doctor: await this.doctors.getInternalEligibility(request.doctorId, request.requiredSpecialtyId) };
   }

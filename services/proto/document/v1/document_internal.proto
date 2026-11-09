@@ -8,7 +8,11 @@ service DocumentInternalService {
   rpc ListDocumentsByOwner(ListDocumentsByOwnerRequest) returns (ListDocumentsByOwnerResponse);
   rpc GetDocumentAccess(GetDocumentAccessRequest) returns (GetDocumentAccessResponse);
   rpc ArchiveDocumentsByOwner(ArchiveDocumentsByOwnerRequest) returns (ArchiveDocumentsByOwnerResponse);
+  rpc GetClinicalFilesForEmail(ClinicalFilesForEmailRequest) returns (ClinicalFilesForEmailResponse);
 }
+message ClinicalFilesForEmailRequest { string encounter_id = 1; string patient_id = 2; google.protobuf.Timestamp cutoff = 3; }
+message ClinicalEmailFile { string file_name = 1; string media_type = 2; bytes content = 3; }
+message ClinicalFilesForEmailResponse { repeated ClinicalEmailFile files = 1; }
 message CreateDocumentUploadRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string owner_type = 3; string owner_id = 4; string patient_id = 5; string purpose = 6; string file_name = 7; string media_type = 8; int64 size_bytes = 9; string sha256 = 10; }
 message CreateDocumentUploadResponse { string session_id = 1; string document_id = 2; string upload_url = 3; google.protobuf.Timestamp expires_at = 4; }
 message LinkDocumentRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string document_id = 3; string owner_type = 4; string owner_id = 5; string patient_id = 6; }

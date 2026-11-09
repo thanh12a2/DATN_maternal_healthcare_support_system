@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { NotificationInbox } from './NotificationInbox';
+import { subscribeToRealtimeStream } from '../../../services/realtimeStream';
 import '../../../styles/notification-inbox.css';
 
 type Notice = { id: string; title: string; readAt: string | null };
 
 export function NotificationBell() {
-  const { request } = useAuthSession();
+  const { request, stream, user } = useAuthSession();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [arrival, setArrival] = useState<Notice | null>(null);
   const known = useRef<Set<string> | null>(null);
+  const sequence = useRef(0);
   const refresh = useCallback(async () => {
+    const current = ++sequence.current;
     try {
       const [page, count] = await Promise.all([
         request<{ items: Notice[] }>('/api/notifications/in-app?page=1'),
         request<{ count: number }>('/api/notifications/in-app/unread-count'),
       ]);
+      if (current !== sequence.current) return;
       setUnread(count.count);
       const previous = known.current;
       const newNotice = previous && page.items.find(item => !item.readAt && !previous.has(item.id));
@@ -25,13 +29,16 @@ export function NotificationBell() {
     } catch { /* Keep the last successful badge until the next retry. */ }
   }, [request]);
   useEffect(() => {
+    known.current = null; setUnread(0); setArrival(null); setOpen(false);
     void refresh();
-    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 15000);
-    const visible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    const sync = () => { void refresh(); window.dispatchEvent(new Event('notifications:arrived')); };
+    const visible = () => { if (document.visibilityState === 'visible') sync(); };
+    const unsubscribe = subscribeToRealtimeStream({ url: '/api/notifications/in-app/stream', streamFn: stream,
+      onEvent: () => sync(), onStatusChange: status => { if (status === 'CONNECTED') sync(); } });
     window.addEventListener('notifications:updated', refresh);
     document.addEventListener('visibilitychange', visible);
-    return () => { window.clearInterval(timer); window.removeEventListener('notifications:updated', refresh); document.removeEventListener('visibilitychange', visible); };
-  }, [refresh]);
+    return () => { sequence.current++; unsubscribe(); window.removeEventListener('notifications:updated', refresh); document.removeEventListener('visibilitychange', visible); };
+  }, [refresh, stream, user?.userId]);
   useEffect(() => {
     if (!arrival) return;
     const timer = window.setTimeout(() => setArrival(null), 5000);

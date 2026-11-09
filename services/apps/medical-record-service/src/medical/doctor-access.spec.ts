@@ -37,7 +37,7 @@ describe('doctor encounter assignment', () => {
   it('does not finalize for a patient or when assignment is revoked before update', async () => {
     const updateMany = jest.fn().mockResolvedValue({ count: 0 });
     findFirst.mockResolvedValue({ staffId: 'doctor-id' });
-    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }) }, $transaction: (fn: any) => fn({ clinicalEncounter: { updateMany } }) } as any, { resolve } as any);
+    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }) }, $transaction: (fn: any) => fn({ $queryRaw: jest.fn(), clinicalFileUploadLock: { findUnique: jest.fn().mockResolvedValue(null) }, clinicalEncounter: { updateMany } }) } as any, { resolve } as any);
     await expect(guarded.finalize('encounter-id', 2, 'patient', 'PATIENT')).rejects.toBeInstanceOf(ForbiddenException);
     await expect(guarded.finalize('encounter-id', 2, 'account-id', 'DOCTOR')).rejects.toBeInstanceOf(ConflictException);
     expect(updateMany.mock.calls[0][0].where.assignments).toEqual({ some: { staffId: 'doctor-id', status: 'ACTIVE' } });
@@ -47,9 +47,17 @@ describe('doctor encounter assignment', () => {
   it('checks for pending required orders again inside the review transition transaction', async () => {
     findFirst.mockResolvedValue({ staffId: 'doctor-id' });
     const txCount = jest.fn().mockResolvedValue(1);
-    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'IN_PROGRESS', version: 2 }) }, clinicalServiceOrder: { count: jest.fn().mockResolvedValue(0) }, $transaction: (fn: any) => fn({ clinicalEncounter: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) }, clinicalServiceOrder: { count: txCount } }) } as any, { resolve } as any);
+    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'IN_PROGRESS', version: 2 }) }, clinicalServiceOrder: { count: jest.fn().mockResolvedValue(0) }, $transaction: (fn: any) => fn({ $queryRaw: jest.fn(), clinicalFileUploadLock: { findUnique: jest.fn().mockResolvedValue(null) }, clinicalEncounter: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) }, clinicalServiceOrder: { count: txCount } }) } as any, { resolve } as any);
     await expect(guarded.ready('encounter-id', 2, 'account-id', 'DOCTOR')).rejects.toThrow('REQUIRED_RESULTS_PENDING');
     expect(txCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not finalize while an examination file is being uploaded', async () => {
+    findFirst.mockResolvedValue({ staffId: 'doctor-id' });
+    const updateMany = jest.fn();
+    const guarded = new MedicalDomainService({ encounterAssignment: { findFirst }, clinicalEncounter: { findUnique: jest.fn().mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }) }, $transaction: (fn: any) => fn({ $queryRaw: jest.fn(), clinicalFileUploadLock: { findUnique: jest.fn().mockResolvedValue({ token: 'upload' }) }, clinicalEncounter: { updateMany } }) } as any, { resolve } as any);
+    await expect(guarded.finalize('encounter-id', 2, 'account-id', 'DOCTOR')).rejects.toThrow('CLINICAL_FILE_UPLOAD_IN_PROGRESS');
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it('writes a note only after an atomic assignment, state and version check', async () => {

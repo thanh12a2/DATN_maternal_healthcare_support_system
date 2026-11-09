@@ -15,6 +15,15 @@ import type { PublicAuthContext } from '@platform';
 export class TreatmentService {
   constructor(private readonly db: TreatmentPlanPrismaService) {}
 
+  async listForEmail(encounterId: string, patientId: string, cutoff: Date) {
+    const rows = await this.db.treatmentPlan.findMany({ where: { sourceEncounterId: encounterId, patientId, status: { in: [TreatmentPlanStatus.ACTIVE, TreatmentPlanStatus.COMPLETED] }, activatedAt: { lte: cutoff } }, include: { versions: { where: { createdAt: { lte: cutoff } }, orderBy: [{ createdAt: 'desc' }, { version: 'desc' }], take: 1 } }, orderBy: { createdAt: 'asc' } });
+    return { plans: rows.map(plan => {
+      const snapshot = plan.versions[0]?.snapshot as { title?: unknown; summary?: unknown; items?: unknown } | undefined;
+      if (!snapshot || typeof snapshot.title !== 'string' || typeof snapshot.summary !== 'string' || !Array.isArray(snapshot.items)) throw new ConflictException('TREATMENT_SNAPSHOT_UNAVAILABLE');
+      return { planId: plan.id, patientId, sourceEncounterId: encounterId, doctorId: plan.authorDoctorId, status: plan.status, version: plan.version, title: snapshot.title, summary: snapshot.summary, items: snapshot.items.map((item: any) => ({ type: String(item.type ?? ''), title: String(item.title ?? ''), description: String(item.description ?? '') })) };
+    }) };
+  }
+
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
   async createRest(b: any, auth?: PublicAuthContext, assignedDoctorId?: string) {

@@ -3,6 +3,16 @@ generator client {
   output   = "../../generated/receptionist-client"
 }
 
+model ReceptionWorkSignalOutbox {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category    String   @db.VarChar(20)
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(6)
+
+  @@index([availableAt, id], map: "reception_work_signal_due_idx")
+  @@map("reception_work_signal_outbox")
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("RECEPTIONIST_DATABASE_URL")
@@ -114,6 +124,10 @@ model ReceptionCase {
   appointmentTypeSnapshot  String?             @map("appointment_type_snapshot") @db.VarChar(50)
   openedByAccountId        String              @map("opened_by_account_id") @db.Uuid
   lastHandledByAccountId   String              @map("last_handled_by_account_id") @db.Uuid
+  workClaimedBy            String?             @map("work_claimed_by") @db.Uuid
+  workClaimExpiresAt       DateTime?           @map("work_claim_expires_at") @db.Timestamptz(6)
+  workRunningToken         String?             @map("work_running_token") @db.Uuid
+  workRunningAt            DateTime?           @map("work_running_at") @db.Timestamptz(6)
   version                  Int                 @default(1)
   createdAt                DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -123,6 +137,15 @@ model ReceptionCase {
 
   @@index([status, arrivalAt])
   @@map("reception_cases")
+}
+
+model ReceptionAppointmentOperation {
+  appointmentId String   @id @map("appointment_id") @db.Uuid
+  token         String   @unique @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  startedAt     DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+
+  @@map("reception_appointment_operations")
 }
 
 model IdentityVerification {
@@ -152,6 +175,9 @@ model Admission {
   medicalRecordId        String?         @map("medical_record_id") @db.Uuid
   encounterId            String?         @map("encounter_id") @db.Uuid
   queueTicketId          String?         @map("queue_ticket_id") @db.Uuid
+  queueTicketCode        String?         @map("queue_ticket_code") @db.VarChar(100)
+  queueRoomCode          String?         @map("queue_room_code") @db.VarChar(100)
+  notificationDismissedAt DateTime?      @map("notification_dismissed_at") @db.Timestamptz(6)
   queueJourneyId         String?         @map("queue_journey_id") @db.Uuid
   appointmentCheckedInAt DateTime?       @map("appointment_checked_in_at") @db.Timestamptz(6)
   lastErrorCode          String?         @map("last_error_code") @db.VarChar(100)

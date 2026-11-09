@@ -16,7 +16,7 @@ service PatientInternalService {
 }
 
 message ResolveNotificationAccountRequest { string patient_id = 1; }
-message ResolveNotificationAccountResponse { bool found = 1; string account_id = 2; }
+message ResolveNotificationAccountResponse { bool found = 1; string account_id = 2; string patient_name = 3; string date_of_birth = 4; string address = 5; }
 
 message GetPatientEligibilityRequest {
   maternal.common.v1.RequestContext context = 1;

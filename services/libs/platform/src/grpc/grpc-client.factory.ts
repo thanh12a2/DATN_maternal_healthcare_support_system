@@ -5,19 +5,19 @@ import { loadSync } from '@grpc/proto-loader';
 import { protoPath, protoRoot } from './proto-path';
 import { ServiceTokenService } from './service-token.service';
 
-interface ClientConstructor { new(address: string, channelCredentials: ChannelCredentials): Client }
+interface ClientConstructor { new(address: string, channelCredentials: ChannelCredentials, options?: Record<string, number>): Client }
 @Injectable()
 export class GrpcClientFactory implements OnModuleDestroy {
   private readonly clients = new Map<string, Client>();
   constructor(private readonly config: ConfigService, private readonly tokens: ServiceTokenService) {}
 
-  client(input: { key: string; target: string; proto: string; package: string; service: string }): Client {
+  client(input: { key: string; target: string; proto: string; package: string; service: string; maxReceiveBytes?: number }): Client {
     const cached=this.clients.get(input.key); if(cached) return cached;
     const definition=loadSync(protoPath(input.proto),{includeDirs:[protoRoot()],longs:String,enums:String,defaults:true,oneofs:true});
     let node:any=loadPackageDefinition(definition);
     for(const part of input.package.split('.')) node=node[part];
     const Constructor=node[input.service] as ClientConstructor;
-    const client=new Constructor(input.target,credentials.createInsecure());
+    const client=new Constructor(input.target,credentials.createInsecure(), input.maxReceiveBytes ? { 'grpc.max_receive_message_length': input.maxReceiveBytes } : undefined);
     this.clients.set(input.key,client); return client;
   }
 

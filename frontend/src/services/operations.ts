@@ -1,7 +1,7 @@
 import type { Requester } from './catalog';
 import { idempotencyKey } from './appointment';
 
-export interface ReceptionCase { id?: string; appointmentId?: string | null; patientId?: string; status?: string; version?: number; admission?: { status?: string } | null; [key: string]: unknown; }
+export interface ReceptionCase { id?: string; appointmentId?: string | null; patientId?: string; status?: string; version?: number; admission?: { status?: string; invoiceId?: string | null } | null; [key: string]: unknown; }
 export interface Report { [key: string]: unknown; }
 export interface Consultation {
   id?: string;

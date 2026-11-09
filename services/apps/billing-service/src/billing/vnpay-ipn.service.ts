@@ -188,9 +188,11 @@ export class VnpayIpnService {
               data: {
                 invoiceId: invoice.id,
                 appointmentId: invoice.appointmentId,
+                patientId: invoice.patientId,
                 paymentId: payment.id,
                 method: PaymentMethod.VNPAY,
-                status: PaymentStatus.VERIFIED,
+                status: settled.status,
+                paymentStatus: PaymentStatus.VERIFIED,
                 amountMinor: attempt.amountMinor.toString(),
                 totalMinor: invoice.totalMinor.toString(),
                 currency: invoice.currency.trim(),

@@ -12,6 +12,22 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export class ClinicalResultsService {
   constructor(private readonly db: DocumentPrismaService, private readonly config: ConfigService, private readonly grpc: GrpcClientFactory) {}
 
+  async filesForEmail(encounterId: string, patientId: string, cutoff: Date) {
+    if (!UUID.test(encounterId) || !UUID.test(patientId) || !Number.isFinite(cutoff.getTime())) throw new BadRequestException('INVALID_CLINICAL_EMAIL_REQUEST');
+    const docs = await this.db.document.findMany({ where: { ownerType: 'ENCOUNTER', ownerId: encounterId, patientId, purpose: PURPOSE, status: 'UPLOADED', createdAt: { lte: cutoff } }, include: { versions: { where: { uploadedAt: { lte: cutoff } }, orderBy: { version: 'desc' }, take: 1 } }, orderBy: { createdAt: 'asc' } });
+    let total = 0;
+    const files = docs.map(doc => {
+      const file = doc.versions[0];
+      if (!file?.content || !['application/pdf', 'image/png', 'image/jpeg'].includes(file.mediaType)) throw new ServiceUnavailableException('CLINICAL_FILE_NOT_AVAILABLE');
+      const content = Buffer.from(file.content);
+      if (content.length !== Number(file.sizeBytes) || createHash('sha256').update(content).digest('hex') !== file.sha256) throw new ServiceUnavailableException('CLINICAL_FILE_INTEGRITY_ERROR');
+      total += content.length;
+      if (total > 10 * 1024 * 1024) throw new ServiceUnavailableException('CLINICAL_FILES_TOO_LARGE');
+      return { fileName: file.fileName, mediaType: file.mediaType, content };
+    });
+    return { files };
+  }
+
   private async authorize(encounterId: string, auth: PublicAuthContext, write = false) {
     if (auth.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     if (!UUID.test(encounterId)) throw new BadRequestException('INVALID_ENCOUNTER_ID');
@@ -47,7 +63,19 @@ export class ClinicalResultsService {
     const fileName = typeof body.fileName === 'string' ? body.fileName.replace(/[\\/\x00-\x1f\x7f]/g, '_').trim().slice(0, 200) : '';
     if (!fileName) throw new BadRequestException('FILE_NAME_REQUIRED');
     const id = randomUUID();
-    await this.db.document.create({ data: { id, ownerType: 'ENCOUNTER', ownerId: encounterId, patientId: encounter.patientId, purpose: PURPOSE, status: 'UPLOADED', createdByAccountId: auth.userId, versions: { create: { version: 1, storageKey: `clinical-results/${id}/1`, fileName, mediaType: type, sizeBytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), content: bytes, scanStatus: 'PENDING', uploadedAt: new Date() } } } });
+    const medical = this.grpc.client({ key: 'clinical-file-medical', target: this.config.get<string>('MEDICAL_RECORD_GRPC_TARGET') ?? 'medical-record-service:6011', proto: 'medical_record/v1/medical_record_internal.proto', package: 'maternal.medical_record.v1', service: 'MedicalRecordInternalService' });
+    const metadata = this.grpc.metadata('medical-record-service', ['medical:clinical-file:write']);
+    let token: string;
+    try {
+      const reservation = await this.grpc.unary<any, { token: string }>(medical, 'beginClinicalFileUpload', { encounterId, patientId: encounter.patientId }, metadata);
+      if (!UUID.test(reservation.token ?? '')) throw new Error('INVALID_UPLOAD_RESERVATION');
+      token = reservation.token;
+    } catch { throw new ServiceUnavailableException('CLINICAL_FILE_UPLOAD_UNAVAILABLE'); }
+    try {
+      await this.db.document.create({ data: { id, ownerType: 'ENCOUNTER', ownerId: encounterId, patientId: encounter.patientId, purpose: PURPOSE, status: 'UPLOADED', createdByAccountId: auth.userId, versions: { create: { version: 1, storageKey: `clinical-results/${id}/1`, fileName, mediaType: type, sizeBytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), content: bytes, scanStatus: 'PENDING', uploadedAt: new Date() } } } });
+    } finally {
+      await this.grpc.unary(medical, 'endClinicalFileUpload', { token }, metadata).catch(() => undefined);
+    }
     return { data: { id, fileName, mediaType: type, sizeBytes: bytes.length } };
   }
 

@@ -9,7 +9,7 @@ export class AppointmentGrpcController {
   constructor(private readonly service: AppointmentDomainService) {}
 
   @GrpcMethod('AppointmentInternalService','GetAppointment')
-  @ServiceCallers('receptionist-service','billing-service','medical-record-service','queue-service')
+  @ServiceCallers('receptionist-service','billing-service','medical-record-service','queue-service','notification-service')
   @ServiceScopes('appointment:internal:read')
   async getAppointment(request: any) { return { appointment: this.view(await this.service.get(request.appointmentId) as any) }; }
 

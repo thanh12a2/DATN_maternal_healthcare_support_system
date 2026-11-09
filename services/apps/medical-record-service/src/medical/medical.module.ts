@@ -4,9 +4,10 @@ import { MedicalGrpcController } from './medical-grpc.controller';
 import { MedicalDomainService } from './medical.service';
 import { DoctorIdentityGateway } from './doctor-identity.gateway';
 import { AppointmentSyncService } from './appointment-sync.service';
+import { ClinicalEmailOutboxService } from './clinical-email-outbox.service';
 @Module({
   controllers: [MedicalController, MedicalGrpcController],
-  providers: [MedicalDomainService, DoctorIdentityGateway, AppointmentSyncService],
+  providers: [MedicalDomainService, DoctorIdentityGateway, AppointmentSyncService, ClinicalEmailOutboxService],
   exports: [MedicalDomainService],
 })
 export class MedicalModule {}

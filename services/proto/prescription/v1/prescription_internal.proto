@@ -9,7 +9,10 @@ service PrescriptionInternalService {
   rpc IssuePrescription(IssuePrescriptionRequest) returns (PrescriptionView);
   rpc CancelPrescription(CancelPrescriptionRequest) returns (PrescriptionView);
   rpc ValidatePrescriptionReference(ValidatePrescriptionReferenceRequest) returns (ValidatePrescriptionReferenceResponse);
+  rpc ListIssuedForEmail(ClinicalEmailRequest) returns (ListIssuedForEmailResponse);
 }
+message ClinicalEmailRequest { string encounter_id = 1; string patient_id = 2; google.protobuf.Timestamp cutoff = 3; }
+message ListIssuedForEmailResponse { repeated PrescriptionView prescriptions = 1; }
 message PrescriptionItemInput { string medication_code = 1; string medication_name = 2; string strength = 3; string dosage_form = 4; string route = 5; string dose = 6; string frequency = 7; int32 duration_days = 8; string instruction = 9; }
 message CreateDraftPrescriptionRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string encounter_id = 3; string patient_id = 4; string pregnancy_episode_id = 5; string doctor_id = 6; repeated PrescriptionItemInput items = 7; }
 message GetPrescriptionRequest { maternal.common.v1.RequestContext context = 1; string prescription_id = 2; }

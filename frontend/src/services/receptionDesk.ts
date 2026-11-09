@@ -9,7 +9,6 @@ import {
   openReceptionCase,
   recordReceptionCashPayment,
   searchReceptionPatients,
-  verifyReceptionIdentity,
   getReceptionPatient,
   type ReceptionAppointment,
 } from './operations';
@@ -550,10 +549,12 @@ export async function loadPatientWorkspace(
 
 export interface CheckInResult { awaitingPayment: boolean; ticketCode?: string }
 export async function checkInAppointment(request: Requester, a: DeskAppointment): Promise<CheckInResult> {
-  const c = await openReceptionCase(request, { appointmentId: a.id, patientId: a.patientId, arrivalAt: new Date().toISOString() }) as { id?: string; data?: { id?: string } };
+  const c = await openReceptionCase(request, { appointmentId: a.id, patientId: a.patientId, arrivalAt: new Date().toISOString() }) as { id?: string; status?: string; data?: { id?: string; status?: string } };
   const caseId = c?.id ?? c?.data?.id;
   if (!caseId) throw new Error('Không thể mở hồ sơ tiếp nhận.');
-  await verifyReceptionIdentity(request, caseId, { method: 'NATIONAL_ID_DOCUMENT', result: 'VERIFIED', verifiedFields: ['fullName', 'phoneNumber', 'nationalId'] });
+  const caseStatus = c.status ?? c.data?.status;
+  if (!caseStatus || caseStatus === 'OPEN') throw new Error('Đã mở case. Hãy mở chuông công việc và xác minh danh tính trước khi tiếp nhận.');
+  else if (!['IDENTITY_VERIFIED', 'ADMISSION_IN_PROGRESS'].includes(caseStatus)) throw new Error('Case không ở trạng thái có thể tiếp nhận.');
   const res = await admitReceptionCase(request, caseId) as Record<string, any>;
   const adm = res?.admission ?? res?.data?.admission ?? res;
   return { awaitingPayment: adm?.status === 'AWAITING_PAYMENT', ticketCode: adm?.queueTicketId };
@@ -567,6 +568,19 @@ export function cancelAppointment(request: Requester, a: DeskAppointment, reason
 
 export function collectCash(request: Requester, inv: DeskInvoice) {
   return recordReceptionCashPayment(request, { id: inv.id, balanceMinor: inv.balance, totalMinor: inv.total, version: inv.version });
+}
+
+export async function recordPendingTransfer(request: Requester, a: DeskAppointment, reference: string) {
+  if (reference.trim().length < 3) throw new Error('Vui lòng nhập mã giao dịch chuyển khoản.');
+  let invoice = a.invoice;
+  if (!invoice) {
+    const reception = await checkInAppointment(request, a);
+    if (!reception.awaitingPayment) throw new Error('Lịch hẹn đã hoàn tất tiếp nhận, không thể ghi nhận giao dịch mới.');
+    const invoices = await listReceptionInvoices(request, { appointmentId: a.id });
+    invoice = toInvoice(invoices[0] as Record<string, unknown> | undefined);
+  }
+  if (!invoice || invoice.balance <= 0) throw new Error('Không có hóa đơn chờ thanh toán.');
+  await request(`/api/billing/invoices/${encodeURIComponent(invoice.id)}/payments`, { method: 'POST', headers: { 'Idempotency-Key': key() }, body: JSON.stringify({ method: 'MANUAL_BANK_TRANSFER', amountMinor: invoice.balance, receivedAt: new Date().toISOString(), manualTransferReference: reference.trim(), expectedInvoiceVersion: invoice.version }) });
 }
 
 export interface ReceptionVnpayAttempt {
@@ -683,33 +697,23 @@ export async function createWalkInAppointment(request: Requester, input: WalkInI
     headers: { 'Idempotency-Key': key() },
     body: JSON.stringify({
       holdId,
-      channel: 'RECEPTION',
+      channel: 'WALK_IN',
     }),
   });
 
   const appt = apptRes?.data || apptRes;
   const apptId = appt?.id || appt?.appointmentId;
+  if (!apptId || !patientId) return { ...appt, receptionWarning: 'Đã gửi yêu cầu đặt lịch nhưng chưa xác định được case. Kiểm tra lịch trước khi thử lại.' };
 
-  // Tự động khởi tạo hồ sơ tiếp nhận để sinh hóa đơn Base Invoice ngay lập tức
-  if (apptId && patientId) {
-    try {
-      const c = (await openReceptionCase(request, {
-        appointmentId: apptId,
-        patientId,
-        arrivalAt: new Date().toISOString(),
-      })) as { id?: string; data?: { id?: string } };
-      const caseId = c?.id ?? c?.data?.id;
-      if (caseId) {
-        await verifyReceptionIdentity(request, caseId, {
-          method: 'NATIONAL_ID_DOCUMENT',
-          result: 'VERIFIED',
-          verifiedFields: ['fullName', 'phoneNumber', 'nationalId'],
-        });
-        await admitReceptionCase(request, caseId);
-      }
-    } catch (err) {
-      console.warn('Tự động khởi tạo hóa đơn tiếp nhận thất bại:', err);
-    }
+  // Ghi nhận người bệnh đã đến và gắn case với lễ tân hiện tại.
+  try {
+    await openReceptionCase(request, {
+      appointmentId: apptId,
+      patientId,
+      arrivalAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    return { ...appt, receptionWarning: 'Đã tạo lịch nhưng chưa mở được case tiếp nhận. Tìm lại lịch và mở case, không đặt lại lịch.', receptionError: err instanceof Error ? err.message : undefined };
   }
 
   return appt;
@@ -724,7 +728,8 @@ export async function payAndCheckInAppointment(
 
   // 1. Nếu chưa có invoice (lịch hẹn tạo trước đó), kích hoạt tạo Base Invoice
   if (!invoice) {
-    await checkInAppointment(request, a).catch(() => {});
+    const reception = await checkInAppointment(request, a);
+    if (!reception.awaitingPayment) return { success: true, ticketCode: reception.ticketCode };
     const invs = await listReceptionInvoices(request, { appointmentId: a.id }).catch(() => []);
     invoice = toInvoice(invs[0] as Record<string, unknown> | undefined);
   }
@@ -967,15 +972,17 @@ export async function rescheduleAppointment(
     const holdId = holdRes?.data?.id || holdRes?.id || holdRes?.holdId;
     if (!holdId) throw new Error('Không thể giữ chỗ khung giờ khám mới.');
 
-    await request<any>(`/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reschedule`, {
-      method: 'POST',
-      headers: { 'Idempotency-Key': key() },
-      body: JSON.stringify({
-        newHoldId: holdId,
-        expectedVersion: appointment.version,
-        reason,
-      }),
-    });
+    try {
+      await request<any>(`/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reschedule`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': key() },
+        body: JSON.stringify({ newHoldId: holdId, expectedVersion: appointment.version, reason }),
+      });
+    } catch (error) {
+      // Do not leave a slot reserved after a rejected or failed reschedule.
+      await request(`/api/appointment/slot-holds/${encodeURIComponent(holdId)}`, { method: 'DELETE' }).catch(() => undefined);
+      throw error;
+    }
   }
 
   return refreshAppointment(request, cat, appointment);

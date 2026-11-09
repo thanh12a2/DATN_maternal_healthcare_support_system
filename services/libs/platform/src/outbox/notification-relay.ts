@@ -13,7 +13,7 @@ export class NotificationRelay {
 
   start() {
     if (!this.publisher.isEnabled()) return;
-    this.timer = setInterval(() => void this.flush(), 10000);
+    this.timer = setInterval(() => void this.flush(), 1000);
     this.timer.unref();
   }
   stop() { if (this.timer) clearInterval(this.timer); }
@@ -22,6 +22,7 @@ export class NotificationRelay {
     this.running = true;
     try {
       await this.publisher.ensureBindings('maternal.notification.delivery.v1', this.events);
+      if (this.producer === 'billing-service') await this.publisher.ensureBindings('maternal.reception.payment.v1', ['billing.payment_recorded.v1']);
       for (let i = 0; i < 20; i++) {
         const sent = await this.db.$transaction(async (tx: any) => {
           // Table names and event names are application constants, never request input.

@@ -138,7 +138,7 @@ export class PatientsService {
 
   async notificationAccount(patientId: string) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(patientId)) return null;
-    return this.db.patient.findUnique({ where: { id: patientId }, select: { authAccountId: true } });
+    return this.db.patient.findUnique({ where: { id: patientId }, select: { authAccountId: true, fullName: true, dateOfBirth: true, address: true } });
   }
 
   async getById(

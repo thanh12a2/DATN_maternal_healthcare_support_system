@@ -3,6 +3,17 @@ generator client {
   output   = "../../generated/appointment-client"
 }
 
+// Kept for existing signal records; new appointment work signals are no longer produced.
+model ReceptionWorkSignalOutbox {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category    String   @db.VarChar(20)
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(6)
+
+  @@index([availableAt, id], map: "reception_work_signal_due_idx")
+  @@map("reception_work_signal_outbox")
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("APPOINTMENT_DATABASE_URL")
@@ -70,6 +81,9 @@ model Appointment {
   clinicalStartedAt        DateTime?                      @map("clinical_started_at") @db.Timestamptz(6)
   completedAt              DateTime?                      @map("completed_at") @db.Timestamptz(6)
   cancellationReason       String?                        @map("cancellation_reason") @db.VarChar(500)
+  reassignmentReason       String?                        @map("reassignment_reason") @db.VarChar(500)
+  reassignmentClaimedBy    String?                        @map("reassignment_claimed_by") @db.Uuid
+  reassignmentClaimExpiresAt DateTime?                    @map("reassignment_claim_expires_at") @db.Timestamptz(6)
   rescheduleCount          Int                            @default(0) @map("reschedule_count")
   version                  Int                            @default(1)
   createdAt                DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
