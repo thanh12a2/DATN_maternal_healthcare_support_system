@@ -13,12 +13,14 @@ import { PatientsService } from '../../src/patients/patients.service';
 import { NationalIdCryptoService } from '../../src/security/national-id-crypto.service';
 
 const db = new PrismaClient({
-  datasourceUrl: 'postgresql://postgres:password@localhost:55433/patient_test?schema=public',
+  datasourceUrl:
+    'postgresql://postgres:password@localhost:55433/patient_test?schema=public',
 });
 const crypto = new NationalIdCryptoService({
-  get: (key: string) => key === 'PATIENT_NATIONAL_ID_ENCRYPTION_KEY'
-    ? '11'.repeat(32)
-    : 'a-strong-test-pepper-value',
+  get: (key: string) =>
+    key === 'PATIENT_NATIONAL_ID_ENCRYPTION_KEY'
+      ? '11'.repeat(32)
+      : 'a-strong-test-pepper-value',
 } as ConfigService);
 const service = new PatientsService(db as never, crypto);
 const receptionist = () => ({
@@ -49,13 +51,28 @@ describe('Receptionist and internal PostgreSQL integration', () => {
   it('creates idempotently, searches masked data and audits result', async () => {
     const actor = receptionist();
     const key = randomUUID();
-    const first = await service.createByReceptionist(createDto(), key, actor, randomUUID());
-    const retry = await service.createByReceptionist(createDto(), key, actor, randomUUID());
+    const first = await service.createByReceptionist(
+      createDto(),
+      key,
+      actor,
+      randomUUID(),
+    );
+    const retry = await service.createByReceptionist(
+      createDto(),
+      key,
+      actor,
+      randomUUID(),
+    );
     expect(first.created).toBe(true);
     expect(retry.created).toBe(false);
     expect(retry.data.id).toBe(first.data.id);
     await expect(
-      service.createByReceptionist(createDto({ address: 'Other' }), key, actor, randomUUID()),
+      service.createByReceptionist(
+        createDto({ address: 'Other' }),
+        key,
+        actor,
+        randomUUID(),
+      ),
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' });
     const result = await service.search(
       { phoneNumber: '0901 234 567', page: 1, limit: 20 },
@@ -63,17 +80,28 @@ describe('Receptionist and internal PostgreSQL integration', () => {
       randomUUID(),
     );
     expect(result.total).toBe(1);
-    expect(result.items[0]).toEqual(expect.objectContaining({
-      id: first.data.id,
-      nationalIdMasked: '********8901',
-    }));
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        id: first.data.id,
+        nationalIdMasked: '********8901',
+      }),
+    );
     expect(result.items[0]).not.toHaveProperty('address');
-    expect(await db.patientAuditLog.count({ where: { eventType: 'patient.searched' } })).toBe(1);
+    expect(
+      await db.patientAuditLog.count({
+        where: { eventType: 'patient.searched' },
+      }),
+    ).toBe(1);
   });
 
   it('prevents stale staff updates and rolls back when audit insert fails', async () => {
     const actor = receptionist();
-    const created = await service.createByReceptionist(createDto(), randomUUID(), actor, randomUUID());
+    const created = await service.createByReceptionist(
+      createDto(),
+      randomUUID(),
+      actor,
+      randomUUID(),
+    );
     const changed = await service.patchByReceptionist(
       created.data.id,
       { address: 'Q1', version: 1, reason: 'CORRECTION' },
@@ -95,19 +123,29 @@ describe('Receptionist and internal PostgreSQL integration', () => {
       ),
     ).rejects.toMatchObject({ code: 'CONCURRENT_UPDATE' });
 
-    const before = await db.patient.findUniqueOrThrow({ where: { id: created.data.id } });
+    const before = await db.patient.findUniqueOrThrow({
+      where: { id: created.data.id },
+    });
     const original = db.patientAuditLog.create.bind(db.patientAuditLog);
     const failingDb = new Proxy(db, {
       get(target, property) {
         if (property === '$transaction') {
-          return (callback: (transaction: unknown) => unknown) => target.$transaction((transaction) =>
-            callback(new Proxy(transaction, {
-              get(tx, key) {
-                if (key === 'patientAuditLog') return { create: () => { throw new Error('audit unavailable'); } };
-                return Reflect.get(tx, key);
-              },
-            })),
-          );
+          return (callback: (transaction: unknown) => unknown) =>
+            target.$transaction((transaction) =>
+              callback(
+                new Proxy(transaction, {
+                  get(tx, key) {
+                    if (key === 'patientAuditLog')
+                      return {
+                        create: () => {
+                          throw new Error('audit unavailable');
+                        },
+                      };
+                    return Reflect.get(tx, key);
+                  },
+                }),
+              ),
+            );
         }
         return Reflect.get(target, property);
       },
@@ -121,7 +159,9 @@ describe('Receptionist and internal PostgreSQL integration', () => {
         randomUUID(),
       ),
     ).rejects.toThrow('audit unavailable');
-    const after = await db.patient.findUniqueOrThrow({ where: { id: created.data.id } });
+    const after = await db.patient.findUniqueOrThrow({
+      where: { id: created.data.id },
+    });
     expect(after.fullName).toBe(before.fullName);
     expect(db.patientAuditLog.create.bind(db.patientAuditLog)).toBeDefined();
     expect(original).toBeDefined();
@@ -129,7 +169,12 @@ describe('Receptionist and internal PostgreSQL integration', () => {
 
   it('returns eligibility without PII for existing and missing patients', async () => {
     const actor = receptionist();
-    const patient = await service.createByReceptionist(createDto(), randomUUID(), actor, randomUUID());
+    const patient = await service.createByReceptionist(
+      createDto(),
+      randomUUID(),
+      actor,
+      randomUUID(),
+    );
     const existing = await service.getEligibility(patient.data.id);
     const missing = await service.getEligibility(randomUUID());
     expect(existing).toEqual({

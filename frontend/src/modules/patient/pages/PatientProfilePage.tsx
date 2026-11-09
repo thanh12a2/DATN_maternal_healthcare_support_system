@@ -5,7 +5,7 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
-} from "react";
+} from 'react';
 import {
   User,
   Phone,
@@ -26,16 +26,16 @@ import {
   Stethoscope,
   X,
   Camera,
-} from "lucide-react";
-import { useAuthSession } from "../../../app/AuthSessionProvider";
-import { AppLink } from "../../../app/navigation";
-import { PatientPortalLayout } from "../components/PatientPortalLayout";
-import { EmailVerificationPanel } from "../components/EmailVerification";
-import { LoadingPlaceholder } from "../../../shared/components/ui/LoadingPlaceholder";
-import { ProfileField } from "../components/profile/ProfileField";
-import { ProfileProgress } from "../components/profile/ProfileProgress";
-import { ProfileSection } from "../components/profile/ProfileSection";
-import { AvatarCropModal } from "../components/profile/AvatarCropModal";
+} from 'lucide-react';
+import { useAuthSession } from '../../../app/AuthSessionProvider';
+import { AppLink } from '../../../app/navigation';
+import { PatientPortalLayout } from '../components/PatientPortalLayout';
+import { EmailVerificationPanel } from '../components/EmailVerification';
+import { LoadingPlaceholder } from '../../../shared/components/ui/LoadingPlaceholder';
+import { ProfileField } from '../components/profile/ProfileField';
+import { ProfileProgress } from '../components/profile/ProfileProgress';
+import { ProfileSection } from '../components/profile/ProfileSection';
+import { AvatarCropModal } from '../components/profile/AvatarCropModal';
 import {
   emptyEmergencyContact,
   emptyPatientProfile,
@@ -51,10 +51,13 @@ import {
   type PatientProfileField,
   type PatientProfileFormValues,
   type ValidationMap,
-} from "../../../schemas/patientProfile";
-import { ApiError } from "../../../services/api";
-import type { EmergencyContact, PatientProfile } from "../../../services/patient";
-import "../../../styles/patient-profile.css";
+} from '../../../schemas/patientProfile';
+import { ApiError } from '../../../services/api';
+import type {
+  EmergencyContact,
+  PatientProfile,
+} from '../../../services/patient';
+import '../../../styles/patient-profile.css';
 
 interface Envelope<T> {
   data: T;
@@ -83,30 +86,30 @@ function calculateAge(dobString: string): number | null {
 }
 
 function formatDateVN(dateStr: string): string {
-  if (!dateStr) return "";
+  if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
 function formatDateTimeVN(dateStr: string): string {
-  if (!dateStr) return "";
+  if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${hours}:${minutes} - ${day}/${month}/${year}`;
 }
 
 function formatPhoneVN(phone?: string | null): string {
-  if (!phone) return "Chưa có";
-  return phone.replace(/^\+84/, "0");
+  if (!phone) return 'Chưa có';
+  return phone.replace(/^\+84/, '0');
 }
 
 const snapshot = (values: PatientProfileFormValues) =>
@@ -123,18 +126,18 @@ export function PatientProfilePage() {
   const [errors, setErrors] = useState<ValidationMap>({});
   const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [initialSnapshot, setInitialSnapshot] = useState("");
+  const [initialSnapshot, setInitialSnapshot] = useState('');
   const [loading, setLoading] = useState(true);
   const [isNewProfile, setIsNewProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState<{
-    type: "error" | "success";
+    type: 'error' | 'success';
     message: string;
   } | null>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
-    if (typeof window !== "undefined" && auth.user?.userId) {
+    if (typeof window !== 'undefined' && auth.user?.userId) {
       return localStorage.getItem(`patient_avatar_${auth.user.userId}`) || null;
     }
     return null;
@@ -174,9 +177,15 @@ export function PatientProfilePage() {
     setAvatarUrl(croppedDataUrl);
     if (auth.user?.userId) {
       try {
-        localStorage.setItem(`patient_avatar_${auth.user.userId}`, croppedDataUrl);
+        localStorage.setItem(
+          `patient_avatar_${auth.user.userId}`,
+          croppedDataUrl,
+        );
         if (auth.user.email) {
-          localStorage.setItem(`patient_avatar_${auth.user.email}`, croppedDataUrl);
+          localStorage.setItem(
+            `patient_avatar_${auth.user.email}`,
+            croppedDataUrl,
+          );
         }
         localStorage.setItem('patient_avatar', croppedDataUrl);
       } catch {
@@ -186,7 +195,7 @@ export function PatientProfilePage() {
         window.dispatchEvent(
           new CustomEvent('patient_avatar_updated', {
             detail: { avatarUrl: croppedDataUrl },
-          })
+          }),
         );
       } catch {
         // ignore
@@ -202,15 +211,19 @@ export function PatientProfilePage() {
     const plainNationalId =
       profile?.nationalId ||
       values.nationalId ||
-      (profile?.nationalIdMasked && !profile.nationalIdMasked.includes("*")
+      (profile?.nationalIdMasked && !profile.nationalIdMasked.includes('*')
         ? profile.nationalIdMasked
-        : "") ||
-      "";
+        : '') ||
+      '';
     setValues((prev) => ({
       ...prev,
       fullName: profile?.fullName || prev.fullName,
-      birthDate: profile?.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : prev.birthDate,
-      phoneNumber: profile?.phoneNumber ? profile.phoneNumber.replace(/^\+84/, "0") : prev.phoneNumber,
+      birthDate: profile?.dateOfBirth
+        ? profile.dateOfBirth.slice(0, 10)
+        : prev.birthDate,
+      phoneNumber: profile?.phoneNumber
+        ? profile.phoneNumber.replace(/^\+84/, '0')
+        : prev.phoneNumber,
       nationalId: plainNationalId,
       address: profile?.address || prev.address,
     }));
@@ -224,16 +237,18 @@ export function PatientProfilePage() {
     if (profile) {
       const plainNationalId =
         profile.nationalId ||
-        (profile.nationalIdMasked && !profile.nationalIdMasked.includes("*")
+        (profile.nationalIdMasked && !profile.nationalIdMasked.includes('*')
           ? profile.nationalIdMasked
-          : "") ||
-        "";
+          : '') ||
+        '';
       setValues({
         ...emptyPatientProfile,
-        fullName: profile.fullName || "",
-        birthDate: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : "",
-        phoneNumber: profile.phoneNumber ? profile.phoneNumber.replace(/^\+84/, "0") : "",
-        address: profile.address || "",
+        fullName: profile.fullName || '',
+        birthDate: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
+        phoneNumber: profile.phoneNumber
+          ? profile.phoneNumber.replace(/^\+84/, '0')
+          : '',
+        address: profile.address || '',
         nationalId: plainNationalId,
       });
     }
@@ -247,7 +262,7 @@ export function PatientProfilePage() {
     useState<EmergencyContactValidationMap>({});
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactAlert, setContactAlert] = useState<{
-    type: "error" | "success";
+    type: 'error' | 'success';
     message: string;
   } | null>(null);
 
@@ -257,28 +272,41 @@ export function PatientProfilePage() {
   useEffect(() => {
     let active = true;
     auth
-      .request<Envelope<PatientProfile>>("/api/patients/me")
+      .request<Envelope<PatientProfile>>('/api/patients/me')
       .then(({ data }: Envelope<PatientProfile>) => {
         if (!active) return;
         const next = {
           ...emptyPatientProfile,
           fullName: data.fullName,
-          birthDate: data.dateOfBirth ? data.dateOfBirth.slice(0, 10) : "",
-          phoneNumber: data.phoneNumber ? data.phoneNumber.replace(/^\+84/, "0") : "",
-          nationalId: data.nationalId || (data.nationalIdMasked && !data.nationalIdMasked.includes("*") ? data.nationalIdMasked : "") || "",
-          address: data.address || "",
+          birthDate: data.dateOfBirth ? data.dateOfBirth.slice(0, 10) : '',
+          phoneNumber: data.phoneNumber
+            ? data.phoneNumber.replace(/^\+84/, '0')
+            : '',
+          nationalId:
+            data.nationalId ||
+            (data.nationalIdMasked && !data.nationalIdMasked.includes('*')
+              ? data.nationalIdMasked
+              : '') ||
+            '',
+          address: data.address || '',
         };
         setProfile(data);
         if (auth.user?.userId && data.fullName) {
           try {
-            localStorage.setItem(`patient_name_${auth.user.userId}`, data.fullName);
+            localStorage.setItem(
+              `patient_name_${auth.user.userId}`,
+              data.fullName,
+            );
             if (auth.user.email) {
-              localStorage.setItem(`patient_name_${auth.user.email}`, data.fullName);
+              localStorage.setItem(
+                `patient_name_${auth.user.email}`,
+                data.fullName,
+              );
             }
             window.dispatchEvent(
               new CustomEvent('patient_profile_updated', {
                 detail: { fullName: data.fullName },
-              })
+              }),
             );
           } catch {
             // ignore
@@ -303,9 +331,11 @@ export function PatientProfilePage() {
           setIsEditing(true);
         } else {
           setAlert({
-            type: "error",
+            type: 'error',
             message:
-              reason instanceof Error ? reason.message : "Không thể tải hồ sơ bệnh nhân.",
+              reason instanceof Error
+                ? reason.message
+                : 'Không thể tải hồ sơ bệnh nhân.',
           });
         }
         setLoading(false);
@@ -324,12 +354,14 @@ export function PatientProfilePage() {
     // 1. Họ và tên: ít nhất 2 ký tự
     const nameValid = values.fullName.trim().length >= 2;
     // 2. Ngày sinh: không được để trống và phải là ngày hợp lệ trong quá khứ
-    const birthValid = Boolean(values.birthDate) && validBirthDate(values.birthDate);
+    const birthValid =
+      Boolean(values.birthDate) && validBirthDate(values.birthDate);
     // 3. Số điện thoại: đúng định dạng 10 số VN
-    const phoneValid = Boolean(values.phoneNumber) && validPhone(values.phoneNumber);
+    const phoneValid =
+      Boolean(values.phoneNumber) && validPhone(values.phoneNumber);
     // 4. CCCD / CMND: 9 hoặc 12 số (nếu hồ sơ đã lưu trước đó thì cho phép giữ nguyên)
     const nationalIdValid = hasStoredNationalId
-      ? (!values.nationalId || validNationalId(values.nationalId))
+      ? !values.nationalId || validNationalId(values.nationalId)
       : Boolean(values.nationalId && validNationalId(values.nationalId));
     // 5. Địa chỉ: ít nhất 6 ký tự
     const addressValid = values.address.trim().length >= 6;
@@ -342,7 +374,14 @@ export function PatientProfilePage() {
       !errors.nationalId &&
       !errors.address;
 
-    return nameValid && birthValid && phoneValid && nationalIdValid && addressValid && noErrors;
+    return (
+      nameValid &&
+      birthValid &&
+      phoneValid &&
+      nationalIdValid &&
+      addressValid &&
+      noErrors
+    );
   }, [values, errors, hasStoredNationalId]);
 
   const hasChanges = useMemo(
@@ -383,22 +422,22 @@ export function PatientProfilePage() {
 
     if (profile && changed && hasStoredNationalId && !values.nationalId) {
       nextErrors.nationalId =
-        "Để cập nhật hồ sơ mà không xóa giấy tờ đã lưu, vui lòng nhập lại CCCD/CMND.";
+        'Để cập nhật hồ sơ mà không xóa giấy tờ đã lưu, vui lòng nhập lại CCCD/CMND.';
     }
     setErrors(nextErrors);
     const first = Object.keys(nextErrors)[0] as PatientProfileField | undefined;
     if (first) {
       formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
       setAlert({
-        type: "error",
-        message: "Vui lòng kiểm tra lại các thông tin được đánh dấu đỏ.",
+        type: 'error',
+        message: 'Vui lòng kiểm tra lại các thông tin được đánh dấu đỏ.',
       });
       return;
     }
     if (!changed) {
       setAlert({
-        type: "success",
-        message: "Hồ sơ không có thay đổi cần lưu.",
+        type: 'success',
+        message: 'Hồ sơ không có thay đổi cần lưu.',
       });
       setIsEditing(false);
       return;
@@ -407,13 +446,13 @@ export function PatientProfilePage() {
     setSubmitting(true);
     try {
       const saved = (
-        await auth.request<Envelope<PatientProfile>>("/api/patients/me", {
-          method: "PUT",
+        await auth.request<Envelope<PatientProfile>>('/api/patients/me', {
+          method: 'PUT',
           body: JSON.stringify({
             fullName: values.fullName.trim(),
             dateOfBirth: values.birthDate,
             phoneNumber: values.phoneNumber.trim(),
-            nationalId: values.nationalId.replace(/[^0-9]/g, ""),
+            nationalId: values.nationalId.replace(/[^0-9]/g, ''),
             address: values.address.trim(),
             ...(profile ? { version: profile.version } : {}),
           }),
@@ -422,14 +461,20 @@ export function PatientProfilePage() {
       setProfile(saved);
       if (auth.user?.userId && saved.fullName) {
         try {
-          localStorage.setItem(`patient_name_${auth.user.userId}`, saved.fullName);
+          localStorage.setItem(
+            `patient_name_${auth.user.userId}`,
+            saved.fullName,
+          );
           if (auth.user.email) {
-            localStorage.setItem(`patient_name_${auth.user.email}`, saved.fullName);
+            localStorage.setItem(
+              `patient_name_${auth.user.email}`,
+              saved.fullName,
+            );
           }
           window.dispatchEvent(
             new CustomEvent('patient_profile_updated', {
               detail: { fullName: saved.fullName },
-            })
+            }),
           );
         } catch {
           // ignore
@@ -439,16 +484,19 @@ export function PatientProfilePage() {
       setInitialSnapshot(snapshot(values));
       setIsNewProfile(false);
       setIsEditing(false);
-      setValues((current) => ({ ...current, nationalId: saved.nationalId || current.nationalId }));
+      setValues((current) => ({
+        ...current,
+        nationalId: saved.nationalId || current.nationalId,
+      }));
       setAlert({
-        type: "success",
-        message: "Hồ sơ bệnh nhân đã được lưu thành công.",
+        type: 'success',
+        message: 'Hồ sơ bệnh nhân đã được lưu thành công.',
       });
     } catch (reason) {
       setAlert({
-        type: "error",
+        type: 'error',
         message:
-          reason instanceof Error ? reason.message : "Không thể lưu hồ sơ.",
+          reason instanceof Error ? reason.message : 'Không thể lưu hồ sơ.',
       });
     } finally {
       setSubmitting(false);
@@ -508,7 +556,7 @@ export function PatientProfilePage() {
         : `/api/patients/${profile.id}/emergency-contacts`;
       const saved = (
         await auth.request<Envelope<EmergencyContact>>(endpoint, {
-          method: editing ? "PATCH" : "POST",
+          method: editing ? 'PATCH' : 'POST',
           body: JSON.stringify({
             fullName: contactValues.fullName.trim(),
             relationship: contactValues.relationship.trim(),
@@ -525,18 +573,18 @@ export function PatientProfilePage() {
       );
       closeContact();
       setContactAlert({
-        type: "success",
+        type: 'success',
         message: editing
-          ? "Đã cập nhật người liên hệ."
-          : "Đã thêm người liên hệ khẩn cấp.",
+          ? 'Đã cập nhật người liên hệ.'
+          : 'Đã thêm người liên hệ khẩn cấp.',
       });
     } catch (reason) {
       setContactAlert({
-        type: "error",
+        type: 'error',
         message:
           reason instanceof Error
             ? reason.message
-            : "Không thể lưu người liên hệ.",
+            : 'Không thể lưu người liên hệ.',
       });
     } finally {
       setContactSubmitting(false);
@@ -555,7 +603,7 @@ export function PatientProfilePage() {
     try {
       await auth.request<void>(
         `/api/patients/${profile.id}/emergency-contacts/${contact.id}`,
-        { method: "DELETE" },
+        { method: 'DELETE' },
       );
       setContacts((current) =>
         current
@@ -567,14 +615,14 @@ export function PatientProfilePage() {
           })),
       );
       if (editingContactId === contact.id) closeContact();
-      setContactAlert({ type: "success", message: "Đã xóa người liên hệ." });
+      setContactAlert({ type: 'success', message: 'Đã xóa người liên hệ.' });
     } catch (reason) {
       setContactAlert({
-        type: "error",
+        type: 'error',
         message:
           reason instanceof Error
             ? reason.message
-            : "Không thể xóa người liên hệ.",
+            : 'Không thể xóa người liên hệ.',
       });
     } finally {
       setContactSubmitting(false);
@@ -595,7 +643,7 @@ export function PatientProfilePage() {
         await auth.request<Envelope<EmergencyContact[]>>(
           `/api/patients/${profile.id}/emergency-contacts/order`,
           {
-            method: "PUT",
+            method: 'PUT',
             body: JSON.stringify({
               contactIds: next.map((item) => item.id),
             }),
@@ -604,16 +652,16 @@ export function PatientProfilePage() {
       ).data;
       setContacts(sortContacts(ordered));
       setContactAlert({
-        type: "success",
-        message: "Đã cập nhật thứ tự ưu tiên.",
+        type: 'success',
+        message: 'Đã cập nhật thứ tự ưu tiên.',
       });
     } catch (reason) {
       setContactAlert({
-        type: "error",
+        type: 'error',
         message:
           reason instanceof Error
             ? reason.message
-            : "Không thể đổi thứ tự ưu tiên.",
+            : 'Không thể đổi thứ tự ưu tiên.',
       });
     } finally {
       setContactSubmitting(false);
@@ -625,19 +673,26 @@ export function PatientProfilePage() {
     value: values[name],
     onChange: changeProfile,
     onBlur: () => validateProfileField(name),
-    "aria-invalid": Boolean(errors[name]),
-    "aria-describedby": name + "-message",
+    'aria-invalid': Boolean(errors[name]),
+    'aria-describedby': name + '-message',
   });
 
-  const displayName = profile?.fullName || values.fullName || auth.user?.email.split("@")[0] || "Bệnh nhân";
-  const userInitials = displayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(-2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("") || "BN";
-  const age = calculateAge(values.birthDate || profile?.dateOfBirth || "");
-  const patientCode = profile?.id ? `PA-${profile.id.slice(0, 8).toUpperCase()}` : "PA-NEW";
+  const displayName =
+    profile?.fullName ||
+    values.fullName ||
+    auth.user?.email.split('@')[0] ||
+    'Bệnh nhân';
+  const userInitials =
+    displayName
+      .split(' ')
+      .filter(Boolean)
+      .slice(-2)
+      .map((w) => w[0]?.toUpperCase())
+      .join('') || 'BN';
+  const age = calculateAge(values.birthDate || profile?.dateOfBirth || '');
+  const patientCode = profile?.id
+    ? `PA-${profile.id.slice(0, 8).toUpperCase()}`
+    : 'PA-NEW';
 
   return (
     <PatientPortalLayout
@@ -645,7 +700,10 @@ export function PatientProfilePage() {
       contentClassName="patient-profile-unified-page"
       profileComplete={loading ? null : Boolean(profile)}
     >
-      <LoadingPlaceholder visible={loading} label="Đang tải hồ sơ bệnh nhân..." />
+      <LoadingPlaceholder
+        visible={loading}
+        label="Đang tải hồ sơ bệnh nhân..."
+      />
 
       <div className="profile-container-root">
         {/* Navigation Breadcrumb */}
@@ -659,9 +717,12 @@ export function PatientProfilePage() {
 
         {/* Floating Toast Notification (không đẩy modal, tự động ẩn sau 3 giây) */}
         {alert && (
-          <div className={`profile-floating-toast is-${alert.type}`} role="status">
+          <div
+            className={`profile-floating-toast is-${alert.type}`}
+            role="status"
+          >
             <div className="toast-icon-wrap">
-              {alert.type === "success" ? (
+              {alert.type === 'success' ? (
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               ) : (
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
@@ -669,7 +730,7 @@ export function PatientProfilePage() {
             </div>
             <div className="toast-content">
               <strong className="toast-title">
-                {alert.type === "success" ? "Thành công" : "Thông báo"}
+                {alert.type === 'success' ? 'Thành công' : 'Thông báo'}
               </strong>
               <p className="toast-msg">{alert.message}</p>
             </div>
@@ -689,14 +750,19 @@ export function PatientProfilePage() {
           type="file"
           ref={fileInputRef}
           accept="image/*"
-          style={{ display: "none" }}
+          style={{ display: 'none' }}
           onChange={handleAvatarFileChange}
           aria-label="Chọn ảnh đại diện từ thư viện"
         />
 
         {/* THẺ THỐNG NHẤT DUY NHẤT: THIẾT KẾ ĐẸP, ĐẦY ĐỦ THÔNG TIN, KÍCH THƯỚC CHUẨN XÁC TRONG CẢ CHẾ ĐỘ XEM VÀ CHỈNH SỬA */}
-        <section className="profile-section-card" aria-labelledby="patient-info-title">
-          <div className={`profile-unified-card ${isEditing ? "is-editing" : ""}`}>
+        <section
+          className="profile-section-card"
+          aria-labelledby="patient-info-title"
+        >
+          <div
+            className={`profile-unified-card ${isEditing ? 'is-editing' : ''}`}
+          >
             {/* Header nhận diện bệnh nhân & Avatar */}
             <div className="profile-unified-header">
               <div className="profile-unified-identity">
@@ -707,19 +773,26 @@ export function PatientProfilePage() {
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
+                    if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       handleTriggerAvatarUpload();
                     }
                   }}
                 >
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={displayName} className="patient-avatar-img" />
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="patient-avatar-img"
+                    />
                   ) : (
                     <span className="patient-avatar-text">{userInitials}</span>
                   )}
                   <span className="patient-avatar-status-dot is-verified" />
-                  <div className="patient-avatar-edit-badge" title="Đổi ảnh đại diện">
+                  <div
+                    className="patient-avatar-edit-badge"
+                    title="Đổi ảnh đại diện"
+                  >
                     <Camera className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -728,7 +801,10 @@ export function PatientProfilePage() {
                   {!isEditing ? (
                     <>
                       <div className="profile-unified-name-row">
-                        <h1 id="patient-info-title" className="profile-unified-name">
+                        <h1
+                          id="patient-info-title"
+                          className="profile-unified-name"
+                        >
                           {displayName}
                         </h1>
                         <span className="patient-badge-verified">
@@ -740,14 +816,20 @@ export function PatientProfilePage() {
                         </span>
                       </div>
                       <p className="profile-unified-desc">
-                        Thông tin hành chính cơ bản dùng để cấp số khám, hồ sơ thai sản và liên lạc tại bệnh viện.
+                        Thông tin hành chính cơ bản dùng để cấp số khám, hồ sơ
+                        thai sản và liên lạc tại bệnh viện.
                       </p>
                     </>
                   ) : (
                     <>
                       <div className="profile-unified-name-row">
-                        <h1 id="patient-info-title" className="profile-unified-name">
-                          {isNewProfile ? "Hoàn thiện thông tin bệnh nhân" : "Chỉnh sửa thông tin hành chính"}
+                        <h1
+                          id="patient-info-title"
+                          className="profile-unified-name"
+                        >
+                          {isNewProfile
+                            ? 'Hoàn thiện thông tin bệnh nhân'
+                            : 'Chỉnh sửa thông tin hành chính'}
                         </h1>
                         <span className="patient-code-tag">
                           <strong>Mã hồ sơ:</strong> {patientCode}
@@ -755,8 +837,8 @@ export function PatientProfilePage() {
                       </div>
                       <p className="profile-unified-desc">
                         {isNewProfile
-                          ? "Vui lòng nhập đầy đủ các trường thông tin cơ bản để bệnh viện khởi tạo mã bệnh nhân."
-                          : "Cập nhật thông tin hành chính của bạn. Dữ liệu được bảo mật y tế tuyệt đối."}
+                          ? 'Vui lòng nhập đầy đủ các trường thông tin cơ bản để bệnh viện khởi tạo mã bệnh nhân.'
+                          : 'Cập nhật thông tin hành chính của bạn. Dữ liệu được bảo mật y tế tuyệt đối.'}
                       </p>
                     </>
                   )}
@@ -803,30 +885,45 @@ export function PatientProfilePage() {
                 <div className="detail-item">
                   <span className="detail-label">Ngày tháng năm sinh</span>
                   <strong className="detail-value">
-                    {formatDateVN(profile.dateOfBirth)} {age !== null ? `(${age} tuổi)` : ""}
+                    {formatDateVN(profile.dateOfBirth)}{' '}
+                    {age !== null ? `(${age} tuổi)` : ''}
                   </strong>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Số điện thoại liên hệ</span>
-                  <strong className="detail-value">{formatPhoneVN(profile.phoneNumber)}</strong>
+                  <strong className="detail-value">
+                    {formatPhoneVN(profile.phoneNumber)}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Căn cước công dân / CMND</span>
                   <strong className="detail-value font-mono">
-                    {profile.nationalId || values.nationalId || (profile.nationalIdMasked && !profile.nationalIdMasked.includes("*") ? profile.nationalIdMasked : "") || profile.nationalIdMasked || "Chưa lưu"}
+                    {profile.nationalId ||
+                      values.nationalId ||
+                      (profile.nationalIdMasked &&
+                      !profile.nationalIdMasked.includes('*')
+                        ? profile.nationalIdMasked
+                        : '') ||
+                      profile.nationalIdMasked ||
+                      'Chưa lưu'}
                   </strong>
                 </div>
                 <div className="detail-item is-full">
-                  <span className="detail-label">Địa chỉ thường trú / Nơi ở hiện tại</span>
-                  <strong className="detail-value">{profile.address || "Chưa cập nhật"}</strong>
+                  <span className="detail-label">
+                    Địa chỉ thường trú / Nơi ở hiện tại
+                  </span>
+                  <strong className="detail-value">
+                    {profile.address || 'Chưa cập nhật'}
+                  </strong>
                 </div>
                 <EmailVerificationPanel />
                 <div className="detail-item is-full detail-meta-box">
                   <div className="flex items-center gap-2 text-slate-600 text-sm">
                     <ShieldCheck className="w-5 h-5 text-sky-600 shrink-0" />
                     <span>
-                      Dữ liệu được bảo mật y tế tuyệt đối theo tiêu chuẩn mã hóa AES-256-GCM.
-                      Khi đến khám trực tiếp, lễ tân tiếp đón sẽ hỗ trợ đối soát mã hồ sơ <strong>{patientCode}</strong>.
+                      Dữ liệu được bảo mật y tế tuyệt đối theo tiêu chuẩn mã hóa
+                      AES-256-GCM. Khi đến khám trực tiếp, lễ tân tiếp đón sẽ hỗ
+                      trợ đối soát mã hồ sơ <strong>{patientCode}</strong>.
                     </span>
                   </div>
                 </div>
@@ -843,79 +940,114 @@ export function PatientProfilePage() {
                   <div className="profile-unified-field">
                     <label htmlFor="fullName" className="profile-unified-label">
                       <span>Họ và tên</span>
-                      {errors.fullName && <span className="profile-unified-error">{errors.fullName}</span>}
+                      {errors.fullName && (
+                        <span className="profile-unified-error">
+                          {errors.fullName}
+                        </span>
+                      )}
                     </label>
                     <input
                       id="fullName"
-                      className={`profile-unified-input ${errors.fullName ? "has-error" : ""}`}
+                      className={`profile-unified-input ${errors.fullName ? 'has-error' : ''}`}
                       autoComplete="name"
                       placeholder="Ví dụ: Trần Diệu Hương"
-                      {...input("fullName")}
+                      {...input('fullName')}
                     />
                   </div>
 
                   <div className="profile-unified-field">
-                    <label htmlFor="birthDate" className="profile-unified-label">
+                    <label
+                      htmlFor="birthDate"
+                      className="profile-unified-label"
+                    >
                       <span>Ngày sinh</span>
-                      {errors.birthDate && <span className="profile-unified-error">{errors.birthDate}</span>}
+                      {errors.birthDate && (
+                        <span className="profile-unified-error">
+                          {errors.birthDate}
+                        </span>
+                      )}
                     </label>
                     <input
                       id="birthDate"
                       type="date"
-                      className={`profile-unified-input ${errors.birthDate ? "has-error" : ""}`}
+                      className={`profile-unified-input ${errors.birthDate ? 'has-error' : ''}`}
                       max={new Date().toISOString().slice(0, 10)}
-                      {...input("birthDate")}
+                      {...input('birthDate')}
                     />
                   </div>
 
                   <div className="profile-unified-field">
-                    <label htmlFor="phoneNumber" className="profile-unified-label">
+                    <label
+                      htmlFor="phoneNumber"
+                      className="profile-unified-label"
+                    >
                       <span>Số điện thoại</span>
-                      {errors.phoneNumber && <span className="profile-unified-error">{errors.phoneNumber}</span>}
+                      {errors.phoneNumber && (
+                        <span className="profile-unified-error">
+                          {errors.phoneNumber}
+                        </span>
+                      )}
                     </label>
                     <input
                       id="phoneNumber"
                       type="tel"
-                      className={`profile-unified-input ${errors.phoneNumber ? "has-error" : ""}`}
+                      className={`profile-unified-input ${errors.phoneNumber ? 'has-error' : ''}`}
                       placeholder="090xxxxxxx"
-                      {...input("phoneNumber")}
+                      {...input('phoneNumber')}
                     />
                   </div>
 
                   <div className="profile-unified-field">
-                    <label htmlFor="nationalId" className="profile-unified-label">
+                    <label
+                      htmlFor="nationalId"
+                      className="profile-unified-label"
+                    >
                       <span>Số CCCD / CMND</span>
-                      {errors.nationalId && <span className="profile-unified-error">{errors.nationalId}</span>}
+                      {errors.nationalId && (
+                        <span className="profile-unified-error">
+                          {errors.nationalId}
+                        </span>
+                      )}
                     </label>
                     <input
                       id="nationalId"
                       inputMode="numeric"
-                      className={`profile-unified-input font-mono ${errors.nationalId ? "has-error" : ""}`}
+                      className={`profile-unified-input font-mono ${errors.nationalId ? 'has-error' : ''}`}
                       placeholder="Nhập 9 hoặc 12 chữ số"
-                      {...input("nationalId")}
+                      {...input('nationalId')}
                     />
                   </div>
 
                   <div className="profile-unified-field is-full">
                     <label htmlFor="address" className="profile-unified-label">
                       <span>Địa chỉ hiện tại</span>
-                      {errors.address && <span className="profile-unified-error">{errors.address}</span>}
+                      {errors.address && (
+                        <span className="profile-unified-error">
+                          {errors.address}
+                        </span>
+                      )}
                     </label>
                     <input
                       id="address"
-                      className={`profile-unified-input ${errors.address ? "has-error" : ""}`}
+                      className={`profile-unified-input ${errors.address ? 'has-error' : ''}`}
                       placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                      {...input("address")}
+                      {...input('address')}
                     />
                   </div>
                 </div>
 
                 <footer className="profile-unified-footer">
                   {!isFormComplete ? (
-                    <span className="profile-unified-footer-hint" style={{ color: "#d97706", fontSize: "13px" }}>
-                      * Vui lòng điền đầy đủ tất cả các thông tin cá nhân trên để lưu hồ sơ.
+                    <span
+                      className="profile-unified-footer-hint"
+                      style={{ color: '#d97706', fontSize: '13px' }}
+                    >
+                      * Vui lòng điền đầy đủ tất cả các thông tin cá nhân trên
+                      để lưu hồ sơ.
                     </span>
-                  ) : <div />}
+                  ) : (
+                    <div />
+                  )}
                   <div className="profile-unified-footer-btns">
                     {!isNewProfile && (
                       <button
@@ -930,9 +1062,13 @@ export function PatientProfilePage() {
                       className="btn-unified-save"
                       type="submit"
                       disabled={!canSaveProfile}
-                      title={!canSaveProfile ? "Vui lòng điền đầy đủ tất cả các thông tin để lưu hồ sơ" : "Lưu hồ sơ"}
+                      title={
+                        !canSaveProfile
+                          ? 'Vui lòng điền đầy đủ tất cả các thông tin để lưu hồ sơ'
+                          : 'Lưu hồ sơ'
+                      }
                     >
-                      {submitting ? "Đang lưu…" : "Lưu hồ sơ"}
+                      {submitting ? 'Đang lưu…' : 'Lưu hồ sơ'}
                     </button>
                   </div>
                 </footer>
@@ -948,11 +1084,13 @@ export function PatientProfilePage() {
         >
           <div className="contact-manager-heading">
             <div>
-              <span className="profile-card-eyebrow">Bảo hộ an toàn thai kỳ</span>
+              <span className="profile-card-eyebrow">
+                Bảo hộ an toàn thai kỳ
+              </span>
               <h2 id="emergency-contacts-title">Người liên hệ khẩn cấp</h2>
               <p>
-                Thêm tối đa {MAX_CONTACTS} người và dùng nút lên/xuống để
-                thay đổi thứ tự ưu tiên.
+                Thêm tối đa {MAX_CONTACTS} người và dùng nút lên/xuống để thay
+                đổi thứ tự ưu tiên.
               </p>
             </div>
             {profile && contacts.length < MAX_CONTACTS && !showContactForm && (
@@ -968,8 +1106,8 @@ export function PatientProfilePage() {
 
           {!profile ? (
             <p className="contact-empty">
-              Hãy lưu hồ sơ bệnh nhân trước. Bạn có thể bỏ qua phần người
-              liên hệ.
+              Hãy lưu hồ sơ bệnh nhân trước. Bạn có thể bỏ qua phần người liên
+              hệ.
             </p>
           ) : (
             <>
@@ -982,7 +1120,7 @@ export function PatientProfilePage() {
                   {contacts.map((contact, index) => (
                     <li key={contact.id} className="contact-card">
                       <div
-                        className={`contact-priority ${index === 0 ? "is-primary-priority" : ""}`}
+                        className={`contact-priority ${index === 0 ? 'is-primary-priority' : ''}`}
                         aria-label={`Ưu tiên ${index + 1}`}
                       >
                         {index + 1}
@@ -990,7 +1128,9 @@ export function PatientProfilePage() {
 
                       <div className="contact-card-copy">
                         <div className="contact-name-row">
-                          <strong className="contact-name-text">{contact.fullName}</strong>
+                          <strong className="contact-name-text">
+                            {contact.fullName}
+                          </strong>
                           {index === 0 && (
                             <span className="primary-badge">
                               Ưu tiên đầu tiên
@@ -998,7 +1138,8 @@ export function PatientProfilePage() {
                           )}
                         </div>
                         <p className="contact-details-row">
-                          {contact.relationship} · {formatPhoneVN(contact.phoneNumber)}
+                          {contact.relationship} ·{' '}
+                          {formatPhoneVN(contact.phoneNumber)}
                         </p>
                       </div>
 
@@ -1018,7 +1159,9 @@ export function PatientProfilePage() {
                           className="btn-order"
                           aria-label={`Giảm ưu tiên ${contact.fullName}`}
                           title="Giảm độ ưu tiên xuống dưới"
-                          disabled={index === contacts.length - 1 || contactSubmitting}
+                          disabled={
+                            index === contacts.length - 1 || contactSubmitting
+                          }
                           onClick={() => moveContact(index, 1)}
                         >
                           ↓
@@ -1053,8 +1196,8 @@ export function PatientProfilePage() {
                   <div className="contact-form-header">
                     <h3 className="contact-form-title">
                       {editingContactId
-                        ? "Cập nhật người liên hệ"
-                        : "Thêm người liên hệ"}
+                        ? 'Cập nhật người liên hệ'
+                        : 'Thêm người liên hệ'}
                     </h3>
                     <button
                       type="button"
@@ -1136,7 +1279,7 @@ export function PatientProfilePage() {
                       className="profile-primary-action"
                       disabled={contactSubmitting}
                     >
-                      {contactSubmitting ? "Đang lưu…" : "Lưu người liên hệ"}
+                      {contactSubmitting ? 'Đang lưu…' : 'Lưu người liên hệ'}
                     </button>
                   </div>
                 </form>
@@ -1145,16 +1288,11 @@ export function PatientProfilePage() {
           )}
 
           {contactAlert && (
-            <div
-              className={`profile-alert ${contactAlert.type}`}
-              role="status"
-            >
+            <div className={`profile-alert ${contactAlert.type}`} role="status">
               {contactAlert.message}
             </div>
           )}
         </section>
-
-
       </div>
 
       {/* Modal cắt chỉnh khung ảnh đại diện chuẩn hình tròn */}

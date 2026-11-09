@@ -98,15 +98,25 @@ vi.mock('../../../app/AuthSessionProvider', () => ({
 describe('AdminAuditLogsPage & AdminSystemHealthPage', () => {
   it('renders AdminAuditLogsPage with audit stats and audit records', async () => {
     render(<AdminAuditLogsPage />);
-    expect(await screen.findByText('Tổng lượt kiểm toán hệ thống')).toBeInTheDocument();
-    expect(await screen.findByText('Khám thai định kỳ VIP (300,000 VND ➔ 350,000 VND)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Tổng lượt kiểm toán hệ thống'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Khám thai định kỳ VIP (300,000 VND ➔ 350,000 VND)',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('192.168.1.45')).toBeInTheDocument();
   });
 
   it('renders AdminSystemHealthPage with 17 microservices probing and backup manager', async () => {
     render(<AdminSystemHealthPage />);
-    expect(await screen.findByText(/17 Microservices Cluster/i)).toBeInTheDocument();
-    expect(await screen.findByText('Danh mục Dịch vụ & Biểu phí (Catalog Service)')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/17 Microservices Cluster/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Danh mục Dịch vụ & Biểu phí (Catalog Service)'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Tạo bản sao lưu ngay')).toBeInTheDocument();
     expect(await screen.findByText('BKP-20261023-0001')).toBeInTheDocument();
   });

@@ -15,22 +15,34 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-export interface RegisterResponse { user: AuthUser; }
-export interface MeResponse { user: AuthUser; }
+export interface RegisterResponse {
+  user: AuthUser;
+}
+export interface MeResponse {
+  user: AuthUser;
+}
 
 export { ApiError as AuthApiError };
 
 export function login(values: LoginFormValues): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password }),
+    body: JSON.stringify({
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+    }),
   });
 }
 
-export function register(values: RegisterFormValues): Promise<RegisterResponse> {
+export function register(
+  values: RegisterFormValues,
+): Promise<RegisterResponse> {
   return apiRequest<RegisterResponse>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email: values.email.trim().toLowerCase(), password: values.password }),
+    body: JSON.stringify({
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+    }),
   });
 }
 

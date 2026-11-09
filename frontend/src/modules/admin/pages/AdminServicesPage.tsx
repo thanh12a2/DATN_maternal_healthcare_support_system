@@ -106,7 +106,10 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 
-const KIND_CONFIG: Record<MedicalServiceKind, { label: string; color: string }> = {
+const KIND_CONFIG: Record<
+  MedicalServiceKind,
+  { label: string; color: string }
+> = {
   CONSULTATION: { label: 'Khám bệnh', color: 'blue' },
   DIAGNOSTIC: { label: 'Chẩn đoán hình ảnh', color: 'purple' },
   PROCEDURE: { label: 'Thủ thuật', color: 'orange' },
@@ -115,7 +118,10 @@ const KIND_CONFIG: Record<MedicalServiceKind, { label: string; color: string }> 
   OTHER: { label: 'Khác', color: 'default' },
 };
 
-const POLICY_CONFIG: Record<DoctorRankSelectionPolicy, { label: string; color: string }> = {
+const POLICY_CONFIG: Record<
+  DoctorRankSelectionPolicy,
+  { label: string; color: string }
+> = {
   NOT_REQUIRED: { label: 'Không phân biệt hạng', color: 'default' },
   BASIC_INCLUDED: { label: 'Đã gồm phí cơ bản', color: 'cyan' },
   RANK_UPGRADE_ALLOWED: { label: 'Cho phép phụ thu theo hạng', color: 'gold' },
@@ -155,12 +161,19 @@ export interface MergedRankItem {
   rawSurcharge?: DoctorRankSurchargeItem;
 }
 
-export function getRankDisplayName(code: string, ranks: ConsultationRankItem[]): string {
+export function getRankDisplayName(
+  code: string,
+  ranks: ConsultationRankItem[],
+): string {
   const r = ranks.find((item) => item.code === code);
   return r ? r.name : code;
 }
 
-export function renderPriceStatusTag(status?: string, effectiveFrom?: string, effectiveTo?: string | null) {
+export function renderPriceStatusTag(
+  status?: string,
+  effectiveFrom?: string,
+  effectiveTo?: string | null,
+) {
   if (!status) return <Tag color="default">Chưa thiết lập</Tag>;
   const now = new Date();
   const from = effectiveFrom ? new Date(effectiveFrom) : null;
@@ -182,7 +195,9 @@ export function AdminServicesPage() {
   const { request, user } = useAuthSession();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'services' | 'categories' | 'tags' | 'surcharges'>('services');
+  const [activeTab, setActiveTab] = useState<
+    'services' | 'categories' | 'tags' | 'surcharges'
+  >('services');
 
   // Specialties list from doctor service
   const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
@@ -197,8 +212,12 @@ export function AdminServicesPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
-  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(
+    undefined,
+  );
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    undefined,
+  );
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -206,27 +225,33 @@ export function AdminServicesPage() {
 
   // Modals & Drawers
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<MedicalServiceItem | null>(null);
+  const [selectedService, setSelectedService] =
+    useState<MedicalServiceItem | null>(null);
   const [servicePrices, setServicePrices] = useState<BasePriceItem[]>([]);
   const [loadingPrices, setLoadingPrices] = useState(false);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [serviceToEdit, setServiceToEdit] = useState<MedicalServiceItem | null>(null);
+  const [serviceToEdit, setServiceToEdit] = useState<MedicalServiceItem | null>(
+    null,
+  );
   const [submittingService, setSubmittingService] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<MedicalServiceItem | null>(null);
+  const [serviceToDelete, setServiceToDelete] =
+    useState<MedicalServiceItem | null>(null);
   const [deletingService, setDeletingService] = useState(false);
 
   // Modal xác nhận kích hoạt / tạm ngưng dịch vụ
   const [toggleStatusModalOpen, setToggleStatusModalOpen] = useState(false);
-  const [serviceToToggle, setServiceToToggle] = useState<MedicalServiceItem | null>(null);
+  const [serviceToToggle, setServiceToToggle] =
+    useState<MedicalServiceItem | null>(null);
   const [togglingService, setTogglingService] = useState(false);
 
   // Lên lịch giá Modal
   const [schedulePriceModalOpen, setSchedulePriceModalOpen] = useState(false);
-  const [serviceForPricing, setServiceForPricing] = useState<MedicalServiceItem | null>(null);
+  const [serviceForPricing, setServiceForPricing] =
+    useState<MedicalServiceItem | null>(null);
   const [submittingPrice, setSubmittingPrice] = useState(false);
 
   const [createServiceForm] = Form.useForm<CreateServicePayload>();
@@ -244,20 +269,27 @@ export function AdminServicesPage() {
 
   const [createCategoryModalOpen, setCreateCategoryModalOpen] = useState(false);
   const [editCategoryModalOpen, setEditCategoryModalOpen] = useState(false);
-  const [categoryToEdit, setCategoryToEdit] = useState<ServiceCategoryItem | null>(null);
+  const [categoryToEdit, setCategoryToEdit] =
+    useState<ServiceCategoryItem | null>(null);
   const [deleteCategoryModalOpen, setDeleteCategoryModalOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<ServiceCategoryItem | null>(null);
+  const [categoryToDelete, setCategoryToDelete] =
+    useState<ServiceCategoryItem | null>(null);
   const [submittingCategory, setSubmittingCategory] = useState(false);
 
   // Modal xác nhận kích hoạt / tạm khóa nhóm dịch vụ
   const [toggleCategoryModalOpen, setToggleCategoryModalOpen] = useState(false);
-  const [categoryToToggle, setCategoryToToggle] = useState<ServiceCategoryItem | null>(null);
+  const [categoryToToggle, setCategoryToToggle] =
+    useState<ServiceCategoryItem | null>(null);
   const [togglingCategory, setTogglingCategory] = useState(false);
 
   // Drawer Chi tiết nhóm dịch vụ
-  const [detailCategoryDrawerOpen, setDetailCategoryDrawerOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategoryItem | null>(null);
-  const [categoryServices, setCategoryServices] = useState<MedicalServiceItem[]>([]);
+  const [detailCategoryDrawerOpen, setDetailCategoryDrawerOpen] =
+    useState(false);
+  const [selectedCategory, setSelectedCategory] =
+    useState<ServiceCategoryItem | null>(null);
+  const [categoryServices, setCategoryServices] = useState<
+    MedicalServiceItem[]
+  >([]);
   const [loadingCategoryServices, setLoadingCategoryServices] = useState(false);
 
   const [createCategoryForm] = Form.useForm<CreateCategoryPayload>();
@@ -297,20 +329,31 @@ export function AdminServicesPage() {
   // ------------------------------------------------------------------
   // TAB 4: HẠNG BÁC SĨ & PHỤ THU HẠNG BÁC SĨ (RANKS & SURCHARGES)
   // ------------------------------------------------------------------
-  const [consultationRanks, setConsultationRanks] = useState<ConsultationRankItem[]>([]);
+  const [consultationRanks, setConsultationRanks] = useState<
+    ConsultationRankItem[]
+  >([]);
   const [ranksLoading, setRanksLoading] = useState(false);
   const [doctorsList, setDoctorsList] = useState<DoctorItem[]>([]);
   const [createRankModalOpen, setCreateRankModalOpen] = useState(false);
   const [editRankModalOpen, setEditRankModalOpen] = useState(false);
-  const [rankToEdit, setRankToEdit] = useState<ConsultationRankItem | null>(null);
+  const [rankToEdit, setRankToEdit] = useState<ConsultationRankItem | null>(
+    null,
+  );
   const [deleteRankModalOpen, setDeleteRankModalOpen] = useState(false);
-  const [rankToDelete, setRankToDelete] = useState<ConsultationRankItem | null>(null);
+  const [rankToDelete, setRankToDelete] = useState<ConsultationRankItem | null>(
+    null,
+  );
   const [toggleRankModalOpen, setToggleRankModalOpen] = useState(false);
-  const [rankToToggle, setRankToToggle] = useState<ConsultationRankItem | null>(null);
+  const [rankToToggle, setRankToToggle] = useState<ConsultationRankItem | null>(
+    null,
+  );
   const [detailRankDrawerOpen, setDetailRankDrawerOpen] = useState(false);
-  const [selectedMergedRank, setSelectedMergedRank] = useState<MergedRankItem | null>(null);
+  const [selectedMergedRank, setSelectedMergedRank] =
+    useState<MergedRankItem | null>(null);
   const [rankSearchQuery, setRankSearchQuery] = useState('');
-  const [rankStatusFilter, setRankStatusFilter] = useState<string | undefined>(undefined);
+  const [rankStatusFilter, setRankStatusFilter] = useState<string | undefined>(
+    undefined,
+  );
   const [rankPage, setRankPage] = useState(1);
   const [rankPageSize, setRankPageSize] = useState(10);
   const [submittingRank, setSubmittingRank] = useState(false);
@@ -320,8 +363,10 @@ export function AdminServicesPage() {
 
   const [surcharges, setSurcharges] = useState<DoctorRankSurchargeItem[]>([]);
   const [surchargesLoading, setSurchargesLoading] = useState(false);
-  const [createSurchargeModalOpen, setCreateSurchargeModalOpen] = useState(false);
-  const [rankForSurcharge, setRankForSurcharge] = useState<MergedRankItem | null>(null);
+  const [createSurchargeModalOpen, setCreateSurchargeModalOpen] =
+    useState(false);
+  const [rankForSurcharge, setRankForSurcharge] =
+    useState<MergedRankItem | null>(null);
   const [submittingSurcharge, setSubmittingSurcharge] = useState(false);
   const [createSurchargeForm] = Form.useForm<ScheduleRankSurchargePayload>();
 
@@ -333,7 +378,10 @@ export function AdminServicesPage() {
 
   const loadActiveCount = useCallback(async () => {
     try {
-      const res = await listAdminServices(request, { status: 'ACTIVE', limit: 1 });
+      const res = await listAdminServices(request, {
+        status: 'ACTIVE',
+        limit: 1,
+      });
       setActiveServicesTotal(res.total);
     } catch {
       // ignore
@@ -397,7 +445,9 @@ export function AdminServicesPage() {
         listDoctors(request, { limit: 100 }),
       ]);
       setConsultationRanks(Array.isArray(ranksRes) ? ranksRes : []);
-      setDoctorsList(Array.isArray(docsRes) ? docsRes : (docsRes as any)?.data || []);
+      setDoctorsList(
+        Array.isArray(docsRes) ? docsRes : (docsRes as any)?.data || [],
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -433,7 +483,16 @@ export function AdminServicesPage() {
         setServicesLoading(false);
       }
     },
-    [request, page, pageSize, searchQuery, categoryFilter, kindFilter, statusFilter, loadActiveCount],
+    [
+      request,
+      page,
+      pageSize,
+      searchQuery,
+      categoryFilter,
+      kindFilter,
+      statusFilter,
+      loadActiveCount,
+    ],
   );
 
   const handleResetServices = () => {
@@ -452,7 +511,14 @@ export function AdminServicesPage() {
     loadSurcharges();
     loadRanksAndDoctors();
     loadActiveCount();
-  }, [loadSpecialties, loadCategories, loadTags, loadSurcharges, loadRanksAndDoctors, loadActiveCount]);
+  }, [
+    loadSpecialties,
+    loadCategories,
+    loadTags,
+    loadSurcharges,
+    loadRanksAndDoctors,
+    loadActiveCount,
+  ]);
 
   useEffect(() => {
     loadServices(page, pageSize);
@@ -493,8 +559,14 @@ export function AdminServicesPage() {
       createServiceForm.resetFields();
       await loadServices();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi tạo dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Thêm dịch vụ thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi tạo dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Thêm dịch vụ thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingService(false);
     }
@@ -540,8 +612,14 @@ export function AdminServicesPage() {
         setSelectedService(refreshed);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi cập nhật dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Cập nhật thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi cập nhật dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Cập nhật thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingService(false);
     }
@@ -563,8 +641,14 @@ export function AdminServicesPage() {
       setServiceToDelete(null);
       await loadServices();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi xóa dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Xóa dịch vụ thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi xóa dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Xóa dịch vụ thất bại!',
+        description: msg,
+      });
     } finally {
       setDeletingService(false);
     }
@@ -600,8 +684,16 @@ export function AdminServicesPage() {
       setServiceToToggle(null);
       await loadServices();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể thay đổi trạng thái dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Đổi trạng thái thất bại!', description: msg });
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Không thể thay đổi trạng thái dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Đổi trạng thái thất bại!',
+        description: msg,
+      });
     } finally {
       setTogglingService(false);
     }
@@ -624,12 +716,14 @@ export function AdminServicesPage() {
       const payload: ScheduleBasePricePayload = {
         amountMinor: values.amountMinor,
         status: values.status,
-        effectiveFrom: values.status === 'SCHEDULED' && values.effectiveFrom 
-          ? values.effectiveFrom 
-          : new Date().toISOString(),
-        effectiveTo: values.status === 'SCHEDULED' && values.effectiveTo 
-          ? values.effectiveTo 
-          : undefined,
+        effectiveFrom:
+          values.status === 'SCHEDULED' && values.effectiveFrom
+            ? values.effectiveFrom
+            : new Date().toISOString(),
+        effectiveTo:
+          values.status === 'SCHEDULED' && values.effectiveTo
+            ? values.effectiveTo
+            : undefined,
       };
       await scheduleBasePrice(request, serviceForPricing.id, payload);
       setFeedback({
@@ -646,8 +740,14 @@ export function AdminServicesPage() {
         setServicePrices(prices);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể lên lịch giá.';
-      setFeedback({ open: true, type: 'error', title: 'Thiết lập giá thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Không thể lên lịch giá.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Thiết lập giá thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingPrice(false);
     }
@@ -669,7 +769,12 @@ export function AdminServicesPage() {
       await loadServices();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Không thể hủy mức giá.';
-      setFeedback({ open: true, type: 'error', title: 'Hủy giá thất bại!', description: msg });
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Hủy giá thất bại!',
+        description: msg,
+      });
     }
   };
 
@@ -691,8 +796,14 @@ export function AdminServicesPage() {
       createCategoryForm.resetFields();
       await loadCategories();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi tạo nhóm dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Thêm nhóm thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi tạo nhóm dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Thêm nhóm thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingCategory(false);
     }
@@ -726,8 +837,16 @@ export function AdminServicesPage() {
       setCategoryToEdit(null);
       await loadCategories();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi cập nhật nhóm dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Cập nhật nhóm thất bại!', description: msg });
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Có lỗi khi cập nhật nhóm dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Cập nhật nhóm thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingCategory(false);
     }
@@ -749,8 +868,14 @@ export function AdminServicesPage() {
       setCategoryToDelete(null);
       await loadCategories();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể xóa nhóm dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Xóa nhóm thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Không thể xóa nhóm dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Xóa nhóm thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingCategory(false);
     }
@@ -769,7 +894,9 @@ export function AdminServicesPage() {
     } catch (err) {
       console.error(err);
       // Fallback to local services in state
-      setCategoryServices(services.filter((s) => s.categories?.some((c) => c.id === cat.id)));
+      setCategoryServices(
+        services.filter((s) => s.categories?.some((c) => c.id === cat.id)),
+      );
     } finally {
       setLoadingCategoryServices(false);
     }
@@ -788,7 +915,9 @@ export function AdminServicesPage() {
     } catch (err) {
       console.error(err);
       // Fallback to local services in state
-      setTagServices(services.filter((s) => s.tags?.some((t) => t.id === tag.id)));
+      setTagServices(
+        services.filter((s) => s.tags?.some((t) => t.id === tag.id)),
+      );
     } finally {
       setLoadingTagServices(false);
     }
@@ -824,8 +953,16 @@ export function AdminServicesPage() {
       setCategoryToToggle(null);
       await loadCategories();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể đổi trạng thái nhóm dịch vụ.';
-      setFeedback({ open: true, type: 'error', title: 'Đổi trạng thái thất bại!', description: msg });
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Không thể đổi trạng thái nhóm dịch vụ.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Đổi trạng thái thất bại!',
+        description: msg,
+      });
     } finally {
       setTogglingCategory(false);
     }
@@ -838,7 +975,11 @@ export function AdminServicesPage() {
   const handleCreateTag = async (values: CreateTagPayload) => {
     setSubmittingTag(true);
     try {
-      await createTag(request, { ...values, group: values.group || 'LABEL', status: 'DRAFT' });
+      await createTag(request, {
+        ...values,
+        group: values.group || 'LABEL',
+        status: 'DRAFT',
+      });
       setFeedback({
         open: true,
         type: 'success',
@@ -849,8 +990,14 @@ export function AdminServicesPage() {
       createTagForm.resetFields();
       await loadTags();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi tạo thẻ tag.';
-      setFeedback({ open: true, type: 'error', title: 'Thêm thẻ tag thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi tạo thẻ tag.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Thêm thẻ tag thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingTag(false);
     }
@@ -873,7 +1020,10 @@ export function AdminServicesPage() {
     if (!tagToEdit) return;
     setSubmittingTag(true);
     try {
-      await updateTag(request, tagToEdit.id, { ...values, group: values.group || tagToEdit.group || 'LABEL' });
+      await updateTag(request, tagToEdit.id, {
+        ...values,
+        group: values.group || tagToEdit.group || 'LABEL',
+      });
       setFeedback({
         open: true,
         type: 'success',
@@ -884,8 +1034,14 @@ export function AdminServicesPage() {
       setTagToEdit(null);
       await loadTags();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi khi cập nhật thẻ tag.';
-      setFeedback({ open: true, type: 'error', title: 'Cập nhật tag thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Có lỗi khi cập nhật thẻ tag.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Cập nhật tag thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingTag(false);
     }
@@ -908,7 +1064,12 @@ export function AdminServicesPage() {
       await loadTags();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Không thể xóa thẻ tag.';
-      setFeedback({ open: true, type: 'error', title: 'Xóa thẻ tag thất bại!', description: msg });
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Xóa thẻ tag thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingTag(false);
     }
@@ -944,8 +1105,14 @@ export function AdminServicesPage() {
       setTagToToggle(null);
       await loadTags();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể đổi trạng thái tag.';
-      setFeedback({ open: true, type: 'error', title: 'Đổi trạng thái thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Không thể đổi trạng thái tag.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Đổi trạng thái thất bại!',
+        description: msg,
+      });
     } finally {
       setTogglingTag(false);
     }
@@ -955,7 +1122,9 @@ export function AdminServicesPage() {
   // SURCHARGE ACTIONS
   // ------------------------------------------------------------------
 
-  const handleScheduleSurcharge = async (values: ScheduleRankSurchargePayload) => {
+  const handleScheduleSurcharge = async (
+    values: ScheduleRankSurchargePayload,
+  ) => {
     setSubmittingSurcharge(true);
     try {
       const targetRankCode = rankForSurcharge?.code || values.rankCode;
@@ -995,8 +1164,14 @@ export function AdminServicesPage() {
       createSurchargeForm.resetFields();
       await loadSurcharges();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể thiết lập phụ thu.';
-      setFeedback({ open: true, type: 'error', title: 'Thiết lập phụ thu thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Không thể thiết lập phụ thu.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Thiết lập phụ thu thất bại!',
+        description: msg,
+      });
     } finally {
       setSubmittingSurcharge(false);
     }
@@ -1013,8 +1188,14 @@ export function AdminServicesPage() {
       });
       await loadSurcharges();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể hủy mức phụ thu.';
-      setFeedback({ open: true, type: 'error', title: 'Hủy phụ thu thất bại!', description: msg });
+      const msg =
+        err instanceof Error ? err.message : 'Không thể hủy mức phụ thu.';
+      setFeedback({
+        open: true,
+        type: 'error',
+        title: 'Hủy phụ thu thất bại!',
+        description: msg,
+      });
     }
   };
 
@@ -1115,14 +1296,18 @@ export function AdminServicesPage() {
         !q ||
         item.name.toLowerCase().includes(q) ||
         item.code.toLowerCase().includes(q);
-      const matchStatus = !rankStatusFilter || item.rankStatus === rankStatusFilter;
+      const matchStatus =
+        !rankStatusFilter || item.rankStatus === rankStatusFilter;
       return matchSearch && matchStatus;
     });
   }, [mergedRankData, rankSearchQuery, rankStatusFilter]);
 
   const activeSelectedRank = useMemo(() => {
     if (!selectedMergedRank) return null;
-    return mergedRankData.find((item) => item.code === selectedMergedRank.code) || selectedMergedRank;
+    return (
+      mergedRankData.find((item) => item.code === selectedMergedRank.code) ||
+      selectedMergedRank
+    );
   }, [mergedRankData, selectedMergedRank]);
 
   // ------------------------------------------------------------------
@@ -1138,16 +1323,23 @@ export function AdminServicesPage() {
         return (
           <Space direction="vertical" size={2}>
             <Space>
-              <span className="admin-code" style={{ fontWeight: 600, color: '#0284c7' }}>
+              <span
+                className="admin-code"
+                style={{ fontWeight: 600, color: '#0284c7' }}
+              >
                 {record.code}
               </span>
               {record.bookingEnabled ? (
                 <Tooltip title="Cho phép đặt khám trực tuyến">
-                  <Tag color="success" style={{ margin: 0, fontSize: 11 }}>Đặt lịch</Tag>
+                  <Tag color="success" style={{ margin: 0, fontSize: 11 }}>
+                    Đặt lịch
+                  </Tag>
                 </Tooltip>
               ) : null}
             </Space>
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>{record.name}</span>
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>
+              {record.name}
+            </span>
           </Space>
         );
       },
@@ -1194,11 +1386,19 @@ export function AdminServicesPage() {
             new Date(p.effectiveFrom) > now,
         );
         // Fallback: giá active mới nhất
-        const activePrice = currentPrice ?? record.prices?.find((p) => p.status === 'ACTIVE') ?? upcomingPrice;
+        const activePrice =
+          currentPrice ??
+          record.prices?.find((p) => p.status === 'ACTIVE') ??
+          upcomingPrice;
 
-        if (!activePrice) return <span style={{ color: '#94a3b8' }}>Chưa có giá</span>;
+        if (!activePrice)
+          return <span style={{ color: '#94a3b8' }}>Chưa có giá</span>;
         return (
-          <Space direction="vertical" size={0} style={{ width: '100%', textAlign: 'right' }}>
+          <Space
+            direction="vertical"
+            size={0}
+            style={{ width: '100%', textAlign: 'right' }}
+          >
             <span style={{ fontWeight: 700, color: '#0f766e', fontSize: 14 }}>
               {formatMoneyMinor(activePrice.amountMinor, activePrice.currency)}
             </span>
@@ -1209,8 +1409,15 @@ export function AdminServicesPage() {
                   upcomingPrice.currency,
                 )} sẽ bắt đầu áp dụng từ ${new Date(upcomingPrice.effectiveFrom).toLocaleString('vi-VN')}`}
               >
-                <Tag color="orange" style={{ margin: 0, fontSize: 10, cursor: 'pointer' }}>
-                  Sắp đổi: {formatMoneyMinor(upcomingPrice.amountMinor, upcomingPrice.currency)}
+                <Tag
+                  color="orange"
+                  style={{ margin: 0, fontSize: 10, cursor: 'pointer' }}
+                >
+                  Sắp đổi:{' '}
+                  {formatMoneyMinor(
+                    upcomingPrice.amountMinor,
+                    upcomingPrice.currency,
+                  )}
                 </Tag>
               </Tooltip>
             ) : null}
@@ -1257,7 +1464,9 @@ export function AdminServicesPage() {
               onClick={() => handleOpenSchedulePrice(record)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}>
+          <Tooltip
+            title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+          >
             <Button
               type="text"
               size="small"
@@ -1295,7 +1504,11 @@ export function AdminServicesPage() {
       dataIndex: 'code',
       key: 'code',
       width: 160,
-      render: (c: string) => <span className="admin-code" style={{ fontWeight: 600 }}>{c}</span>,
+      render: (c: string) => (
+        <span className="admin-code" style={{ fontWeight: 600 }}>
+          {c}
+        </span>
+      ),
     },
     {
       title: 'Tên nhóm danh mục',
@@ -1358,7 +1571,9 @@ export function AdminServicesPage() {
               onClick={() => handleOpenEditCategory(record)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}>
+          <Tooltip
+            title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+          >
             <Button
               type="text"
               size="small"
@@ -1396,7 +1611,11 @@ export function AdminServicesPage() {
       dataIndex: 'code',
       key: 'code',
       width: 160,
-      render: (c: string) => <span className="admin-code" style={{ fontWeight: 600 }}>{c}</span>,
+      render: (c: string) => (
+        <span className="admin-code" style={{ fontWeight: 600 }}>
+          {c}
+        </span>
+      ),
     },
     {
       title: 'Tên thẻ tag',
@@ -1459,7 +1678,9 @@ export function AdminServicesPage() {
               onClick={() => handleOpenEditTag(record)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}>
+          <Tooltip
+            title={record.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+          >
             <Button
               type="text"
               size="small"
@@ -1533,7 +1754,8 @@ export function AdminServicesPage() {
         open: true,
         type: 'error',
         title: 'Thêm hạng thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể thêm hạng bác sĩ.',
+        description:
+          err instanceof Error ? err.message : 'Không thể thêm hạng bác sĩ.',
       });
     } finally {
       setSubmittingRank(false);
@@ -1555,7 +1777,11 @@ export function AdminServicesPage() {
     setSubmittingRank(true);
     try {
       const { surchargeMinor, ...rankPayload } = values;
-      const updated = await updateConsultationRank(request, rankToEdit.id, rankPayload);
+      const updated = await updateConsultationRank(
+        request,
+        rankToEdit.id,
+        rankPayload,
+      );
 
       editRankForm.resetFields();
       setEditRankModalOpen(false);
@@ -1573,7 +1799,10 @@ export function AdminServicesPage() {
         open: true,
         type: 'error',
         title: 'Cập nhật hạng thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể cập nhật hạng bác sĩ.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Không thể cập nhật hạng bác sĩ.',
       });
     } finally {
       setSubmittingRank(false);
@@ -1587,7 +1816,9 @@ export function AdminServicesPage() {
 
   const handleConfirmDeleteRank = async () => {
     if (!rankToDelete) return;
-    const doctorsInRank = doctorsList.filter((d) => d.consultationRank === rankToDelete.code);
+    const doctorsInRank = doctorsList.filter(
+      (d) => d.consultationRank === rankToDelete.code,
+    );
     if (doctorsInRank.length > 0) {
       setFeedback({
         open: true,
@@ -1605,7 +1836,10 @@ export function AdminServicesPage() {
     try {
       await deleteConsultationRank(request, rankToDelete.id);
       setDeleteRankModalOpen(false);
-      if (selectedMergedRank?.id === rankToDelete.id || selectedMergedRank?.code === rankToDelete.code) {
+      if (
+        selectedMergedRank?.id === rankToDelete.id ||
+        selectedMergedRank?.code === rankToDelete.code
+      ) {
         setDetailRankDrawerOpen(false);
         setSelectedMergedRank(null);
       }
@@ -1623,7 +1857,8 @@ export function AdminServicesPage() {
         open: true,
         type: 'error',
         title: 'Xóa hạng thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể xóa hạng bác sĩ.',
+        description:
+          err instanceof Error ? err.message : 'Không thể xóa hạng bác sĩ.',
       });
     } finally {
       setSubmittingRank(false);
@@ -1663,7 +1898,9 @@ export function AdminServicesPage() {
       setFeedback({
         open: true,
         type: 'success',
-        title: isActivating ? 'Kích hoạt hạng bác sĩ thành công!' : 'Tạm khóa hạng bác sĩ thành công!',
+        title: isActivating
+          ? 'Kích hoạt hạng bác sĩ thành công!'
+          : 'Tạm khóa hạng bác sĩ thành công!',
         description: isActivating
           ? `Hạng "${targetRank.name}" đã được kích hoạt áp dụng trở lại.`
           : `Hạng "${targetRank.name}" đã được chuyển sang trạng thái tạm khóa.`,
@@ -1674,7 +1911,10 @@ export function AdminServicesPage() {
         open: true,
         type: 'error',
         title: isActivating ? 'Kích hoạt thất bại!' : 'Tạm khóa thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể thay đổi trạng thái hạng bác sĩ.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Không thể thay đổi trạng thái hạng bác sĩ.',
       });
     } finally {
       setSubmittingRank(false);
@@ -1734,7 +1974,11 @@ export function AdminServicesPage() {
             </span>
             {record.surchargeStatus && (
               <div style={{ marginTop: 2 }}>
-                {renderPriceStatusTag(record.surchargeStatus, record.effectiveFrom, record.effectiveTo)}
+                {renderPriceStatusTag(
+                  record.surchargeStatus,
+                  record.effectiveFrom,
+                  record.effectiveTo,
+                )}
               </div>
             )}
           </Space>
@@ -1747,7 +1991,8 @@ export function AdminServicesPage() {
       key: 'experienceYearsMin',
       width: 160,
       align: 'center',
-      render: (years?: number | null) => (years ? `${years} năm` : 'Không yêu cầu'),
+      render: (years?: number | null) =>
+        years ? `${years} năm` : 'Không yêu cầu',
     },
     {
       title: 'Bác sĩ đạt hạng',
@@ -1755,7 +2000,9 @@ export function AdminServicesPage() {
       width: 130,
       align: 'center',
       render: (_, record) => {
-        const count = doctorsList.filter((d) => d.consultationRank === record.code).length;
+        const count = doctorsList.filter(
+          (d) => d.consultationRank === record.code,
+        ).length;
         return (
           <Badge
             count={count}
@@ -1813,7 +2060,9 @@ export function AdminServicesPage() {
                 />
               </Tooltip>
               <Tooltip
-                title={record.rankStatus === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+                title={
+                  record.rankStatus === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'
+                }
               >
                 <Button
                   type="text"
@@ -1870,7 +2119,11 @@ export function AdminServicesPage() {
       dataIndex: 'effectiveFrom',
       key: 'effectiveFrom',
       width: 150,
-      render: (d: string) => <span style={{ fontSize: 13 }}>{new Date(d).toLocaleString('vi-VN')}</span>,
+      render: (d: string) => (
+        <span style={{ fontSize: 13 }}>
+          {new Date(d).toLocaleString('vi-VN')}
+        </span>
+      ),
     },
     {
       title: 'Đến ngày',
@@ -1878,7 +2131,9 @@ export function AdminServicesPage() {
       key: 'effectiveTo',
       width: 150,
       render: (d?: string | null) => (
-        <span style={{ fontSize: 13 }}>{d ? new Date(d).toLocaleString('vi-VN') : 'Hiện tại (Vô thời hạn)'}</span>
+        <span style={{ fontSize: 13 }}>
+          {d ? new Date(d).toLocaleString('vi-VN') : 'Hiện tại (Vô thời hạn)'}
+        </span>
       ),
     },
     {
@@ -1886,7 +2141,8 @@ export function AdminServicesPage() {
       key: 'status',
       width: 140,
       align: 'center',
-      render: (_, row: BasePriceItem) => renderPriceStatusTag(row.status, row.effectiveFrom, row.effectiveTo),
+      render: (_, row: BasePriceItem) =>
+        renderPriceStatusTag(row.status, row.effectiveFrom, row.effectiveTo),
     },
     {
       title: 'Thao tác',
@@ -1896,7 +2152,12 @@ export function AdminServicesPage() {
       render: (_, row) => {
         if (!row || row.status === 'CANCELLED') return null;
         return (
-          <Button size="small" danger type="link" onClick={() => handleCancelPrice(row.id)}>
+          <Button
+            size="small"
+            danger
+            type="link"
+            onClick={() => handleCancelPrice(row.id)}
+          >
             Hủy giá
           </Button>
         );
@@ -1911,46 +2172,105 @@ export function AdminServicesPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* KPI Stats cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-        <Card size="small" style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16,
+        }}
+      >
+        <Card
+          size="small"
+          style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+        >
           <Space align="center">
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#e0f2fe',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <MedicineBoxOutlined style={{ fontSize: 20, color: '#0284c7' }} />
             </div>
             <div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Tổng số dịch vụ</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>{servicesTotal}</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                Tổng số dịch vụ
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
+                {servicesTotal}
+              </div>
             </div>
           </Space>
         </Card>
 
-        <Card size="small" style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <Card
+          size="small"
+          style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+        >
           <Space align="center">
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#ccfbf1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <ApartmentOutlined style={{ fontSize: 20, color: '#0f766e' }} />
             </div>
             <div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Nhóm danh mục</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f766e' }}>{categories.length}</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                Nhóm danh mục
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#0f766e' }}>
+                {categories.length}
+              </div>
             </div>
           </Space>
         </Card>
 
-        <Card size="small" style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <Card
+          size="small"
+          style={{ borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+        >
           <Space align="center">
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#f3e8ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <TagsOutlined style={{ fontSize: 20, color: '#9333ea' }} />
             </div>
             <div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Thẻ tag phân loại</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#9333ea' }}>{tags.length}</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                Thẻ tag phân loại
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#9333ea' }}>
+                {tags.length}
+              </div>
             </div>
           </Space>
         </Card>
       </div>
 
       {/* Main Tabs */}
-      <Card style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <Card
+        style={{ borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+      >
         <Tabs
           activeKey={activeTab}
           onChange={(k) => setActiveTab(k as typeof activeTab)}
@@ -1963,9 +2283,19 @@ export function AdminServicesPage() {
                 </span>
               ),
               children: (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
                   {/* Search and Filters */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Space wrap size={8}>
                       <Input
                         placeholder="Tìm kiếm dịch vụ..."
@@ -1977,7 +2307,14 @@ export function AdminServicesPage() {
                         }}
                         onPressEnter={() => {
                           setPage(1);
-                          void loadServices(1, pageSize, searchQuery, categoryFilter, kindFilter, statusFilter);
+                          void loadServices(
+                            1,
+                            pageSize,
+                            searchQuery,
+                            categoryFilter,
+                            kindFilter,
+                            statusFilter,
+                          );
                         }}
                         style={{ width: 220 }}
                         allowClear
@@ -1991,7 +2328,10 @@ export function AdminServicesPage() {
                         }}
                         style={{ width: 200 }}
                         allowClear
-                        options={categories.map((c) => ({ label: c.name, value: c.code }))}
+                        options={categories.map((c) => ({
+                          label: c.name,
+                          value: c.code,
+                        }))}
                       />
                       <Select
                         placeholder="Lọc loại hình"
@@ -2090,8 +2430,16 @@ export function AdminServicesPage() {
                 </span>
               ),
               children: (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <Space size={10}>
                       <Input
                         placeholder="Tìm kiếm nhóm danh mục..."
@@ -2101,7 +2449,10 @@ export function AdminServicesPage() {
                         style={{ width: 280 }}
                         allowClear
                       />
-                      <Button icon={<ReloadOutlined />} onClick={() => loadCategories()}>
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => loadCategories()}
+                      >
                         Làm mới
                       </Button>
                     </Space>
@@ -2111,7 +2462,10 @@ export function AdminServicesPage() {
                       style={{ background: '#0284c7' }}
                       onClick={() => {
                         createCategoryForm.resetFields();
-                        createCategoryForm.setFieldsValue({ status: 'ACTIVE', sortOrder: categories.length + 1 });
+                        createCategoryForm.setFieldsValue({
+                          status: 'ACTIVE',
+                          sortOrder: categories.length + 1,
+                        });
                         setCreateCategoryModalOpen(true);
                       }}
                     >
@@ -2152,8 +2506,16 @@ export function AdminServicesPage() {
                 </span>
               ),
               children: (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <Space size={10}>
                       <Input
                         placeholder="Tìm kiếm thẻ tag..."
@@ -2166,7 +2528,10 @@ export function AdminServicesPage() {
                         style={{ width: 280 }}
                         allowClear
                       />
-                      <Button icon={<ReloadOutlined />} onClick={() => loadTags()}>
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => loadTags()}
+                      >
                         Làm mới
                       </Button>
                     </Space>
@@ -2176,7 +2541,11 @@ export function AdminServicesPage() {
                       style={{ background: '#0284c7' }}
                       onClick={() => {
                         createTagForm.resetFields();
-                        createTagForm.setFieldsValue({ group: 'LABEL', status: 'ACTIVE', sortOrder: tags.length + 1 });
+                        createTagForm.setFieldsValue({
+                          group: 'LABEL',
+                          status: 'ACTIVE',
+                          sortOrder: tags.length + 1,
+                        });
                         setCreateTagModalOpen(true);
                       }}
                     >
@@ -2213,13 +2582,24 @@ export function AdminServicesPage() {
               key: 'surcharges',
               label: (
                 <span>
-                  <TrophyOutlined /> Hạng bác sĩ & Phụ thu ({mergedRankData.length})
+                  <TrophyOutlined /> Hạng bác sĩ & Phụ thu (
+                  {mergedRankData.length})
                 </span>
               ),
               children: (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                >
                   {/* THANH CÔNG CỤ TÌM KIẾM, LỌC & THAO TÁC */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                    }}
+                  >
                     <Space size={10} wrap>
                       <Input
                         placeholder="Tìm theo tên hạng, mã định danh..."
@@ -2294,7 +2674,11 @@ export function AdminServicesPage() {
                     onRow={(record) => ({
                       onClick: (e) => {
                         const target = e.target as HTMLElement;
-                        if (target.closest('button') || target.closest('.ant-tooltip')) return;
+                        if (
+                          target.closest('button') ||
+                          target.closest('.ant-tooltip')
+                        )
+                          return;
                         setSelectedMergedRank(record);
                         setDetailRankDrawerOpen(true);
                       },
@@ -2347,7 +2731,10 @@ export function AdminServicesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Mã dịch vụ" span={1}>
-                <span className="admin-code" style={{ fontWeight: 600, color: '#0284c7' }}>
+                <span
+                  className="admin-code"
+                  style={{ fontWeight: 600, color: '#0284c7' }}
+                >
                   {selectedService.code}
                 </span>
               </Descriptions.Item>
@@ -2368,7 +2755,8 @@ export function AdminServicesPage() {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Chuyên khoa" span={1}>
-                {specialties.find((s) => s.id === selectedService.specialtyId)?.name || 'Chung'}
+                {specialties.find((s) => s.id === selectedService.specialtyId)
+                  ?.name || 'Chung'}
               </Descriptions.Item>
 
               <Descriptions.Item label="Đặt khám online" span={1}>
@@ -2379,8 +2767,16 @@ export function AdminServicesPage() {
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Chính sách phụ thu" span={2}>
-                <Tag color={POLICY_CONFIG[selectedService.doctorRankSelectionPolicy]?.color}>
-                  {POLICY_CONFIG[selectedService.doctorRankSelectionPolicy]?.label}
+                <Tag
+                  color={
+                    POLICY_CONFIG[selectedService.doctorRankSelectionPolicy]
+                      ?.color
+                  }
+                >
+                  {
+                    POLICY_CONFIG[selectedService.doctorRankSelectionPolicy]
+                      ?.label
+                  }
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Nhóm danh mục" span={2}>
@@ -2409,8 +2805,17 @@ export function AdminServicesPage() {
 
             {selectedService.summary ? (
               <div>
-                <Title level={5} style={{ marginBottom: 6 }}>Tóm tắt dịch vụ</Title>
-                <div style={{ background: '#f8fafc', padding: 12, borderRadius: 6, color: '#334155' }}>
+                <Title level={5} style={{ marginBottom: 6 }}>
+                  Tóm tắt dịch vụ
+                </Title>
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    padding: 12,
+                    borderRadius: 6,
+                    color: '#334155',
+                  }}
+                >
                   {selectedService.summary}
                 </div>
               </div>
@@ -2418,7 +2823,9 @@ export function AdminServicesPage() {
 
             {selectedService.description ? (
               <div>
-                <Title level={5} style={{ marginBottom: 6 }}>Mô tả quy trình chi tiết</Title>
+                <Title level={5} style={{ marginBottom: 6 }}>
+                  Mô tả quy trình chi tiết
+                </Title>
                 <Paragraph style={{ whiteSpace: 'pre-line', color: '#475569' }}>
                   {selectedService.description}
                 </Paragraph>
@@ -2429,9 +2836,18 @@ export function AdminServicesPage() {
 
             {/* Bảng lịch sử viện phí */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                }}
+              >
                 <Title level={5} style={{ margin: 0 }}>
-                  <DollarCircleOutlined style={{ color: '#0f766e', marginRight: 6 }} />
+                  <DollarCircleOutlined
+                    style={{ color: '#0f766e', marginRight: 6 }}
+                  />
                   Bảng giá viện phí dịch vụ
                 </Title>
                 <Button
@@ -2497,7 +2913,10 @@ export function AdminServicesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Mã nhóm" span={1}>
-                <span className="admin-code" style={{ fontWeight: 600, color: '#0284c7' }}>
+                <span
+                  className="admin-code"
+                  style={{ fontWeight: 600, color: '#0284c7' }}
+                >
                   {selectedCategory.code}
                 </span>
               </Descriptions.Item>
@@ -2508,16 +2927,24 @@ export function AdminServicesPage() {
                 <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
               </Descriptions.Item>
               <Descriptions.Item label="Đường dẫn (Slug)" span={1}>
-                <span style={{ color: '#64748b' }}>/{selectedCategory.slug}</span>
+                <span style={{ color: '#64748b' }}>
+                  /{selectedCategory.slug}
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Thứ tự hiển thị" span={1}>
-                <span style={{ fontWeight: 600 }}>{selectedCategory.sortOrder}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {selectedCategory.sortOrder}
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Mô tả" span={2}>
                 {selectedCategory.description ? (
-                  <span style={{ color: '#475569' }}>{selectedCategory.description}</span>
+                  <span style={{ color: '#475569' }}>
+                    {selectedCategory.description}
+                  </span>
                 ) : (
-                  <span style={{ color: '#94a3b8' }}>Chưa có mô tả chi tiết</span>
+                  <span style={{ color: '#94a3b8' }}>
+                    Chưa có mô tả chi tiết
+                  </span>
                 )}
               </Descriptions.Item>
             </Descriptions>
@@ -2526,9 +2953,18 @@ export function AdminServicesPage() {
 
             {/* Danh sách các dịch vụ thuộc nhóm này */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                }}
+              >
                 <Title level={5} style={{ margin: 0 }}>
-                  <MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 6 }} />
+                  <MedicineBoxOutlined
+                    style={{ color: '#0284c7', marginRight: 6 }}
+                  />
                   Danh sách dịch vụ y tế thuộc nhóm ({categoryServices.length})
                 </Title>
               </div>
@@ -2545,7 +2981,9 @@ export function AdminServicesPage() {
                     dataIndex: 'code',
                     key: 'code',
                     width: 110,
-                    render: (c: string) => <span className="admin-code">{c}</span>,
+                    render: (c: string) => (
+                      <span className="admin-code">{c}</span>
+                    ),
                   },
                   {
                     title: 'Tên dịch vụ',
@@ -2554,7 +2992,11 @@ export function AdminServicesPage() {
                     render: (text: string, row: MedicalServiceItem) => (
                       <Space direction="vertical" size={2}>
                         <span
-                          style={{ fontWeight: 600, color: '#0284c7', cursor: 'pointer' }}
+                          style={{
+                            fontWeight: 600,
+                            color: '#0284c7',
+                            cursor: 'pointer',
+                          }}
                           onClick={() => {
                             setDetailCategoryDrawerOpen(false);
                             openDetailDrawer(row);
@@ -2574,7 +3016,9 @@ export function AdminServicesPage() {
                     key: 'status',
                     width: 110,
                     align: 'center',
-                    render: (status: CatalogStatus) => <StatusTag status={status} />,
+                    render: (status: CatalogStatus) => (
+                      <StatusTag status={status} />
+                    ),
                   },
                   {
                     title: 'Thao tác',
@@ -2641,7 +3085,10 @@ export function AdminServicesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Mã thẻ tag" span={1}>
-                <span className="admin-code" style={{ fontWeight: 600, color: '#7c3aed' }}>
+                <span
+                  className="admin-code"
+                  style={{ fontWeight: 600, color: '#7c3aed' }}
+                >
                   {selectedTag.code}
                 </span>
               </Descriptions.Item>
@@ -2667,9 +3114,13 @@ export function AdminServicesPage() {
               </Descriptions.Item>
               <Descriptions.Item label="Mô tả" span={2}>
                 {selectedTag.description ? (
-                  <span style={{ color: '#475569' }}>{selectedTag.description}</span>
+                  <span style={{ color: '#475569' }}>
+                    {selectedTag.description}
+                  </span>
                 ) : (
-                  <span style={{ color: '#94a3b8' }}>Chưa có mô tả chi tiết</span>
+                  <span style={{ color: '#94a3b8' }}>
+                    Chưa có mô tả chi tiết
+                  </span>
                 )}
               </Descriptions.Item>
             </Descriptions>
@@ -2678,9 +3129,18 @@ export function AdminServicesPage() {
 
             {/* Danh sách các dịch vụ gắn thẻ tag này */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                }}
+              >
                 <Title level={5} style={{ margin: 0 }}>
-                  <MedicineBoxOutlined style={{ color: '#7c3aed', marginRight: 6 }} />
+                  <MedicineBoxOutlined
+                    style={{ color: '#7c3aed', marginRight: 6 }}
+                  />
                   Danh sách dịch vụ y tế gắn thẻ tag ({tagServices.length})
                 </Title>
               </div>
@@ -2697,7 +3157,9 @@ export function AdminServicesPage() {
                     dataIndex: 'code',
                     key: 'code',
                     width: 110,
-                    render: (c: string) => <span className="admin-code">{c}</span>,
+                    render: (c: string) => (
+                      <span className="admin-code">{c}</span>
+                    ),
                   },
                   {
                     title: 'Tên dịch vụ',
@@ -2706,7 +3168,11 @@ export function AdminServicesPage() {
                     render: (text: string, row: MedicalServiceItem) => (
                       <Space direction="vertical" size={2}>
                         <span
-                          style={{ fontWeight: 600, color: '#0284c7', cursor: 'pointer' }}
+                          style={{
+                            fontWeight: 600,
+                            color: '#0284c7',
+                            cursor: 'pointer',
+                          }}
                           onClick={() => {
                             setDetailTagDrawerOpen(false);
                             openDetailDrawer(row);
@@ -2726,7 +3192,9 @@ export function AdminServicesPage() {
                     key: 'status',
                     width: 110,
                     align: 'center',
-                    render: (status: CatalogStatus) => <StatusTag status={status} />,
+                    render: (status: CatalogStatus) => (
+                      <StatusTag status={status} />
+                    ),
                   },
                   {
                     title: 'Thao tác',
@@ -2780,7 +3248,13 @@ export function AdminServicesPage() {
           onFinish={handleCreateService}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 20px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã dịch vụ y tế"
@@ -2789,7 +3263,10 @@ export function AdminServicesPage() {
                 { min: 2, max: 50, message: 'Độ dài từ 2 đến 50 ký tự' },
               ]}
             >
-              <Input placeholder="VD: PRENATAL_BASIC, US_5D_HD" style={{ textTransform: 'uppercase' }} />
+              <Input
+                placeholder="VD: PRENATAL_BASIC, US_5D_HD"
+                style={{ textTransform: 'uppercase' }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -2803,7 +3280,6 @@ export function AdminServicesPage() {
               <Input placeholder="VD: Khám thai định kỳ cơ bản" />
             </Form.Item>
 
-
             <Form.Item
               name="kind"
               label="Loại hình dịch vụ"
@@ -2812,7 +3288,10 @@ export function AdminServicesPage() {
               <Select
                 options={[
                   { label: 'Khám bệnh (Consultation)', value: 'CONSULTATION' },
-                  { label: 'Chẩn đoán hình ảnh (Diagnostic)', value: 'DIAGNOSTIC' },
+                  {
+                    label: 'Chẩn đoán hình ảnh (Diagnostic)',
+                    value: 'DIAGNOSTIC',
+                  },
                   { label: 'Thủ thuật (Procedure)', value: 'PROCEDURE' },
                   { label: 'Gói thai sản (Package)', value: 'PACKAGE' },
                   { label: 'Tiêm chủng (Vaccination)', value: 'VACCINATION' },
@@ -2824,12 +3303,20 @@ export function AdminServicesPage() {
             <Form.Item
               name="categoryIds"
               label="Nhóm danh mục"
-              rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 nhóm danh mục' }]}
+              rules={[
+                {
+                  required: true,
+                  message: 'Vui lòng chọn ít nhất 1 nhóm danh mục',
+                },
+              ]}
             >
               <Select
                 mode="multiple"
                 placeholder="Chọn một hoặc nhiều nhóm danh mục..."
-                options={categories.map((c) => ({ label: c.name, value: c.id }))}
+                options={categories.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
               />
             </Form.Item>
 
@@ -2837,7 +3324,10 @@ export function AdminServicesPage() {
               <Select
                 placeholder="Chọn chuyên khoa (nếu có)..."
                 allowClear
-                options={specialties.map((s) => ({ label: s.name, value: s.id }))}
+                options={specialties.map((s) => ({
+                  label: s.name,
+                  value: s.id,
+                }))}
               />
             </Form.Item>
 
@@ -2849,8 +3339,6 @@ export function AdminServicesPage() {
               />
             </Form.Item>
 
-
-
             <Form.Item
               name="initialPriceMinor"
               label="Mức giá cơ bản ban đầu (VND)"
@@ -2859,7 +3347,9 @@ export function AdminServicesPage() {
               <InputNumber
                 style={{ width: '100%' }}
                 placeholder="VD: 250000"
-                formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                formatter={(val) =>
+                  `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                }
                 parser={(val) => val?.replace(/,/g, '') as unknown as number}
                 addonAfter="đ"
               />
@@ -2871,17 +3361,37 @@ export function AdminServicesPage() {
             >
               <Select
                 options={[
-                  { label: 'Không phân biệt hạng bác sĩ', value: 'NOT_REQUIRED' },
-                  { label: 'Đã bao gồm hạng cơ bản (BASIC)', value: 'BASIC_INCLUDED' },
-                  { label: 'Cho phép phụ thu theo hạng bác sĩ', value: 'RANK_UPGRADE_ALLOWED' },
+                  {
+                    label: 'Không phân biệt hạng bác sĩ',
+                    value: 'NOT_REQUIRED',
+                  },
+                  {
+                    label: 'Đã bao gồm hạng cơ bản (BASIC)',
+                    value: 'BASIC_INCLUDED',
+                  },
+                  {
+                    label: 'Cho phép phụ thu theo hạng bác sĩ',
+                    value: 'RANK_UPGRADE_ALLOWED',
+                  },
                 ]}
               />
             </Form.Item>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 8px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 8px 0',
+              }}
+            >
               <div>
-                <span style={{ fontWeight: 600, color: '#334155' }}>Cho phép đặt khám trực tuyến:</span>
-                <div style={{ fontSize: 12, color: '#64748b' }}>Hiển thị trên cổng đặt hẹn cho bệnh nhân</div>
+                <span style={{ fontWeight: 600, color: '#334155' }}>
+                  Cho phép đặt khám trực tuyến:
+                </span>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  Hiển thị trên cổng đặt hẹn cho bệnh nhân
+                </div>
               </div>
               <Form.Item name="bookingEnabled" valuePropName="checked" noStyle>
                 <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
@@ -2889,12 +3399,29 @@ export function AdminServicesPage() {
             </div>
           </div>
 
-          <Form.Item name="summary" label="Tóm tắt giới thiệu ngắn gọn" style={{ marginTop: 12 }}>
-            <Input.TextArea rows={2} maxLength={500} showCount placeholder="Mô tả tóm tắt 1-2 câu về dịch vụ..." />
+          <Form.Item
+            name="summary"
+            label="Tóm tắt giới thiệu ngắn gọn"
+            style={{ marginTop: 12 }}
+          >
+            <Input.TextArea
+              rows={2}
+              maxLength={500}
+              showCount
+              placeholder="Mô tả tóm tắt 1-2 câu về dịch vụ..."
+            />
           </Form.Item>
 
-          <Form.Item name="description" label="Quy trình và mô tả chi tiết dịch vụ">
-            <Input.TextArea rows={3} maxLength={3000} showCount placeholder="Chi tiết các bước thực hiện, lưu ý chuẩn bị..." />
+          <Form.Item
+            name="description"
+            label="Quy trình và mô tả chi tiết dịch vụ"
+          >
+            <Input.TextArea
+              rows={3}
+              maxLength={3000}
+              showCount
+              placeholder="Chi tiết các bước thực hiện, lưu ý chuẩn bị..."
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -2925,7 +3452,13 @@ export function AdminServicesPage() {
           onFinish={handleUpdateService}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 20px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã dịch vụ"
@@ -2941,7 +3474,6 @@ export function AdminServicesPage() {
             >
               <Input />
             </Form.Item>
-
 
             <Form.Item name="kind" label="Loại hình dịch vụ">
               <Select
@@ -2959,19 +3491,30 @@ export function AdminServicesPage() {
             <Form.Item
               name="categoryIds"
               label="Nhóm danh mục"
-              rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 nhóm danh mục' }]}
+              rules={[
+                {
+                  required: true,
+                  message: 'Vui lòng chọn ít nhất 1 nhóm danh mục',
+                },
+              ]}
             >
               <Select
                 mode="multiple"
                 placeholder="Chọn một hoặc nhiều nhóm danh mục..."
-                options={categories.map((c) => ({ label: c.name, value: c.id }))}
+                options={categories.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
               />
             </Form.Item>
 
             <Form.Item name="specialtyId" label="Chuyên khoa liên kết">
               <Select
                 allowClear
-                options={specialties.map((s) => ({ label: s.name, value: s.id }))}
+                options={specialties.map((s) => ({
+                  label: s.name,
+                  value: s.id,
+                }))}
               />
             </Form.Item>
 
@@ -2982,20 +3525,40 @@ export function AdminServicesPage() {
               />
             </Form.Item>
 
-
-            <Form.Item name="doctorRankSelectionPolicy" label="Chính sách phụ thu theo Hạng">
+            <Form.Item
+              name="doctorRankSelectionPolicy"
+              label="Chính sách phụ thu theo Hạng"
+            >
               <Select
                 options={[
-                  { label: 'Không phân biệt hạng bác sĩ', value: 'NOT_REQUIRED' },
-                  { label: 'Đã bao gồm hạng cơ bản (BASIC)', value: 'BASIC_INCLUDED' },
-                  { label: 'Cho phép phụ thu theo hạng bác sĩ', value: 'RANK_UPGRADE_ALLOWED' },
+                  {
+                    label: 'Không phân biệt hạng bác sĩ',
+                    value: 'NOT_REQUIRED',
+                  },
+                  {
+                    label: 'Đã bao gồm hạng cơ bản (BASIC)',
+                    value: 'BASIC_INCLUDED',
+                  },
+                  {
+                    label: 'Cho phép phụ thu theo hạng bác sĩ',
+                    value: 'RANK_UPGRADE_ALLOWED',
+                  },
                 ]}
               />
             </Form.Item>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 8px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 8px 0',
+              }}
+            >
               <div>
-                <span style={{ fontWeight: 600, color: '#334155' }}>Cho phép đặt trực tuyến:</span>
+                <span style={{ fontWeight: 600, color: '#334155' }}>
+                  Cho phép đặt trực tuyến:
+                </span>
               </div>
               <Form.Item name="bookingEnabled" valuePropName="checked" noStyle>
                 <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
@@ -3050,10 +3613,25 @@ export function AdminServicesPage() {
                 marginBottom: 18,
               }}
             >
-              <div style={{ fontSize: 12, color: '#166534', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#166534',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 Dịch vụ áp dụng
               </div>
-              <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 15, marginTop: 2 }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  fontSize: 15,
+                  marginTop: 2,
+                }}
+              >
                 {serviceForPricing.name}
               </div>
             </div>
@@ -3068,7 +3646,9 @@ export function AdminServicesPage() {
               style={{ width: '100%' }}
               size="large"
               placeholder="VD: 300000"
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              formatter={(val) =>
+                `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              }
               parser={(val) => val?.replace(/,/g, '') as unknown as number}
               addonAfter="đ"
             />
@@ -3085,7 +3665,9 @@ export function AdminServicesPage() {
 
           <Form.Item
             noStyle
-            shouldUpdate={(prevValues, currentValues) => prevValues.status !== currentValues.status}
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.status !== currentValues.status
+            }
           >
             {({ getFieldValue }) =>
               getFieldValue('status') === 'SCHEDULED' ? (
@@ -3102,12 +3684,19 @@ export function AdminServicesPage() {
                     name="effectiveFrom"
                     label="Thời điểm bắt đầu có hiệu lực"
                     rules={[
-                      { required: true, message: 'Vui lòng chọn thời điểm hiệu lực' },
+                      {
+                        required: true,
+                        message: 'Vui lòng chọn thời điểm hiệu lực',
+                      },
                       () => ({
                         validator(_, value) {
                           if (!value) return Promise.resolve();
                           if (new Date(value).getTime() < Date.now() - 60000) {
-                            return Promise.reject(new Error('Thời điểm hiệu lực không được ở trong quá khứ'));
+                            return Promise.reject(
+                              new Error(
+                                'Thời điểm hiệu lực không được ở trong quá khứ',
+                              ),
+                            );
                           }
                           return Promise.resolve();
                         },
@@ -3116,7 +3705,11 @@ export function AdminServicesPage() {
                   >
                     <Input
                       type="datetime-local"
-                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                      min={new Date(
+                        Date.now() - new Date().getTimezoneOffset() * 60000,
+                      )
+                        .toISOString()
+                        .slice(0, 16)}
                     />
                   </Form.Item>
 
@@ -3130,7 +3723,11 @@ export function AdminServicesPage() {
                           if (!value) return Promise.resolve();
                           const from = getFieldValue('effectiveFrom');
                           if (from && new Date(value) <= new Date(from)) {
-                            return Promise.reject(new Error('Thời điểm kết thúc phải sau thời điểm bắt đầu'));
+                            return Promise.reject(
+                              new Error(
+                                'Thời điểm kết thúc phải sau thời điểm bắt đầu',
+                              ),
+                            );
                           }
                           return Promise.resolve();
                         },
@@ -3139,7 +3736,11 @@ export function AdminServicesPage() {
                   >
                     <Input
                       type="datetime-local"
-                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                      min={new Date(
+                        Date.now() - new Date().getTimezoneOffset() * 60000,
+                      )
+                        .toISOString()
+                        .slice(0, 16)}
                     />
                   </Form.Item>
                 </div>
@@ -3188,7 +3789,9 @@ export function AdminServicesPage() {
               disabled={togglingService}
               onClick={handleConfirmToggleServiceStatus}
             >
-              {serviceToToggle?.status === 'ACTIVE' ? 'Xác nhận tạm khóa' : 'Kích hoạt'}
+              {serviceToToggle?.status === 'ACTIVE'
+                ? 'Xác nhận tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={togglingService}
@@ -3207,11 +3810,13 @@ export function AdminServicesPage() {
           <p style={{ margin: '0 0 12px', fontSize: 14 }}>
             {serviceToToggle?.status === 'ACTIVE' ? (
               <>
-                Bạn có chắc chắn muốn tạm khóa dịch vụ <strong>{serviceToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn tạm khóa dịch vụ{' '}
+                <strong>{serviceToToggle?.name}</strong> không?
               </>
             ) : (
               <>
-                Bạn có chắc chắn muốn kích hoạt dịch vụ <strong>{serviceToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn kích hoạt dịch vụ{' '}
+                <strong>{serviceToToggle?.name}</strong> không?
               </>
             )}
           </p>
@@ -3242,10 +3847,14 @@ export function AdminServicesPage() {
         okButtonProps={{ danger: true }}
       >
         <p>
-          Bạn có chắc chắn muốn xóa dịch vụ <strong>{serviceToDelete?.name}</strong> (Mã: {serviceToDelete?.code})?
+          Bạn có chắc chắn muốn xóa dịch vụ{' '}
+          <strong>{serviceToDelete?.name}</strong> (Mã: {serviceToDelete?.code}
+          )?
         </p>
         <p style={{ color: '#64748b', fontSize: 13 }}>
-          * Nếu dịch vụ đã từng có lịch hẹn hoặc hóa đơn liên quan, hệ thống sẽ tự động chuyển sang trạng thái <strong>Lưu trữ (ARCHIVED)</strong> để bảo toàn toàn vẹn dữ liệu lịch sử khám bệnh.
+          * Nếu dịch vụ đã từng có lịch hẹn hoặc hóa đơn liên quan, hệ thống sẽ
+          tự động chuyển sang trạng thái <strong>Lưu trữ (ARCHIVED)</strong> để
+          bảo toàn toàn vẹn dữ liệu lịch sử khám bệnh.
         </p>
       </Modal>
 
@@ -3273,13 +3882,22 @@ export function AdminServicesPage() {
           onFinish={handleCreateCategory}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 16px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã nhóm danh mục"
               rules={[{ required: true, message: 'Vui lòng nhập mã' }]}
             >
-              <Input placeholder="VD: KHAM_THAI, SIEU_AM" style={{ textTransform: 'uppercase' }} />
+              <Input
+                placeholder="VD: KHAM_THAI, SIEU_AM"
+                style={{ textTransform: 'uppercase' }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -3300,7 +3918,10 @@ export function AdminServicesPage() {
           </div>
 
           <Form.Item name="description" label="Mô tả nhóm dịch vụ">
-            <Input.TextArea rows={3} placeholder="Mô tả chi tiết nhóm dịch vụ..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Mô tả chi tiết nhóm dịch vụ..."
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -3329,7 +3950,13 @@ export function AdminServicesPage() {
           onFinish={handleUpdateCategory}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 16px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã nhóm danh mục"
@@ -3399,7 +4026,9 @@ export function AdminServicesPage() {
               disabled={togglingCategory}
               onClick={handleConfirmToggleCategoryStatus}
             >
-              {categoryToToggle?.status === 'ACTIVE' ? 'Xác nhận tạm khóa' : 'Kích hoạt'}
+              {categoryToToggle?.status === 'ACTIVE'
+                ? 'Xác nhận tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={togglingCategory}
@@ -3418,11 +4047,13 @@ export function AdminServicesPage() {
           <p style={{ margin: '0 0 12px', fontSize: 14 }}>
             {categoryToToggle?.status === 'ACTIVE' ? (
               <>
-                Bạn có chắc chắn muốn tạm khóa nhóm danh mục <strong>{categoryToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn tạm khóa nhóm danh mục{' '}
+                <strong>{categoryToToggle?.name}</strong> không?
               </>
             ) : (
               <>
-                Bạn có chắc chắn muốn kích hoạt nhóm danh mục <strong>{categoryToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn kích hoạt nhóm danh mục{' '}
+                <strong>{categoryToToggle?.name}</strong> không?
               </>
             )}
           </p>
@@ -3449,10 +4080,12 @@ export function AdminServicesPage() {
         okButtonProps={{ danger: true }}
       >
         <p>
-          Bạn có chắc chắn muốn xóa nhóm danh mục <strong>{categoryToDelete?.name}</strong>?
+          Bạn có chắc chắn muốn xóa nhóm danh mục{' '}
+          <strong>{categoryToDelete?.name}</strong>?
         </p>
         <p style={{ color: '#ef4444', fontSize: 13 }}>
-          * Nhóm danh mục chỉ có thể xóa khi không còn dịch vụ nào trực thuộc và không chứa nhóm con.
+          * Nhóm danh mục chỉ có thể xóa khi không còn dịch vụ nào trực thuộc và
+          không chứa nhóm con.
         </p>
       </Modal>
 
@@ -3477,13 +4110,22 @@ export function AdminServicesPage() {
           onFinish={handleCreateTag}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 16px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã thẻ tag"
               rules={[{ required: true, message: 'Vui lòng nhập mã' }]}
             >
-              <Input placeholder="VD: SIEU_AM_5D" style={{ textTransform: 'uppercase' }} />
+              <Input
+                placeholder="VD: SIEU_AM_5D"
+                style={{ textTransform: 'uppercase' }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -3504,7 +4146,10 @@ export function AdminServicesPage() {
           </div>
 
           <Form.Item name="description" label="Mô tả thẻ tag">
-            <Input.TextArea rows={2} placeholder="Ý nghĩa và mục đích sử dụng thẻ tag..." />
+            <Input.TextArea
+              rows={2}
+              placeholder="Ý nghĩa và mục đích sử dụng thẻ tag..."
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -3533,7 +4178,13 @@ export function AdminServicesPage() {
           onFinish={handleUpdateTag}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0 16px',
+            }}
+          >
             <Form.Item
               name="code"
               label="Mã thẻ tag"
@@ -3604,7 +4255,9 @@ export function AdminServicesPage() {
               disabled={togglingTag}
               onClick={handleConfirmToggleTagStatus}
             >
-              {tagToToggle?.status === 'ACTIVE' ? 'Xác nhận tạm khóa' : 'Kích hoạt'}
+              {tagToToggle?.status === 'ACTIVE'
+                ? 'Xác nhận tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={togglingTag}
@@ -3623,11 +4276,13 @@ export function AdminServicesPage() {
           <p style={{ margin: '0 0 12px', fontSize: 14 }}>
             {tagToToggle?.status === 'ACTIVE' ? (
               <>
-                Bạn có chắc chắn muốn tạm khóa thẻ tag <strong>{tagToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn tạm khóa thẻ tag{' '}
+                <strong>{tagToToggle?.name}</strong> không?
               </>
             ) : (
               <>
-                Bạn có chắc chắn muốn kích hoạt thẻ tag <strong>{tagToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn kích hoạt thẻ tag{' '}
+                <strong>{tagToToggle?.name}</strong> không?
               </>
             )}
           </p>
@@ -3654,7 +4309,8 @@ export function AdminServicesPage() {
         okButtonProps={{ danger: true }}
       >
         <p>
-          Bạn có chắc chắn muốn xóa thẻ tag <strong>{tagToDelete?.name}</strong>?
+          Bạn có chắc chắn muốn xóa thẻ tag <strong>{tagToDelete?.name}</strong>
+          ?
         </p>
         <p style={{ color: '#64748b', fontSize: 13 }}>
           * Thẻ tag sẽ được tự động gỡ khỏi tất cả dịch vụ y tế đang liên kết.
@@ -3693,7 +4349,11 @@ export function AdminServicesPage() {
         >
           {rankForSurcharge ? (
             <>
-              <Form.Item name="rankCode" hidden initialValue={rankForSurcharge.code}>
+              <Form.Item
+                name="rankCode"
+                hidden
+                initialValue={rankForSurcharge.code}
+              >
                 <Input type="hidden" />
               </Form.Item>
               <div
@@ -3705,11 +4365,31 @@ export function AdminServicesPage() {
                   marginBottom: 18,
                 }}
               >
-                <div style={{ fontSize: 12, color: '#0369a1', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: '#0369a1',
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   Hạng bác sĩ áp dụng
                 </div>
-                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 15, marginTop: 2 }}>
-                  {rankForSurcharge.name} <span style={{ color: '#64748b', fontSize: 13, fontWeight: 400 }}>({rankForSurcharge.code})</span>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    fontSize: 15,
+                    marginTop: 2,
+                  }}
+                >
+                  {rankForSurcharge.name}{' '}
+                  <span
+                    style={{ color: '#64748b', fontSize: 13, fontWeight: 400 }}
+                  >
+                    ({rankForSurcharge.code})
+                  </span>
                 </div>
               </div>
             </>
@@ -3738,13 +4418,19 @@ export function AdminServicesPage() {
               style={{ width: '100%' }}
               size="large"
               placeholder="VD: 150000"
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              formatter={(val) =>
+                `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              }
               parser={(val) => val?.replace(/,/g, '') as unknown as number}
               addonAfter="đ"
             />
           </Form.Item>
 
-          <Form.Item name="status" label="Trạng thái áp dụng" initialValue="ACTIVE">
+          <Form.Item
+            name="status"
+            label="Trạng thái áp dụng"
+            initialValue="ACTIVE"
+          >
             <Select
               options={[
                 { label: 'Áp dụng ngay', value: 'ACTIVE' },
@@ -3755,7 +4441,9 @@ export function AdminServicesPage() {
 
           <Form.Item
             noStyle
-            shouldUpdate={(prevValues, currentValues) => prevValues.status !== currentValues.status}
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.status !== currentValues.status
+            }
           >
             {({ getFieldValue }) =>
               getFieldValue('status') === 'SCHEDULED' ? (
@@ -3772,12 +4460,19 @@ export function AdminServicesPage() {
                     name="effectiveFrom"
                     label="Thời điểm bắt đầu có hiệu lực"
                     rules={[
-                      { required: true, message: 'Vui lòng chọn thời điểm hiệu lực' },
+                      {
+                        required: true,
+                        message: 'Vui lòng chọn thời điểm hiệu lực',
+                      },
                       () => ({
                         validator(_, value) {
                           if (!value) return Promise.resolve();
                           if (new Date(value).getTime() < Date.now() - 60000) {
-                            return Promise.reject(new Error('Thời điểm hiệu lực không được ở trong quá khứ'));
+                            return Promise.reject(
+                              new Error(
+                                'Thời điểm hiệu lực không được ở trong quá khứ',
+                              ),
+                            );
                           }
                           return Promise.resolve();
                         },
@@ -3786,7 +4481,11 @@ export function AdminServicesPage() {
                   >
                     <Input
                       type="datetime-local"
-                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                      min={new Date(
+                        Date.now() - new Date().getTimezoneOffset() * 60000,
+                      )
+                        .toISOString()
+                        .slice(0, 16)}
                     />
                   </Form.Item>
 
@@ -3800,7 +4499,11 @@ export function AdminServicesPage() {
                           if (!value) return Promise.resolve();
                           const from = getFieldValue('effectiveFrom');
                           if (from && new Date(value) <= new Date(from)) {
-                            return Promise.reject(new Error('Thời điểm kết thúc phải sau thời điểm bắt đầu'));
+                            return Promise.reject(
+                              new Error(
+                                'Thời điểm kết thúc phải sau thời điểm bắt đầu',
+                              ),
+                            );
                           }
                           return Promise.resolve();
                         },
@@ -3809,7 +4512,11 @@ export function AdminServicesPage() {
                   >
                     <Input
                       type="datetime-local"
-                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                      min={new Date(
+                        Date.now() - new Date().getTimezoneOffset() * 60000,
+                      )
+                        .toISOString()
+                        .slice(0, 16)}
                     />
                   </Form.Item>
                 </div>
@@ -3827,7 +4534,12 @@ export function AdminServicesPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Avatar
               size={40}
-              style={{ backgroundColor: '#722ed1', color: '#fff', fontSize: 16, fontWeight: 700 }}
+              style={{
+                backgroundColor: '#722ed1',
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 700,
+              }}
             >
               HBS
             </Avatar>
@@ -3835,8 +4547,11 @@ export function AdminServicesPage() {
               <div style={{ fontSize: 16, fontWeight: 700 }}>
                 {activeSelectedRank?.name}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                Mã hạng: <span className="admin-code">{activeSelectedRank?.code}</span>
+              <div
+                style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}
+              >
+                Mã hạng:{' '}
+                <span className="admin-code">{activeSelectedRank?.code}</span>
               </div>
             </div>
           </div>
@@ -3851,11 +4566,25 @@ export function AdminServicesPage() {
         destroyOnClose
       >
         {activeSelectedRank && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          >
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                paddingRight: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20,
+              }}
+            >
               {/* PHẦN 1: THÔNG TIN HẠNG BÁC SĨ (consultation_ranks) */}
               <div>
-                <Typography.Title level={5} style={{ marginBottom: 12, color: 'var(--deep)' }}>
+                <Typography.Title
+                  level={5}
+                  style={{ marginBottom: 12, color: 'var(--deep)' }}
+                >
                   1. Thông tin Hạng bác sĩ tư vấn (bảng consultation_ranks)
                 </Typography.Title>
                 <Descriptions
@@ -3866,7 +4595,14 @@ export function AdminServicesPage() {
                     {
                       key: 'code',
                       label: 'Mã hạng (code)',
-                      children: <span className="admin-code" style={{ fontWeight: 600 }}>{activeSelectedRank.code}</span>,
+                      children: (
+                        <span
+                          className="admin-code"
+                          style={{ fontWeight: 600 }}
+                        >
+                          {activeSelectedRank.code}
+                        </span>
+                      ),
                     },
                     {
                       key: 'name',
@@ -3876,19 +4612,29 @@ export function AdminServicesPage() {
                     {
                       key: 'experienceYearsMin',
                       label: 'Kinh nghiệm tối thiểu (experience_years_min)',
-                      children: activeSelectedRank.experienceYearsMin ? `${activeSelectedRank.experienceYearsMin} năm` : 'Không yêu cầu',
+                      children: activeSelectedRank.experienceYearsMin
+                        ? `${activeSelectedRank.experienceYearsMin} năm`
+                        : 'Không yêu cầu',
                     },
                     {
                       key: 'status',
                       label: 'Trạng thái hạng (status)',
-                      children: <StatusTag status={activeSelectedRank.rankStatus} />,
+                      children: (
+                        <StatusTag status={activeSelectedRank.rankStatus} />
+                      ),
                     },
                     {
                       key: 'doctorCount',
                       label: 'Bác sĩ đạt hạng',
                       children: (
                         <Tag color="purple" style={{ fontWeight: 600 }}>
-                          {doctorsList.filter((d) => d.consultationRank === activeSelectedRank.code).length} bác sĩ
+                          {
+                            doctorsList.filter(
+                              (d) =>
+                                d.consultationRank === activeSelectedRank.code,
+                            ).length
+                          }{' '}
+                          bác sĩ
                         </Tag>
                       ),
                     },
@@ -3896,7 +4642,9 @@ export function AdminServicesPage() {
                       key: 'description',
                       label: 'Mô tả & Tiêu chuẩn',
                       span: 2,
-                      children: activeSelectedRank.description || 'Chưa có mô tả tiêu chuẩn.',
+                      children:
+                        activeSelectedRank.description ||
+                        'Chưa có mô tả tiêu chuẩn.',
                     },
                   ]}
                 />
@@ -3904,15 +4652,27 @@ export function AdminServicesPage() {
 
               {/* PHẦN 2: THÔNG TIN BIỂU PHÍ PHỤ THU (doctor_rank_surcharges - CHUẨN DB) */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Typography.Title level={5} style={{ margin: 0, color: '#0f766e' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <Typography.Title
+                    level={5}
+                    style={{ margin: 0, color: '#0f766e' }}
+                  >
                     2. Biểu phí phụ thu theo hạng (bảng doctor_rank_surcharges)
                   </Typography.Title>
                   <Button
                     size="small"
                     icon={<DollarCircleOutlined />}
                     style={{ borderColor: '#0f766e', color: '#0f766e' }}
-                    onClick={() => openScheduleSurchargeForRank(activeSelectedRank)}
+                    onClick={() =>
+                      openScheduleSurchargeForRank(activeSelectedRank)
+                    }
                   >
                     Thiết lập / Đổi mức phụ thu
                   </Button>
@@ -3926,12 +4686,20 @@ export function AdminServicesPage() {
                     {
                       key: 'id',
                       label: 'ID bản ghi [PK uuid]',
-                      children: <span className="admin-code" style={{ fontSize: 11 }}>{activeSelectedRank.surchargeId || 'Chưa thiết lập'}</span>,
+                      children: (
+                        <span className="admin-code" style={{ fontSize: 11 }}>
+                          {activeSelectedRank.surchargeId || 'Chưa thiết lập'}
+                        </span>
+                      ),
                     },
                     {
                       key: 'rank_code',
                       label: 'Mã hạng (rank_code)',
-                      children: <span className="admin-code">{activeSelectedRank.code}</span>,
+                      children: (
+                        <span className="admin-code">
+                          {activeSelectedRank.code}
+                        </span>
+                      ),
                     },
                     {
                       key: 'amount_minor',
@@ -3939,7 +4707,10 @@ export function AdminServicesPage() {
                       children: (
                         <strong style={{ color: '#0f766e', fontSize: 15 }}>
                           {activeSelectedRank.amountMinor !== undefined
-                            ? formatMoneyMinor(activeSelectedRank.amountMinor, activeSelectedRank.currency || 'VND')
+                            ? formatMoneyMinor(
+                                activeSelectedRank.amountMinor,
+                                activeSelectedRank.currency || 'VND',
+                              )
                             : 'Chưa thiết lập'}
                         </strong>
                       ),
@@ -3947,20 +4718,28 @@ export function AdminServicesPage() {
                     {
                       key: 'currency',
                       label: 'Tiền tệ (currency)',
-                      children: <Tag color="blue">{activeSelectedRank.currency || 'VND'}</Tag>,
+                      children: (
+                        <Tag color="blue">
+                          {activeSelectedRank.currency || 'VND'}
+                        </Tag>
+                      ),
                     },
                     {
                       key: 'effective_from',
                       label: 'Hiệu lực từ (effective_from)',
                       children: activeSelectedRank.effectiveFrom
-                        ? new Date(activeSelectedRank.effectiveFrom).toLocaleString('vi-VN')
+                        ? new Date(
+                            activeSelectedRank.effectiveFrom,
+                          ).toLocaleString('vi-VN')
                         : '-',
                     },
                     {
                       key: 'effective_to',
                       label: 'Đến ngày (effective_to)',
                       children: activeSelectedRank.effectiveTo
-                        ? new Date(activeSelectedRank.effectiveTo).toLocaleString('vi-VN')
+                        ? new Date(
+                            activeSelectedRank.effectiveTo,
+                          ).toLocaleString('vi-VN')
                         : 'Vô thời hạn',
                     },
                     {
@@ -3975,20 +4754,28 @@ export function AdminServicesPage() {
                     {
                       key: 'version',
                       label: 'Phiên bản (version)',
-                      children: <span>Version {activeSelectedRank.surchargeVersion ?? 1}</span>,
+                      children: (
+                        <span>
+                          Version {activeSelectedRank.surchargeVersion ?? 1}
+                        </span>
+                      ),
                     },
                     {
                       key: 'created_at',
                       label: 'Ngày tạo (created_at)',
                       children: activeSelectedRank.surchargeCreatedAt
-                        ? new Date(activeSelectedRank.surchargeCreatedAt).toLocaleString('vi-VN')
+                        ? new Date(
+                            activeSelectedRank.surchargeCreatedAt,
+                          ).toLocaleString('vi-VN')
                         : '-',
                     },
                     {
                       key: 'updated_at',
                       label: 'Cập nhật (updated_at)',
                       children: activeSelectedRank.surchargeUpdatedAt
-                        ? new Date(activeSelectedRank.surchargeUpdatedAt).toLocaleString('vi-VN')
+                        ? new Date(
+                            activeSelectedRank.surchargeUpdatedAt,
+                          ).toLocaleString('vi-VN')
                         : '-',
                     },
                   ]}
@@ -3998,8 +4785,12 @@ export function AdminServicesPage() {
               {/* PHẦN 3: LỊCH SỬ CÁC ĐỢT PHỤ THU CỦA HẠNG NÀY */}
               {activeSelectedRank.allSurcharges.length > 0 && (
                 <div>
-                  <Typography.Title level={5} style={{ marginBottom: 10, color: 'var(--deep)' }}>
-                    3. Lịch sử biểu phí phụ thu ({activeSelectedRank.allSurcharges.length})
+                  <Typography.Title
+                    level={5}
+                    style={{ marginBottom: 10, color: 'var(--deep)' }}
+                  >
+                    3. Lịch sử biểu phí phụ thu (
+                    {activeSelectedRank.allSurcharges.length})
                   </Typography.Title>
                   <Table<DoctorRankSurchargeItem>
                     rowKey="id"
@@ -4019,25 +4810,35 @@ export function AdminServicesPage() {
                       {
                         title: 'Hiệu lực từ',
                         dataIndex: 'effectiveFrom',
-                        render: (d: string) => new Date(d).toLocaleDateString('vi-VN'),
+                        render: (d: string) =>
+                          new Date(d).toLocaleDateString('vi-VN'),
                       },
                       {
                         title: 'Đến ngày',
                         dataIndex: 'effectiveTo',
-                        render: (d?: string | null) => (d ? new Date(d).toLocaleDateString('vi-VN') : 'Vô thời hạn'),
+                        render: (d?: string | null) =>
+                          d
+                            ? new Date(d).toLocaleDateString('vi-VN')
+                            : 'Vô thời hạn',
                       },
                       {
                         title: 'Trạng thái',
                         dataIndex: 'status',
                         align: 'center',
-                        render: (st: string, row) => renderPriceStatusTag(st, row.effectiveFrom, row.effectiveTo),
+                        render: (st: string, row) =>
+                          renderPriceStatusTag(
+                            st,
+                            row.effectiveFrom,
+                            row.effectiveTo,
+                          ),
                       },
                       {
                         title: 'Thao tác',
                         key: 'action',
                         align: 'center',
                         render: (_, s) => {
-                          if (s.status === 'CANCELLED') return <span style={{ color: '#94a3b8' }}>-</span>;
+                          if (s.status === 'CANCELLED')
+                            return <span style={{ color: '#94a3b8' }}>-</span>;
                           return (
                             <Button
                               type="text"
@@ -4059,13 +4860,27 @@ export function AdminServicesPage() {
               {/* PHẦN 4: DANH SÁCH BÁC SĨ ĐẠT HẠNG NÀY */}
               <div>
                 <Typography.Title level={5} style={{ marginBottom: 12 }}>
-                  4. Danh sách bác sĩ đạt hạng này ({doctorsList.filter((d) => d.consultationRank === activeSelectedRank.code).length})
+                  4. Danh sách bác sĩ đạt hạng này (
+                  {
+                    doctorsList.filter(
+                      (d) => d.consultationRank === activeSelectedRank.code,
+                    ).length
+                  }
+                  )
                 </Typography.Title>
                 {(() => {
-                  const doctorsInRank = doctorsList.filter((d) => d.consultationRank === activeSelectedRank.code);
+                  const doctorsInRank = doctorsList.filter(
+                    (d) => d.consultationRank === activeSelectedRank.code,
+                  );
                   if (doctorsInRank.length === 0) {
                     return (
-                      <p style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: 13 }}>
+                      <p
+                        style={{
+                          color: 'var(--muted)',
+                          fontStyle: 'italic',
+                          fontSize: 13,
+                        }}
+                      >
                         Chưa có bác sĩ nào đạt hạng này.
                       </p>
                     );
@@ -4081,7 +4896,10 @@ export function AdminServicesPage() {
                           title: 'Bác sĩ',
                           render: (_, d) => (
                             <Space>
-                              <Avatar size="small" style={{ backgroundColor: '#0284c7' }}>
+                              <Avatar
+                                size="small"
+                                style={{ backgroundColor: '#0284c7' }}
+                              >
                                 {(d.profile?.fullName || 'B')[0].toUpperCase()}
                               </Avatar>
                               <strong>{d.profile?.fullName}</strong>
@@ -4095,13 +4913,21 @@ export function AdminServicesPage() {
                             l && l.trim() ? (
                               <span className="admin-code">{l}</span>
                             ) : (
-                              <span style={{ color: 'var(--muted)', fontSize: 12 }}>Chưa cấp</span>
+                              <span
+                                style={{ color: 'var(--muted)', fontSize: 12 }}
+                              >
+                                Chưa cấp
+                              </span>
                             ),
                         },
                         {
                           title: 'Trạng thái',
                           dataIndex: 'status',
-                          render: (st: string) => <Tag color={st === 'ACTIVE' ? 'green' : 'volcano'}>{st === 'ACTIVE' ? 'Hoạt động' : 'Tạm khóa'}</Tag>,
+                          render: (st: string) => (
+                            <Tag color={st === 'ACTIVE' ? 'green' : 'volcano'}>
+                              {st === 'ACTIVE' ? 'Hoạt động' : 'Tạm khóa'}
+                            </Tag>
+                          ),
                         },
                       ]}
                     />
@@ -4111,7 +4937,14 @@ export function AdminServicesPage() {
             </div>
 
             <Divider style={{ margin: '16px 0 12px' }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 10,
+                flexWrap: 'wrap',
+              }}
+            >
               <Button
                 icon={<DollarCircleOutlined />}
                 style={{ borderColor: '#0f766e', color: '#0f766e' }}
@@ -4201,22 +5034,30 @@ export function AdminServicesPage() {
           <Form.Item
             name="code"
             label="Mã định danh hạng"
-            normalize={(val) => (typeof val === 'string' ? val.toUpperCase().trim() : val)}
+            normalize={(val) =>
+              typeof val === 'string' ? val.toUpperCase().trim() : val
+            }
             rules={[
               { required: true, message: 'Vui lòng nhập mã định danh' },
               {
                 pattern: /^[A-Z0-9_]+$/,
-                message: 'Mã định danh chỉ gồm chữ in hoa, số và dấu gạch dưới (VD: SPECIALIST_III)',
+                message:
+                  'Mã định danh chỉ gồm chữ in hoa, số và dấu gạch dưới (VD: SPECIALIST_III)',
               },
             ]}
           >
-            <Input placeholder="Ví dụ: SPECIALIST_III, SENIOR_CONSULTANT..." style={{ textTransform: 'uppercase' }} />
+            <Input
+              placeholder="Ví dụ: SPECIALIST_III, SENIOR_CONSULTANT..."
+              style={{ textTransform: 'uppercase' }}
+            />
           </Form.Item>
 
           <Form.Item
             name="name"
             label="Tên hạng bác sĩ"
-            rules={[{ required: true, message: 'Vui lòng nhập tên hạng bác sĩ' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên hạng bác sĩ' },
+            ]}
           >
             <Input placeholder="Ví dụ: Bác sĩ Chuyên khoa III, Chuyên gia cao cấp..." />
           </Form.Item>
@@ -4224,14 +5065,18 @@ export function AdminServicesPage() {
           <Form.Item
             name="surchargeMinor"
             label="Tiền phụ thu khám (VNĐ)"
-            rules={[{ required: true, message: 'Vui lòng nhập tiền phụ thu khám' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tiền phụ thu khám' },
+            ]}
           >
             <InputNumber
               style={{ width: '100%' }}
               min={0}
               step={10000}
               placeholder="Nhập 0 nếu không áp dụng phụ thu"
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              formatter={(val) =>
+                `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              }
               parser={(val) => Number((val ?? '').replace(/,/g, '')) as any}
               addonAfter="VNĐ"
             />
@@ -4240,13 +5085,23 @@ export function AdminServicesPage() {
           <Form.Item
             name="experienceYearsMin"
             label="Số năm kinh nghiệm tối thiểu yêu cầu"
-            rules={[{ required: true, message: 'Vui lòng nhập số năm kinh nghiệm' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập số năm kinh nghiệm' },
+            ]}
           >
-            <InputNumber style={{ width: '100%' }} min={0} max={60} addonAfter="năm" />
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={60}
+              addonAfter="năm"
+            />
           </Form.Item>
 
           <Form.Item name="description" label="Tiêu chuẩn & Mô tả hạng">
-            <Input.TextArea rows={3} placeholder="Mô tả tiêu chuẩn, chứng chỉ hoặc quy định áp dụng..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Mô tả tiêu chuẩn, chứng chỉ hoặc quy định áp dụng..."
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -4278,7 +5133,9 @@ export function AdminServicesPage() {
           <Form.Item
             name="name"
             label="Tên hạng bác sĩ"
-            rules={[{ required: true, message: 'Vui lòng nhập tên hạng bác sĩ' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên hạng bác sĩ' },
+            ]}
           >
             <Input />
           </Form.Item>
@@ -4287,7 +5144,12 @@ export function AdminServicesPage() {
             name="experienceYearsMin"
             label="Số năm kinh nghiệm tối thiểu"
           >
-            <InputNumber style={{ width: '100%' }} min={0} max={60} addonAfter="năm" />
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={60}
+              addonAfter="năm"
+            />
           </Form.Item>
 
           <Form.Item name="description" label="Tiêu chuẩn & Mô tả">
@@ -4337,10 +5199,12 @@ export function AdminServicesPage() {
       >
         <div style={{ padding: '8px 0' }}>
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-            Bạn có chắc muốn xóa hạng bác sĩ <strong>{rankToDelete?.name}</strong>?
+            Bạn có chắc muốn xóa hạng bác sĩ{' '}
+            <strong>{rankToDelete?.name}</strong>?
           </p>
           <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)' }}>
-            Hành động này sẽ xóa hạng bác sĩ khỏi hệ thống. Chỉ xóa được khi không có bác sĩ nào giữ hạng này.
+            Hành động này sẽ xóa hạng bác sĩ khỏi hệ thống. Chỉ xóa được khi
+            không có bác sĩ nào giữ hạng này.
           </p>
         </div>
       </Modal>
@@ -4382,7 +5246,9 @@ export function AdminServicesPage() {
               disabled={submittingRank}
               onClick={() => void handleConfirmToggleRankStatus()}
             >
-              {rankToToggle?.status === 'ACTIVE' ? 'Xác nhận tạm khóa' : 'Kích hoạt'}
+              {rankToToggle?.status === 'ACTIVE'
+                ? 'Xác nhận tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={submittingRank}
@@ -4401,11 +5267,13 @@ export function AdminServicesPage() {
           <p style={{ margin: '0 0 12px', fontSize: 14 }}>
             {rankToToggle?.status === 'ACTIVE' ? (
               <>
-                Bạn có chắc chắn muốn tạm khóa hạng bác sĩ <strong>{rankToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn tạm khóa hạng bác sĩ{' '}
+                <strong>{rankToToggle?.name}</strong> không?
               </>
             ) : (
               <>
-                Bạn có chắc chắn muốn kích hoạt hạng bác sĩ <strong>{rankToToggle?.name}</strong> không?
+                Bạn có chắc chắn muốn kích hoạt hạng bác sĩ{' '}
+                <strong>{rankToToggle?.name}</strong> không?
               </>
             )}
           </p>

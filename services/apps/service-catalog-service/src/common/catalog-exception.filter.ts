@@ -17,18 +17,27 @@ export class CatalogExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
-    const body = exception instanceof HttpException ? exception.getResponse() : undefined;
-    const payload = typeof body === 'object' && body !== null ? body as Record<string, unknown> : {};
+    const body =
+      exception instanceof HttpException ? exception.getResponse() : undefined;
+    const payload =
+      typeof body === 'object' && body !== null
+        ? (body as Record<string, unknown>)
+        : {};
     response.status(status).json({
       error: {
-        code: typeof payload.code === 'string' ? payload.code : this.defaultCode(status),
+        code:
+          typeof payload.code === 'string'
+            ? payload.code
+            : this.defaultCode(status),
         message:
           typeof payload.message === 'string'
             ? payload.message
             : Array.isArray(payload.message)
               ? 'Request validation failed'
               : this.defaultMessage(status),
-        details: payload.details ?? (Array.isArray(payload.message) ? payload.message : undefined),
+        details:
+          payload.details ??
+          (Array.isArray(payload.message) ? payload.message : undefined),
         requestId: request.requestId,
       },
     });

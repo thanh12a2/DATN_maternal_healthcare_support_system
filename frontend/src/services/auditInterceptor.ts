@@ -16,7 +16,9 @@ export function registerSpecialtyToCache(id: string, name: string) {
   }
 }
 
-export function registerSpecialtyBatchToCache(specialties: Array<{ id: string; name: string }>) {
+export function registerSpecialtyBatchToCache(
+  specialties: Array<{ id: string; name: string }>,
+) {
   if (Array.isArray(specialties)) {
     for (const s of specialties) {
       if (s.id && s.name) {
@@ -27,9 +29,15 @@ export function registerSpecialtyBatchToCache(specialties: Array<{ id: string; n
 }
 
 // Cache lưu trữ context tạm thời (SĐT, Chuyên khoa, ...) khi bác sĩ được tạo hoặc cập nhật
-export const doctorContextCache: Map<string, { phoneNumber?: string; specialtyName?: string }> = new Map();
+export const doctorContextCache: Map<
+  string,
+  { phoneNumber?: string; specialtyName?: string }
+> = new Map();
 
-export function setDoctorContext(doctorId: string, context: { phoneNumber?: string; specialtyName?: string }) {
+export function setDoctorContext(
+  doctorId: string,
+  context: { phoneNumber?: string; specialtyName?: string },
+) {
   if (doctorId) {
     const existing = doctorContextCache.get(doctorId) || {};
     doctorContextCache.set(doctorId, { ...existing, ...context });
@@ -48,7 +56,9 @@ export function registerDoctorToCache(doctorId: string, identifier: string) {
   }
 }
 
-export function registerUserBatchToCache(users: Array<{ id: string; email: string }>) {
+export function registerUserBatchToCache(
+  users: Array<{ id: string; email: string }>,
+) {
   if (Array.isArray(users)) {
     for (const u of users) {
       if (u.id && u.email) {
@@ -58,7 +68,13 @@ export function registerUserBatchToCache(users: Array<{ id: string; email: strin
   }
 }
 
-export function registerDoctorBatchToCache(doctors: Array<{ id: string; email?: string | null; profile?: { fullName?: string } }>) {
+export function registerDoctorBatchToCache(
+  doctors: Array<{
+    id: string;
+    email?: string | null;
+    profile?: { fullName?: string };
+  }>,
+) {
   if (Array.isArray(doctors)) {
     for (const d of doctors) {
       const ident = d.email || d.profile?.fullName || '';
@@ -143,7 +159,10 @@ export function deriveAuditDetails(
       if (bodyData?.status === 'ACTIVE') {
         action = 'USER_ACCOUNT_ACTIVATED';
         metadata.description = `Kích hoạt tài khoản: ${targetUserIdentifier}`;
-      } else if (bodyData?.status === 'LOCKED' || bodyData?.status === 'DISABLED') {
+      } else if (
+        bodyData?.status === 'LOCKED' ||
+        bodyData?.status === 'DISABLED'
+      ) {
         action = 'USER_ACCOUNT_LOCKED';
         metadata.description = `Khóa tài khoản: ${targetUserIdentifier}`;
       } else {
@@ -156,18 +175,25 @@ export function deriveAuditDetails(
     }
   }
 
-    // 2. Quản lý Bác sĩ & Chuyên môn & Hạng bác sĩ (doctor-service)
+  // 2. Quản lý Bác sĩ & Chuyên môn & Hạng bác sĩ (doctor-service)
   else if (normPath.includes('/api/doctors')) {
     sourceService = 'doctor-service';
 
     // Bỏ qua các endpoint phụ như liên kết/hủy chuyên khoa của bác sĩ: /api/doctors/{doctorId}/specialties/{specialtyId}
     // (Lưu ý: Không bỏ qua endpoint quản lý danh mục chuyên khoa: /api/doctors/specialties hoặc /api/doctors/specialties/{id})
-    if (/\/api\/doctors\/[a-zA-Z0-9-]+\/specialties(\/|$)/.test(normPath) && !normPath.startsWith('/api/doctors/specialties')) {
+    if (
+      /\/api\/doctors\/[a-zA-Z0-9-]+\/specialties(\/|$)/.test(normPath) &&
+      !normPath.startsWith('/api/doctors/specialties')
+    ) {
       return { shouldLog: false } as any;
     }
 
     const idMatch = normPath.match(/\/doctors\/([a-zA-Z0-9-]+)/);
-    if (idMatch && idMatch[1] !== 'specialties' && idMatch[1] !== 'consultation-ranks') {
+    if (
+      idMatch &&
+      idMatch[1] !== 'specialties' &&
+      idMatch[1] !== 'consultation-ranks'
+    ) {
       aggregateId = idMatch[1];
     } else if (responseResult?.id) {
       aggregateId = responseResult.id;
@@ -175,7 +201,9 @@ export function deriveAuditDetails(
 
     if (normPath.includes('/consultation-ranks')) {
       aggregateType = 'DOCTOR_RANK';
-      const rankCodeMatch = normPath.match(/\/consultation-ranks\/([a-zA-Z0-9_-]+)/);
+      const rankCodeMatch = normPath.match(
+        /\/consultation-ranks\/([a-zA-Z0-9_-]+)/,
+      );
       if (rankCodeMatch) aggregateId = rankCodeMatch[1];
       else if (bodyData?.code) aggregateId = bodyData.code;
 
@@ -236,10 +264,17 @@ export function deriveAuditDetails(
 
       // Cập nhật cache định danh bác sĩ nếu có responseResult hoặc bodyData
       if (responseResult?.id) {
-        const ident = responseResult.email || bodyData?.email || responseResult.profile?.fullName || '';
+        const ident =
+          responseResult.email ||
+          bodyData?.email ||
+          responseResult.profile?.fullName ||
+          '';
         if (ident) doctorLookupCache.set(responseResult.id, ident);
         if (responseResult.accountId && responseResult.email) {
-          userEmailLookupCache.set(responseResult.accountId, responseResult.email);
+          userEmailLookupCache.set(
+            responseResult.accountId,
+            responseResult.email,
+          );
         }
       }
       if (bodyData?.email && aggregateId && aggregateId !== 'general') {
@@ -253,7 +288,9 @@ export function deriveAuditDetails(
         userEmailLookupCache.get(aggregateId) ||
         aggregateId;
 
-      const extraDocContext = aggregateId ? doctorContextCache.get(aggregateId) : undefined;
+      const extraDocContext = aggregateId
+        ? doctorContextCache.get(aggregateId)
+        : undefined;
       if (extraDocContext?.phoneNumber) {
         metadata.phoneNumber = extraDocContext.phoneNumber;
       }
@@ -267,7 +304,9 @@ export function deriveAuditDetails(
         metadata.targetEmail = targetDoctorIdentifier;
       } else if (normPath.endsWith('/deactivate')) {
         action = 'DOCTOR_DEACTIVATED';
-        const reasonSuffix = bodyData?.reason ? ` - Lý do: ${bodyData.reason}` : '';
+        const reasonSuffix = bodyData?.reason
+          ? ` - Lý do: ${bodyData.reason}`
+          : '';
         metadata.description = `Tạm khóa bác sĩ: ${targetDoctorIdentifier}${reasonSuffix}`;
         metadata.targetEmail = targetDoctorIdentifier;
       } else if (upperMethod === 'POST') {
@@ -458,7 +497,12 @@ export function autoRecordAudit(
   user: { userId?: string; email?: string; role?: string } | null,
 ) {
   try {
-    const derived = deriveAuditDetails(method, path, bodyData, errorThrown ? null : resultData);
+    const derived = deriveAuditDetails(
+      method,
+      path,
+      bodyData,
+      errorThrown ? null : resultData,
+    );
     if (!derived.shouldLog) return;
 
     void recordClientAuditLog(requester, {
@@ -473,7 +517,9 @@ export function autoRecordAudit(
       metadata: {
         actorEmail: user?.email,
         ...derived.metadata,
-        ...(errorThrown ? { errorMessage: errorThrown?.message || String(errorThrown) } : {}),
+        ...(errorThrown
+          ? { errorMessage: errorThrown?.message || String(errorThrown) }
+          : {}),
       },
     });
   } catch {

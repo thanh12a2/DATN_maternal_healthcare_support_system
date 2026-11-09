@@ -51,7 +51,10 @@ import {
   type DeskPatient,
   type PatientMap,
 } from '../../../services/receptionDesk';
-import { PENDING_VNPAY_RETURN_KEY, type VnpayReturnContext } from '../../../services/vnpayReturn';
+import {
+  PENDING_VNPAY_RETURN_KEY,
+  type VnpayReturnContext,
+} from '../../../services/vnpayReturn';
 import {
   age,
   channelText,
@@ -72,6 +75,7 @@ interface Props {
   request?: Requester;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  autoPrintAppointment?: DeskAppointment | null;
   onOpen?: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -88,6 +92,7 @@ export function PatientCard({
   request: propRequest,
   busy,
   targetAppointmentId,
+  autoPrintAppointment,
   onOpen,
   onCheckIn,
   onCancel,
@@ -101,12 +106,28 @@ export function PatientCard({
 
   const [currentPatient, setCurrentPatient] = useState<DeskPatient>(p);
   const [editPatientOpen, setEditPatientOpen] = useState(false);
-  const [reschedulingApp, setReschedulingApp] = useState<DeskAppointment | null>(null);
-  const [paymentModalApp, setPaymentModalApp] = useState<DeskAppointment | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'VNPAY'>('CASH');
+  const [reschedulingApp, setReschedulingApp] =
+    useState<DeskAppointment | null>(null);
+  const [paymentModalApp, setPaymentModalApp] =
+    useState<DeskAppointment | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<
+    'CASH' | 'TRANSFER' | 'VNPAY'
+  >('CASH');
   const [paymentRef, setPaymentRef] = useState<string>('');
-  const [payingAndCheckingIn, setPayingAndCheckingIn] = useState<boolean>(false);
-  const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(null);
+  const [payingAndCheckingIn, setPayingAndCheckingIn] =
+    useState<boolean>(false);
+  const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (
+      autoPrintAppointment?.patientId === p.id &&
+      autoPrintAppointment.queueCode
+    ) {
+      setPrintTicketApp(autoPrintAppointment);
+    }
+  }, [autoPrintAppointment, p.id]);
 
   const handleConfirmPayAndCheckIn = async () => {
     if (!paymentModalApp) return;
@@ -114,12 +135,22 @@ export function PatientCard({
     try {
       if (paymentMethod === 'VNPAY') {
         const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-        const { invoice, attempt } = await createAppointmentVnpayAttempt(request, paymentModalApp, returnPath);
+        const { invoice, attempt } = await createAppointmentVnpayAttempt(
+          request,
+          paymentModalApp,
+          returnPath,
+        );
         const context: VnpayReturnContext = {
           txnRef: attempt.txnRef,
           returnPath,
           invoiceId: invoice.id,
-          appointment: { ...paymentModalApp, invoice, invoices: paymentModalApp.invoices?.length ? paymentModalApp.invoices : [invoice] },
+          appointment: {
+            ...paymentModalApp,
+            invoice,
+            invoices: paymentModalApp.invoices?.length
+              ? paymentModalApp.invoices
+              : [invoice],
+          },
           patient: currentPatient,
           page: {
             room: paymentModalApp.roomCode,
@@ -128,15 +159,23 @@ export function PatientCard({
           },
           completeCheckInAfterPayment: true,
         };
-        window.sessionStorage.setItem(PENDING_VNPAY_RETURN_KEY, JSON.stringify(context));
+        window.sessionStorage.setItem(
+          PENDING_VNPAY_RETURN_KEY,
+          JSON.stringify(context),
+        );
         window.location.assign(attempt.paymentUrl);
         return;
       }
 
       if (paymentMethod === 'TRANSFER') {
         await recordPendingTransfer(request, paymentModalApp, paymentRef);
-        message.success('Đã ghi nhận chuyển khoản. Giao dịch đang chờ lễ tân xác minh trước khi check-in.');
-        if (catalog) onAppointmentUpdated?.(await refreshAppointment(request, catalog, paymentModalApp));
+        message.success(
+          'Đã ghi nhận chuyển khoản. Giao dịch đang chờ lễ tân xác minh trước khi check-in.',
+        );
+        if (catalog)
+          onAppointmentUpdated?.(
+            await refreshAppointment(request, catalog, paymentModalApp),
+          );
         setPaymentModalApp(null);
         return;
       }
@@ -144,12 +183,16 @@ export function PatientCard({
       const res = await payAndCheckInAppointment(
         request,
         paymentModalApp,
-        paymentRef.trim() || undefined
+        paymentRef.trim() || undefined,
       );
       if (res.success) {
         message.success('Đã thu viện phí và check-in tiếp đón thành công!');
         if (catalog) {
-          const refreshed = await refreshAppointment(request, catalog, paymentModalApp);
+          const refreshed = await refreshAppointment(
+            request,
+            catalog,
+            paymentModalApp,
+          );
           onAppointmentUpdated?.(refreshed);
           setPrintTicketApp(refreshed);
         }
@@ -157,8 +200,19 @@ export function PatientCard({
       }
     } catch (err: any) {
       console.error('Lỗi thu tiền và check-in:', err);
-      if (String(err?.message ?? '').includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) Modal.warning({ title: 'Không thể xử lý thanh toán', content: err.message });
-      else message.error(err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.');
+      if (
+        String(err?.message ?? '').includes(
+          'Case đã có người xử lý hoặc đang thực hiện thao tác khác',
+        )
+      )
+        Modal.warning({
+          title: 'Không thể xử lý thanh toán',
+          content: err.message,
+        });
+      else
+        message.error(
+          err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.',
+        );
     } finally {
       setPayingAndCheckingIn(false);
     }
@@ -172,31 +226,41 @@ export function PatientCard({
 
   // Bộ lọc thời gian: 'TODAY' | 'ALL' | 'CUSTOM'
   // Nếu có targetAppointmentId mà ngày khám khác hôm nay -> tự động chọn 'ALL' để chắc chắn hiển thị lịch được chọn
-  const [timeFilter, setTimeFilter] = useState<'TODAY' | 'ALL' | 'CUSTOM'>(() => {
-    if (targetAppointmentId) {
-      const target = appointments.find((x) => x.id === targetAppointmentId || x.code === targetAppointmentId);
-      if (target && target.date !== todayStr) {
-        return 'ALL';
+  const [timeFilter, setTimeFilter] = useState<'TODAY' | 'ALL' | 'CUSTOM'>(
+    () => {
+      if (targetAppointmentId) {
+        const target = appointments.find(
+          (x) => x.id === targetAppointmentId || x.code === targetAppointmentId,
+        );
+        if (target && target.date !== todayStr) {
+          return 'ALL';
+        }
       }
-    }
-    return appointments.some((a) => a.date === todayStr) ? 'TODAY' : 'ALL';
-  });
+      return appointments.some((a) => a.date === todayStr) ? 'TODAY' : 'ALL';
+    },
+  );
   const [customDate, setCustomDate] = useState<Dayjs>(dayjs());
 
   useEffect(() => {
     if (targetAppointmentId) {
-      const target = appointments.find((x) => x.id === targetAppointmentId || x.code === targetAppointmentId);
+      const target = appointments.find(
+        (x) => x.id === targetAppointmentId || x.code === targetAppointmentId,
+      );
       if (target && target.date !== todayStr && timeFilter === 'TODAY') {
         setTimeFilter('ALL');
       }
-    } else if (appointments.length > 0 && !appointments.some((a) => a.date === todayStr) && timeFilter === 'TODAY') {
+    } else if (
+      appointments.length > 0 &&
+      !appointments.some((a) => a.date === todayStr) &&
+      timeFilter === 'TODAY'
+    ) {
       setTimeFilter('ALL');
     }
   }, [targetAppointmentId, appointments, todayStr]);
 
   const todayApps = useMemo(
     () => appointments.filter((a) => a.date === todayStr),
-    [appointments, todayStr]
+    [appointments, todayStr],
   );
 
   const filteredAppointments = useMemo(() => {
@@ -215,8 +279,14 @@ export function PatientCard({
   const sortedAppointments = useMemo(() => {
     return [...filteredAppointments].sort((a, b) => {
       if (targetAppointmentId) {
-        const isTargetA = a.id === targetAppointmentId || a.code === targetAppointmentId ? 1 : 0;
-        const isTargetB = b.id === targetAppointmentId || b.code === targetAppointmentId ? 1 : 0;
+        const isTargetA =
+          a.id === targetAppointmentId || a.code === targetAppointmentId
+            ? 1
+            : 0;
+        const isTargetB =
+          b.id === targetAppointmentId || b.code === targetAppointmentId
+            ? 1
+            : 0;
         if (isTargetA !== isTargetB) return isTargetB - isTargetA;
       }
       const isTodayA = a.date === todayStr ? 1 : 0;
@@ -233,7 +303,8 @@ export function PatientCard({
       }`
     : '—';
 
-  const nationalIdDisplay = currentPatient.nationalId || currentPatient.nationalIdMasked || '—';
+  const nationalIdDisplay =
+    currentPatient.nationalId || currentPatient.nationalIdMasked || '—';
 
   return (
     <Card
@@ -244,10 +315,22 @@ export function PatientCard({
         background: '#ffffff',
       }}
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>{currentPatient.fullName}</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>
+            {currentPatient.fullName}
+          </span>
           {todayApps.length > 0 ? (
-            <Tag color="processing" style={{ fontWeight: 600, fontSize: 12, padding: '2px 8px' }}>
+            <Tag
+              color="processing"
+              style={{ fontWeight: 600, fontSize: 12, padding: '2px 8px' }}
+            >
               {todayApps.length} lịch hôm nay
             </Tag>
           ) : (
@@ -323,7 +406,9 @@ export function PatientCard({
           {
             label: (
               <span>
-                <CalendarOutlined style={{ marginRight: 6, color: '#0B5CAD' }} />
+                <CalendarOutlined
+                  style={{ marginRight: 6, color: '#0B5CAD' }}
+                />
                 Ngày sinh
               </span>
             ),
@@ -360,7 +445,9 @@ export function PatientCard({
           {
             label: (
               <span>
-                <EnvironmentOutlined style={{ marginRight: 6, color: '#0B5CAD' }} />
+                <EnvironmentOutlined
+                  style={{ marginRight: 6, color: '#0B5CAD' }}
+                />
                 Địa chỉ
               </span>
             ),
@@ -388,7 +475,9 @@ export function PatientCard({
               {timeFilter === 'TODAY'
                 ? 'Bệnh nhân không có lịch hẹn nào trong ngày hôm nay'
                 : `Không có lịch hẹn trong ngày ${
-                    timeFilter === 'CUSTOM' ? customDate.format('DD/MM/YYYY') : ''
+                    timeFilter === 'CUSTOM'
+                      ? customDate.format('DD/MM/YYYY')
+                      : ''
                   }`}
             </span>
           }
@@ -399,24 +488,37 @@ export function PatientCard({
           {sortedAppointments.map((a, index) => {
             const isToday = a.date === todayStr;
             const isUpcoming = dayjs(a.date).isAfter(dayjs());
-            const appStep = a.completedAt ? 3 : a.startedAt ? 2 : a.checkedInAt ? 1 : 0;
+            const appStep = a.completedAt
+              ? 3
+              : a.startedAt
+                ? 2
+                : a.checkedInAt
+                  ? 1
+                  : 0;
             const payStatus = paymentStatusOf(a);
 
-            const isSelected = Boolean(targetAppointmentId && (a.id === targetAppointmentId || a.code === targetAppointmentId));
+            const isSelected = Boolean(
+              targetAppointmentId &&
+              (a.id === targetAppointmentId || a.code === targetAppointmentId),
+            );
 
             return (
               <div
                 key={a.id}
                 style={{
                   background: '#ffffff',
-                  border: isSelected ? '2px solid #0B5CAD' : isToday ? '1.5px solid #93c5fd' : '1px solid #e2e8f0',
+                  border: isSelected
+                    ? '2px solid #0B5CAD'
+                    : isToday
+                      ? '1.5px solid #93c5fd'
+                      : '1px solid #e2e8f0',
                   borderRadius: 12,
                   padding: 16,
                   boxShadow: isSelected
                     ? '0 6px 20px rgba(11, 92, 173, 0.14)'
                     : isToday
-                    ? '0 4px 14px rgba(11, 92, 173, 0.07)'
-                    : '0 1px 3px rgba(0, 0, 0, 0.02)',
+                      ? '0 4px 14px rgba(11, 92, 173, 0.07)'
+                      : '0 1px 3px rgba(0, 0, 0, 0.02)',
                 }}
               >
                 {/* Header dải lịch hẹn */}
@@ -435,8 +537,21 @@ export function PatientCard({
                   }}
                   title={onOpen ? 'Nhấn để xem chi tiết lịch hẹn' : undefined}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 17, fontWeight: 700, color: '#0B5CAD' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 17,
+                        fontWeight: 700,
+                        color: '#0B5CAD',
+                      }}
+                    >
                       {a.code}
                     </span>
 
@@ -523,7 +638,10 @@ export function PatientCard({
                     >
                       {statusMeta[a.status]?.label ?? a.status}
                     </Tag>
-                    <Tag color={sourceMeta[a.source].color} style={{ margin: 0 }}>
+                    <Tag
+                      color={sourceMeta[a.source].color}
+                      style={{ margin: 0 }}
+                    >
                       {sourceMeta[a.source].label}
                     </Tag>
                     <span style={{ fontSize: 12, color: '#64748b' }}>
@@ -593,7 +711,8 @@ export function PatientCard({
                         <div
                           style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                            gridTemplateColumns:
+                              'repeat(auto-fit, minmax(200px, 1fr))',
                             gap: 12,
                             marginBottom: 14,
                           }}
@@ -607,7 +726,13 @@ export function PatientCard({
                               borderLeft: '4px solid #0B5CAD',
                             }}
                           >
-                            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: '#64748b',
+                                fontWeight: 600,
+                              }}
+                            >
                               DỊCH VỤ ĐĂNG KÝ KHÁM
                             </div>
                             <div
@@ -623,11 +748,24 @@ export function PatientCard({
                           </div>
 
                           <div>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>Thời gian khám:</span>
-                            <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>
-                              <CalendarOutlined style={{ color: '#0B5CAD', marginRight: 4 }} />
+                            <span style={{ fontSize: 12, color: '#64748b' }}>
+                              Thời gian khám:
+                            </span>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                color: '#1e293b',
+                                marginTop: 2,
+                              }}
+                            >
+                              <CalendarOutlined
+                                style={{ color: '#0B5CAD', marginRight: 4 }}
+                              />
                               {time(a.startAt)} – {time(a.endAt)} (
-                              {a.date ? dayjs(a.date).format('DD/MM/YYYY') : '—'})
+                              {a.date
+                                ? dayjs(a.date).format('DD/MM/YYYY')
+                                : '—'}
+                              )
                             </div>
                           </div>
 
@@ -635,8 +773,21 @@ export function PatientCard({
                             <span style={{ fontSize: 12, color: '#64748b' }}>
                               Phòng khám tiếp nhận:
                             </span>
-                            <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>
-                              <Tag color="blue" style={{ fontWeight: 700, margin: 0, marginRight: 6 }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                color: '#1e293b',
+                                marginTop: 2,
+                              }}
+                            >
+                              <Tag
+                                color="blue"
+                                style={{
+                                  fontWeight: 700,
+                                  margin: 0,
+                                  marginRight: 6,
+                                }}
+                              >
                                 {a.roomCode}
                               </Tag>
                               {a.roomName || 'Phòng khám Sản Phụ khoa'}
@@ -644,16 +795,34 @@ export function PatientCard({
                           </div>
 
                           <div>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>Bác sĩ đảm nhiệm:</span>
-                            <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>
-                              <MedicineBoxOutlined style={{ color: '#0B5CAD', marginRight: 4 }} />
+                            <span style={{ fontSize: 12, color: '#64748b' }}>
+                              Bác sĩ đảm nhiệm:
+                            </span>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                color: '#1e293b',
+                                marginTop: 2,
+                              }}
+                            >
+                              <MedicineBoxOutlined
+                                style={{ color: '#0B5CAD', marginRight: 4 }}
+                              />
                               {a.doctorName || '—'}
                             </div>
                           </div>
 
                           <div>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>Chuyên khoa:</span>
-                            <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 2 }}>
+                            <span style={{ fontSize: 12, color: '#64748b' }}>
+                              Chuyên khoa:
+                            </span>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                color: '#1e293b',
+                                marginTop: 2,
+                              }}
+                            >
                               {a.specialty || 'Sản Phụ khoa'}
                             </div>
                           </div>
@@ -695,7 +864,9 @@ export function PatientCard({
                             </Button>
                           )}
 
-                          {['BOOKED', 'REASSIGNMENT_REQUIRED'].includes(a.status) && (
+                          {['BOOKED', 'REASSIGNMENT_REQUIRED'].includes(
+                            a.status,
+                          ) && (
                             <Button
                               icon={<CalendarOutlined />}
                               onClick={() => setReschedulingApp(a)}
@@ -729,7 +900,11 @@ export function PatientCard({
                               cancelText="Không"
                               onConfirm={() => onCancel?.(a)}
                             >
-                              <Button danger icon={<CloseCircleOutlined />} style={{ borderRadius: 6 }}>
+                              <Button
+                                danger
+                                icon={<CloseCircleOutlined />}
+                                style={{ borderRadius: 6 }}
+                              >
                                 Hủy lịch
                               </Button>
                             </Popconfirm>
@@ -765,17 +940,36 @@ export function PatientCard({
                             marginBottom: 10,
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 15,
+                                fontWeight: 700,
+                                color: '#1e293b',
+                              }}
+                            >
                               Hóa đơn & Viện phí
                             </span>
                             <span style={{ fontSize: 12, color: '#64748b' }}>
-                              ({a.invoice?.number || (a.code ? `INV-${a.code}` : 'Dự thảo viện phí')})
+                              (
+                              {a.invoice?.number ||
+                                (a.code ? `INV-${a.code}` : 'Dự thảo viện phí')}
+                              )
                             </span>
                           </div>
                           <Tag
                             color={payMeta[payStatus].color}
-                            style={{ fontSize: 11, fontWeight: 700, padding: '1px 8px' }}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: '1px 8px',
+                            }}
                           >
                             {payMeta[payStatus].label}
                           </Tag>
@@ -794,9 +988,12 @@ export function PatientCard({
                                     amount: a.estimatedTotal || 0,
                                   },
                                 ];
-                          const total = a.invoice?.total ?? a.estimatedTotal ?? 0;
-                          const paid = a.invoice?.paid ?? (payStatus === 'PAID' ? total : 0);
-                          const balance = a.invoice?.balance ?? (total - paid);
+                          const total =
+                            a.invoice?.total ?? a.estimatedTotal ?? 0;
+                          const paid =
+                            a.invoice?.paid ??
+                            (payStatus === 'PAID' ? total : 0);
+                          const balance = a.invoice?.balance ?? total - paid;
                           const payments = a.invoice?.payments || [];
 
                           return (
@@ -810,7 +1007,11 @@ export function PatientCard({
                                   {
                                     title: 'Khoản thu / Dịch vụ',
                                     dataIndex: 'name',
-                                    render: (v) => <span style={{ fontWeight: 500 }}>{v}</span>,
+                                    render: (v) => (
+                                      <span style={{ fontWeight: 500 }}>
+                                        {v}
+                                      </span>
+                                    ),
                                   },
                                   {
                                     title: 'SL',
@@ -831,7 +1032,9 @@ export function PatientCard({
                                     align: 'right',
                                     width: 95,
                                     render: (v: number) => (
-                                      <b style={{ color: '#0f172a' }}>{money(v)}</b>
+                                      <b style={{ color: '#0f172a' }}>
+                                        {money(v)}
+                                      </b>
                                     ),
                                   },
                                 ]}
@@ -854,8 +1057,18 @@ export function PatientCard({
                                     marginBottom: 3,
                                   }}
                                 >
-                                  <span style={{ color: '#64748b', fontSize: 12 }}>Tổng viện phí:</span>
-                                  <span style={{ fontWeight: 600, color: '#0f172a', fontSize: 12 }}>
+                                  <span
+                                    style={{ color: '#64748b', fontSize: 12 }}
+                                  >
+                                    Tổng viện phí:
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontWeight: 600,
+                                      color: '#0f172a',
+                                      fontSize: 12,
+                                    }}
+                                  >
                                     {money(total)}
                                   </span>
                                 </div>
@@ -867,8 +1080,18 @@ export function PatientCard({
                                     marginBottom: 3,
                                   }}
                                 >
-                                  <span style={{ color: '#64748b', fontSize: 12 }}>Đã thanh toán:</span>
-                                  <span style={{ fontWeight: 600, color: '#16a34a', fontSize: 12 }}>
+                                  <span
+                                    style={{ color: '#64748b', fontSize: 12 }}
+                                  >
+                                    Đã thanh toán:
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontWeight: 600,
+                                      color: '#16a34a',
+                                      fontSize: 12,
+                                    }}
+                                  >
                                     {money(paid)}
                                   </span>
                                 </div>
@@ -882,14 +1105,21 @@ export function PatientCard({
                                     alignItems: 'center',
                                   }}
                                 >
-                                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 12 }}>
+                                  <span
+                                    style={{
+                                      fontWeight: 700,
+                                      color: '#0f172a',
+                                      fontSize: 12,
+                                    }}
+                                  >
                                     Còn lại cần thu:
                                   </span>
                                   <span
                                     style={{
                                       fontWeight: 800,
                                       fontSize: 15,
-                                      color: balance > 0 ? '#dc2626' : '#16a34a',
+                                      color:
+                                        balance > 0 ? '#dc2626' : '#16a34a',
                                     }}
                                   >
                                     {money(balance)}
@@ -913,7 +1143,9 @@ export function PatientCard({
                                   {payments.map((pm, idx) => (
                                     <span key={idx} style={{ marginRight: 6 }}>
                                       • {pm.method} ({money(pm.amount)}){' '}
-                                      {pm.at ? dayjs(pm.at).format('HH:mm DD/MM') : ''}
+                                      {pm.at
+                                        ? dayjs(pm.at).format('HH:mm DD/MM')
+                                        : ''}
                                     </span>
                                   ))}
                                 </div>
@@ -927,29 +1159,36 @@ export function PatientCard({
                       <div>
                         <Divider style={{ margin: '10px 0' }} />
                         <Space size={8} wrap>
-                          {a.status === 'BOOKED' && (a.invoice ? a.invoice.balance > 0 : true) && (
-                            <Button
-                              type="primary"
-                              icon={<CreditCardOutlined />}
-                              loading={busy || payingAndCheckingIn}
-                              onClick={() => {
-                                setPaymentModalApp(a);
-                                setPaymentMethod('CASH');
-                                setPaymentRef('');
-                              }}
-                              style={{
-                                backgroundColor: '#16a34a',
-                                borderColor: '#16a34a',
-                                fontWeight: 700,
-                                fontSize: 13,
-                                borderRadius: 6,
-                                padding: '0 16px',
-                                boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
-                              }}
-                            >
-                              💵 Thu tiền & Check-in ngay ({money(a.invoice ? a.invoice.balance : a.estimatedTotal)})
-                            </Button>
-                          )}
+                          {a.status === 'BOOKED' &&
+                            (a.invoice ? a.invoice.balance > 0 : true) && (
+                              <Button
+                                type="primary"
+                                icon={<CreditCardOutlined />}
+                                loading={busy || payingAndCheckingIn}
+                                onClick={() => {
+                                  setPaymentModalApp(a);
+                                  setPaymentMethod('CASH');
+                                  setPaymentRef('');
+                                }}
+                                style={{
+                                  backgroundColor: '#16a34a',
+                                  borderColor: '#16a34a',
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  borderRadius: 6,
+                                  padding: '0 16px',
+                                  boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
+                                }}
+                              >
+                                💵 Thu tiền & Check-in ngay (
+                                {money(
+                                  a.invoice
+                                    ? a.invoice.balance
+                                    : a.estimatedTotal,
+                                )}
+                                )
+                              </Button>
+                            )}
 
                           {a.status === 'CHECKED_IN' && (
                             <Button
@@ -963,7 +1202,8 @@ export function PatientCard({
                                 fontWeight: 600,
                               }}
                             >
-                              In phiếu khám & Biên lai (STT: {a.queueCode || 'Đã cấp'})
+                              In phiếu khám & Biên lai (STT:{' '}
+                              {a.queueCode || 'Đã cấp'})
                             </Button>
                           )}
 
@@ -1035,13 +1275,29 @@ export function PatientCard({
                   justifyContent: 'center',
                 }}
               >
-                <CreditCardOutlined style={{ color: '#16A34A', fontSize: 18 }} />
+                <CreditCardOutlined
+                  style={{ color: '#16A34A', fontSize: 18 }}
+                />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', lineHeight: 1.2 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: '#0F172A',
+                    lineHeight: 1.2,
+                  }}
+                >
                   Thu tiền viện phí & Check-in tiếp đón
                 </div>
-                <div style={{ fontSize: 12, color: '#64748B', fontWeight: 400, marginTop: 2 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: '#64748B',
+                    fontWeight: 400,
+                    marginTop: 2,
+                  }}
+                >
                   Ghi nhận thanh toán và tự động cấp số thứ tự vào phòng khám
                 </div>
               </div>
@@ -1061,7 +1317,13 @@ export function PatientCard({
               key="submit"
               type="primary"
               loading={payingAndCheckingIn}
-              icon={paymentMethod === 'VNPAY' ? <QrcodeOutlined /> : <CheckCircleOutlined />}
+              icon={
+                paymentMethod === 'VNPAY' ? (
+                  <QrcodeOutlined />
+                ) : (
+                  <CheckCircleOutlined />
+                )
+              }
               onClick={handleConfirmPayAndCheckIn}
               style={{
                 backgroundColor: '#16A34A',
@@ -1071,7 +1333,11 @@ export function PatientCard({
                 padding: '0 18px',
               }}
             >
-              {paymentMethod === 'VNPAY' ? 'Tiếp tục thanh toán VNPay' : paymentMethod === 'TRANSFER' ? 'Ghi nhận chờ xác minh' : 'Xác nhận Thu tiền & Cấp số thứ tự'}
+              {paymentMethod === 'VNPAY'
+                ? 'Tiếp tục thanh toán VNPay'
+                : paymentMethod === 'TRANSFER'
+                  ? 'Ghi nhận chờ xác minh'
+                  : 'Xác nhận Thu tiền & Cấp số thứ tự'}
             </Button>,
           ]}
           width={540}
@@ -1091,7 +1357,9 @@ export function PatientCard({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748B' }}>Bệnh nhân:</span>
-                <strong style={{ color: '#0F172A' }}>{currentPatient.fullName}</strong>
+                <strong style={{ color: '#0F172A' }}>
+                  {currentPatient.fullName}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748B' }}>Số điện thoại:</span>
@@ -1099,12 +1367,15 @@ export function PatientCard({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748B' }}>Dịch vụ khám:</span>
-                <strong style={{ color: '#0B5CAD' }}>{paymentModalApp.service}</strong>
+                <strong style={{ color: '#0B5CAD' }}>
+                  {paymentModalApp.service}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748B' }}>Phòng khám & Bác sĩ:</span>
                 <span>
-                  Phòng {paymentModalApp.roomCode} — {paymentModalApp.doctorName}
+                  Phòng {paymentModalApp.roomCode} —{' '}
+                  {paymentModalApp.doctorName}
                 </span>
               </div>
             </div>
@@ -1119,14 +1390,28 @@ export function PatientCard({
                 marginBottom: 16,
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#166534',
+                  textTransform: 'uppercase',
+                }}
+              >
                 Số tiền cần thu tại quầy
               </div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: '#15803D', marginTop: 2 }}>
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 900,
+                  color: '#15803D',
+                  marginTop: 2,
+                }}
+              >
                 {money(
                   paymentModalApp.invoice && paymentModalApp.invoice.balance > 0
                     ? paymentModalApp.invoice.balance
-                    : paymentModalApp.estimatedTotal
+                    : paymentModalApp.estimatedTotal,
                 )}
               </div>
               <Tag color="success" style={{ marginTop: 4, fontWeight: 600 }}>
@@ -1135,7 +1420,14 @@ export function PatientCard({
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 8 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#1E293B',
+                  marginBottom: 8,
+                }}
+              >
                 Hình thức thanh toán tại quầy:
               </div>
               <Radio.Group
@@ -1145,21 +1437,34 @@ export function PatientCard({
               >
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Radio value="CASH">
-                    <span style={{ fontWeight: 600, color: '#0F172A' }}>💵 Tiền mặt (Cash)</span>
-                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                      💵 Tiền mặt (Cash)
+                    </span>
+                    <span
+                      style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}
+                    >
                       Thu tiền mặt trực tiếp tại quầy tiếp đón
                     </span>
                   </Radio>
                   <Radio value="TRANSFER">
-                    <span style={{ fontWeight: 600, color: '#0F172A' }}>📲 Quét mã VietQR tại quầy</span>
-                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                      📲 Quét mã VietQR tại quầy
+                    </span>
+                    <span
+                      style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}
+                    >
                       Bệnh nhân quét mã QR ngân hàng tại quầy
                     </span>
                   </Radio>
                   <Radio value="VNPAY">
-                    <span style={{ fontWeight: 600, color: '#0F172A' }}>Thanh toán VNPay / QR</span>
-                    <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>
-                      Mở trang VNPay để bệnh nhân quét mã hoặc chọn ngân hàng thanh toán
+                    <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                      Thanh toán VNPay / QR
+                    </span>
+                    <span
+                      style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}
+                    >
+                      Mở trang VNPay để bệnh nhân quét mã hoặc chọn ngân hàng
+                      thanh toán
                     </span>
                   </Radio>
                 </Space>
@@ -1168,7 +1473,9 @@ export function PatientCard({
 
             {paymentMethod === 'TRANSFER' && (
               <div style={{ marginTop: 8 }}>
-                <Typography.Text type="secondary">Giao dịch cần được xác minh trước khi tiếp nhận và cấp số.</Typography.Text>
+                <Typography.Text type="secondary">
+                  Giao dịch cần được xác minh trước khi tiếp nhận và cấp số.
+                </Typography.Text>
                 <Input
                   placeholder="Nhập mã giao dịch chuyển khoản"
                   value={paymentRef}
@@ -1178,8 +1485,12 @@ export function PatientCard({
               </div>
             )}
             {paymentMethod === 'VNPAY' && (
-              <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                Check-in và cấp số thứ tự chỉ hoàn tất sau khi hệ thống nhận xác nhận thanh toán từ VNPay.
+              <Typography.Text
+                type="secondary"
+                style={{ display: 'block', marginTop: 8 }}
+              >
+                Check-in và cấp số thứ tự chỉ hoàn tất sau khi hệ thống nhận xác
+                nhận thanh toán từ VNPay.
               </Typography.Text>
             )}
           </div>
@@ -1200,7 +1511,11 @@ export function PatientCard({
           }
           onCancel={() => setPrintTicketApp(null)}
           footer={[
-            <Button key="close" onClick={() => setPrintTicketApp(null)} style={{ borderRadius: 6 }}>
+            <Button
+              key="close"
+              onClick={() => setPrintTicketApp(null)}
+              style={{ borderRadius: 6 }}
+            >
               Đóng
             </Button>,
             <Button
@@ -1208,7 +1523,11 @@ export function PatientCard({
               type="primary"
               icon={<PrinterOutlined />}
               onClick={() => window.print()}
-              style={{ backgroundColor: '#0B5CAD', borderRadius: 6, fontWeight: 600 }}
+              style={{
+                backgroundColor: '#0B5CAD',
+                borderRadius: 6,
+                fontWeight: 600,
+              }}
             >
               In phiếu ngay
             </Button>,
@@ -1234,7 +1553,14 @@ export function PatientCard({
                 marginBottom: 12,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0B5CAD', textTransform: 'uppercase' }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: '#0B5CAD',
+                  textTransform: 'uppercase',
+                }}
+              >
                 Bệnh viện Phụ sản & Sức khỏe Bà mẹ
               </div>
               <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
@@ -1251,7 +1577,14 @@ export function PatientCard({
                 marginBottom: 14,
               }}
             >
-              <div style={{ fontSize: 12, color: '#475569', fontWeight: 600, textTransform: 'uppercase' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#475569',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                }}
+              >
                 SỐ THỨ TỰ KHÁM (STT)
               </div>
               <div
@@ -1266,7 +1599,8 @@ export function PatientCard({
                 {printTicketApp.queueCode || 'Chưa cấp'}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B' }}>
-                Phòng khám: {printTicketApp.roomCode} — {printTicketApp.roomName || 'Phòng khám Sản Phụ khoa'}
+                Phòng khám: {printTicketApp.roomCode} —{' '}
+                {printTicketApp.roomName || 'Phòng khám Sản Phụ khoa'}
               </div>
             </div>
 
@@ -1284,13 +1618,20 @@ export function PatientCard({
                 <strong>Dịch vụ y tế:</strong> {printTicketApp.service}
               </div>
               <div>
-                <strong>Thời gian khám:</strong> {time(printTicketApp.startAt)} – {time(printTicketApp.endAt)} (
-                {printTicketApp.date ? dayjs(printTicketApp.date).format('DD/MM/YYYY') : 'Hôm nay'})
+                <strong>Thời gian khám:</strong> {time(printTicketApp.startAt)}{' '}
+                – {time(printTicketApp.endAt)} (
+                {printTicketApp.date
+                  ? dayjs(printTicketApp.date).format('DD/MM/YYYY')
+                  : 'Hôm nay'}
+                )
               </div>
               <div>
                 <strong>Viện phí đã thu:</strong>{' '}
                 <span style={{ fontWeight: 700, color: '#16A34A' }}>
-                  {money(printTicketApp.invoice?.total || printTicketApp.estimatedTotal)}
+                  {money(
+                    printTicketApp.invoice?.total ||
+                      printTicketApp.estimatedTotal,
+                  )}
                 </span>{' '}
                 (Đã thu đủ)
               </div>
@@ -1307,7 +1648,9 @@ export function PatientCard({
                 fontStyle: 'italic',
               }}
             >
-              Quý khách vui lòng ngồi chờ trước cửa phòng {printTicketApp.roomCode}, theo dõi màn hình hiển thị để được gọi số thứ tự vào khám.
+              Quý khách vui lòng ngồi chờ trước cửa phòng{' '}
+              {printTicketApp.roomCode}, theo dõi màn hình hiển thị để được gọi
+              số thứ tự vào khám.
             </div>
           </div>
         </Modal>

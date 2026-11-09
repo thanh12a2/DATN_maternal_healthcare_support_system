@@ -7,7 +7,10 @@ const roles: Array<{ code: AuthRoleCode; description: string }> = [
   { code: AuthRoleCode.RECEPTIONIST, description: 'Receptionist / Lễ tân' },
   { code: AuthRoleCode.DOCTOR, description: 'Doctor / Bác sĩ' },
   { code: AuthRoleCode.NURSE, description: 'Nurse or Midwife / Y tá, hộ sinh' },
-  { code: AuthRoleCode.CLINIC_MANAGER, description: 'Clinic operations manager' },
+  {
+    code: AuthRoleCode.CLINIC_MANAGER,
+    description: 'Clinic operations manager',
+  },
   { code: AuthRoleCode.ADMIN, description: 'System administrator' },
 ];
 

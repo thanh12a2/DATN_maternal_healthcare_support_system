@@ -13,17 +13,17 @@
    -------------------------------------------------------------------------- */
 
 .personalized-hero-section {
-  --ph-bg: #F8FAFC;
+  --ph-bg: #f8fafc;
   --ph-ink: #183153;
-  --ph-muted: #5B6F8A;
-  --ph-blue: #0B4F9C;
-  --ph-azure: #1677FF;
-  --ph-blue-soft: #E4EFFC;
-  --ph-orange: #E67E22;
-  --ph-peach: #E7F8F1;
-  --ph-green: #10B981;
-  --ph-red: #D9381E;
-  --ph-line: #DCE6F1;
+  --ph-muted: #5b6f8a;
+  --ph-blue: #0b4f9c;
+  --ph-azure: #1677ff;
+  --ph-blue-soft: #e4effc;
+  --ph-orange: #e67e22;
+  --ph-peach: #e7f8f1;
+  --ph-green: #10b981;
+  --ph-red: #d9381e;
+  --ph-line: #dce6f1;
   --ph-white: #ffffff;
 
   background: var(--ph-bg);
@@ -102,14 +102,14 @@
   position: relative;
   height: 10px;
   border-radius: 99px;
-  background: #E3EBF5;
+  background: #e3ebf5;
 }
 
 .ph-track-fill {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--ph-blue), #1677FF);
+  background: linear-gradient(90deg, var(--ph-blue), #1677ff);
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -120,7 +120,7 @@
   height: 14px;
   border-radius: 50%;
   background: var(--ph-white);
-  border: 3px solid #B9C8DA;
+  border: 3px solid #b9c8da;
   transform: translate(-50%, -50%);
   transition: all 0.3s ease;
 }
@@ -261,7 +261,9 @@
   gap: 20px;
   align-items: center;
   box-shadow: 0 14px 34px -22px rgba(11, 79, 156, 0.4);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ph-appt-card:hover {
@@ -312,7 +314,7 @@
   margin-bottom: 6px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #0B7A56;
+  color: #0b7a56;
   background: var(--ph-peach);
   padding: 2px 10px;
   border-radius: 99px;
@@ -433,7 +435,7 @@
   font-size: 15px;
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: #B5CFEF;
+  text-decoration-color: #b5cfef;
   transition: color 0.18s ease;
 }
 
@@ -525,8 +527,12 @@
 }
 
 @keyframes ph-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .ph-skeleton-title {
@@ -639,7 +645,9 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 6px 18px -6px rgba(11, 79, 156, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   height: 100%;
   box-sizing: border-box;
 }
@@ -666,18 +674,18 @@
 }
 
 .ph-pillar-icon.blue {
-  background: #E6F4FF;
-  color: #1677FF;
+  background: #e6f4ff;
+  color: #1677ff;
 }
 
 .ph-pillar-icon.green {
-  background: #E6F7ED;
-  color: #10B981;
+  background: #e6f7ed;
+  color: #10b981;
 }
 
 .ph-pillar-icon.amber {
-  background: #FFF4E6;
-  color: #E67E22;
+  background: #fff4e6;
+  color: #e67e22;
 }
 
 .ph-pillar-icon svg {
@@ -756,7 +764,7 @@
 }
 
 .ph-hotline-link {
-  color: #D9381E !important;
+  color: #d9381e !important;
   font-weight: 750 !important;
   text-decoration: none;
   transition: opacity 0.15s ease;
@@ -768,15 +776,15 @@
 }
 
 .ph-hotline-link:focus-visible {
-  outline: 3px solid #D9381E;
+  outline: 3px solid #d9381e;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* Nút Đặt lịch ngay (CAM) & Xem gói sinh (VIỀN NAVY) */
 .ph-btn-book {
-  background: #E67E22 !important;
-  border-color: #E67E22 !important;
+  background: #e67e22 !important;
+  border-color: #e67e22 !important;
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(230, 126, 34, 0.28);
 }
@@ -788,23 +796,23 @@
 }
 
 .ph-btn-book:focus-visible {
-  outline: 3px solid #E67E22;
+  outline: 3px solid #e67e22;
   outline-offset: 2px;
 }
 
 .ph-btn-outline {
   background: #ffffff !important;
-  border: 1.5px solid #0B4F9C !important;
-  color: #0B4F9C !important;
+  border: 1.5px solid #0b4f9c !important;
+  color: #0b4f9c !important;
 }
 
 .ph-btn-outline:hover {
-  background: #E4EFFC !important;
+  background: #e4effc !important;
   color: #07376e !important;
 }
 
 .ph-btn-outline:focus-visible {
-  outline: 3px solid #1677FF;
+  outline: 3px solid #1677ff;
   outline-offset: 2px;
 }
 
@@ -819,19 +827,21 @@
   gap: 6px;
   font-size: 14.5px;
   font-weight: 650;
-  color: #1677FF;
+  color: #1677ff;
   text-decoration: none;
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .ph-live-queue-link:hover {
-  color: #0B4F9C;
+  color: #0b4f9c;
   text-decoration: underline;
   transform: translateX(2px);
 }
 
 .ph-live-queue-link:focus-visible {
-  outline: 3px solid #1677FF;
+  outline: 3px solid #1677ff;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -845,7 +855,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #0B4F9C;
+  background: #0b4f9c;
   color: #ffffff;
   border: none;
   display: flex;
@@ -853,7 +863,10 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(11, 79, 156, 0.32);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .patient-chatbot-circle-btn:hover {
@@ -863,7 +876,7 @@
 }
 
 .patient-chatbot-circle-btn:focus-visible {
-  outline: 3px solid #1677FF;
+  outline: 3px solid #1677ff;
   outline-offset: 3px;
 }
 
@@ -889,7 +902,9 @@
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
   box-shadow: 0 4px 12px rgba(24, 49, 83, 0.25);
 }
 
@@ -976,4 +991,3 @@
     display: none;
   }
 }
-

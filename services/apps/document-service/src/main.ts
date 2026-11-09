@@ -1,1 +1,20 @@
-import { NestFactory } from '@nestjs/core';import { connectGrpcServer } from '@platform';import { json, urlencoded } from 'express';import { DocumentServiceModule } from './document-service.module';async function bootstrap(){const app=await NestFactory.create(DocumentServiceModule,{bodyParser:false});app.use('/clinical-results',json({limit:'7mb'}));app.use(json());app.use(urlencoded({extended:true}));connectGrpcServer(app,{package:'maternal.document.v1',proto:'document/v1/document_internal.proto',url:'0.0.0.0:'+(process.env.GRPC_PORT??'6013')});await app.startAllMicroservices();await app.listen(process.env.PORT??5013);}void bootstrap();
+import { NestFactory } from '@nestjs/core';
+import { connectGrpcServer } from '@platform';
+import { json, urlencoded } from 'express';
+import { DocumentServiceModule } from './document-service.module';
+async function bootstrap() {
+  const app = await NestFactory.create(DocumentServiceModule, {
+    bodyParser: false,
+  });
+  app.use('/clinical-results', json({ limit: '7mb' }));
+  app.use(json());
+  app.use(urlencoded({ extended: true }));
+  connectGrpcServer(app, {
+    package: 'maternal.document.v1',
+    proto: 'document/v1/document_internal.proto',
+    url: '0.0.0.0:' + (process.env.GRPC_PORT ?? '6013'),
+  });
+  await app.startAllMicroservices();
+  await app.listen(process.env.PORT ?? 5013);
+}
+void bootstrap();

@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ConflictException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, Prisma } from '@prisma/client';
-import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
+import {
+  AccountsRepository,
+  AuthRoleNotSeededError,
+} from '../accounts/accounts.repository';
 import { PasswordHasherService } from '../security/password-hasher.service';
-import { InvalidRefreshSessionError, SessionsService } from '../sessions/sessions.service';
+import {
+  InvalidRefreshSessionError,
+  SessionsService,
+} from '../sessions/sessions.service';
 import { AccessTokenService } from '../tokens/access-token.service';
 import { AuthService } from './auth.service';
 import { AuthRole } from './dto/auth-role.enum';
@@ -45,7 +55,10 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: AccountsRepository, useFactory: accountsRepositoryMock },
-        { provide: PasswordHasherService, useFactory: passwordHasherServiceMock },
+        {
+          provide: PasswordHasherService,
+          useFactory: passwordHasherServiceMock,
+        },
         { provide: AccessTokenService, useFactory: accessTokenServiceMock },
         { provide: SessionsService, useFactory: sessionsServiceMock },
       ],
@@ -60,7 +73,9 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('should register public account as PATIENT with normalized email and hashed password', async () => {
-      passwordHasherService.hashPassword.mockResolvedValue('argon2id-hash' as never);
+      passwordHasherService.hashPassword.mockResolvedValue(
+        'argon2id-hash' as never,
+      );
       accountsRepository.createAccountWithCredential.mockResolvedValue({
         userId: 'account-id',
         email: 'patient@example.com',
@@ -80,8 +95,12 @@ describe('AuthService', () => {
         },
       });
 
-      expect(passwordHasherService.hashPassword).toHaveBeenCalledWith('Password123!');
-      expect(accountsRepository.createAccountWithCredential).toHaveBeenCalledWith({
+      expect(passwordHasherService.hashPassword).toHaveBeenCalledWith(
+        'Password123!',
+      );
+      expect(
+        accountsRepository.createAccountWithCredential,
+      ).toHaveBeenCalledWith({
         email: 'patient@example.com',
         passwordHash: 'argon2id-hash',
         role: AuthRole.Patient,
@@ -89,29 +108,46 @@ describe('AuthService', () => {
     });
 
     it('should throw ConflictException when account email already exists', async () => {
-      const uniqueConstraintError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-        code: 'P2002',
-        clientVersion: 'test',
-      });
+      const uniqueConstraintError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        {
+          code: 'P2002',
+          clientVersion: 'test',
+        },
+      );
 
-      passwordHasherService.hashPassword.mockResolvedValue('argon2id-hash' as never);
-      accountsRepository.createAccountWithCredential.mockRejectedValue(uniqueConstraintError as never);
+      passwordHasherService.hashPassword.mockResolvedValue(
+        'argon2id-hash' as never,
+      );
+      accountsRepository.createAccountWithCredential.mockRejectedValue(
+        uniqueConstraintError as never,
+      );
       accountsRepository.isUniqueConstraintError.mockReturnValue(true as never);
 
       await expect(
-        authService.register({ email: 'patient@example.com', password: 'Password123!' }),
+        authService.register({
+          email: 'patient@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('should throw InternalServerErrorException when PATIENT role is missing in database', async () => {
-      passwordHasherService.hashPassword.mockResolvedValue('argon2id-hash' as never);
+      passwordHasherService.hashPassword.mockResolvedValue(
+        'argon2id-hash' as never,
+      );
       accountsRepository.createAccountWithCredential.mockRejectedValue(
         new AuthRoleNotSeededError(AuthRole.Patient) as never,
       );
-      accountsRepository.isUniqueConstraintError.mockReturnValue(false as never);
+      accountsRepository.isUniqueConstraintError.mockReturnValue(
+        false as never,
+      );
 
       await expect(
-        authService.register({ email: 'patient@example.com', password: 'Password123!' }),
+        authService.register({
+          email: 'patient@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
   });
@@ -139,27 +175,41 @@ describe('AuthService', () => {
       } as never);
 
       await expect(
-        authService.login({ email: ' Patient@Example.COM ', password: 'Password123!' }),
+        authService.login({
+          email: ' Patient@Example.COM ',
+          password: 'Password123!',
+        }),
       ).resolves.toEqual({
         accessToken: 'signed-access-token',
         refreshToken: 'opaque-refresh-token',
         tokenType: 'Bearer',
         expiresIn: 900,
-        user: { userId: 'account-id', email: 'patient@example.com', role: AuthRole.Patient },
+        user: {
+          userId: 'account-id',
+          email: 'patient@example.com',
+          role: AuthRole.Patient,
+        },
       });
 
       expect(accessTokenService.signAccessToken).toHaveBeenCalledWith({
         userId: 'account-id',
         role: AuthRole.Patient,
       });
-      expect(sessionsService.createRefreshSession).toHaveBeenCalledWith('account-id');
+      expect(sessionsService.createRefreshSession).toHaveBeenCalledWith(
+        'account-id',
+      );
     });
 
     it('should throw UnauthorizedException when account does not exist', async () => {
-      accountsRepository.findAccountForLoginByEmail.mockResolvedValue(null as never);
+      accountsRepository.findAccountForLoginByEmail.mockResolvedValue(
+        null as never,
+      );
 
       await expect(
-        authService.login({ email: 'missing@example.com', password: 'Password123!' }),
+        authService.login({
+          email: 'missing@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
@@ -174,7 +224,10 @@ describe('AuthService', () => {
       passwordHasherService.verifyPassword.mockResolvedValue(false as never);
 
       await expect(
-        authService.login({ email: 'patient@example.com', password: 'WrongPassword!' }),
+        authService.login({
+          email: 'patient@example.com',
+          password: 'WrongPassword!',
+        }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
@@ -188,7 +241,10 @@ describe('AuthService', () => {
       } as never);
 
       await expect(
-        authService.login({ email: 'patient@example.com', password: 'Password123!' }),
+        authService.login({
+          email: 'patient@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
@@ -213,21 +269,29 @@ describe('AuthService', () => {
         expiresIn: 900,
       } as never);
 
-      await expect(authService.refresh({ refreshToken: 'old-refresh-token' })).resolves.toEqual({
+      await expect(
+        authService.refresh({ refreshToken: 'old-refresh-token' }),
+      ).resolves.toEqual({
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
         tokenType: 'Bearer',
         expiresIn: 900,
-        user: { userId: 'account-id', email: 'patient@example.com', role: AuthRole.Patient },
+        user: {
+          userId: 'account-id',
+          email: 'patient@example.com',
+          role: AuthRole.Patient,
+        },
       });
     });
 
     it('should throw UnauthorizedException when refresh session is invalid', async () => {
-      sessionsService.refreshSession.mockRejectedValue(new InvalidRefreshSessionError() as never);
-
-      await expect(authService.refresh({ refreshToken: 'invalid-token' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
+      sessionsService.refreshSession.mockRejectedValue(
+        new InvalidRefreshSessionError() as never,
       );
+
+      await expect(
+        authService.refresh({ refreshToken: 'invalid-token' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when refreshed account is not active', async () => {
@@ -244,9 +308,9 @@ describe('AuthService', () => {
         role: AuthRole.Patient,
       } as never);
 
-      await expect(authService.refresh({ refreshToken: 'refresh-token' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        authService.refresh({ refreshToken: 'refresh-token' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 
@@ -265,7 +329,11 @@ describe('AuthService', () => {
       } as never);
 
       await expect(authService.getMe('access-token')).resolves.toEqual({
-        user: { userId: 'account-id', email: 'patient@example.com', role: AuthRole.Patient },
+        user: {
+          userId: 'account-id',
+          email: 'patient@example.com',
+          role: AuthRole.Patient,
+        },
       });
     });
 
@@ -282,7 +350,9 @@ describe('AuthService', () => {
         role: AuthRole.Patient,
       } as never);
 
-      await expect(authService.getMe('access-token')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(authService.getMe('access-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -290,16 +360,22 @@ describe('AuthService', () => {
     it('should revoke refresh session', async () => {
       sessionsService.logoutSession.mockResolvedValue(undefined as never);
 
-      await expect(authService.logout({ refreshToken: 'refresh-token' })).resolves.toBeUndefined();
-      expect(sessionsService.logoutSession).toHaveBeenCalledWith('refresh-token');
+      await expect(
+        authService.logout({ refreshToken: 'refresh-token' }),
+      ).resolves.toBeUndefined();
+      expect(sessionsService.logoutSession).toHaveBeenCalledWith(
+        'refresh-token',
+      );
     });
 
     it('should throw UnauthorizedException when refresh session is invalid', async () => {
-      sessionsService.logoutSession.mockRejectedValue(new InvalidRefreshSessionError() as never);
-
-      await expect(authService.logout({ refreshToken: 'invalid-token' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
+      sessionsService.logoutSession.mockRejectedValue(
+        new InvalidRefreshSessionError() as never,
       );
+
+      await expect(
+        authService.logout({ refreshToken: 'invalid-token' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 });

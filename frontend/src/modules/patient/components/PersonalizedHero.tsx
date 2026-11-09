@@ -5,7 +5,10 @@ import { ApiError } from '../../../services/api';
 import type { Appointment } from '../../../services/appointment';
 import type { Doctor } from '../../../services/doctor';
 import type { PatientProfile } from '../../../services/patient';
-import { PREGNANCY_MILESTONES, TIMELINE_POINTS } from '../config/pregnancyHeroConfig';
+import {
+  PREGNANCY_MILESTONES,
+  TIMELINE_POINTS,
+} from '../config/pregnancyHeroConfig';
 import { HeroMotherArt } from './HeroMotherArt';
 import {
   calculateDaysLeft,
@@ -31,7 +34,15 @@ interface Envelope<T> {
 
 function CalendarIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
@@ -73,7 +84,8 @@ export function PersonalizedHero() {
       // 1. Tải thông tin bệnh nhân
       let profile: PatientProfile | null = null;
       try {
-        const res = await auth.request<Envelope<PatientProfile>>('/api/patients/me');
+        const res =
+          await auth.request<Envelope<PatientProfile>>('/api/patients/me');
         profile = res.data;
         setPatient(profile);
       } catch (err) {
@@ -89,7 +101,9 @@ export function PersonalizedHero() {
       const promises: [Promise<any>, Promise<any>, Promise<any>] = [
         profile?.id
           ? auth
-              .request<Envelope<PregnancyEpisode[]>>(`/api/medical-records/pregnancy-episodes?patientId=${profile.id}`)
+              .request<Envelope<PregnancyEpisode[]>>(
+                `/api/medical-records/pregnancy-episodes?patientId=${profile.id}`,
+              )
               .catch(() => ({ data: [] }))
           : Promise.resolve({ data: [] }),
         auth
@@ -100,23 +114,40 @@ export function PersonalizedHero() {
           .catch(() => []),
       ];
 
-      const [pregnancyRes, appointmentRes, doctorRes] = await Promise.all(promises);
+      const [pregnancyRes, appointmentRes, doctorRes] =
+        await Promise.all(promises);
 
       // Xử lý hồ sơ thai kỳ ACTIVE
-      const episodes: PregnancyEpisode[] = Array.isArray(pregnancyRes?.data) ? pregnancyRes.data : [];
+      const episodes: PregnancyEpisode[] = Array.isArray(pregnancyRes?.data)
+        ? pregnancyRes.data
+        : [];
       const activeEp = episodes.find((ep) => ep.status === 'ACTIVE') ?? null;
       setPregnancy(activeEp);
 
       // Xử lý danh bạ bác sĩ để map tên hiển thị
-      const rawDoctors: Doctor[] = Array.isArray(doctorRes) ? doctorRes : Array.isArray(doctorRes?.data) ? doctorRes.data : [];
+      const rawDoctors: Doctor[] = Array.isArray(doctorRes)
+        ? doctorRes
+        : Array.isArray(doctorRes?.data)
+          ? doctorRes.data
+          : [];
       const dMap: Record<string, string> = {};
       for (const d of rawDoctors) {
         const id = d.id ?? d.doctorId;
         if (id) {
           const profileData = d.profile ?? {};
-          const title = ((d as any).consultationRankInfo?.shortName || d.consultationRank || '').trim();
-          const name = (d.fullName ?? profileData.fullName ?? d.name ?? '').trim();
-          dMap[id] = [title, name].filter(Boolean).join(' ') || 'Bác sĩ phụ trách';
+          const title = (
+            (d as any).consultationRankInfo?.shortName ||
+            d.consultationRank ||
+            ''
+          ).trim();
+          const name = (
+            d.fullName ??
+            profileData.fullName ??
+            d.name ??
+            ''
+          ).trim();
+          dMap[id] =
+            [title, name].filter(Boolean).join(' ') || 'Bác sĩ phụ trách';
         }
       }
       setDoctorMap(dMap);
@@ -125,10 +156,10 @@ export function PersonalizedHero() {
       const rawItems: Appointment[] = Array.isArray(appointmentRes?.items)
         ? appointmentRes.items
         : Array.isArray(appointmentRes?.data)
-        ? appointmentRes.data
-        : Array.isArray(appointmentRes)
-        ? appointmentRes
-        : [];
+          ? appointmentRes.data
+          : Array.isArray(appointmentRes)
+            ? appointmentRes
+            : [];
 
       const nowMs = Date.now();
       const validUpcoming = rawItems
@@ -139,7 +170,10 @@ export function PersonalizedHero() {
           if (!apt.startAt) return false;
           return new Date(apt.startAt).getTime() >= nowMs;
         })
-        .sort((a, b) => new Date(a.startAt!).getTime() - new Date(b.startAt!).getTime());
+        .sort(
+          (a, b) =>
+            new Date(a.startAt!).getTime() - new Date(b.startAt!).getTime(),
+        );
 
       setAppointment(validUpcoming[0] ?? null);
       setLoading(false);
@@ -186,11 +220,19 @@ export function PersonalizedHero() {
     const timeFormatted = formatTime(start);
 
     const docId = appointment.assignedDoctorId ?? '';
-    const doctorDisplay: string = docId && doctorMap[docId] ? doctorMap[docId] : 'Bác sĩ phụ trách';
-    const roomDisplay: string = String(appointment.roomName || appointment.roomCode || 'Phòng khám Sản Phụ khoa');
-    const serviceDisplay: string = String(appointment.pricing?.serviceName || appointment.serviceNameSnapshot || 'Khám thai định kỳ');
+    const doctorDisplay: string =
+      docId && doctorMap[docId] ? doctorMap[docId] : 'Bác sĩ phụ trách';
+    const roomDisplay: string = String(
+      appointment.roomName || appointment.roomCode || 'Phòng khám Sản Phụ khoa',
+    );
+    const serviceDisplay: string = String(
+      appointment.pricing?.serviceName ||
+        appointment.serviceNameSnapshot ||
+        'Khám thai định kỳ',
+    );
     const daysLeftChip: string = calculateDaysLeft(appointment.startAt);
-    const canReschedule: boolean = String(appointment.status).toUpperCase() === 'BOOKED';
+    const canReschedule: boolean =
+      String(appointment.status).toUpperCase() === 'BOOKED';
 
     return {
       dayNumber,
@@ -206,7 +248,10 @@ export function PersonalizedHero() {
   }, [appointment, doctorMap]);
 
   return (
-    <section className="personalized-hero-section" aria-label="Khối chào cá nhân hóa cho bệnh nhân">
+    <section
+      className="personalized-hero-section"
+      aria-label="Khối chào cá nhân hóa cho bệnh nhân"
+    >
       <div className="portal-container personalized-hero-inner">
         {/* CỘT TRÁI: Thông tin cá nhân hóa */}
         <div className="ph-content-col">
@@ -222,7 +267,11 @@ export function PersonalizedHero() {
           ) : error ? (
             <div className="ph-error-box" role="alert">
               <span>{error}</span>
-              <button type="button" className="ph-retry-btn" onClick={() => void fetchData()}>
+              <button
+                type="button"
+                className="ph-retry-btn"
+                onClick={() => void fetchData()}
+              >
                 Thử lại
               </button>
             </div>
@@ -232,7 +281,9 @@ export function PersonalizedHero() {
               <div className="ph-hero-intro">
                 <h1 className="ph-hero-title">
                   Chào {greetingName},<br />
-                  {gestationalWeek !== null ? 'hôm nay mẹ và bé thế nào?' : 'chào mừng bạn đến với Tâm An!'}
+                  {gestationalWeek !== null
+                    ? 'hôm nay mẹ và bé thế nào?'
+                    : 'chào mừng bạn đến với Tâm An!'}
                 </h1>
                 <p className="ph-hero-sub">
                   {gestationalWeek !== null ? (
@@ -240,7 +291,10 @@ export function PersonalizedHero() {
                       Bạn đang ở <b>tuần thai thứ {gestationalWeek}</b>.
                     </span>
                   ) : (
-                    <span>Chào mừng mẹ đồng hành cùng Bệnh viện Phụ sản & Y học Bào thai Tâm An.</span>
+                    <span>
+                      Chào mừng mẹ đồng hành cùng Bệnh viện Phụ sản & Y học Bào
+                      thai Tâm An.
+                    </span>
                   )}
                 </p>
               </div>
@@ -249,9 +303,13 @@ export function PersonalizedHero() {
               {gestationalWeek !== null ? (
                 <div className="ph-weeks-wrap" aria-label="Hành trình thai kỳ">
                   <div className="ph-track">
-                    <div className="ph-track-fill" style={{ width: `${timelineCurPos}%` }} />
+                    <div
+                      className="ph-track-fill"
+                      style={{ width: `${timelineCurPos}%` }}
+                    />
                     {PREGNANCY_MILESTONES.map((tick, i) => {
-                      const leftPercent = ((i + 1) / (TIMELINE_POINTS.length - 1)) * 100;
+                      const leftPercent =
+                        ((i + 1) / (TIMELINE_POINTS.length - 1)) * 100;
                       const isDone = tick.w <= gestationalWeek;
                       return (
                         <div key={tick.w}>
@@ -260,15 +318,25 @@ export function PersonalizedHero() {
                             style={{ left: `${leftPercent}%` }}
                             aria-hidden="true"
                           />
-                          <div className="ph-lbl" style={{ left: `${leftPercent}%` }}>
+                          <div
+                            className="ph-lbl"
+                            style={{ left: `${leftPercent}%` }}
+                          >
                             <b>{tick.w}</b>
                             <span>{tick.name}</span>
                           </div>
                         </div>
                       );
                     })}
-                    <i className="ph-dot now" style={{ left: `${timelineCurPos}%` }} aria-hidden="true" />
-                    <span className="ph-here-badge" style={{ left: `${timelineCurPos}%` }}>
+                    <i
+                      className="ph-dot now"
+                      style={{ left: `${timelineCurPos}%` }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="ph-here-badge"
+                      style={{ left: `${timelineCurPos}%` }}
+                    >
                       Bạn ở đây
                     </span>
                   </div>
@@ -300,21 +368,30 @@ export function PersonalizedHero() {
               {/* 3. Khối dưới cùng: Thẻ lịch hẹn & Lối tắt */}
               <div className="ph-bottom-group">
                 {appointment && apptMeta ? (
-                  <article className="ph-appt-card" aria-label="Lịch hẹn sắp tới">
+                  <article
+                    className="ph-appt-card"
+                    aria-label="Lịch hẹn sắp tới"
+                  >
                     <div className="ph-appt-date">
                       <strong>{apptMeta.dayNumber}</strong>
                       <span>{apptMeta.monthShort}</span>
                     </div>
                     <div className="ph-appt-info">
-                      <span className="ph-chip highlight">{apptMeta.daysLeftChip}</span>
+                      <span className="ph-chip highlight">
+                        {apptMeta.daysLeftChip}
+                      </span>
                       <h2>{apptMeta.serviceDisplay}</h2>
                       <p>
-                        {apptMeta.timeFormatted}, {apptMeta.weekday} · {apptMeta.doctorDisplay}
+                        {apptMeta.timeFormatted}, {apptMeta.weekday} ·{' '}
+                        {apptMeta.doctorDisplay}
                       </p>
                       <p>{apptMeta.roomDisplay}</p>
                     </div>
                     <div className="ph-btns">
-                      <AppLink className="ph-btn" href={`/lich-hen/${encodeURIComponent(appointment.id ?? '')}`}>
+                      <AppLink
+                        className="ph-btn"
+                        href={`/lich-hen/${encodeURIComponent(appointment.id ?? '')}`}
+                      >
                         Xem phiếu khám
                       </AppLink>
                       {apptMeta.canReschedule && (
@@ -330,14 +407,20 @@ export function PersonalizedHero() {
                   </article>
                 ) : (
                   /* Thẻ mời đặt lịch khi chưa có lịch hẹn sắp tới */
-                  <article className="ph-appt-card" aria-label="Mời đặt lịch khám">
+                  <article
+                    className="ph-appt-card"
+                    aria-label="Mời đặt lịch khám"
+                  >
                     <div className="ph-appt-empty-icon" aria-hidden="true">
                       <CalendarIcon />
                     </div>
                     <div className="ph-appt-info">
                       <span className="ph-chip">Lịch khám của bạn</span>
                       <h2>Bạn chưa có lịch hẹn sắp tới</h2>
-                      <p>Chủ động chọn bác sĩ chuyên khoa và khung giờ phù hợp mà không cần xếp hàng.</p>
+                      <p>
+                        Chủ động chọn bác sĩ chuyên khoa và khung giờ phù hợp mà
+                        không cần xếp hàng.
+                      </p>
                     </div>
                     <div className="ph-btns">
                       <AppLink className="ph-btn" href="/dat-lich">

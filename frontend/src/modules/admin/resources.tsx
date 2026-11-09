@@ -3,7 +3,13 @@ import type { ColumnsType } from 'antd/es/table';
 import type { Requester } from '../../services/catalog';
 import { StatusTag } from './components/StatusTag';
 import type { Row } from './components/DataTable';
-import { extractList, formatDateTime, formatMoneyMinor, humanizeKey, text } from './format';
+import {
+  extractList,
+  formatDateTime,
+  formatMoneyMinor,
+  humanizeKey,
+  text,
+} from './format';
 
 export interface ResourceConfig {
   title: string;
@@ -13,27 +19,42 @@ export interface ResourceConfig {
   detailTitle?: (row: Row) => ReactNode;
 }
 
-const getList = (path: string) => async (request: Requester) => extractList<Row>(await request<unknown>(path));
-const code = (value: unknown) => <span className="admin-code">{text(value)}</span>;
+const getList = (path: string) => async (request: Requester) =>
+  extractList<Row>(await request<unknown>(path));
+const code = (value: unknown) => (
+  <span className="admin-code">{text(value)}</span>
+);
 const status = (value: unknown) => <StatusTag status={value} />;
 const when = (value: unknown) => formatDateTime(value);
 
 /** Tự dựng cột từ các trường nguyên thủy khi backend chưa có contract cố định. */
 export function autoColumns(rows: Row[]): ColumnsType<Row> {
   const sample = rows[0] ?? {};
-  const keys = Object.keys(sample).filter((key) => ['string', 'number', 'boolean'].includes(typeof sample[key])).slice(0, 7);
+  const keys = Object.keys(sample)
+    .filter((key) =>
+      ['string', 'number', 'boolean'].includes(typeof sample[key]),
+    )
+    .slice(0, 7);
   return keys.map((key) => ({
     title: humanizeKey(key),
     dataIndex: key,
     key,
-    render: (value: unknown) => (/status|state/i.test(key) ? status(value) : /(At|Date)$/.test(key) ? when(value) : /id$/i.test(key) ? code(value) : text(value)),
+    render: (value: unknown) =>
+      /status|state/i.test(key)
+        ? status(value)
+        : /(At|Date)$/.test(key)
+          ? when(value)
+          : /id$/i.test(key)
+            ? code(value)
+            : text(value),
   }));
 }
 
 export const RESOURCES: Record<string, ResourceConfig> = {
   appointments: {
     title: 'Quản lý lịch hẹn',
-    description: 'Toàn bộ lịch hẹn khám bệnh và điều phối bác sĩ trong hệ thống.',
+    description:
+      'Toàn bộ lịch hẹn khám bệnh và điều phối bác sĩ trong hệ thống.',
     load: getList('/api/appointment/appointments?limit=100'),
     detailTitle: (row) => `Lịch hẹn ${text(row.appointmentCode ?? row.id)}`,
     columns: [
@@ -43,12 +64,20 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { title: 'Trạng thái', dataIndex: 'status', render: status },
       { title: 'Bác sĩ', dataIndex: 'assignedDoctorId', render: code },
       { title: 'Hạng bác sĩ', dataIndex: 'assignedRankCode', render: text },
-      { title: 'Tạm tính', dataIndex: 'pricing', render: (pricing: { estimatedTotalMinor?: number; currency?: string } | undefined) => formatMoneyMinor(pricing?.estimatedTotalMinor, pricing?.currency) },
+      {
+        title: 'Tạm tính',
+        dataIndex: 'pricing',
+        render: (
+          pricing:
+            { estimatedTotalMinor?: number; currency?: string } | undefined,
+        ) => formatMoneyMinor(pricing?.estimatedTotalMinor, pricing?.currency),
+      },
     ],
   },
   queue: {
     title: 'Quản lý hàng đợi',
-    description: 'Các công đoạn khám đang hoạt động và điều phối tiến trình tiếp nhận.',
+    description:
+      'Các công đoạn khám đang hoạt động và điều phối tiến trình tiếp nhận.',
     load: getList('/api/queue/stages'),
     detailTitle: (row) => `Công đoạn ${text(row.name ?? row.code ?? row.id)}`,
   },
@@ -61,14 +90,27 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { title: 'Số hóa đơn', dataIndex: 'invoiceNumber', render: code },
       { title: 'Loại', dataIndex: 'type', render: text },
       { title: 'Trạng thái', dataIndex: 'status', render: status },
-      { title: 'Tổng tiền', dataIndex: 'totalMinor', align: 'right', render: (value: number, row) => formatMoneyMinor(value, row.currency as string | undefined) },
-      { title: 'Còn nợ', dataIndex: 'balanceMinor', align: 'right', render: (value: number, row) => formatMoneyMinor(value, row.currency as string | undefined) },
+      {
+        title: 'Tổng tiền',
+        dataIndex: 'totalMinor',
+        align: 'right',
+        render: (value: number, row) =>
+          formatMoneyMinor(value, row.currency as string | undefined),
+      },
+      {
+        title: 'Còn nợ',
+        dataIndex: 'balanceMinor',
+        align: 'right',
+        render: (value: number, row) =>
+          formatMoneyMinor(value, row.currency as string | undefined),
+      },
       { title: 'Hạn thanh toán', dataIndex: 'dueAt', render: when },
     ],
   },
   doctors: {
     title: 'Quản lý bác sĩ',
-    description: 'Danh mục bác sĩ, thông tin chuyên khoa và trạng thái hoạt động.',
+    description:
+      'Danh mục bác sĩ, thông tin chuyên khoa và trạng thái hoạt động.',
     load: getList('/api/doctors?limit=100'),
     detailTitle: (row) => `Bác sĩ ${text(row.fullName ?? row.name ?? row.id)}`,
   },
@@ -76,11 +118,13 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     title: 'Quản lý dịch vụ & giá',
     description: 'Danh mục dịch vụ khám, bảng giá viện phí đang cấu hình.',
     load: getList('/api/catalog/services'),
-    detailTitle: (row) => `Dịch vụ ${text(row.displayName ?? row.name ?? row.id)}`,
+    detailTitle: (row) =>
+      `Dịch vụ ${text(row.displayName ?? row.name ?? row.id)}`,
   },
   encounters: {
     title: 'Quản lý hồ sơ khám',
-    description: 'Các lượt khám bệnh (encounter) và kết quả thăm khám trong hệ thống.',
+    description:
+      'Các lượt khám bệnh (encounter) và kết quả thăm khám trong hệ thống.',
     load: getList('/api/medical-records/encounters'),
     detailTitle: (row) => `Encounter ${text(row.id)}`,
     columns: [
@@ -99,7 +143,8 @@ export const RESOURCES: Record<string, ResourceConfig> = {
   },
   prescriptions: {
     title: 'Quản lý đơn thuốc',
-    description: 'Danh sách đơn thuốc đã kê toa, liều dùng và trạng thái phát hành.',
+    description:
+      'Danh sách đơn thuốc đã kê toa, liều dùng và trạng thái phát hành.',
     load: getList('/api/prescriptions'),
     detailTitle: (row) => `Đơn thuốc ${text(row.id)}`,
     columns: [
@@ -111,7 +156,8 @@ export const RESOURCES: Record<string, ResourceConfig> = {
   },
   'treatment-plans': {
     title: 'Quản lý kế hoạch điều trị',
-    description: 'Kế hoạch điều trị, phác đồ và tiến độ chăm sóc của bệnh nhân.',
+    description:
+      'Kế hoạch điều trị, phác đồ và tiến độ chăm sóc của bệnh nhân.',
     load: getList('/api/treatment-plans'),
     detailTitle: (row) => `Kế hoạch ${text(row.title ?? row.id)}`,
     columns: [
@@ -140,7 +186,10 @@ export const RESOURCES: Record<string, ResourceConfig> = {
 };
 
 /** Mục chưa có HTTP API ở backend — hiển thị trạng thái thay vì dữ liệu giả. */
-export const UNSUPPORTED: Record<string, { title: string; description: string; reason: string }> = {};
+export const UNSUPPORTED: Record<
+  string,
+  { title: string; description: string; reason: string }
+> = {};
 
 export const SECTION_TITLES: Record<string, string> = {
   overview: 'Tổng quan hệ thống',
@@ -152,6 +201,10 @@ export const SECTION_TITLES: Record<string, string> = {
   services: 'Quản lý dịch vụ & giá',
   'audit-log': 'Nhật ký & Kiểm toán hệ thống (Audit Logs)',
   'system-health': 'Giám sát dịch vụ & Sao lưu (Health & Backup Monitor)',
-  ...Object.fromEntries(Object.entries(RESOURCES).map(([key, value]) => [key, value.title])),
-  ...Object.fromEntries(Object.entries(UNSUPPORTED).map(([key, value]) => [key, value.title])),
+  ...Object.fromEntries(
+    Object.entries(RESOURCES).map(([key, value]) => [key, value.title]),
+  ),
+  ...Object.fromEntries(
+    Object.entries(UNSUPPORTED).map(([key, value]) => [key, value.title]),
+  ),
 };

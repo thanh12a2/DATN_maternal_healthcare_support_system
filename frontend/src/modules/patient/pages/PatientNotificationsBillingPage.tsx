@@ -6,7 +6,10 @@ import { NotificationInbox } from '../../../shared/components/notifications/Noti
  */
 export function PatientNotificationsBillingPage() {
   return (
-    <PatientPortalLayout eyebrow="Tài khoản cá nhân" title="Thông báo & Hóa đơn">
+    <PatientPortalLayout
+      eyebrow="Tài khoản cá nhân"
+      title="Thông báo & Hóa đơn"
+    >
       <NotificationInbox />
     </PatientPortalLayout>
   );

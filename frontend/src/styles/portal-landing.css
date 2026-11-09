@@ -44,7 +44,10 @@
   z-index: 1000;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(11, 79, 156, 0.06);
-  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  font-family:
+    'Be Vietnam Pro',
+    -apple-system,
+    sans-serif;
 }
 
 /* Tier 1: Top Spacious Bar (Logo & Auth/UserChip Actions) */
@@ -101,7 +104,10 @@
   letter-spacing: 0.04em;
   color: var(--portal-navy);
   line-height: 1;
-  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  font-family:
+    'Be Vietnam Pro',
+    -apple-system,
+    sans-serif;
 }
 
 .brand-badge-sub {
@@ -384,7 +390,9 @@
   height: 15px;
   margin-left: 2px;
   color: #64748b;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s ease;
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.18s ease;
 }
 
 .portal-nav-item-dropdown-btn:hover .portal-dropdown-chevron,
@@ -405,7 +413,9 @@
   max-width: calc(100vw - 32px);
   background: #ffffff;
   border-radius: 14px;
-  box-shadow: 0 16px 36px -4px rgba(11, 79, 156, 0.14), 0 4px 12px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 16px 36px -4px rgba(11, 79, 156, 0.14),
+    0 4px 12px rgba(15, 23, 42, 0.05);
   border: 1px solid #e2e8f0;
   z-index: 999;
   display: flex;
@@ -1658,7 +1668,10 @@
 .public-portal-footer {
   background: #072a53;
   color: #cbd5e1;
-  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  font-family:
+    'Be Vietnam Pro',
+    -apple-system,
+    sans-serif;
   margin-top: 60px;
 }
 
@@ -1950,8 +1963,6 @@
   }
 }
 
-
-
 /* ==========================================================================
    Specialty Detail Page (Full Width Matching Navbar & Modern Layout)
    ========================================================================== */
@@ -2053,7 +2064,9 @@
   border: none;
   border-radius: 8px;
   text-decoration: none;
-  transition: background-color 0.18s ease, transform 0.15s ease;
+  transition:
+    background-color 0.18s ease,
+    transform 0.15s ease;
   box-shadow: 0 4px 14px rgba(230, 126, 34, 0.28);
 }
 
@@ -2097,7 +2110,9 @@
   padding: 28px 24px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(11, 79, 156, 0.04);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .portal-specialty-pillar-card:hover {
@@ -2144,7 +2159,6 @@
   margin: 0;
 }
 
-
 @media (max-width: 900px) {
   .portal-specialty-hero-card {
     padding: 24px 20px;
@@ -2157,7 +2171,6 @@
     gap: 16px;
   }
 }
-
 
 /* ==========================================================================
    Specialty Detail Tabs & Sections (Vinmec Redesign)
@@ -2325,7 +2338,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 40px;
   align-items: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .portal-service-showcase-row:hover {
@@ -2609,7 +2624,9 @@
 }
 
 @keyframes portalSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .portal-empty-card {
@@ -2647,7 +2664,10 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .portal-doc-card:hover {
@@ -2847,8 +2867,6 @@
   margin-top: 2px;
 }
 
-
-
 /* Chân thẻ Bác sĩ: 2 nút hành động */
 .portal-doc-card-footer {
   display: flex;
@@ -2933,13 +2951,23 @@
 }
 
 @keyframes portalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes portalScaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .portal-doc-modal-header {

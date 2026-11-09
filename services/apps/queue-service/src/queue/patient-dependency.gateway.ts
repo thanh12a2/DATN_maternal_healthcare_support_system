@@ -12,7 +12,9 @@ export class PatientDependencyGateway {
   async resolvePatientId(accountId: string): Promise<string> {
     const client = this.grpc.client({
       key: 'patient',
-      target: this.config.get<string>('PATIENT_GRPC_TARGET') ?? 'patient-service:6004',
+      target:
+        this.config.get<string>('PATIENT_GRPC_TARGET') ??
+        'patient-service:6004',
       proto: 'patient/v1/patient_internal.proto',
       package: 'maternal.patient.v1',
       service: 'PatientInternalService',
@@ -27,7 +29,11 @@ export class PatientDependencyGateway {
       client,
       'getPatientEligibility',
       { context },
-      this.grpc.metadata('patient-service', ['patient:eligibility:read'], context),
+      this.grpc.metadata(
+        'patient-service',
+        ['patient:eligibility:read'],
+        context,
+      ),
     );
     if (!response?.patientId) {
       throw new NotFoundException('PATIENT_PROFILE_NOT_FOUND');

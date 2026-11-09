@@ -78,8 +78,12 @@ export function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
+  const [selectedRole, setSelectedRole] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(
+    undefined,
+  );
   const [error, setError] = useState('');
 
   // Modal states
@@ -102,37 +106,44 @@ export function AdminUsersPage() {
   const [createForm] = Form.useForm<CreateUserFormValues>();
   const [editForm] = Form.useForm<UpdateAdminUserPayload>();
 
-  const loadData = useCallback(async (
-    overrideSearchTerm?: string,
-    overrideRole?: string,
-    overrideStatus?: string,
-    overridePage?: number,
-  ) => {
-    setLoading(true);
-    setError('');
-    const s = overrideSearchTerm !== undefined ? overrideSearchTerm : searchTerm;
-    const r = overrideRole !== undefined ? overrideRole : selectedRole;
-    const st = overrideStatus !== undefined ? overrideStatus : selectedStatus;
-    const p = overridePage !== undefined ? overridePage : page;
-    try {
-      const res = await listAdminUsers(request, {
-        page: p,
-        limit: pageSize,
-        search: s,
-        role: r,
-        status: st,
-      });
-      setUsers(res.items ?? []);
-      setTotal(res.total ?? 0);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể tải danh sách người dùng.';
-      setError(msg);
-      setUsers([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [request, page, pageSize, searchTerm, selectedRole, selectedStatus]);
+  const loadData = useCallback(
+    async (
+      overrideSearchTerm?: string,
+      overrideRole?: string,
+      overrideStatus?: string,
+      overridePage?: number,
+    ) => {
+      setLoading(true);
+      setError('');
+      const s =
+        overrideSearchTerm !== undefined ? overrideSearchTerm : searchTerm;
+      const r = overrideRole !== undefined ? overrideRole : selectedRole;
+      const st = overrideStatus !== undefined ? overrideStatus : selectedStatus;
+      const p = overridePage !== undefined ? overridePage : page;
+      try {
+        const res = await listAdminUsers(request, {
+          page: p,
+          limit: pageSize,
+          search: s,
+          role: r,
+          status: st,
+        });
+        setUsers(res.items ?? []);
+        setTotal(res.total ?? 0);
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : 'Không thể tải danh sách người dùng.';
+        setError(msg);
+        setUsers([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [request, page, pageSize, searchTerm, selectedRole, selectedStatus],
+  );
 
   useEffect(() => {
     void loadData();
@@ -188,7 +199,10 @@ export function AdminUsersPage() {
         open: true,
         type: 'error',
         title: 'Tạo tài khoản thất bại!',
-        description: err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi tạo người dùng mới.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Đã có lỗi xảy ra khi tạo người dùng mới.',
       });
     } finally {
       setSubmitting(false);
@@ -200,10 +214,15 @@ export function AdminUsersPage() {
     setSubmitting(true);
     try {
       const payload: UpdateAdminUserPayload = {};
-      if (values.email && values.email.trim() !== editingUser.email) payload.email = values.email.trim();
-      if (values.password && values.password.trim().length >= 8) payload.password = values.password.trim();
+      if (values.email && values.email.trim() !== editingUser.email)
+        payload.email = values.email.trim();
+      if (values.password && values.password.trim().length >= 8)
+        payload.password = values.password.trim();
 
-      registerUserEmailToCache(editingUser.id, values.email?.trim() || editingUser.email);
+      registerUserEmailToCache(
+        editingUser.id,
+        values.email?.trim() || editingUser.email,
+      );
       const updated = await updateAdminUser(request, editingUser.id, payload);
       editForm.resetFields();
       setEditModalOpen(false);
@@ -223,7 +242,10 @@ export function AdminUsersPage() {
         open: true,
         type: 'error',
         title: 'Cập nhật thất bại!',
-        description: err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi cập nhật thông tin.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Đã có lỗi xảy ra khi cập nhật thông tin.',
       });
     } finally {
       setSubmitting(false);
@@ -232,7 +254,8 @@ export function AdminUsersPage() {
 
   // Confirm status toggle modal state (Tạm khóa / Kích hoạt)
   const [confirmStatusModalOpen, setConfirmStatusModalOpen] = useState(false);
-  const [userForStatusToggle, setUserForStatusToggle] = useState<AdminUser | null>(null);
+  const [userForStatusToggle, setUserForStatusToggle] =
+    useState<AdminUser | null>(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [statusToggleLoading, setStatusToggleLoading] = useState(false);
 
@@ -260,12 +283,16 @@ export function AdminUsersPage() {
     const nextStatus: UserStatus = isCurrentlyActive ? 'LOCKED' : 'ACTIVE';
     const actionText = isCurrentlyActive ? 'Tạm khóa' : 'Kích hoạt';
 
-    if (isCurrentlyActive && (!deactivateReason || deactivateReason.trim().length < 3)) {
+    if (
+      isCurrentlyActive &&
+      (!deactivateReason || deactivateReason.trim().length < 3)
+    ) {
       setFeedbackModal({
         open: true,
         type: 'error',
         title: 'Thiếu lý do tạm khóa!',
-        description: 'Vui lòng nhập lý do tạm khóa tài khoản (tối thiểu 3 ký tự).',
+        description:
+          'Vui lòng nhập lý do tạm khóa tài khoản (tối thiểu 3 ký tự).',
       });
       setStatusToggleLoading(false);
       return;
@@ -279,11 +306,19 @@ export function AdminUsersPage() {
             listDoctors(request, { status: 'ACTIVE', limit: 100 }),
             listDoctors(request, { status: 'INACTIVE', limit: 100 }),
           ]);
-          const allDocs = [...(activeDocs.data ?? []), ...(inactiveDocs.data ?? [])];
+          const allDocs = [
+            ...(activeDocs.data ?? []),
+            ...(inactiveDocs.data ?? []),
+          ];
           const doc = allDocs.find((d) => d.accountId === userItem.id);
           if (doc) {
             if (isCurrentlyActive) {
-              await deactivateDoctor(request, doc.id, doc.version, deactivateReason.trim());
+              await deactivateDoctor(
+                request,
+                doc.id,
+                doc.version,
+                deactivateReason.trim(),
+              );
             } else {
               // Khi kích hoạt bác sĩ: Auth user cần ACTIVE trước để verifyAccount kiểm tra thành công!
               await updateAdminUser(request, userItem.id, {
@@ -296,7 +331,9 @@ export function AdminUsersPage() {
           console.error('Lỗi khi đồng bộ trạng thái bác sĩ:', docErr);
           throw new Error(
             `Đồng bộ trạng thái bác sĩ thất bại: ${
-              docErr instanceof Error ? docErr.message : 'Không thể kết nối đến Doctor Service'
+              docErr instanceof Error
+                ? docErr.message
+                : 'Không thể kết nối đến Doctor Service'
             }`,
           );
         }
@@ -318,8 +355,8 @@ export function AdminUsersPage() {
           userItem.role === 'DOCTOR'
             ? 'và hồ sơ bác sĩ tương ứng'
             : userItem.role === 'PATIENT'
-            ? 'và hồ sơ bệnh nhân tương ứng'
-            : ''
+              ? 'và hồ sơ bệnh nhân tương ứng'
+              : ''
         } đã được chuyển sang trạng thái ${isCurrentlyActive ? 'tạm khóa' : 'hoạt động'}.`,
       });
       void loadData();
@@ -329,7 +366,10 @@ export function AdminUsersPage() {
         open: true,
         type: 'error',
         title: `${actionText} thất bại!`,
-        description: err instanceof Error ? err.message : `Không thể ${actionText.toLowerCase()} tài khoản này.`,
+        description:
+          err instanceof Error
+            ? err.message
+            : `Không thể ${actionText.toLowerCase()} tài khoản này.`,
       });
     } finally {
       setStatusToggleLoading(false);
@@ -372,7 +412,10 @@ export function AdminUsersPage() {
         open: true,
         type: 'error',
         title: 'Xóa tài khoản thất bại!',
-        description: err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi xóa người dùng.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Đã có lỗi xảy ra khi xóa người dùng.',
       });
     } finally {
       setDeleting(false);
@@ -396,7 +439,11 @@ export function AdminUsersPage() {
 
   const roleTag = (role: UserRole) => {
     const opt = ROLE_OPTIONS.find((r) => r.value === role);
-    return <Tag color={opt?.color ?? 'default'} variant="filled">{opt?.label ?? role}</Tag>;
+    return (
+      <Tag color={opt?.color ?? 'default'} variant="filled">
+        {opt?.label ?? role}
+      </Tag>
+    );
   };
 
   const columns: ColumnsType<AdminUser> = [
@@ -422,15 +469,31 @@ export function AdminUsersPage() {
             </Avatar>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>{email}</span>
+                <span
+                  style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}
+                >
+                  {email}
+                </span>
                 {currentUser?.userId === record.id && (
-                  <Tag color="cyan" variant="outlined" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
+                  <Tag
+                    color="cyan"
+                    variant="outlined"
+                    style={{ margin: 0, fontSize: 11, padding: '0 6px' }}
+                  >
                     Bạn
                   </Tag>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                ID: <span className="admin-code" style={{ padding: '0 4px', fontSize: 10 }}>{record.id.slice(0, 8)}…</span>
+              <div
+                style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}
+              >
+                ID:{' '}
+                <span
+                  className="admin-code"
+                  style={{ padding: '0 4px', fontSize: 10 }}
+                >
+                  {record.id.slice(0, 8)}…
+                </span>
               </div>
             </div>
           </Space>
@@ -467,7 +530,13 @@ export function AdminUsersPage() {
               />
             </Tooltip>
             {record.status === 'ACTIVE' ? (
-              <Tooltip title={currentUser?.userId === record.id ? 'Không thể tự khóa chính mình' : 'Tạm khóa tài khoản'}>
+              <Tooltip
+                title={
+                  currentUser?.userId === record.id
+                    ? 'Không thể tự khóa chính mình'
+                    : 'Tạm khóa tài khoản'
+                }
+              >
                 <Button
                   type="text"
                   icon={<PauseCircleOutlined style={{ color: '#fa8c16' }} />}
@@ -491,7 +560,13 @@ export function AdminUsersPage() {
                 onClick={() => openEditModal(record)}
               />
             </Tooltip>
-            <Tooltip title={currentUser?.userId === record.id ? 'Không thể xóa chính mình' : 'Xóa'}>
+            <Tooltip
+              title={
+                currentUser?.userId === record.id
+                  ? 'Không thể xóa chính mình'
+                  : 'Xóa'
+              }
+            >
               <Button
                 type="text"
                 danger
@@ -546,10 +621,17 @@ export function AdminUsersPage() {
             style={{ width: 180 }}
             options={[
               { label: 'Tất cả trạng thái', value: '' },
-              ...STATUS_OPTIONS.map((s) => ({ label: s.label, value: s.value })),
+              ...STATUS_OPTIONS.map((s) => ({
+                label: s.label,
+                value: s.value,
+              })),
             ]}
           />
-          <Button icon={<ReloadOutlined />} onClick={handleResetUsers} loading={loading}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleResetUsers}
+            loading={loading}
+          >
             Làm mới
           </Button>
         </Space>
@@ -574,7 +656,11 @@ export function AdminUsersPage() {
           showIcon
           title="Không thể tải dữ liệu"
           description={error}
-          action={<Button size="small" onClick={() => void loadData()}>Thử lại</Button>}
+          action={
+            <Button size="small" onClick={() => void loadData()}>
+              Thử lại
+            </Button>
+          }
           style={{ marginBottom: 16 }}
         />
       )}
@@ -622,8 +708,18 @@ export function AdminUsersPage() {
           style={{ marginTop: 16 }}
         >
           {/* Chrome/Edge autofill prevention dummy fields */}
-          <input type="text" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
-          <input type="password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
+          <input
+            type="text"
+            style={{ display: 'none' }}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <input
+            type="password"
+            style={{ display: 'none' }}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
 
           <Form.Item
             name="email"
@@ -633,7 +729,11 @@ export function AdminUsersPage() {
               { type: 'email', message: 'Email không đúng định dạng' },
             ]}
           >
-            <Input placeholder="ví dụ: bacsi@hospital.vn" autoComplete="off" name="new_user_email" />
+            <Input
+              placeholder="ví dụ: bacsi@hospital.vn"
+              autoComplete="off"
+              name="new_user_email"
+            />
           </Form.Item>
 
           <Form.Item
@@ -644,7 +744,11 @@ export function AdminUsersPage() {
               { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
             ]}
           >
-            <Input.Password placeholder="Tối thiểu 8 ký tự" autoComplete="new-password" name="new_user_password" />
+            <Input.Password
+              placeholder="Tối thiểu 8 ký tự"
+              autoComplete="new-password"
+              name="new_user_password"
+            />
           </Form.Item>
 
           <Form.Item
@@ -658,12 +762,18 @@ export function AdminUsersPage() {
                   if (!value || getFieldValue('password') === value) {
                     return Promise.resolve();
                   }
-                  return Promise.reject(new Error('Mật khẩu xác nhận không khớp với mật khẩu'));
+                  return Promise.reject(
+                    new Error('Mật khẩu xác nhận không khớp với mật khẩu'),
+                  );
                 },
               }),
             ]}
           >
-            <Input.Password placeholder="Nhập lại mật khẩu ở trên" autoComplete="new-password" name="new_user_confirm_password" />
+            <Input.Password
+              placeholder="Nhập lại mật khẩu ở trên"
+              autoComplete="new-password"
+              name="new_user_confirm_password"
+            />
           </Form.Item>
 
           <Form.Item
@@ -671,7 +781,12 @@ export function AdminUsersPage() {
             label="Vai trò"
             rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
           >
-            <Select options={ROLE_OPTIONS.map((r) => ({ label: r.label, value: r.value }))} />
+            <Select
+              options={ROLE_OPTIONS.map((r) => ({
+                label: r.label,
+                value: r.value,
+              }))}
+            />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -697,7 +812,12 @@ export function AdminUsersPage() {
         destroyOnClose
         centered
       >
-        <Form form={editForm} layout="vertical" onFinish={handleEdit} style={{ marginTop: 16 }}>
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleEdit}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             name="email"
             label="Địa chỉ Email"
@@ -714,7 +834,13 @@ export function AdminUsersPage() {
             label="Vai trò"
             extra="Vai trò được gắn cố định với tài khoản và không thể thay đổi."
           >
-            <Select disabled options={ROLE_OPTIONS.map((r) => ({ label: r.label, value: r.value }))} />
+            <Select
+              disabled
+              options={ROLE_OPTIONS.map((r) => ({
+                label: r.label,
+                value: r.value,
+              }))}
+            />
           </Form.Item>
 
           <Form.Item
@@ -723,7 +849,10 @@ export function AdminUsersPage() {
             rules={[{ min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' }]}
             extra="Để trống trường này nếu không muốn thay đổi mật khẩu hiện tại."
           >
-            <Input.Password prefix={<KeyOutlined />} placeholder="Nhập mật khẩu mới nếu muốn đổi" />
+            <Input.Password
+              prefix={<KeyOutlined />}
+              placeholder="Nhập mật khẩu mới nếu muốn đổi"
+            />
           </Form.Item>
 
           <Form.Item
@@ -739,18 +868,28 @@ export function AdminUsersPage() {
                   label="Xác nhận mật khẩu mới"
                   dependencies={['password']}
                   rules={[
-                    { required: true, message: 'Vui lòng xác nhận lại mật khẩu mới' },
+                    {
+                      required: true,
+                      message: 'Vui lòng xác nhận lại mật khẩu mới',
+                    },
                     ({ getFieldValue: getField }) => ({
                       validator(_, value) {
                         if (!value || getField('password') === value) {
                           return Promise.resolve();
                         }
-                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp với mật khẩu mới'));
+                        return Promise.reject(
+                          new Error(
+                            'Mật khẩu xác nhận không khớp với mật khẩu mới',
+                          ),
+                        );
                       },
                     }),
                   ]}
                 >
-                  <Input.Password prefix={<KeyOutlined />} placeholder="Nhập lại mật khẩu mới ở trên" />
+                  <Input.Password
+                    prefix={<KeyOutlined />}
+                    placeholder="Nhập lại mật khẩu mới ở trên"
+                  />
                 </Form.Item>
               );
             }}
@@ -796,13 +935,16 @@ export function AdminUsersPage() {
                 border: '1px solid var(--border)',
                 borderRadius: 14,
                 marginBottom: 20,
-                boxShadow: '0 2px 10px color-mix(in oklch, var(--deep) 4%, transparent)',
+                boxShadow:
+                  '0 2px 10px color-mix(in oklch, var(--deep) 4%, transparent)',
               }}
             >
               <Avatar
                 size={54}
                 style={{
-                  backgroundColor: ROLE_OPTIONS.find((r) => r.value === selectedUser.role)?.color
+                  backgroundColor: ROLE_OPTIONS.find(
+                    (r) => r.value === selectedUser.role,
+                  )?.color
                     ? `var(--${ROLE_OPTIONS.find((r) => r.value === selectedUser.role)?.color}, #0d828a)`
                     : '#0d828a',
                   fontSize: 22,
@@ -814,7 +956,12 @@ export function AdminUsersPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Typography.Title
                   level={5}
-                  style={{ margin: 0, wordBreak: 'break-all', color: 'var(--fg)', fontSize: 16 }}
+                  style={{
+                    margin: 0,
+                    wordBreak: 'break-all',
+                    color: 'var(--fg)',
+                    fontSize: 16,
+                  }}
                 >
                   {selectedUser.email}
                 </Typography.Title>
@@ -822,7 +969,9 @@ export function AdminUsersPage() {
                   {roleTag(selectedUser.role)}
                   <StatusTag status={selectedUser.status} />
                   {currentUser?.userId === selectedUser.id && (
-                    <Tag color="cyan" variant="outlined">Bạn</Tag>
+                    <Tag color="cyan" variant="outlined">
+                      Bạn
+                    </Tag>
                   )}
                 </Space>
               </div>
@@ -839,7 +988,10 @@ export function AdminUsersPage() {
                   key: 'id',
                   label: 'Mã người dùng',
                   children: (
-                    <span className="admin-code" style={{ wordBreak: 'break-all' }}>
+                    <span
+                      className="admin-code"
+                      style={{ wordBreak: 'break-all' }}
+                    >
                       {selectedUser.id}
                     </span>
                   ),
@@ -879,7 +1031,11 @@ export function AdminUsersPage() {
                   children: selectedUser.lastLoginAt ? (
                     formatDateTime(selectedUser.lastLoginAt)
                   ) : (
-                    <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Chưa có lượt đăng nhập</span>
+                    <span
+                      style={{ color: 'var(--muted)', fontStyle: 'italic' }}
+                    >
+                      Chưa có lượt đăng nhập
+                    </span>
                   ),
                 },
               ]}
@@ -888,7 +1044,9 @@ export function AdminUsersPage() {
             <Divider style={{ margin: '24px 0 16px' }} />
 
             {/* Thao tác nhanh bên dưới: Tạm khóa / Kích hoạt, Chỉnh sửa, Xóa tài khoản */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}
+            >
               {selectedUser.status === 'ACTIVE' ? (
                 <Button
                   style={{ color: '#fa8c16', borderColor: '#fa8c16' }}
@@ -924,7 +1082,9 @@ export function AdminUsersPage() {
                 disabled={currentUser?.userId === selectedUser.id}
                 onClick={() => openDeleteModal(selectedUser)}
               >
-                {currentUser?.userId === selectedUser.id ? 'Không thể xóa chính mình' : 'Xóa tài khoản'}
+                {currentUser?.userId === selectedUser.id
+                  ? 'Không thể xóa chính mình'
+                  : 'Xóa tài khoản'}
               </Button>
             </div>
           </div>
@@ -972,10 +1132,12 @@ export function AdminUsersPage() {
       >
         <div style={{ padding: '8px 0' }}>
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-            Bạn có chắc muốn xóa tài khoản <strong>{userToDelete?.email}</strong>?
+            Bạn có chắc muốn xóa tài khoản{' '}
+            <strong>{userToDelete?.email}</strong>?
           </p>
           <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)' }}>
-            Hành động này sẽ xóa vĩnh viễn tài khoản khỏi hệ thống và không thể hoàn tác.
+            Hành động này sẽ xóa vĩnh viễn tài khoản khỏi hệ thống và không thể
+            hoàn tác.
           </p>
         </div>
       </Modal>
@@ -1014,10 +1176,16 @@ export function AdminUsersPage() {
                   : { backgroundColor: '#52c41a', borderColor: '#52c41a' }
               }
               loading={statusToggleLoading}
-              disabled={statusToggleLoading || (userForStatusToggle?.status === 'ACTIVE' && deactivateReason.trim().length < 3)}
+              disabled={
+                statusToggleLoading ||
+                (userForStatusToggle?.status === 'ACTIVE' &&
+                  deactivateReason.trim().length < 3)
+              }
               onClick={() => void handleToggleStatus()}
             >
-              {userForStatusToggle?.status === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'}
+              {userForStatusToggle?.status === 'ACTIVE'
+                ? 'Tạm khóa'
+                : 'Kích hoạt'}
             </Button>
             <Button
               disabled={statusToggleLoading}
@@ -1036,7 +1204,9 @@ export function AdminUsersPage() {
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
             Bạn có chắc chắn muốn{' '}
             <strong>
-              {userForStatusToggle?.status === 'ACTIVE' ? 'tạm khóa' : 'kích hoạt lại'}
+              {userForStatusToggle?.status === 'ACTIVE'
+                ? 'tạm khóa'
+                : 'kích hoạt lại'}
             </strong>{' '}
             tài khoản <strong>{userForStatusToggle?.email}</strong> không?
           </p>
@@ -1047,7 +1217,14 @@ export function AdminUsersPage() {
           </p>
           {userForStatusToggle?.status === 'ACTIVE' && (
             <div style={{ marginTop: 14 }}>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: 6,
+                  fontWeight: 500,
+                  fontSize: 13,
+                }}
+              >
                 Lý do tạm khóa (tối thiểu 3 ký tự):
               </label>
               <Input

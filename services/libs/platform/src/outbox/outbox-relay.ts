@@ -37,13 +37,17 @@ export class OutboxRelay {
           aggregateType: String(payload.aggregateType ?? 'unknown'),
           aggregateId: String(payload.aggregateId ?? ''),
           occurredAt: record.occurredAt.toISOString(),
-          correlationId: record.correlationId ?? String(payload.correlationId ?? record.id),
+          correlationId:
+            record.correlationId ?? String(payload.correlationId ?? record.id),
           producer: this.producer,
           data: (payload.data ?? payload) as Record<string, unknown>,
         });
         await this.store.markPublished(record.id, new Date());
       } catch (error) {
-        await this.store.markFailed(record.id, error instanceof Error ? error.message : 'publish failed');
+        await this.store.markFailed(
+          record.id,
+          error instanceof Error ? error.message : 'publish failed',
+        );
       }
     }
     return records.length;

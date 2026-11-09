@@ -20,7 +20,8 @@ export class AdminAuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const authorization = request.headers['authorization'] as string | undefined;
+    const authorization = request.headers['authorization'] as
+      string | undefined;
 
     if (!authorization) {
       throw new UnauthorizedException('Thiếu bearer token xác thực');
@@ -33,7 +34,9 @@ export class AdminAuthGuard implements CanActivate {
 
     const verified = this.accessTokenService.verifyAccessToken(token);
     if (!verified || verified.role !== AuthRole.Admin) {
-      throw new ForbiddenException('Chỉ quản trị viên (ADMIN) mới có quyền truy cập');
+      throw new ForbiddenException(
+        'Chỉ quản trị viên (ADMIN) mới có quyền truy cập',
+      );
     }
 
     request.user = verified;

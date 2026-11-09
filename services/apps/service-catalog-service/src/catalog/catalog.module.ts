@@ -7,7 +7,11 @@ import { CatalogService } from './catalog.service';
 @Module({
   // Deprecated compatibility routes; they are never exposed through Kong.
   // New callers must use CatalogInternalService gRPC.
-  controllers: [CatalogPublicController, CatalogAdminController, CatalogInternalController],
+  controllers: [
+    CatalogPublicController,
+    CatalogAdminController,
+    CatalogInternalController,
+  ],
   providers: [CatalogService],
   exports: [CatalogService],
 })

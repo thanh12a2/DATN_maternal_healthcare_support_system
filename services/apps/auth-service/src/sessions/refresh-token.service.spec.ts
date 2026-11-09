@@ -24,17 +24,22 @@ describe('RefreshTokenService', () => {
       ],
     }).compile();
 
-    refreshTokenService = moduleRef.get<RefreshTokenService>(RefreshTokenService);
+    refreshTokenService =
+      moduleRef.get<RefreshTokenService>(RefreshTokenService);
   });
 
   it('should issue opaque refresh token and store only a deterministic hash', () => {
-    const issued = refreshTokenService.issueRefreshToken(new Date('2026-01-01T00:00:00.000Z'));
+    const issued = refreshTokenService.issueRefreshToken(
+      new Date('2026-01-01T00:00:00.000Z'),
+    );
 
     expect(issued.refreshToken).toEqual(expect.any(String));
     expect(issued.refreshToken.length).toBeGreaterThan(60);
     expect(issued.refreshTokenHash).toEqual(expect.any(String));
     expect(issued.refreshTokenHash).not.toBe(issued.refreshToken);
-    expect(issued.refreshTokenHash).toBe(refreshTokenService.hashRefreshToken(issued.refreshToken));
+    expect(issued.refreshTokenHash).toBe(
+      refreshTokenService.hashRefreshToken(issued.refreshToken),
+    );
     expect(issued.expiresAt).toEqual(new Date('2026-01-31T00:00:00.000Z'));
   });
 
@@ -59,6 +64,8 @@ describe('RefreshTokenService', () => {
 
     const service = moduleRef.get<RefreshTokenService>(RefreshTokenService);
 
-    expect(() => service.issueRefreshToken()).toThrow(InternalServerErrorException);
+    expect(() => service.issueRefreshToken()).toThrow(
+      InternalServerErrorException,
+    );
   });
 });

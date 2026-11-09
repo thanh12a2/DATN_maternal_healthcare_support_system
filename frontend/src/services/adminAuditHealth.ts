@@ -107,15 +107,21 @@ export async function fetchAuditLogs(
   return request<AuditLogListResponse>(`/api/audit-logs${qs ? `?${qs}` : ''}`);
 }
 
-export async function fetchAuditStats(request: Requester): Promise<AuditLogStats> {
+export async function fetchAuditStats(
+  request: Requester,
+): Promise<AuditLogStats> {
   return request<AuditLogStats>('/api/audit-logs/stats');
 }
 
-export async function fetchSystemHealth(request: Requester): Promise<SystemHealthOverview> {
+export async function fetchSystemHealth(
+  request: Requester,
+): Promise<SystemHealthOverview> {
   return request<SystemHealthOverview>('/api/audit-logs/system/health');
 }
 
-export async function fetchBackupRecords(request: Requester): Promise<BackupListResponse> {
+export async function fetchBackupRecords(
+  request: Requester,
+): Promise<BackupListResponse> {
   return request<BackupListResponse>('/api/audit-logs/system/backups');
 }
 

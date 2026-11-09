@@ -48,6 +48,8 @@ export function validateRegister(values: RegisterFormValues) {
   };
 }
 
-export function hasValidationErrors(results: Record<string, ValidationResult>): boolean {
+export function hasValidationErrors(
+  results: Record<string, ValidationResult>,
+): boolean {
   return Object.values(results).some((result) => !result.valid);
 }

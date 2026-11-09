@@ -1,1 +1,8 @@
-import { Injectable,OnModuleDestroy } from '@nestjs/common';import { PrismaClient } from '../../../../generated/notification-client';@Injectable()export class AppPrismaService extends PrismaClient implements OnModuleDestroy{async onModuleDestroy(){await this.$disconnect();}}
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { PrismaClient } from '../../../../generated/notification-client';
+@Injectable()
+export class AppPrismaService extends PrismaClient implements OnModuleDestroy {
+  async onModuleDestroy() {
+    await this.$disconnect();
+  }
+}

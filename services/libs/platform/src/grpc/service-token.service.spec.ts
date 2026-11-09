@@ -18,12 +18,25 @@ describe('ServiceTokenService', () => {
   const service = new ServiceTokenService(config);
 
   it('signs and verifies scoped service tokens', () => {
-    const token = service.sign({ serviceId: 'appointment-service', audience: 'patient-service', scopes: ['patient:eligibility:read'] });
-    expect(service.verify(token)).toMatchObject({ serviceId: 'appointment-service', scopes: ['patient:eligibility:read'] });
+    const token = service.sign({
+      serviceId: 'appointment-service',
+      audience: 'patient-service',
+      scopes: ['patient:eligibility:read'],
+    });
+    expect(service.verify(token)).toMatchObject({
+      serviceId: 'appointment-service',
+      scopes: ['patient:eligibility:read'],
+    });
   });
 
   it('rejects a token for the wrong audience', () => {
-    const token = service.sign({ serviceId: 'appointment-service', audience: 'doctor-service', scopes: ['doctor:read'] });
-    expect(() => service.verify(token)).toThrow('Invalid internal service token');
+    const token = service.sign({
+      serviceId: 'appointment-service',
+      audience: 'doctor-service',
+      scopes: ['doctor:read'],
+    });
+    expect(() => service.verify(token)).toThrow(
+      'Invalid internal service token',
+    );
   });
 });

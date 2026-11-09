@@ -17,7 +17,8 @@ export class QueueRealtimeService implements OnModuleDestroy {
   private readonly subscribers = new Map<string, Set<Subscriber>>();
 
   subscribe(patientId: string, subscriber: Subscriber): () => void {
-    const subscribers = this.subscribers.get(patientId) ?? new Set<Subscriber>();
+    const subscribers =
+      this.subscribers.get(patientId) ?? new Set<Subscriber>();
     subscribers.add(subscriber);
     this.subscribers.set(patientId, subscribers);
 

@@ -79,12 +79,22 @@ describe('AdminDoctorsPage', () => {
     mockRequest.mockImplementation((path: string) => {
       if (typeof path === 'string' && path.includes('/specialties')) {
         return Promise.resolve([
-          { id: 'sp-01', code: 'OBGYN', name: 'Sản phụ khoa', status: 'ACTIVE' },
+          {
+            id: 'sp-01',
+            code: 'OBGYN',
+            name: 'Sản phụ khoa',
+            status: 'ACTIVE',
+          },
         ]);
       }
       if (typeof path === 'string' && path.includes('/consultation-ranks')) {
         return Promise.resolve([
-          { id: 'rk-01', code: 'SPECIALIST_I', name: 'Bác sĩ CKI', status: 'ACTIVE' },
+          {
+            id: 'rk-01',
+            code: 'SPECIALIST_I',
+            name: 'Bác sĩ CKI',
+            status: 'ACTIVE',
+          },
         ]);
       }
       if (typeof path === 'string' && path.includes('/doctors/')) {
@@ -111,11 +121,17 @@ describe('AdminDoctorsPage', () => {
     const nameEl = await screen.findByText(/Trần Quốc Việt/);
     await userEvent.click(nameEl);
 
-    expect(await screen.findByText('Số chứng chỉ hành nghề')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Số chứng chỉ hành nghề'),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Bác sĩ CKI').length).toBeGreaterThan(0);
     expect(screen.getByText('Giới thiệu / Tiểu sử')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Chỉnh sửa/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Xóa bác sĩ/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Chỉnh sửa/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Xóa bác sĩ/i }),
+    ).toBeInTheDocument();
   });
 
   it('opens delete confirmation modal with red Xóa and Hủy', async () => {
@@ -123,7 +139,9 @@ describe('AdminDoctorsPage', () => {
     const nameEl = await screen.findByText(/Trần Quốc Việt/);
     await userEvent.click(nameEl);
 
-    const deleteBtn = await screen.findByRole('button', { name: /Xóa bác sĩ/i });
+    const deleteBtn = await screen.findByRole('button', {
+      name: /Xóa bác sĩ/i,
+    });
     await userEvent.click(deleteBtn);
 
     expect(await screen.findByText('Xác nhận xóa bác sĩ')).toBeInTheDocument();
@@ -171,11 +189,19 @@ describe('AdminPatientsPage', () => {
     const nameEl = await screen.findByText('Nguyễn Thị Bích Ngọc');
     await userEvent.click(nameEl);
 
-    expect(await screen.findByText('Người liên hệ khẩn cấp')).toBeInTheDocument();
-    expect(screen.getAllByText('Nguyễn Văn Minh').length).toBeGreaterThanOrEqual(1);
+    expect(
+      await screen.findByText('Người liên hệ khẩn cấp'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Nguyễn Văn Minh').length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Chồng').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: /Chỉnh sửa/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Xóa hồ sơ/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Chỉnh sửa/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Xóa hồ sơ/i }),
+    ).toBeInTheDocument();
   });
 
   it('opens delete confirmation modal with red Xóa and Hủy', async () => {
@@ -186,7 +212,9 @@ describe('AdminPatientsPage', () => {
     const deleteBtn = await screen.findByRole('button', { name: /Xóa hồ sơ/i });
     await userEvent.click(deleteBtn);
 
-    expect(await screen.findByText('Xác nhận xóa hồ sơ bệnh nhân')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Xác nhận xóa hồ sơ bệnh nhân'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Xóa' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hủy' })).toBeInTheDocument();
   });

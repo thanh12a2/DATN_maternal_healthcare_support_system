@@ -3,7 +3,10 @@ import { AppLink } from '../../../app/navigation';
 import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
 import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
 import { ChatbotLauncher } from '../components/chatbot/ChatbotLauncher';
-import { fetchSpecialties, type SpecialtyItem } from '../../../services/specialty';
+import {
+  fetchSpecialties,
+  type SpecialtyItem,
+} from '../../../services/specialty';
 import { apiRequest } from '../../../services/api';
 import '../../../styles/patient-service-catalog.css';
 
@@ -109,7 +112,16 @@ function SearchIcon() {
 
 function LayersIcon() {
   return (
-    <svg className="psc-sidebar-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      className="psc-sidebar-header-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polygon points="12 2 2 7 12 12 22 7 12 2" />
       <polyline points="2 17 12 22 22 17" />
       <polyline points="2 12 12 17 22 12" />
@@ -119,7 +131,16 @@ function LayersIcon() {
 
 function TagIcon() {
   return (
-    <svg className="psc-sidebar-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      className="psc-sidebar-header-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
@@ -128,7 +149,16 @@ function TagIcon() {
 
 function ClockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14 }}
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
@@ -137,7 +167,16 @@ function ClockIcon() {
 
 function CheckCircleIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14 }}
+      aria-hidden="true"
+    >
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
@@ -146,7 +185,16 @@ function CheckCircleIcon() {
 
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14 }}
+      aria-hidden="true"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -189,7 +237,16 @@ function CheckmarkIcon() {
 
 function ChevronLeftIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 16, height: 16 }}
+      aria-hidden="true"
+    >
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -197,14 +254,26 @@ function ChevronLeftIcon() {
 
 function ChevronRightIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 16, height: 16 }}
+      aria-hidden="true"
+    >
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
 }
 
 // Helper tính toán các nút trang
-function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+function getPageNumbers(
+  currentPage: number,
+  totalPages: number,
+): (number | string)[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
@@ -212,9 +281,25 @@ function getPageNumbers(currentPage: number, totalPages: number): (number | stri
     return [1, 2, 3, 4, 5, '...', totalPages];
   }
   if (currentPage >= totalPages - 3) {
-    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [
+      1,
+      '...',
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
   }
-  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  return [
+    1,
+    '...',
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    '...',
+    totalPages,
+  ];
 }
 
 const PAGE_SIZE = 9;
@@ -245,7 +330,9 @@ export function PatientServiceCatalogPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Selected Service for modal preview
-  const [selectedService, setSelectedService] = useState<ServiceData | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceData | null>(
+    null,
+  );
 
   // Click outside listener for custom dropdowns
   useEffect(() => {
@@ -315,7 +402,7 @@ export function PatientServiceCatalogPage() {
       return doctors;
     }
     return doctors.filter((doc) =>
-      doc.specialties?.some((s) => s.id === selectedSpecialtyId)
+      doc.specialties?.some((s) => s.id === selectedSpecialtyId),
     );
   }, [doctors, selectedSpecialtyId]);
 
@@ -338,7 +425,8 @@ export function PatientServiceCatalogPage() {
     setDoctorDropdownOpen(false);
     if (docId !== 'all') {
       const doc = doctors.find((d) => d.id === docId);
-      const docSpec = doc?.specialties?.find((s) => s.isPrimary) || doc?.specialties?.[0];
+      const docSpec =
+        doc?.specialties?.find((s) => s.isPrimary) || doc?.specialties?.[0];
       if (docSpec?.id) {
         setSelectedSpecialtyId(docSpec.id);
       }
@@ -354,7 +442,14 @@ export function PatientServiceCatalogPage() {
       }
     });
 
-    const order = ['PACKAGE', 'CONSULTATION', 'DIAGNOSTIC', 'PROCEDURE', 'VACCINATION', 'OTHER'];
+    const order = [
+      'PACKAGE',
+      'CONSULTATION',
+      'DIAGNOSTIC',
+      'PROCEDURE',
+      'VACCINATION',
+      'OTHER',
+    ];
     const result: Array<{ code: string; label: string; count: number }> = [];
 
     order.forEach((k) => {
@@ -382,7 +477,10 @@ export function PatientServiceCatalogPage() {
 
   // Danh sách tất cả các tags có trong hệ thống và đếm số lượng dịch vụ
   const tagsList = useMemo(() => {
-    const tagMap = new Map<string, { code: string; name: string; count: number }>();
+    const tagMap = new Map<
+      string,
+      { code: string; name: string; count: number }
+    >();
     services.forEach((service) => {
       (service.tags || []).forEach((t) => {
         if (!t.code) return;
@@ -390,7 +488,11 @@ export function PatientServiceCatalogPage() {
         if (existing) {
           existing.count += 1;
         } else {
-          tagMap.set(t.code, { code: t.code, name: t.name || t.code, count: 1 });
+          tagMap.set(t.code, {
+            code: t.code,
+            name: t.name || t.code,
+            count: 1,
+          });
         }
       });
     });
@@ -424,7 +526,7 @@ export function PatientServiceCatalogPage() {
       // 4. Lọc theo thẻ dịch vụ (Tag)
       if (selectedTagCode !== 'all') {
         const hasTag = (srv.tags || []).some(
-          (t) => t.code === selectedTagCode || t.slug === selectedTagCode
+          (t) => t.code === selectedTagCode || t.slug === selectedTagCode,
         );
         if (!hasTag) return false;
       }
@@ -443,12 +545,26 @@ export function PatientServiceCatalogPage() {
 
       return true;
     });
-  }, [services, selectedSpecialtyId, selectedDoctorId, selectedKind, selectedTagCode, searchQuery, doctors]);
+  }, [
+    services,
+    selectedSpecialtyId,
+    selectedDoctorId,
+    selectedKind,
+    selectedTagCode,
+    searchQuery,
+    doctors,
+  ]);
 
   // Reset page về 1 khi bất kỳ điều kiện lọc nào thay đổi
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedSpecialtyId, selectedDoctorId, selectedKind, selectedTagCode]);
+  }, [
+    searchQuery,
+    selectedSpecialtyId,
+    selectedDoctorId,
+    selectedKind,
+    selectedTagCode,
+  ]);
 
   // Xóa tất cả bộ lọc
   const handleResetFilters = () => {
@@ -485,7 +601,10 @@ export function PatientServiceCatalogPage() {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
     if (contentTopRef.current) {
-      contentTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      contentTopRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   };
 
@@ -523,10 +642,13 @@ export function PatientServiceCatalogPage() {
           </nav>
 
           <div className="psc-hero-content">
-            <h1 className="psc-title">Bảng Giá Dịch Vụ & Gói Khám Chuyên Khoa</h1>
+            <h1 className="psc-title">
+              Bảng Giá Dịch Vụ & Gói Khám Chuyên Khoa
+            </h1>
             <p className="psc-subtitle">
-              Hệ thống dịch vụ y tế tiêu chuẩn quốc tế được niêm yết công khai, minh bạch.
-              Hỗ trợ tư vấn phác đồ và đặt lịch trực tiếp cùng các chuyên gia Sản phụ khoa hàng đầu.
+              Hệ thống dịch vụ y tế tiêu chuẩn quốc tế được niêm yết công khai,
+              minh bạch. Hỗ trợ tư vấn phác đồ và đặt lịch trực tiếp cùng các
+              chuyên gia Sản phụ khoa hàng đầu.
             </p>
           </div>
 
@@ -553,9 +675,7 @@ export function PatientServiceCatalogPage() {
 
               {/* Cột 2: Custom Dropdown lọc theo Chuyên khoa */}
               <div className="psc-filter-group" ref={specialtyDropdownRef}>
-                <label className="psc-filter-label">
-                  Chuyên khoa
-                </label>
+                <label className="psc-filter-label">Chuyên khoa</label>
                 <div className="psc-custom-dropdown">
                   <button
                     type="button"
@@ -567,7 +687,9 @@ export function PatientServiceCatalogPage() {
                     aria-haspopup="listbox"
                     aria-expanded={specialtyDropdownOpen}
                   >
-                    <span className="psc-dropdown-trigger-text">{selectedSpecialtyLabel}</span>
+                    <span className="psc-dropdown-trigger-text">
+                      {selectedSpecialtyLabel}
+                    </span>
                     <ChevronDownIcon open={specialtyDropdownOpen} />
                   </button>
 
@@ -581,8 +703,12 @@ export function PatientServiceCatalogPage() {
                         onClick={() => handleSelectSpecialty('all')}
                       >
                         <div className="psc-dropdown-item-label">
-                          <span className="psc-dropdown-item-primary">Tất cả chuyên khoa</span>
-                          <span className="psc-dropdown-item-secondary">{specialties.length} chuyên khoa</span>
+                          <span className="psc-dropdown-item-primary">
+                            Tất cả chuyên khoa
+                          </span>
+                          <span className="psc-dropdown-item-secondary">
+                            {specialties.length} chuyên khoa
+                          </span>
                         </div>
                         {selectedSpecialtyId === 'all' && <CheckmarkIcon />}
                       </button>
@@ -599,7 +725,9 @@ export function PatientServiceCatalogPage() {
                             onClick={() => handleSelectSpecialty(spec.id)}
                           >
                             <div className="psc-dropdown-item-label">
-                              <span className="psc-dropdown-item-primary">{spec.name}</span>
+                              <span className="psc-dropdown-item-primary">
+                                {spec.name}
+                              </span>
                             </div>
                             {isSelected && <CheckmarkIcon />}
                           </button>
@@ -612,9 +740,7 @@ export function PatientServiceCatalogPage() {
 
               {/* Cột 3: Custom Dropdown lọc theo Bác sĩ (chỉ hiển thị bác sĩ thuộc chuyên khoa đã chọn) */}
               <div className="psc-filter-group" ref={doctorDropdownRef}>
-                <label className="psc-filter-label">
-                  Bác sĩ phụ trách
-                </label>
+                <label className="psc-filter-label">Bác sĩ phụ trách</label>
                 <div className="psc-custom-dropdown">
                   <button
                     type="button"
@@ -626,7 +752,9 @@ export function PatientServiceCatalogPage() {
                     aria-haspopup="listbox"
                     aria-expanded={doctorDropdownOpen}
                   >
-                    <span className="psc-dropdown-trigger-text">{selectedDoctorLabel}</span>
+                    <span className="psc-dropdown-trigger-text">
+                      {selectedDoctorLabel}
+                    </span>
                     <ChevronDownIcon open={doctorDropdownOpen} />
                   </button>
 
@@ -640,20 +768,29 @@ export function PatientServiceCatalogPage() {
                         onClick={() => handleSelectDoctor('all')}
                       >
                         <div className="psc-dropdown-item-label">
-                          <span className="psc-dropdown-item-primary">Tất cả bác sĩ</span>
+                          <span className="psc-dropdown-item-primary">
+                            Tất cả bác sĩ
+                          </span>
                           <span className="psc-dropdown-item-secondary">
-                            {availableDoctors.length} bác sĩ {selectedSpecialtyId !== 'all' ? 'khoa này' : 'chuyên khoa'}
+                            {availableDoctors.length} bác sĩ{' '}
+                            {selectedSpecialtyId !== 'all'
+                              ? 'khoa này'
+                              : 'chuyên khoa'}
                           </span>
                         </div>
                         {selectedDoctorId === 'all' && <CheckmarkIcon />}
                       </button>
 
                       {availableDoctors.length === 0 ? (
-                        <div className="psc-dropdown-empty">Chưa có bác sĩ thuộc chuyên khoa này</div>
+                        <div className="psc-dropdown-empty">
+                          Chưa có bác sĩ thuộc chuyên khoa này
+                        </div>
                       ) : (
                         availableDoctors.map((doc) => {
                           const isSelected = selectedDoctorId === doc.id;
-                          const docName = doc.profile?.fullName || `Bác sĩ ${doc.id.slice(0, 6)}`;
+                          const docName =
+                            doc.profile?.fullName ||
+                            `Bác sĩ ${doc.id.slice(0, 6)}`;
                           const docSpec = doc.specialties?.[0]?.name;
                           return (
                             <button
@@ -665,9 +802,13 @@ export function PatientServiceCatalogPage() {
                               onClick={() => handleSelectDoctor(doc.id)}
                             >
                               <div className="psc-dropdown-item-label">
-                                <span className="psc-dropdown-item-primary">{docName}</span>
+                                <span className="psc-dropdown-item-primary">
+                                  {docName}
+                                </span>
                                 {docSpec && (
-                                  <span className="psc-dropdown-item-secondary">{docSpec}</span>
+                                  <span className="psc-dropdown-item-secondary">
+                                    {docSpec}
+                                  </span>
                                 )}
                               </div>
                               {isSelected && <CheckmarkIcon />}
@@ -713,7 +854,11 @@ export function PatientServiceCatalogPage() {
                 )}
                 {selectedDoctorId !== 'all' && (
                   <span className="psc-active-chip">
-                    BS: {doctors.find((d) => d.id === selectedDoctorId)?.profile?.fullName}
+                    BS:{' '}
+                    {
+                      doctors.find((d) => d.id === selectedDoctorId)?.profile
+                        ?.fullName
+                    }
                     <button
                       type="button"
                       className="psc-active-chip-remove"
@@ -739,7 +884,8 @@ export function PatientServiceCatalogPage() {
                 )}
                 {selectedTagCode !== 'all' && (
                   <span className="psc-active-chip">
-                    Thẻ: {tagsList.find((t) => t.code === selectedTagCode)?.name}
+                    Thẻ:{' '}
+                    {tagsList.find((t) => t.code === selectedTagCode)?.name}
                     <button
                       type="button"
                       className="psc-active-chip-remove"
@@ -784,7 +930,9 @@ export function PatientServiceCatalogPage() {
                       <span className="psc-tag-dot"></span>
                       <span className="psc-tag-label">Tất cả loại hình</span>
                     </span>
-                    <span className="psc-tag-count-badge">{services.length}</span>
+                    <span className="psc-tag-count-badge">
+                      {services.length}
+                    </span>
                   </button>
 
                   {/* Danh sách từng loại hình trong hệ thống */}
@@ -823,7 +971,9 @@ export function PatientServiceCatalogPage() {
                       <span className="psc-tag-dot"></span>
                       <span className="psc-tag-label">Tất cả thẻ</span>
                     </span>
-                    <span className="psc-tag-count-badge">{services.length}</span>
+                    <span className="psc-tag-count-badge">
+                      {services.length}
+                    </span>
                   </button>
 
                   {/* Danh sách từng thẻ */}
@@ -849,7 +999,8 @@ export function PatientServiceCatalogPage() {
                 <span className="psc-support-badge">Tư vấn trực tiếp</span>
                 <h4 className="psc-support-title">Cần tư vấn gói khám?</h4>
                 <p className="psc-support-desc">
-                  Đội ngũ chuyên viên y tế sẵn sàng hướng dẫn chọn dịch vụ phù hợp nhất với giai đoạn thai kỳ của bạn.
+                  Đội ngũ chuyên viên y tế sẵn sàng hướng dẫn chọn dịch vụ phù
+                  hợp nhất với giai đoạn thai kỳ của bạn.
                 </p>
                 <a href="tel:19006868" className="psc-support-hotline-btn">
                   <span>📞 1900 6868</span>
@@ -860,7 +1011,13 @@ export function PatientServiceCatalogPage() {
             {/* CỘT PHẢI: LƯỚI 3 DỊCH VỤ MỖI HÀNG + PHÂN TRANG */}
             <section className="psc-content" ref={contentTopRef}>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '60px 0',
+                    color: '#64748b',
+                  }}
+                >
                   <p>Đang tải danh mục dịch vụ...</p>
                 </div>
               ) : filteredServices.length === 0 ? (
@@ -868,9 +1025,12 @@ export function PatientServiceCatalogPage() {
                   <div className="psc-empty-icon">
                     <SearchIcon />
                   </div>
-                  <h3 className="psc-empty-title">Không tìm thấy dịch vụ phù hợp</h3>
+                  <h3 className="psc-empty-title">
+                    Không tìm thấy dịch vụ phù hợp
+                  </h3>
                   <p className="psc-empty-desc">
-                    Không có dịch vụ nào khớp với tiêu chí tìm kiếm hoặc bộ lọc hiện tại của bạn. Vui lòng thử lại với từ khóa khác.
+                    Không có dịch vụ nào khớp với tiêu chí tìm kiếm hoặc bộ lọc
+                    hiện tại của bạn. Vui lòng thử lại với từ khóa khác.
                   </p>
                   <button
                     type="button"
@@ -885,7 +1045,9 @@ export function PatientServiceCatalogPage() {
                   <div className="psc-services-grid">
                     {paginatedServices.map((service) => {
                       const priceVal = service.prices?.[0]?.amountMinor;
-                      const specialtyName = getServiceSpecialtyName(service.specialtyId);
+                      const specialtyName = getServiceSpecialtyName(
+                        service.specialtyId,
+                      );
                       const kindLabel = getServiceKindLabel(service.kind);
 
                       return (
@@ -902,26 +1064,43 @@ export function PatientServiceCatalogPage() {
                             ) : (
                               <div className="psc-card-img-placeholder">
                                 <CheckCircleIcon />
-                                <span style={{ fontSize: 13, fontWeight: 600 }}>Tâm An Hospital</span>
+                                <span style={{ fontSize: 13, fontWeight: 600 }}>
+                                  Tâm An Hospital
+                                </span>
                               </div>
                             )}
 
                             {/* Container Badges tự động xuống dòng khi tên dài */}
                             <div className="psc-card-badges-wrap">
-                              <span className="psc-card-specialty-badge">{specialtyName}</span>
-                              <span className="psc-card-kind-badge">{kindLabel}</span>
+                              <span className="psc-card-specialty-badge">
+                                {specialtyName}
+                              </span>
+                              <span className="psc-card-kind-badge">
+                                {kindLabel}
+                              </span>
                             </div>
                           </div>
 
                           {/* Thân card */}
                           <div className="psc-card-body">
                             <h3 className="psc-card-title" title={service.name}>
-                              <AppLink href={`/dich-vu/${service.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                              <AppLink
+                                href={`/dich-vu/${service.slug}`}
+                                style={{
+                                  color: 'inherit',
+                                  textDecoration: 'none',
+                                }}
+                              >
                                 {service.name}
                               </AppLink>
                             </h3>
-                            <p className="psc-card-desc" title={service.summary || service.description}>
-                              {service.summary || service.description || 'Dịch vụ khám và điều trị chuyên sâu theo chuẩn quốc tế.'}
+                            <p
+                              className="psc-card-desc"
+                              title={service.summary || service.description}
+                            >
+                              {service.summary ||
+                                service.description ||
+                                'Dịch vụ khám và điều trị chuyên sâu theo chuẩn quốc tế.'}
                             </p>
 
                             {/* Thông tin phụ: Thời gian & trạng thái */}
@@ -951,8 +1130,12 @@ export function PatientServiceCatalogPage() {
 
                             {/* Giá niêm yết */}
                             <div className="psc-card-price-wrap">
-                              <span className="psc-card-price-label">Giá niêm yết:</span>
-                              <span className="psc-card-price-val">{formatVnd(priceVal)}</span>
+                              <span className="psc-card-price-label">
+                                Giá niêm yết:
+                              </span>
+                              <span className="psc-card-price-val">
+                                {formatVnd(priceVal)}
+                              </span>
                             </div>
 
                             {/* Nút hành động */}
@@ -966,7 +1149,12 @@ export function PatientServiceCatalogPage() {
                               <AppLink
                                 href={`/dich-vu/${service.slug}`}
                                 className="psc-detail-btn"
-                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
                               >
                                 Chi tiết
                               </AppLink>
@@ -979,7 +1167,10 @@ export function PatientServiceCatalogPage() {
 
                   {/* PHÂN TRANG (PAGINATION) */}
                   {totalPages > 1 && (
-                    <nav className="psc-pagination" aria-label="Phân trang dịch vụ">
+                    <nav
+                      className="psc-pagination"
+                      aria-label="Phân trang dịch vụ"
+                    >
                       <button
                         type="button"
                         className="psc-page-arrow"
@@ -992,27 +1183,34 @@ export function PatientServiceCatalogPage() {
                       </button>
 
                       <div className="psc-page-numbers">
-                        {getPageNumbers(currentPage, totalPages).map((p, idx) => {
-                          if (p === '...') {
+                        {getPageNumbers(currentPage, totalPages).map(
+                          (p, idx) => {
+                            if (p === '...') {
+                              return (
+                                <span
+                                  key={`ellipsis-${idx}`}
+                                  className="psc-page-ellipsis"
+                                >
+                                  …
+                                </span>
+                              );
+                            }
+                            const pageNum = p as number;
                             return (
-                              <span key={`ellipsis-${idx}`} className="psc-page-ellipsis">
-                                …
-                              </span>
+                              <button
+                                key={pageNum}
+                                type="button"
+                                className={`psc-page-num ${currentPage === pageNum ? 'active' : ''}`}
+                                onClick={() => handlePageChange(pageNum)}
+                                aria-current={
+                                  currentPage === pageNum ? 'page' : undefined
+                                }
+                              >
+                                {pageNum}
+                              </button>
                             );
-                          }
-                          const pageNum = p as number;
-                          return (
-                            <button
-                              key={pageNum}
-                              type="button"
-                              className={`psc-page-num ${currentPage === pageNum ? 'active' : ''}`}
-                              onClick={() => handlePageChange(pageNum)}
-                              aria-current={currentPage === pageNum ? 'page' : undefined}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
+                          },
+                        )}
                       </div>
 
                       <button
@@ -1048,8 +1246,12 @@ export function PatientServiceCatalogPage() {
           >
             <div className="psc-modal-header">
               <div className="psc-modal-header-info">
-                <span className="psc-card-kind-badge" style={{ position: 'static', alignSelf: 'flex-start' }}>
-                  {getServiceKindLabel(selectedService.kind)} • {getServiceSpecialtyName(selectedService.specialtyId)}
+                <span
+                  className="psc-card-kind-badge"
+                  style={{ position: 'static', alignSelf: 'flex-start' }}
+                >
+                  {getServiceKindLabel(selectedService.kind)} •{' '}
+                  {getServiceSpecialtyName(selectedService.specialtyId)}
                 </span>
                 <h3 className="psc-modal-title">{selectedService.name}</h3>
               </div>
@@ -1066,44 +1268,72 @@ export function PatientServiceCatalogPage() {
             <div className="psc-modal-body">
               {selectedService.thumbnailUrl && (
                 <div className="psc-modal-media">
-                  <img src={selectedService.thumbnailUrl} alt={selectedService.name} />
+                  <img
+                    src={selectedService.thumbnailUrl}
+                    alt={selectedService.name}
+                  />
                 </div>
               )}
 
               <div className="psc-modal-info-grid">
                 <div className="psc-modal-info-item">
                   <span className="psc-modal-info-label">Chuyên khoa</span>
-                  <span className="psc-modal-info-val">{getServiceSpecialtyName(selectedService.specialtyId)}</span>
+                  <span className="psc-modal-info-val">
+                    {getServiceSpecialtyName(selectedService.specialtyId)}
+                  </span>
                 </div>
                 <div className="psc-modal-info-item">
-                  <span className="psc-modal-info-label">Thời gian thực hiện</span>
+                  <span className="psc-modal-info-label">
+                    Thời gian thực hiện
+                  </span>
                   <span className="psc-modal-info-val">
-                    {selectedService.durationMinutes ? `${selectedService.durationMinutes} phút` : 'Theo phác đồ / Tình trạng lâm sàng'}
+                    {selectedService.durationMinutes
+                      ? `${selectedService.durationMinutes} phút`
+                      : 'Theo phác đồ / Tình trạng lâm sàng'}
                   </span>
                 </div>
                 <div className="psc-modal-info-item">
                   <span className="psc-modal-info-label">Mã dịch vụ</span>
-                  <span className="psc-modal-info-val" style={{ fontFamily: 'monospace' }}>{selectedService.code}</span>
+                  <span
+                    className="psc-modal-info-val"
+                    style={{ fontFamily: 'monospace' }}
+                  >
+                    {selectedService.code}
+                  </span>
                 </div>
                 <div className="psc-modal-info-item">
-                  <span className="psc-modal-info-label">Hình thức tiếp nhận</span>
-                  <span className="psc-modal-info-val">Khám trực tiếp tại viện</span>
+                  <span className="psc-modal-info-label">
+                    Hình thức tiếp nhận
+                  </span>
+                  <span className="psc-modal-info-val">
+                    Khám trực tiếp tại viện
+                  </span>
                 </div>
               </div>
 
               <div>
-                <h4 className="psc-modal-section-title">Mô tả chi tiết & Quy trình chuyên môn</h4>
+                <h4 className="psc-modal-section-title">
+                  Mô tả chi tiết & Quy trình chuyên môn
+                </h4>
                 <p className="psc-modal-desc-text">
-                  {selectedService.description || selectedService.summary || 'Thông tin chi tiết dịch vụ đang được cập nhật.'}
+                  {selectedService.description ||
+                    selectedService.summary ||
+                    'Thông tin chi tiết dịch vụ đang được cập nhật.'}
                 </p>
               </div>
 
               {selectedService.tags && selectedService.tags.length > 0 && (
                 <div>
-                  <h4 className="psc-modal-section-title">Đối tượng & Thẻ chỉ định</h4>
+                  <h4 className="psc-modal-section-title">
+                    Đối tượng & Thẻ chỉ định
+                  </h4>
                   <div className="psc-card-tags" style={{ marginBottom: 0 }}>
                     {selectedService.tags.map((t, idx) => (
-                      <span key={idx} className="psc-card-tag-pill" style={{ fontSize: 12, padding: '4px 10px' }}>
+                      <span
+                        key={idx}
+                        className="psc-card-tag-pill"
+                        style={{ fontSize: 12, padding: '4px 10px' }}
+                      >
                         #{t.name}
                       </span>
                     ))}
@@ -1113,8 +1343,14 @@ export function PatientServiceCatalogPage() {
 
               <div className="psc-modal-price-box">
                 <div>
-                  <div style={{ fontSize: 13, color: '#166534', fontWeight: 600 }}>Chi phí niêm yết chính thức:</div>
-                  <div style={{ fontSize: 12, color: '#4ade80' }}>Đã bao gồm thuế GTGT và vật tư y tế cơ bản</div>
+                  <div
+                    style={{ fontSize: 13, color: '#166534', fontWeight: 600 }}
+                  >
+                    Chi phí niêm yết chính thức:
+                  </div>
+                  <div style={{ fontSize: 12, color: '#4ade80' }}>
+                    Đã bao gồm thuế GTGT và vật tư y tế cơ bản
+                  </div>
                 </div>
                 <div className="psc-modal-price-val">
                   {formatVnd(selectedService.prices?.[0]?.amountMinor)}

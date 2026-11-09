@@ -5,7 +5,13 @@ import { AuthServiceModule } from './auth-service.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthServiceModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   connectGrpcServer(app, {
     package: 'maternal.auth.v1',
     proto: 'auth/v1/auth_internal.proto',

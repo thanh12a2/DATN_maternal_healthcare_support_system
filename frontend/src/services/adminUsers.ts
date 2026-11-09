@@ -1,7 +1,9 @@
 import type { Requester } from './catalog';
 
-export type UserRole = 'ADMIN' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'PATIENT';
-export type UserStatus = 'ACTIVE' | 'LOCKED' | 'DISABLED' | 'PENDING_VERIFICATION';
+export type UserRole =
+  'ADMIN' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'PATIENT';
+export type UserStatus =
+  'ACTIVE' | 'LOCKED' | 'DISABLED' | 'PENDING_VERIFICATION';
 
 export interface AdminUser {
   id: string;
@@ -42,7 +44,10 @@ export interface QueryUsersParams {
   limit?: number;
 }
 
-import { registerUserBatchToCache, registerUserEmailToCache } from './auditInterceptor';
+import {
+  registerUserBatchToCache,
+  registerUserEmailToCache,
+} from './auditInterceptor';
 
 export async function listAdminUsers(
   request: Requester,
@@ -84,10 +89,13 @@ export function updateAdminUser(
   options?: { suppressAudit?: boolean },
 ): Promise<AdminUser> {
   const query = options?.suppressAudit ? '?suppressAudit=true' : '';
-  return request<AdminUser>(`/auth/admin/users/${encodeURIComponent(id)}${query}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
+  return request<AdminUser>(
+    `/auth/admin/users/${encodeURIComponent(id)}${query}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export function deleteAdminUser(

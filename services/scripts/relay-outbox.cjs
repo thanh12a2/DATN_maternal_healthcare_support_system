@@ -35,7 +35,9 @@ function publishToRabbit(routingKey, envelope) {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(JSON.parse(data));
           } else {
-            reject(new Error(`Rabbit publish failed (${res.statusCode}): ${data}`));
+            reject(
+              new Error(`Rabbit publish failed (${res.statusCode}): ${data}`),
+            );
           }
         });
       },
@@ -60,7 +62,8 @@ async function relayAppointment() {
   );
   console.log(`[Appointment] Found ${res.rows.length} pending events`);
   for (const row of res.rows) {
-    const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+    const payload =
+      typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
     const envelope = {
       eventId: row.id,
       eventType: row.event_type,
@@ -96,7 +99,8 @@ async function relayBilling() {
   );
   console.log(`[Billing] Found ${res.rows.length} pending events`);
   for (const row of res.rows) {
-    const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+    const payload =
+      typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
     const data = payload.data || payload;
     // Ensure amountMinor exists for payment_recorded
     if (row.event_type.includes('payment_recorded') && !data.amountMinor) {
@@ -137,7 +141,8 @@ async function relayMedical() {
   );
   console.log(`[Medical] Found ${res.rows.length} pending events`);
   for (const row of res.rows) {
-    const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+    const payload =
+      typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
     const envelope = {
       eventId: row.id,
       eventType: row.event_type,

@@ -46,9 +46,9 @@ describe('PatientAuthGuard', () => {
       verifyAccessToken: jest.fn(),
     } as unknown as JwtVerifierService);
 
-    await expect(guard.canActivate(createContext({ headers: {} }))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      guard.canActivate(createContext({ headers: {} })),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('should reject unsupported role', async () => {

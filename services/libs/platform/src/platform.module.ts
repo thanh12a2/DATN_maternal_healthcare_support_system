@@ -9,7 +9,19 @@ import { ReceptionWorkAccess } from './grpc/reception-work-access';
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [ServiceTokenService, ServiceJwtGuard, GrpcClientFactory, PublicJwtGuard, ReceptionWorkAccess],
-  exports: [ServiceTokenService, ServiceJwtGuard, GrpcClientFactory, PublicJwtGuard, ReceptionWorkAccess],
+  providers: [
+    ServiceTokenService,
+    ServiceJwtGuard,
+    GrpcClientFactory,
+    PublicJwtGuard,
+    ReceptionWorkAccess,
+  ],
+  exports: [
+    ServiceTokenService,
+    ServiceJwtGuard,
+    GrpcClientFactory,
+    PublicJwtGuard,
+    ReceptionWorkAccess,
+  ],
 })
 export class PlatformModule {}

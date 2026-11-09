@@ -18,9 +18,14 @@ export class VnpayGatewayService {
   constructor(private readonly config: ConfigService) {}
 
   expiryMinutes(): number {
-    const minutes = Number(this.config.get<string>('VNPAY_EXPIRE_MINUTES', '15'));
+    const minutes = Number(
+      this.config.get<string>('VNPAY_EXPIRE_MINUTES', '15'),
+    );
     if (!Number.isInteger(minutes) || minutes < 5 || minutes > 30) {
-      this.fail('VNPAY_CONFIGURATION_INVALID', 'VNPay expiry must be between 5 and 30 minutes');
+      this.fail(
+        'VNPAY_CONFIGURATION_INVALID',
+        'VNPay expiry must be between 5 and 30 minutes',
+      );
     }
     return minutes;
   }
@@ -37,9 +42,14 @@ export class VnpayGatewayService {
       endpoint = new URL(paymentUrl);
       callback = new URL(returnUrl);
     } catch {
-      this.fail('VNPAY_CONFIGURATION_INVALID', 'VNPay URL configuration is invalid');
+      this.fail(
+        'VNPAY_CONFIGURATION_INVALID',
+        'VNPay URL configuration is invalid',
+      );
     }
-    const callbackSecure = callback.protocol === 'https:' || (callback.protocol === 'http:' && callback.hostname === 'localhost');
+    const callbackSecure =
+      callback.protocol === 'https:' ||
+      (callback.protocol === 'http:' && callback.hostname === 'localhost');
     if (endpoint.protocol !== 'https:' || !callbackSecure) {
       this.fail('VNPAY_CONFIGURATION_INVALID', 'VNPay URLs must use HTTPS');
     }
@@ -64,14 +74,19 @@ export class VnpayGatewayService {
     };
 
     const canonical = this.canonical(params);
-    const signature = createHmac('sha512', hashSecret).update(canonical, 'utf8').digest('hex');
+    const signature = createHmac('sha512', hashSecret)
+      .update(canonical, 'utf8')
+      .digest('hex');
     const signedUrl = new URL(endpoint);
-    for (const [key, value] of Object.entries(params)) signedUrl.searchParams.set(key, value);
+    for (const [key, value] of Object.entries(params))
+      signedUrl.searchParams.set(key, value);
     signedUrl.searchParams.set('vnp_SecureHash', signature);
     return signedUrl.toString();
   }
 
-  callbackFields(query: Record<string, unknown>): Record<string, string> | null {
+  callbackFields(
+    query: Record<string, unknown>,
+  ): Record<string, string> | null {
     const fields: Record<string, string> = {};
     for (const [key, value] of Object.entries(query)) {
       if (!key.startsWith('vnp_')) continue;
@@ -91,7 +106,9 @@ export class VnpayGatewayService {
       .update(this.canonical(signedFields), 'utf8')
       .digest();
     const received = Buffer.from(supplied, 'hex');
-    return received.length === expected.length && timingSafeEqual(received, expected);
+    return (
+      received.length === expected.length && timingSafeEqual(received, expected)
+    );
   }
 
   merchantCode(): string {
@@ -100,7 +117,11 @@ export class VnpayGatewayService {
 
   private required(key: string): string {
     const value = this.config.get<string>(key)?.trim();
-    if (!value) this.fail('VNPAY_NOT_CONFIGURED', 'VNPay payment configuration is incomplete');
+    if (!value)
+      this.fail(
+        'VNPAY_NOT_CONFIGURED',
+        'VNPay payment configuration is incomplete',
+      );
     return value;
   }
 
@@ -112,8 +133,22 @@ export class VnpayGatewayService {
   private canonical(params: Record<string, string>): string {
     return Object.keys(params)
       .sort()
-      .map((key) => `${key}=${params[key]}`)
+      .map(
+        (key) =>
+          `${this.encodeVnpayValue(key)}=${this.encodeVnpayValue(params[key])}`,
+      )
       .join('&');
+  }
+
+  /**
+   * VNPay API 2.1.0 signs the URL-encoded field names and values. Use the
+   * application/x-www-form-urlencoded encoding also used by URLSearchParams
+   * below (not encodeURIComponent, which leaves a few characters untouched).
+   */
+  private encodeVnpayValue(value: string): string {
+    const encoded = new URLSearchParams();
+    encoded.append('value', value);
+    return encoded.toString().slice('value='.length);
   }
 
   private formatVnpayDate(value: Date): string {
@@ -127,7 +162,8 @@ export class VnpayGatewayService {
       second: '2-digit',
       hourCycle: 'h23',
     }).formatToParts(value);
-    const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
+    const part = (type: string) =>
+      parts.find((item) => item.type === type)?.value ?? '';
     return `${part('year')}${part('month')}${part('day')}${part('hour')}${part('minute')}${part('second')}`;
   }
 

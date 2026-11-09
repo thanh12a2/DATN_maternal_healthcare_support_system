@@ -30,8 +30,16 @@ import { AppLink, navigate } from '../../../app/navigation';
 import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
 import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
 import { AppointmentTicketModal } from '../../../shared/components/portal/AppointmentTicketModal';
-import { listCatalogServices, type CatalogService } from '../../../services/catalog';
-import { listDoctors, listSpecialties, type Doctor, type Specialty } from '../../../services/doctor';
+import {
+  listCatalogServices,
+  type CatalogService,
+} from '../../../services/catalog';
+import {
+  listDoctors,
+  listSpecialties,
+  type Doctor,
+  type Specialty,
+} from '../../../services/doctor';
 import {
   createAppointment,
   createSlotHold,
@@ -42,15 +50,21 @@ import {
   type BookableSlot,
   type SelectionMode,
 } from '../../../services/appointment';
-import { getMyPatient, saveMyPatient, type PatientProfile } from '../../../services/patient';
+import {
+  getMyPatient,
+  saveMyPatient,
+  type PatientProfile,
+} from '../../../services/patient';
 import '../../../styles/patient-booking.css';
 
 function getServicePrice(svc?: CatalogService | null): number {
   if (!svc) return 0;
   if (typeof (svc as any).price === 'number') return (svc as any).price;
-  if ((svc as any).basePrice?.amountMinor != null) return Number((svc as any).basePrice.amountMinor);
+  if ((svc as any).basePrice?.amountMinor != null)
+    return Number((svc as any).basePrice.amountMinor);
   if (Array.isArray(svc.prices) && svc.prices.length > 0) {
-    const active = svc.prices.find((p: any) => p.status === 'ACTIVE') || svc.prices[0];
+    const active =
+      svc.prices.find((p: any) => p.status === 'ACTIVE') || svc.prices[0];
     if (active?.amountMinor != null) return Number(active.amountMinor);
   }
   return 0;
@@ -129,7 +143,15 @@ const RANK_SURCHARGE: Record<string, number> = {
   HEAD_DOCTOR: 250000,
 };
 
-const WEEKDAYS = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+const WEEKDAYS = [
+  'Chủ nhật',
+  'Thứ Hai',
+  'Thứ Ba',
+  'Thứ Tư',
+  'Thứ Năm',
+  'Thứ Sáu',
+  'Thứ Bảy',
+];
 
 export function PatientBookingPage() {
   const auth = useAuthSession();
@@ -154,9 +176,12 @@ export function PatientBookingPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
   // Lựa chọn ở Bước 1
-  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>(querySpecialtyId || 'all');
+  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>(
+    querySpecialtyId || 'all',
+  );
   const [serviceSearch, setServiceSearch] = useState('');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(queryServiceId);
+  const [selectedServiceId, setSelectedServiceId] =
+    useState<string>(queryServiceId);
   const [servicePage, setServicePage] = useState<number>(1);
   const SERVICES_PER_PAGE = 6;
   const [isSpecialtyDropdownOpen, setIsSpecialtyDropdownOpen] = useState(false);
@@ -165,7 +190,10 @@ export function PatientBookingPage() {
   // Đóng dropdown chuyên khoa khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (specialtyDropdownRef.current && !specialtyDropdownRef.current.contains(event.target as Node)) {
+      if (
+        specialtyDropdownRef.current &&
+        !specialtyDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsSpecialtyDropdownOpen(false);
       }
     }
@@ -176,9 +204,14 @@ export function PatientBookingPage() {
   }, []);
 
   // Lựa chọn ở Bước 2
-  const [doctorMode, setDoctorMode] = useState<SelectionMode>(queryDoctorId ? 'DOCTOR' : 'RANK');
-  const [selectedDoctorId, setSelectedDoctorId] = useState<string>(queryDoctorId);
-  const [holdSecondsRemaining, setHoldSecondsRemaining] = useState<number | null>(null);
+  const [doctorMode, setDoctorMode] = useState<SelectionMode>(
+    queryDoctorId ? 'DOCTOR' : 'RANK',
+  );
+  const [selectedDoctorId, setSelectedDoctorId] =
+    useState<string>(queryDoctorId);
+  const [holdSecondsRemaining, setHoldSecondsRemaining] = useState<
+    number | null
+  >(null);
   const [holdExpired, setHoldExpired] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<string>(''); // YYYY-MM-DD
@@ -189,8 +222,12 @@ export function PatientBookingPage() {
   const [slotsRetry, setSlotsRetry] = useState(0);
 
   // Lựa chọn ở Bước 3: Hồ sơ bệnh nhân
-  const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(null);
-  const [profileStatus, setProfileStatus] = useState<'loading' | 'complete' | 'incomplete'>('loading');
+  const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(
+    null,
+  );
+  const [profileStatus, setProfileStatus] = useState<
+    'loading' | 'complete' | 'incomplete'
+  >('loading');
 
   // Form điền thông tin bệnh nhân (cho tài khoản mới hoặc khi cần sửa)
   const [formFullName, setFormFullName] = useState('');
@@ -214,11 +251,22 @@ export function PatientBookingPage() {
   function handleStartEditProfile() {
     if (patientProfile) {
       setEditFullName(patientProfile.fullName || '');
-      setEditDateOfBirth(patientProfile.dateOfBirth ? patientProfile.dateOfBirth.slice(0, 10) : '');
-      setEditPhoneNumber(patientProfile.phoneNumber ? patientProfile.phoneNumber.replace(/^\+84/, '0') : '');
+      setEditDateOfBirth(
+        patientProfile.dateOfBirth
+          ? patientProfile.dateOfBirth.slice(0, 10)
+          : '',
+      );
+      setEditPhoneNumber(
+        patientProfile.phoneNumber
+          ? patientProfile.phoneNumber.replace(/^\+84/, '0')
+          : '',
+      );
       const plainNationalId =
         (patientProfile as any).nationalId ||
-        (patientProfile.nationalIdMasked && !patientProfile.nationalIdMasked.includes('*') ? patientProfile.nationalIdMasked : '') ||
+        (patientProfile.nationalIdMasked &&
+        !patientProfile.nationalIdMasked.includes('*')
+          ? patientProfile.nationalIdMasked
+          : '') ||
         formNationalId ||
         '';
       setEditNationalId(plainNationalId);
@@ -238,7 +286,8 @@ export function PatientBookingPage() {
     }
     const cleanPhone = editPhoneNumber.trim().replace(/^\+84/, '0');
     if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
-      errors.phoneNumber = 'Số điện thoại không hợp lệ (10 số, đầu 03/05/07/08/09)';
+      errors.phoneNumber =
+        'Số điện thoại không hợp lệ (10 số, đầu 03/05/07/08/09)';
     }
     const cleanNationalId = editNationalId.trim().replace(/[^0-9]/g, '');
     if (cleanNationalId && ![9, 12].includes(cleanNationalId.length)) {
@@ -271,7 +320,9 @@ export function PatientBookingPage() {
 
       setPatientProfile(updated);
       setFormFullName(updated.fullName);
-      setFormDateOfBirth(updated.dateOfBirth ? updated.dateOfBirth.slice(0, 10) : '');
+      setFormDateOfBirth(
+        updated.dateOfBirth ? updated.dateOfBirth.slice(0, 10) : '',
+      );
       setFormPhoneNumber(cleanPhone);
       setFormNationalId(cleanNationalId);
       setFormAddress(updated.address || '');
@@ -279,21 +330,29 @@ export function PatientBookingPage() {
 
       if (auth.user?.userId) {
         try {
-          localStorage.setItem(`patient_name_${auth.user.userId}`, updated.fullName);
+          localStorage.setItem(
+            `patient_name_${auth.user.userId}`,
+            updated.fullName,
+          );
           if (auth.user.email) {
-            localStorage.setItem(`patient_name_${auth.user.email}`, updated.fullName);
+            localStorage.setItem(
+              `patient_name_${auth.user.email}`,
+              updated.fullName,
+            );
           }
           window.dispatchEvent(
             new CustomEvent('patient_profile_updated', {
               detail: { fullName: updated.fullName },
-            })
+            }),
           );
         } catch {
           // ignore
         }
       }
     } catch (err: any) {
-      setEditErrors({ form: err.message || 'Không thể cập nhật hồ sơ. Vui lòng kiểm tra lại.' });
+      setEditErrors({
+        form: err.message || 'Không thể cập nhật hồ sơ. Vui lòng kiểm tra lại.',
+      });
     } finally {
       setIsSavingEdit(false);
     }
@@ -309,14 +368,18 @@ export function PatientBookingPage() {
   // Bước 4 & Đặt lịch
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null);
+  const [createdAppointment, setCreatedAppointment] =
+    useState<Appointment | null>(null);
   const [showSuccessTicketModal, setShowSuccessTicketModal] = useState(false);
 
   // Cuộn mượt khi chuyển bước
   const topAnchorRef = useRef<HTMLDivElement>(null);
   const scrollToTop = () => {
     if (topAnchorRef.current) {
-      topAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      topAnchorRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   };
 
@@ -331,7 +394,11 @@ export function PatientBookingPage() {
       if (!active) return;
       // Chỉ lấy dịch vụ ACTIVE và bookingEnabled
       const activeSvcs = (svcList || []).filter(
-        (s: any) => s.bookingEnabled !== false && s.status !== 'INACTIVE' && s.status !== 'ARCHIVED' && s.status !== 'DRAFT'
+        (s: any) =>
+          s.bookingEnabled !== false &&
+          s.status !== 'INACTIVE' &&
+          s.status !== 'ARCHIVED' &&
+          s.status !== 'DRAFT',
       );
       setServices(activeSvcs);
       setSpecialties(specList || []);
@@ -397,13 +464,21 @@ export function PatientBookingPage() {
   // Bác sĩ đang được chọn
   const selectedDoctor = useMemo(() => {
     if (doctorMode === 'RANK' || !selectedDoctorId) return null;
-    return doctors.find((d: any) => d.id === selectedDoctorId || d.doctorId === selectedDoctorId) || null;
+    return (
+      doctors.find(
+        (d: any) =>
+          d.id === selectedDoctorId || d.doctorId === selectedDoctorId,
+      ) || null
+    );
   }, [doctors, selectedDoctorId, doctorMode]);
 
   // Phụ phí bác sĩ theo yêu cầu (nếu chọn chỉ định bác sĩ)
   const selectedDoctorSurcharge = useMemo(() => {
     if (doctorMode === 'RANK' || !selectedDoctor) return 0;
-    const rankCode: string = (selectedDoctor as any).consultationRank || (selectedDoctor as any).rank || 'BASIC';
+    const rankCode: string =
+      (selectedDoctor as any).consultationRank ||
+      (selectedDoctor as any).rank ||
+      'BASIC';
     return RANK_SURCHARGE[rankCode] ?? 0;
   }, [doctorMode, selectedDoctor]);
 
@@ -415,7 +490,8 @@ export function PatientBookingPage() {
 
   // Danh sách 14 ngày tới để chọn lịch
   const dateOptions = useMemo(() => {
-    const list: Array<{ dateStr: string; dayName: string; formatted: string }> = [];
+    const list: Array<{ dateStr: string; dayName: string; formatted: string }> =
+      [];
     const now = new Date();
     // Bắt đầu từ ngày mai (đặt trước tối thiểu 1 ngày theo tiêu chuẩn bệnh viện)
     for (let i = 1; i <= 14; i++) {
@@ -443,7 +519,11 @@ export function PatientBookingPage() {
 
   // 5. Tải danh sách Slots khi chọn Dịch vụ, Bác sĩ/Chế độ và Ngày
   useEffect(() => {
-    if (!selectedServiceId || !selectedDate || (doctorMode === 'DOCTOR' && !selectedDoctorId)) {
+    if (
+      !selectedServiceId ||
+      !selectedDate ||
+      (doctorMode === 'DOCTOR' && !selectedDoctorId)
+    ) {
       setAvailableSlots([]);
       setSelectedSlot(null);
       setLoadingSlots(false);
@@ -464,7 +544,8 @@ export function PatientBookingPage() {
       selectionMode: doctorMode,
       from,
       to,
-      requestedDoctorId: doctorMode === 'DOCTOR' ? selectedDoctorId || undefined : undefined,
+      requestedDoctorId:
+        doctorMode === 'DOCTOR' ? selectedDoctorId || undefined : undefined,
       requestedRankCode: doctorMode === 'RANK' ? 'BASIC' : undefined,
     })
       .then((slots) => {
@@ -482,8 +563,14 @@ export function PatientBookingPage() {
     return () => {
       active = false;
     };
-  }, [auth.request, selectedServiceId, doctorMode, selectedDoctorId, selectedDate, slotsRetry]);
-
+  }, [
+    auth.request,
+    selectedServiceId,
+    doctorMode,
+    selectedDoctorId,
+    selectedDate,
+    slotsRetry,
+  ]);
 
   // Đếm ngược 5 phút (300 giây) khi chọn slot
   useEffect(() => {
@@ -493,7 +580,9 @@ export function PatientBookingPage() {
       return;
     }
     const timer = setInterval(() => {
-      setHoldSecondsRemaining((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      setHoldSecondsRemaining((prev) =>
+        prev !== null && prev > 0 ? prev - 1 : 0,
+      );
     }, 1000);
     return () => clearInterval(timer);
   }, [selectedSlot, holdSecondsRemaining]);
@@ -539,7 +628,9 @@ export function PatientBookingPage() {
       if (serviceSearch.trim()) {
         const query = serviceSearch.toLowerCase();
         const nameMatch = (svc.name || '').toLowerCase().includes(query);
-        const descMatch = (svc.summary || svc.description || '').toLowerCase().includes(query);
+        const descMatch = (svc.summary || svc.description || '')
+          .toLowerCase()
+          .includes(query);
         if (!nameMatch && !descMatch) return false;
       }
       return true;
@@ -563,7 +654,10 @@ export function PatientBookingPage() {
     setServicePage(1);
   }, [selectedSpecialtyId, serviceSearch]);
 
-  const totalServicePages = Math.max(1, Math.ceil(filteredServices.length / SERVICES_PER_PAGE));
+  const totalServicePages = Math.max(
+    1,
+    Math.ceil(filteredServices.length / SERVICES_PER_PAGE),
+  );
 
   // Tự động chuyển tới trang chứa dịch vụ đang chọn nếu có
   useEffect(() => {
@@ -599,7 +693,9 @@ export function PatientBookingPage() {
       await fetchPatientProfile();
       setAuthSubmitting(false);
     } catch (err: any) {
-      setAuthError(err.message || 'Xác thực tài khoản thất bại. Vui lòng kiểm tra lại.');
+      setAuthError(
+        err.message || 'Xác thực tài khoản thất bại. Vui lòng kiểm tra lại.',
+      );
       setAuthSubmitting(false);
     }
   };
@@ -607,8 +703,10 @@ export function PatientBookingPage() {
   // Validate form bệnh nhân khi ở trạng thái tạo mới hồ sơ
   const validatePatientForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!formFullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên đầy đủ.';
-    if (!formDateOfBirth.trim()) errors.dateOfBirth = 'Vui lòng chọn ngày sinh.';
+    if (!formFullName.trim())
+      errors.fullName = 'Vui lòng nhập họ và tên đầy đủ.';
+    if (!formDateOfBirth.trim())
+      errors.dateOfBirth = 'Vui lòng chọn ngày sinh.';
     if (!formPhoneNumber.trim()) {
       errors.phoneNumber = 'Vui lòng nhập số điện thoại liên hệ.';
     } else if (!/^[0-9+() -]{9,15}$/.test(formPhoneNumber.trim())) {
@@ -641,7 +739,9 @@ export function PatientBookingPage() {
       return;
     }
     if (holdExpired) {
-      setSubmitError('Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng chọn lại khung giờ khám.');
+      setSubmitError(
+        'Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng chọn lại khung giờ khám.',
+      );
       return;
     }
     setSubmitError(null);
@@ -666,7 +766,9 @@ export function PatientBookingPage() {
     setSubmitError(null);
 
     if (auth.status !== 'authenticated') {
-      setSubmitError('Vui lòng đăng nhập hoặc đăng ký tài khoản để bảo mật và lưu phiếu khám.');
+      setSubmitError(
+        'Vui lòng đăng nhập hoặc đăng ký tài khoản để bảo mật và lưu phiếu khám.',
+      );
       return;
     }
 
@@ -674,7 +776,9 @@ export function PatientBookingPage() {
     if (profileStatus === 'incomplete') {
       const isValid = validatePatientForm();
       if (!isValid) {
-        setSubmitError('Vui lòng điền đầy đủ và chính xác các thông tin người khám bắt buộc (*).');
+        setSubmitError(
+          'Vui lòng điền đầy đủ và chính xác các thông tin người khám bắt buộc (*).',
+        );
         return;
       }
 
@@ -688,48 +792,61 @@ export function PatientBookingPage() {
             nationalId: formNationalId.trim(),
             address: formAddress.trim() || undefined,
           },
-          (auth as any).user?.accessToken || ''
+          (auth as any).user?.accessToken || '',
         );
         setPatientProfile(savedProfile);
         setProfileStatus('complete');
       } catch (err: any) {
         setIsSubmitting(false);
-        setSubmitError(err.message || 'Không thể lưu hồ sơ bệnh nhân. Vui lòng kiểm tra lại số CCCD/SĐT.');
+        setSubmitError(
+          err.message ||
+            'Không thể lưu hồ sơ bệnh nhân. Vui lòng kiểm tra lại số CCCD/SĐT.',
+        );
         return;
       }
     }
 
     if (!selectedService || !selectedSlot) {
-      setSubmitError('Thông tin đặt lịch không đầy đủ. Vui lòng quay lại kiểm tra.');
+      setSubmitError(
+        'Thông tin đặt lịch không đầy đủ. Vui lòng quay lại kiểm tra.',
+      );
       setIsSubmitting(false);
       return;
     }
 
     if (holdExpired) {
-      setSubmitError('Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng quay lại bước 2 chọn lại khung giờ.');
+      setSubmitError(
+        'Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng quay lại bước 2 chọn lại khung giờ.',
+      );
       setIsSubmitting(false);
       return;
     }
 
-      setIsSubmitting(true);
-      try {
-        // Bước A: Tạo Slot Hold (giữ chỗ 5 phút)
-        const holdSelectionMode = selectedSlot.selectionMode || doctorMode;
-        const hold = await createSlotHold(auth.request, {
-          serviceId: selectedService.id!,
-          selectionMode: holdSelectionMode,
-          requestedDoctorId: holdSelectionMode === 'DOCTOR'
-            ? selectedSlot.doctorId || (doctorMode === 'DOCTOR' ? selectedDoctorId : undefined)
+    setIsSubmitting(true);
+    try {
+      // Bước A: Tạo Slot Hold (giữ chỗ 5 phút)
+      const holdSelectionMode = selectedSlot.selectionMode || doctorMode;
+      const hold = await createSlotHold(auth.request, {
+        serviceId: selectedService.id!,
+        selectionMode: holdSelectionMode,
+        requestedDoctorId:
+          holdSelectionMode === 'DOCTOR'
+            ? selectedSlot.doctorId ||
+              (doctorMode === 'DOCTOR' ? selectedDoctorId : undefined)
             : undefined,
-          requestedRankCode: holdSelectionMode === 'RANK'
-            ? selectedSlot.rankCode || (doctorMode === 'RANK' ? 'BASIC' : undefined)
+        requestedRankCode:
+          holdSelectionMode === 'RANK'
+            ? selectedSlot.rankCode ||
+              (doctorMode === 'RANK' ? 'BASIC' : undefined)
             : undefined,
-          startAt: selectedSlot.startAt,
-          endAt: selectedSlot.endAt,
-        });
+        startAt: selectedSlot.startAt,
+        endAt: selectedSlot.endAt,
+      });
 
       if (!hold || !hold.id) {
-        throw new Error('Khung giờ này vừa có người giữ chỗ. Vui lòng chọn khung giờ khác.');
+        throw new Error(
+          'Khung giờ này vừa có người giữ chỗ. Vui lòng chọn khung giờ khác.',
+        );
       }
 
       // Bước B: Chuyển Hold thành Lịch hẹn chính thức (BookingChannel: ONLINE)
@@ -740,7 +857,10 @@ export function PatientBookingPage() {
       setIsSubmitting(false);
     } catch (err: any) {
       setIsSubmitting(false);
-      setSubmitError(err.message || 'Không thể tạo lịch hẹn. Vui lòng thử lại hoặc chọn khung giờ khác.');
+      setSubmitError(
+        err.message ||
+          'Không thể tạo lịch hẹn. Vui lòng thử lại hoặc chọn khung giờ khác.',
+      );
     }
   };
 
@@ -763,10 +883,13 @@ export function PatientBookingPage() {
               <span className="pb-hero-badge">
                 <Building2 size={14} /> Bệnh viện Phụ sản Tâm An • Hà Nội
               </span>
-              <h1 className="pb-hero-title">Đăng Ký Đặt Lịch Khám Trực Tuyến</h1>
+              <h1 className="pb-hero-title">
+                Đăng Ký Đặt Lịch Khám Trực Tuyến
+              </h1>
               <p className="pb-hero-desc">
-                Chủ động lựa chọn dịch vụ, bác sĩ chuyên khoa và khung giờ khám thuận tiện nhất. Hệ thống tiếp đón ưu tiên
-                không cần bốc số xếp hàng tại bệnh viện.
+                Chủ động lựa chọn dịch vụ, bác sĩ chuyên khoa và khung giờ khám
+                thuận tiện nhất. Hệ thống tiếp đón ưu tiên không cần bốc số xếp
+                hàng tại bệnh viện.
               </p>
             </div>
             <div className="pb-hero-right">
@@ -777,7 +900,8 @@ export function PatientBookingPage() {
                 <CheckCircle2 size={16} color="#4ade80" /> Bác sĩ chuyên môn cao
               </span>
               <span className="pb-hero-commitment-item">
-                <CheckCircle2 size={16} color="#4ade80" /> Bảo mật thông tin y tế
+                <CheckCircle2 size={16} color="#4ade80" /> Bảo mật thông tin y
+                tế
               </span>
             </div>
           </section>
@@ -793,14 +917,20 @@ export function PatientBookingPage() {
                     if (currentStep > 1) setCurrentStep(1);
                   }}
                 >
-                  <div className="pb-stepper-number">{currentStep > 1 ? <Check size={16} /> : 1}</div>
+                  <div className="pb-stepper-number">
+                    {currentStep > 1 ? <Check size={16} /> : 1}
+                  </div>
                   <div className="pb-stepper-info">
                     <span className="pb-stepper-step-title">Dịch vụ khám</span>
-                    <span className="pb-stepper-step-sub">Chọn gói / chuyên khoa</span>
+                    <span className="pb-stepper-step-sub">
+                      Chọn gói / chuyên khoa
+                    </span>
                   </div>
                 </li>
 
-                <div className={`pb-stepper-divider ${currentStep > 1 ? 'is-done' : ''}`} />
+                <div
+                  className={`pb-stepper-divider ${currentStep > 1 ? 'is-done' : ''}`}
+                />
 
                 {/* Bước 2 */}
                 <li
@@ -809,14 +939,22 @@ export function PatientBookingPage() {
                     if (currentStep > 2) setCurrentStep(2);
                   }}
                 >
-                  <div className="pb-stepper-number">{currentStep > 2 ? <Check size={16} /> : 2}</div>
+                  <div className="pb-stepper-number">
+                    {currentStep > 2 ? <Check size={16} /> : 2}
+                  </div>
                   <div className="pb-stepper-info">
-                    <span className="pb-stepper-step-title">Bác sĩ &amp; Thời gian</span>
-                    <span className="pb-stepper-step-sub">Chọn ngày và khung giờ</span>
+                    <span className="pb-stepper-step-title">
+                      Bác sĩ &amp; Thời gian
+                    </span>
+                    <span className="pb-stepper-step-sub">
+                      Chọn ngày và khung giờ
+                    </span>
                   </div>
                 </li>
 
-                <div className={`pb-stepper-divider ${currentStep > 2 ? 'is-done' : ''}`} />
+                <div
+                  className={`pb-stepper-divider ${currentStep > 2 ? 'is-done' : ''}`}
+                />
 
                 {/* Bước 3 */}
                 <li
@@ -824,8 +962,12 @@ export function PatientBookingPage() {
                 >
                   <div className="pb-stepper-number">3</div>
                   <div className="pb-stepper-info">
-                    <span className="pb-stepper-step-title">Thông tin &amp; Xác nhận</span>
-                    <span className="pb-stepper-step-sub">Hồ sơ người khám &amp; Phiếu hẹn</span>
+                    <span className="pb-stepper-step-title">
+                      Thông tin &amp; Xác nhận
+                    </span>
+                    <span className="pb-stepper-step-sub">
+                      Hồ sơ người khám &amp; Phiếu hẹn
+                    </span>
                   </div>
                 </li>
               </ol>
@@ -876,29 +1018,45 @@ export function PatientBookingPage() {
                         </span>
                       </div>
                       <p className="pb-step-subtitle">
-                        Vui lòng lựa chọn chuyên khoa và dịch vụ khám phù hợp theo nhu cầu của bạn.
+                        Vui lòng lựa chọn chuyên khoa và dịch vụ khám phù hợp
+                        theo nhu cầu của bạn.
                       </p>
                     </div>
 
                     {/* Bộ lọc Bước 1: Dropdown Chuyên khoa & Ô Tìm kiếm dịch vụ */}
                     <div className="pb-filter-controls">
                       {/* Dropdown Menu Chuyên khoa */}
-                      <div className="pb-specialty-dropdown-container" ref={specialtyDropdownRef}>
-                        <label className="pb-filter-label" htmlFor="pb-specialty-select-btn">
+                      <div
+                        className="pb-specialty-dropdown-container"
+                        ref={specialtyDropdownRef}
+                      >
+                        <label
+                          className="pb-filter-label"
+                          htmlFor="pb-specialty-select-btn"
+                        >
                           Chuyên khoa khám:
                         </label>
                         <button
                           id="pb-specialty-select-btn"
                           type="button"
                           className={`pb-specialty-dropdown-btn ${isSpecialtyDropdownOpen ? 'is-active' : ''}`}
-                          onClick={() => setIsSpecialtyDropdownOpen((prev) => !prev)}
+                          onClick={() =>
+                            setIsSpecialtyDropdownOpen((prev) => !prev)
+                          }
                           aria-expanded={isSpecialtyDropdownOpen}
                           aria-haspopup="listbox"
                         >
                           <div className="pb-dropdown-btn-left">
-                            <Stethoscope size={17} className="pb-dropdown-icon" />
-                            <span className="pb-dropdown-label">{currentSpecialtyName}</span>
-                            <span className="pb-dropdown-count">({currentSpecialtyCount})</span>
+                            <Stethoscope
+                              size={17}
+                              className="pb-dropdown-icon"
+                            />
+                            <span className="pb-dropdown-label">
+                              {currentSpecialtyName}
+                            </span>
+                            <span className="pb-dropdown-count">
+                              ({currentSpecialtyCount})
+                            </span>
                           </div>
                           <ChevronDown
                             size={18}
@@ -907,7 +1065,10 @@ export function PatientBookingPage() {
                         </button>
 
                         {isSpecialtyDropdownOpen && (
-                          <div className="pb-specialty-dropdown-menu" role="listbox">
+                          <div
+                            className="pb-specialty-dropdown-menu"
+                            role="listbox"
+                          >
                             <button
                               type="button"
                               role="option"
@@ -919,15 +1080,24 @@ export function PatientBookingPage() {
                               }}
                             >
                               <div className="pb-item-info">
-                                <span className="pb-item-name">Tất cả chuyên khoa</span>
-                                <span className="pb-item-badge">{services.length} dịch vụ</span>
+                                <span className="pb-item-name">
+                                  Tất cả chuyên khoa
+                                </span>
+                                <span className="pb-item-badge">
+                                  {services.length} dịch vụ
+                                </span>
                               </div>
-                              {selectedSpecialtyId === 'all' && <Check size={16} className="pb-item-check" />}
+                              {selectedSpecialtyId === 'all' && (
+                                <Check size={16} className="pb-item-check" />
+                              )}
                             </button>
                             <div className="pb-dropdown-divider" />
                             {specialties.map((spec) => {
-                              const count = services.filter((s) => s.specialtyId === spec.id).length;
-                              const isSelected = selectedSpecialtyId === spec.id;
+                              const count = services.filter(
+                                (s) => s.specialtyId === spec.id,
+                              ).length;
+                              const isSelected =
+                                selectedSpecialtyId === spec.id;
                               return (
                                 <button
                                   key={spec.id}
@@ -941,10 +1111,19 @@ export function PatientBookingPage() {
                                   }}
                                 >
                                   <div className="pb-item-info">
-                                    <span className="pb-item-name">{spec.name}</span>
-                                    <span className="pb-item-badge">{count} dịch vụ</span>
+                                    <span className="pb-item-name">
+                                      {spec.name}
+                                    </span>
+                                    <span className="pb-item-badge">
+                                      {count} dịch vụ
+                                    </span>
                                   </div>
-                                  {isSelected && <Check size={16} className="pb-item-check" />}
+                                  {isSelected && (
+                                    <Check
+                                      size={16}
+                                      className="pb-item-check"
+                                    />
+                                  )}
                                 </button>
                               );
                             })}
@@ -954,7 +1133,10 @@ export function PatientBookingPage() {
 
                       {/* Ô Tìm kiếm Dịch vụ */}
                       <div className="pb-search-container">
-                        <label className="pb-filter-label" htmlFor="pb-service-search-input">
+                        <label
+                          className="pb-filter-label"
+                          htmlFor="pb-service-search-input"
+                        >
                           Tìm kiếm dịch vụ:
                         </label>
                         <div className="pb-search-box">
@@ -985,7 +1167,8 @@ export function PatientBookingPage() {
                     {selectedSpecialtyId !== 'all' && (
                       <div className="pb-active-spec-banner">
                         <span>
-                          Đang lọc theo: <strong>{currentSpecialtyName}</strong> ({filteredServices.length} dịch vụ)
+                          Đang lọc theo: <strong>{currentSpecialtyName}</strong>{' '}
+                          ({filteredServices.length} dịch vụ)
                         </span>
                         <button
                           type="button"
@@ -1004,7 +1187,10 @@ export function PatientBookingPage() {
                       </div>
                     ) : filteredServices.length === 0 ? (
                       <div className="pb-empty-state">
-                        <p>Không tìm thấy dịch vụ nào phù hợp với bộ lọc hiện tại.</p>
+                        <p>
+                          Không tìm thấy dịch vụ nào phù hợp với bộ lọc hiện
+                          tại.
+                        </p>
                         {(serviceSearch || selectedSpecialtyId !== 'all') && (
                           <button
                             type="button"
@@ -1024,7 +1210,9 @@ export function PatientBookingPage() {
                           {paginatedServices.map((svc) => {
                             const isSelected = selectedServiceId === svc.id;
                             const priceVal = getServicePrice(svc);
-                            const specObj = specialties.find((s) => s.id === svc.specialtyId);
+                            const specObj = specialties.find(
+                              (s) => s.id === svc.specialtyId,
+                            );
 
                             return (
                               <div
@@ -1052,18 +1240,27 @@ export function PatientBookingPage() {
                                 </div>
 
                                 <div className="pb-service-card-content">
-                                  <h3 className="pb-service-card-name" title={svc.name}>
+                                  <h3
+                                    className="pb-service-card-name"
+                                    title={svc.name}
+                                  >
                                     {svc.name}
                                   </h3>
                                   <p className="pb-service-card-desc">
-                                    {svc.summary || svc.description || 'Dịch vụ y tế chuyên khoa chuẩn chất lượng cao.'}
+                                    {svc.summary ||
+                                      svc.description ||
+                                      'Dịch vụ y tế chuyên khoa chuẩn chất lượng cao.'}
                                   </p>
                                 </div>
 
                                 <div className="pb-service-card-footer">
                                   <div className="pb-service-price-block">
-                                    <span className="pb-service-price-amount">{formatVnd(priceVal)}</span>
-                                    <span className="pb-service-price-note">Giá niêm yết</span>
+                                    <span className="pb-service-price-amount">
+                                      {formatVnd(priceVal)}
+                                    </span>
+                                    <span className="pb-service-price-note">
+                                      Giá niêm yết
+                                    </span>
                                   </div>
                                   {isSelected && (
                                     <span className="pb-service-selected-pill">
@@ -1082,20 +1279,28 @@ export function PatientBookingPage() {
                             <span className="pb-pagination-info">
                               Trang {servicePage}/{totalServicePages} (
                               {(servicePage - 1) * SERVICES_PER_PAGE + 1} -{' '}
-                              {Math.min(servicePage * SERVICES_PER_PAGE, filteredServices.length)} trong{' '}
-                              {filteredServices.length} dịch vụ)
+                              {Math.min(
+                                servicePage * SERVICES_PER_PAGE,
+                                filteredServices.length,
+                              )}{' '}
+                              trong {filteredServices.length} dịch vụ)
                             </span>
                             <div className="pb-pagination-pages">
                               <button
                                 type="button"
                                 className="pb-page-btn"
                                 disabled={servicePage === 1}
-                                onClick={() => setServicePage((p) => Math.max(1, p - 1))}
+                                onClick={() =>
+                                  setServicePage((p) => Math.max(1, p - 1))
+                                }
                                 aria-label="Trang trước"
                               >
                                 <ChevronLeft size={16} />
                               </button>
-                              {Array.from({ length: totalServicePages }, (_, i) => i + 1).map((p) => (
+                              {Array.from(
+                                { length: totalServicePages },
+                                (_, i) => i + 1,
+                              ).map((p) => (
                                 <button
                                   key={p}
                                   type="button"
@@ -1109,7 +1314,11 @@ export function PatientBookingPage() {
                                 type="button"
                                 className="pb-page-btn"
                                 disabled={servicePage === totalServicePages}
-                                onClick={() => setServicePage((p) => Math.min(totalServicePages, p + 1))}
+                                onClick={() =>
+                                  setServicePage((p) =>
+                                    Math.min(totalServicePages, p + 1),
+                                  )
+                                }
                                 aria-label="Trang sau"
                               >
                                 <ChevronRight size={16} />
@@ -1133,7 +1342,8 @@ export function PatientBookingPage() {
                         Bước 2: Chọn Bác Sĩ &amp; Thời Gian Khám
                       </h2>
                       <p className="pb-step-subtitle">
-                        Đang đặt lịch cho dịch vụ: <strong>{selectedService?.name}</strong>
+                        Đang đặt lịch cho dịch vụ:{' '}
+                        <strong>{selectedService?.name}</strong>
                       </p>
                     </div>
 
@@ -1150,12 +1360,23 @@ export function PatientBookingPage() {
                           <Building2 size={20} />
                         </div>
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <h4 className="pb-mode-title" style={{ margin: 0 }}>Bệnh viện tự động sắp xếp</h4>
-                            <span className="pb-zero-surcharge-badge">Phụ phí 0 ₫</span>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <h4 className="pb-mode-title" style={{ margin: 0 }}>
+                              Bệnh viện tự động sắp xếp
+                            </h4>
+                            <span className="pb-zero-surcharge-badge">
+                              Phụ phí 0 ₫
+                            </span>
                           </div>
                           <p className="pb-mode-desc">
-                            Bác sĩ chuyên khoa tiêu chuẩn của bệnh viện, không phụ phí.
+                            Bác sĩ chuyên khoa tiêu chuẩn của bệnh viện, không
+                            phụ phí.
                           </p>
                         </div>
                       </div>
@@ -1168,9 +1389,12 @@ export function PatientBookingPage() {
                           <Stethoscope size={20} />
                         </div>
                         <div>
-                          <h4 className="pb-mode-title">Chỉ định Bác sĩ theo yêu cầu</h4>
+                          <h4 className="pb-mode-title">
+                            Chỉ định Bác sĩ theo yêu cầu
+                          </h4>
                           <p className="pb-mode-desc">
-                            Tự do lựa chọn Bác sĩ Trưởng khoa hoặc Chuyên gia cố vấn bạn mong muốn.
+                            Tự do lựa chọn Bác sĩ Trưởng khoa hoặc Chuyên gia cố
+                            vấn bạn mong muốn.
                           </p>
                         </div>
                       </div>
@@ -1191,27 +1415,53 @@ export function PatientBookingPage() {
                         </h4>
 
                         <div className="pb-doctor-grid">
-                          {!loadingInitial && eligibleDoctorsForService.length === 0 && <p>Chưa tải được bác sĩ phù hợp. Vui lòng thử lại hoặc chọn chế độ bệnh viện tự sắp xếp.</p>}
+                          {!loadingInitial &&
+                            eligibleDoctorsForService.length === 0 && (
+                              <p>
+                                Chưa tải được bác sĩ phù hợp. Vui lòng thử lại
+                                hoặc chọn chế độ bệnh viện tự sắp xếp.
+                              </p>
+                            )}
                           {eligibleDoctorsForService.map((doc: any) => {
-                            const isSelected = selectedDoctorId === (doc.id || doc.doctorId);
+                            const isSelected =
+                              selectedDoctorId === (doc.id || doc.doctorId);
                             const profile = doc.profile || {};
-                            const docName = profile.fullName || doc.name || 'Bác sĩ chuyên khoa';
-                            const rankCode: string = doc.consultationRank || doc.rank || 'BASIC';
-                            const rankFullName = doc.consultationRankInfo?.name || RANK_NAME[rankCode] || 'Bác sĩ chuyên khoa';
-                            const docPhoto = profile.photoUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
+                            const docName =
+                              profile.fullName ||
+                              doc.name ||
+                              'Bác sĩ chuyên khoa';
+                            const rankCode: string =
+                              doc.consultationRank || doc.rank || 'BASIC';
+                            const rankFullName =
+                              doc.consultationRankInfo?.name ||
+                              RANK_NAME[rankCode] ||
+                              'Bác sĩ chuyên khoa';
+                            const docPhoto =
+                              profile.photoUrl ||
+                              'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
                             const surcharge = RANK_SURCHARGE[rankCode] ?? 0;
-                            const docSpecialties: any[] = Array.isArray(doc.specialties) ? doc.specialties : [];
-                            const sortedSpecialties = [...docSpecialties].sort((a, b) => {
-                              const aPri = a.isPrimary || a.is_primary ? 1 : 0;
-                              const bPri = b.isPrimary || b.is_primary ? 1 : 0;
-                              return bPri - aPri;
-                            });
+                            const docSpecialties: any[] = Array.isArray(
+                              doc.specialties,
+                            )
+                              ? doc.specialties
+                              : [];
+                            const sortedSpecialties = [...docSpecialties].sort(
+                              (a, b) => {
+                                const aPri =
+                                  a.isPrimary || a.is_primary ? 1 : 0;
+                                const bPri =
+                                  b.isPrimary || b.is_primary ? 1 : 0;
+                                return bPri - aPri;
+                              },
+                            );
 
                             return (
                               <div
                                 key={doc.id || doc.doctorId}
                                 className={`pb-doctor-item-card ${isSelected ? 'is-selected' : ''}`}
-                                onClick={() => setSelectedDoctorId(doc.id || doc.doctorId)}
+                                onClick={() =>
+                                  setSelectedDoctorId(doc.id || doc.doctorId)
+                                }
                               >
                                 <img
                                   src={docPhoto}
@@ -1219,30 +1469,45 @@ export function PatientBookingPage() {
                                   className="pb-doctor-thumb"
                                   onError={(e) => {
                                     e.currentTarget.onerror = null;
-                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
+                                    e.currentTarget.src =
+                                      'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80';
                                   }}
                                 />
                                 <div className="pb-doctor-info">
                                   <h5 className="pb-doctor-name">{docName}</h5>
-                                  <div className="pb-doctor-rank-label">{rankFullName}</div>
+                                  <div className="pb-doctor-rank-label">
+                                    {rankFullName}
+                                  </div>
 
                                   <div className="pb-doctor-specs-wrap">
                                     {sortedSpecialties.length > 0 ? (
-                                      sortedSpecialties.map((spec: any, idx: number) => {
-                                        const isPrimary = Boolean(spec.isPrimary || spec.is_primary);
-                                        return (
-                                          <span
-                                            key={spec.id || idx}
-                                            className={`pb-doctor-spec-chip ${isPrimary ? 'is-primary' : 'is-secondary'}`}
-                                            title={isPrimary ? `Chuyên khoa chính: ${spec.name}` : `Chuyên khoa phối hợp: ${spec.name}`}
-                                          >
-                                            <span className="pb-spec-chip-name">{spec.name}</span>
-                                          </span>
-                                        );
-                                      })
+                                      sortedSpecialties.map(
+                                        (spec: any, idx: number) => {
+                                          const isPrimary = Boolean(
+                                            spec.isPrimary || spec.is_primary,
+                                          );
+                                          return (
+                                            <span
+                                              key={spec.id || idx}
+                                              className={`pb-doctor-spec-chip ${isPrimary ? 'is-primary' : 'is-secondary'}`}
+                                              title={
+                                                isPrimary
+                                                  ? `Chuyên khoa chính: ${spec.name}`
+                                                  : `Chuyên khoa phối hợp: ${spec.name}`
+                                              }
+                                            >
+                                              <span className="pb-spec-chip-name">
+                                                {spec.name}
+                                              </span>
+                                            </span>
+                                          );
+                                        },
+                                      )
                                     ) : (
                                       <span className="pb-doctor-spec-chip is-secondary">
-                                        <span className="pb-spec-chip-name">Đa khoa</span>
+                                        <span className="pb-spec-chip-name">
+                                          Đa khoa
+                                        </span>
                                       </span>
                                     )}
                                   </div>
@@ -1252,7 +1517,9 @@ export function PatientBookingPage() {
                                       +{formatVnd(surcharge)} phụ phí hạng
                                     </span>
                                   ) : (
-                                    <span className="pb-doctor-surcharge is-free">Không phụ phí</span>
+                                    <span className="pb-doctor-surcharge is-free">
+                                      Không phụ phí
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -1268,7 +1535,9 @@ export function PatientBookingPage() {
                         <Calendar size={18} color="#0b4f9c" />
                         Chọn ngày đến khám
                       </h4>
-                      <span style={{ fontSize: '13px', color: '#64748b' }}>14 ngày khả dụng tiếp theo</span>
+                      <span style={{ fontSize: '13px', color: '#64748b' }}>
+                        14 ngày khả dụng tiếp theo
+                      </span>
                     </div>
 
                     <div className="pb-date-chips-wrap">
@@ -1280,8 +1549,12 @@ export function PatientBookingPage() {
                             className={`pb-date-chip ${isSelected ? 'is-active' : ''}`}
                             onClick={() => setSelectedDate(item.dateStr)}
                           >
-                            <span className="pb-date-chip-day">{item.dayName}</span>
-                            <span className="pb-date-chip-date">{item.formatted}</span>
+                            <span className="pb-date-chip-day">
+                              {item.dayName}
+                            </span>
+                            <span className="pb-date-chip-date">
+                              {item.formatted}
+                            </span>
                           </div>
                         );
                       })}
@@ -1290,29 +1563,60 @@ export function PatientBookingPage() {
                     {/* 3. Khung giờ khám khả dụng */}
                     {/* 3. Khung giờ khám khả dụng */}
                     <div className="pb-slots-container">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
                         <h4 className="pb-subheading-text">
                           <Clock size={18} color="#0b4f9c" />
-                          Chọn khung giờ khám ngày {formatDateDisplay(selectedDate)}
+                          Chọn khung giờ khám ngày{' '}
+                          {formatDateDisplay(selectedDate)}
                         </h4>
                         {doctorMode === 'RANK' && (
-                          <span style={{ fontSize: '12.5px', color: '#16a34a', fontWeight: 700 }}>
+                          <span
+                            style={{
+                              fontSize: '12.5px',
+                              color: '#16a34a',
+                              fontWeight: 700,
+                            }}
+                          >
                             ● Lọc bác sĩ tiêu chuẩn (Phụ phí 0 ₫)
                           </span>
                         )}
                       </div>
 
                       {doctorMode === 'DOCTOR' && !selectedDoctorId ? (
-                        <div className="pb-slots-empty">Vui lòng chọn bác sĩ trước để xem lịch khám.</div>
+                        <div className="pb-slots-empty">
+                          Vui lòng chọn bác sĩ trước để xem lịch khám.
+                        </div>
                       ) : loadingSlots ? (
-                        <div style={{ padding: '30px 0', textAlign: 'center', color: '#64748b' }}>
+                        <div
+                          style={{
+                            padding: '30px 0',
+                            textAlign: 'center',
+                            color: '#64748b',
+                          }}
+                        >
                           Đang kiểm tra lịch trống của bác sĩ...
                         </div>
                       ) : slotsError ? (
-                        <div className="pb-slots-empty" role="alert">Không thể tải lịch khám lúc này. <button type="button" onClick={() => setSlotsRetry(value => value + 1)}>Thử lại</button></div>
+                        <div className="pb-slots-empty" role="alert">
+                          Không thể tải lịch khám lúc này.{' '}
+                          <button
+                            type="button"
+                            onClick={() => setSlotsRetry((value) => value + 1)}
+                          >
+                            Thử lại
+                          </button>
+                        </div>
                       ) : availableSlots.length === 0 ? (
                         <div className="pb-slots-empty">
-                          Chưa có khung giờ phù hợp trong ngày {formatDateDisplay(selectedDate)}. Vui lòng chọn ngày khác hoặc thay đổi lựa chọn bác sĩ.
+                          Chưa có khung giờ phù hợp trong ngày{' '}
+                          {formatDateDisplay(selectedDate)}. Vui lòng chọn ngày
+                          khác hoặc thay đổi lựa chọn bác sĩ.
                         </div>
                       ) : (
                         <div style={{ marginTop: '14px' }}>
@@ -1325,9 +1629,16 @@ export function PatientBookingPage() {
                               </h5>
                               <div className="pb-slots-grid">
                                 {morningSlots.map((slot, idx) => {
-                                  const isSelected = selectedSlot?.startAt === slot.startAt && selectedSlot?.endAt === slot.endAt;
-                                  const isAvailable = (slot as any).isAvailable !== false && ((slot as any).availableCapacity ?? 1) > 0;
-                                  const timeLabel = formatTimeRange(slot.startAt, slot.endAt);
+                                  const isSelected =
+                                    selectedSlot?.startAt === slot.startAt &&
+                                    selectedSlot?.endAt === slot.endAt;
+                                  const isAvailable =
+                                    (slot as any).isAvailable !== false &&
+                                    ((slot as any).availableCapacity ?? 1) > 0;
+                                  const timeLabel = formatTimeRange(
+                                    slot.startAt,
+                                    slot.endAt,
+                                  );
 
                                   return (
                                     <button
@@ -1335,10 +1646,18 @@ export function PatientBookingPage() {
                                       type="button"
                                       disabled={!isAvailable}
                                       className={`pb-slot-btn ${isSelected ? 'is-active' : ''} ${!isAvailable ? 'is-disabled' : ''}`}
-                                      onClick={() => isAvailable && handleSelectSlot(slot)}
-                                      title={!isAvailable ? 'Khung giờ này đã có người đặt' : `Chọn khung giờ ${timeLabel}`}
+                                      onClick={() =>
+                                        isAvailable && handleSelectSlot(slot)
+                                      }
+                                      title={
+                                        !isAvailable
+                                          ? 'Khung giờ này đã có người đặt'
+                                          : `Chọn khung giờ ${timeLabel}`
+                                      }
                                     >
-                                      <span className="pb-slot-time">{timeLabel}</span>
+                                      <span className="pb-slot-time">
+                                        {timeLabel}
+                                      </span>
                                     </button>
                                   );
                                 })}
@@ -1355,9 +1674,16 @@ export function PatientBookingPage() {
                               </h5>
                               <div className="pb-slots-grid">
                                 {afternoonSlots.map((slot, idx) => {
-                                  const isSelected = selectedSlot?.startAt === slot.startAt && selectedSlot?.endAt === slot.endAt;
-                                  const isAvailable = (slot as any).isAvailable !== false && ((slot as any).availableCapacity ?? 1) > 0;
-                                  const timeLabel = formatTimeRange(slot.startAt, slot.endAt);
+                                  const isSelected =
+                                    selectedSlot?.startAt === slot.startAt &&
+                                    selectedSlot?.endAt === slot.endAt;
+                                  const isAvailable =
+                                    (slot as any).isAvailable !== false &&
+                                    ((slot as any).availableCapacity ?? 1) > 0;
+                                  const timeLabel = formatTimeRange(
+                                    slot.startAt,
+                                    slot.endAt,
+                                  );
 
                                   return (
                                     <button
@@ -1365,10 +1691,18 @@ export function PatientBookingPage() {
                                       type="button"
                                       disabled={!isAvailable}
                                       className={`pb-slot-btn ${isSelected ? 'is-active' : ''} ${!isAvailable ? 'is-disabled' : ''}`}
-                                      onClick={() => isAvailable && handleSelectSlot(slot)}
-                                      title={!isAvailable ? 'Khung giờ này đã có người đặt' : `Chọn khung giờ ${timeLabel}`}
+                                      onClick={() =>
+                                        isAvailable && handleSelectSlot(slot)
+                                      }
+                                      title={
+                                        !isAvailable
+                                          ? 'Khung giờ này đã có người đặt'
+                                          : `Chọn khung giờ ${timeLabel}`
+                                      }
                                     >
-                                      <span className="pb-slot-time">{timeLabel}</span>
+                                      <span className="pb-slot-time">
+                                        {timeLabel}
+                                      </span>
                                     </button>
                                   );
                                 })}
@@ -1392,17 +1726,25 @@ export function PatientBookingPage() {
                   <div className="pb-summary-body">
                     {/* 1. Cơ sở khám chữa bệnh */}
                     <div className="pb-summary-row">
-                      <span className="pb-summary-row-label">Cơ sở khám chữa bệnh</span>
-                      <span className="pb-summary-row-val">Bệnh viện Phụ sản Tâm An</span>
+                      <span className="pb-summary-row-label">
+                        Cơ sở khám chữa bệnh
+                      </span>
+                      <span className="pb-summary-row-val">
+                        Bệnh viện Phụ sản Tâm An
+                      </span>
                     </div>
 
                     {/* 2. Chuyên khoa */}
                     {(selectedSpecialtyId !== 'all' || selectedService) && (
                       <div className="pb-summary-row">
-                        <span className="pb-summary-row-label">Chuyên khoa</span>
+                        <span className="pb-summary-row-label">
+                          Chuyên khoa
+                        </span>
                         <span className="pb-summary-row-val">
                           {selectedService
-                            ? specialties.find((s) => s.id === selectedService.specialtyId)?.name || 'Sản Phụ khoa'
+                            ? specialties.find(
+                                (s) => s.id === selectedService.specialtyId,
+                              )?.name || 'Sản Phụ khoa'
                             : currentSpecialtyName}
                         </span>
                       </div>
@@ -1411,8 +1753,13 @@ export function PatientBookingPage() {
                     {/* 3. Dịch vụ đã chọn */}
                     {selectedService && (
                       <div className="pb-summary-row">
-                        <span className="pb-summary-row-label">Dịch vụ đã chọn</span>
-                        <span className="pb-summary-row-val" style={{ color: '#0b4f9c' }}>
+                        <span className="pb-summary-row-label">
+                          Dịch vụ đã chọn
+                        </span>
+                        <span
+                          className="pb-summary-row-val"
+                          style={{ color: '#0b4f9c' }}
+                        >
                           {selectedService.name}
                         </span>
                       </div>
@@ -1421,10 +1768,15 @@ export function PatientBookingPage() {
                     {/* 4. Bác sĩ khám (ở Bước 2) */}
                     {currentStep === 2 && (
                       <div className="pb-summary-row">
-                        <span className="pb-summary-row-label">Bác sĩ khám</span>
+                        <span className="pb-summary-row-label">
+                          Bác sĩ khám
+                        </span>
                         <span className="pb-summary-row-val">
                           {doctorMode === 'DOCTOR'
-                            ? (selectedDoctor ? (selectedDoctor.profile as any)?.fullName || selectedDoctor.name : 'Chưa chọn bác sĩ')
+                            ? selectedDoctor
+                              ? (selectedDoctor.profile as any)?.fullName ||
+                                selectedDoctor.name
+                              : 'Chưa chọn bác sĩ'
                             : 'Bệnh viện tự động sắp xếp'}
                         </span>
                       </div>
@@ -1433,9 +1785,16 @@ export function PatientBookingPage() {
                     {/* 5. Thời gian hẹn (ở Bước 2) */}
                     {currentStep === 2 && selectedDate && selectedSlot && (
                       <div className="pb-summary-row">
-                        <span className="pb-summary-row-label">Thời gian hẹn</span>
+                        <span className="pb-summary-row-label">
+                          Thời gian hẹn
+                        </span>
                         <span className="pb-summary-row-val">
-                          {formatDateDisplay(selectedDate)} ({formatTimeRange(selectedSlot.startAt, selectedSlot.endAt)})
+                          {formatDateDisplay(selectedDate)} (
+                          {formatTimeRange(
+                            selectedSlot.startAt,
+                            selectedSlot.endAt,
+                          )}
+                          )
                         </span>
                       </div>
                     )}
@@ -1443,14 +1802,17 @@ export function PatientBookingPage() {
                     {/* Lời nhắc khi chưa chọn dịch vụ */}
                     {!selectedService && selectedSpecialtyId === 'all' && (
                       <div className="pb-summary-empty-hint">
-                        Vui lòng lựa chọn chuyên khoa và dịch vụ khám để tiếp tục các bước đặt lịch.
+                        Vui lòng lựa chọn chuyên khoa và dịch vụ khám để tiếp
+                        tục các bước đặt lịch.
                       </div>
                     )}
 
                     {/* 6. Tổng tạm tính */}
                     {selectedService && (
                       <div className="pb-summary-total-box">
-                        <span className="pb-summary-total-label">Tổng tạm tính</span>
+                        <span className="pb-summary-total-label">
+                          Tổng tạm tính
+                        </span>
                         <span className="pb-summary-total-price">
                           {formatVnd(totalEstimatedPrice)}
                         </span>
@@ -1458,18 +1820,35 @@ export function PatientBookingPage() {
                     )}
 
                     {/* Thông báo giữ chỗ 5 phút sau khi chọn xong giờ ở bước 2 */}
-                    {currentStep === 2 && selectedSlot && formattedHoldTimer && !holdExpired && (
-                      <div className="pb-hold-sidebar-notice">
-                        <Clock size={16} className="pb-hold-icon" />
-                        <div className="pb-hold-text">
-                          Khung giờ <strong>{formatTimeRange(selectedSlot.startAt, selectedSlot.endAt)}</strong> ngày <strong>{formatDateDisplay(selectedDate)}</strong> đã được giữ chỗ trong <strong className="pb-hold-countdown">{formattedHoldTimer}</strong>.
+                    {currentStep === 2 &&
+                      selectedSlot &&
+                      formattedHoldTimer &&
+                      !holdExpired && (
+                        <div className="pb-hold-sidebar-notice">
+                          <Clock size={16} className="pb-hold-icon" />
+                          <div className="pb-hold-text">
+                            Khung giờ{' '}
+                            <strong>
+                              {formatTimeRange(
+                                selectedSlot.startAt,
+                                selectedSlot.endAt,
+                              )}
+                            </strong>{' '}
+                            ngày{' '}
+                            <strong>{formatDateDisplay(selectedDate)}</strong>{' '}
+                            đã được giữ chỗ trong{' '}
+                            <strong className="pb-hold-countdown">
+                              {formattedHoldTimer}
+                            </strong>
+                            .
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {currentStep === 2 && selectedSlot && holdExpired && (
                       <div className="pb-hold-sidebar-expired">
-                        ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5 phút đã kết thúc. Vui lòng bấm chọn lại khung giờ khám.
+                        ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5
+                        phút đã kết thúc. Vui lòng bấm chọn lại khung giờ khám.
                       </div>
                     )}
 
@@ -1514,7 +1893,9 @@ export function PatientBookingPage() {
                     <Phone size={20} />
                   </div>
                   <div className="pb-hotline-info">
-                    <span className="pb-hotline-label">Cần hỗ trợ đặt lịch khẩn cấp?</span>
+                    <span className="pb-hotline-label">
+                      Cần hỗ trợ đặt lịch khẩn cấp?
+                    </span>
                     <a href="tel:19006868" className="pb-hotline-number">
                       1900 6868
                     </a>
@@ -1539,7 +1920,8 @@ export function PatientBookingPage() {
                     </h2>
                   </div>
                   <p className="pb-step-subtitle">
-                    Thông tin được dùng để làm hồ sơ tiếp đón y tế và lưu trữ kết quả khám trực tuyến.
+                    Thông tin được dùng để làm hồ sơ tiếp đón y tế và lưu trữ
+                    kết quả khám trực tuyến.
                   </p>
                 </div>
 
@@ -1588,7 +1970,9 @@ export function PatientBookingPage() {
                     <form onSubmit={handleQuickAuth}>
                       <div className="pb-form-grid">
                         <div className="pb-form-group">
-                          <label className="pb-label">Email đăng nhập / Số điện thoại</label>
+                          <label className="pb-label">
+                            Email đăng nhập / Số điện thoại
+                          </label>
                           <input
                             type="text"
                             className="pb-input"
@@ -1610,7 +1994,14 @@ export function PatientBookingPage() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginTop: '12px',
+                        }}
+                      >
                         <span style={{ fontSize: '13px', color: '#64748b' }}>
                           {authTab === 'login'
                             ? 'Tài khoản demo: demo.patient@antam.local / Demo@123456'
@@ -1626,8 +2017,8 @@ export function PatientBookingPage() {
                           {authSubmitting
                             ? 'Đang xử lý...'
                             : authTab === 'login'
-                            ? 'Đăng nhập & Tiếp tục'
-                            : 'Tạo tài khoản & Tiếp tục'}
+                              ? 'Đăng nhập & Tiếp tục'
+                              : 'Tạo tài khoản & Tiếp tục'}
                         </button>
                       </div>
                     </form>
@@ -1635,296 +2026,407 @@ export function PatientBookingPage() {
                 )}
 
                 {/* TRƯỜNG HỢP B: ĐÃ ĐĂNG NHẬP VÀ ĐÃ CÓ HỒ SƠ ĐẦY ĐỦ */}
-                {auth.status === 'authenticated' && profileStatus === 'complete' && (
-                  <div>
-                    {!isEditingProfile ? (
-                      <div className="pb-verified-profile-card">
-                        <div className="pb-verified-header">
-                          <div className="pb-verified-title-left">
-                            <ShieldCheck size={18} color="#166534" />
-                            <span>Hồ sơ bệnh nhân hợp lệ</span>
+                {auth.status === 'authenticated' &&
+                  profileStatus === 'complete' && (
+                    <div>
+                      {!isEditingProfile ? (
+                        <div className="pb-verified-profile-card">
+                          <div className="pb-verified-header">
+                            <div className="pb-verified-title-left">
+                              <ShieldCheck size={18} color="#166534" />
+                              <span>Hồ sơ bệnh nhân hợp lệ</span>
+                            </div>
+                            <div className="pb-verified-header-right">
+                              <span className="pb-verified-id-badge">
+                                Mã bệnh nhân:{' '}
+                                <strong>
+                                  {patientProfile?.id
+                                    ? patientProfile.id
+                                        .slice(0, 8)
+                                        .toUpperCase()
+                                    : '98942BA2'}
+                                </strong>
+                              </span>
+                              <button
+                                type="button"
+                                className="pb-btn-edit-profile"
+                                onClick={handleStartEditProfile}
+                                title="Chỉnh sửa thông tin hồ sơ người khám"
+                              >
+                                <Edit2 size={13} />
+                                <span>Chỉnh sửa hồ sơ</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className="pb-verified-header-right">
+
+                          <div className="pb-verified-grid">
+                            <div className="pb-verified-item">
+                              <span className="pb-verified-label">
+                                Họ và tên
+                              </span>
+                              <span className="pb-verified-val">
+                                {patientProfile?.fullName}
+                              </span>
+                            </div>
+
+                            <div className="pb-verified-item">
+                              <span className="pb-verified-label">
+                                Ngày sinh
+                              </span>
+                              <span className="pb-verified-val">
+                                {formatDateDisplay(patientProfile?.dateOfBirth)}
+                              </span>
+                            </div>
+
+                            <div className="pb-verified-item">
+                              <span className="pb-verified-label">
+                                Số điện thoại
+                              </span>
+                              <span className="pb-verified-val">
+                                {formatPhoneNumber(patientProfile?.phoneNumber)}
+                              </span>
+                            </div>
+
+                            <div className="pb-verified-item">
+                              <span className="pb-verified-label">
+                                Số CCCD / Định danh
+                              </span>
+                              <span className="pb-verified-val">
+                                {(patientProfile as any)?.nationalId ||
+                                  formNationalId ||
+                                  patientProfile?.nationalIdMasked ||
+                                  '001195000101'}
+                              </span>
+                            </div>
+
+                            <div className="pb-verified-item pb-col-full">
+                              <span className="pb-verified-label">
+                                Địa chỉ cư trú
+                              </span>
+                              <span className="pb-verified-val">
+                                {patientProfile?.address || 'Chưa cập nhật'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="pb-verified-profile-card is-editing">
+                          <div className="pb-verified-header">
+                            <div className="pb-verified-title-left">
+                              <Edit2 size={18} color="#0b4f9c" />
+                              <span style={{ color: '#0b4f9c' }}>
+                                Chỉnh sửa thông tin hồ sơ người khám
+                              </span>
+                            </div>
                             <span className="pb-verified-id-badge">
-                              Mã bệnh nhân: <strong>{patientProfile?.id ? patientProfile.id.slice(0, 8).toUpperCase() : '98942BA2'}</strong>
+                              Mã bệnh nhân:{' '}
+                              <strong>
+                                {patientProfile?.id
+                                  ? patientProfile.id.slice(0, 8).toUpperCase()
+                                  : '98942BA2'}
+                              </strong>
                             </span>
+                          </div>
+
+                          {editErrors.form && (
+                            <div className="pb-edit-error-banner">
+                              <AlertCircle size={15} />
+                              <span>{editErrors.form}</span>
+                            </div>
+                          )}
+
+                          <div
+                            className="pb-form-grid"
+                            style={{ marginBottom: '16px' }}
+                          >
+                            <div className="pb-form-group">
+                              <label className="pb-label">
+                                Họ và tên <span className="required">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className={`pb-input ${editErrors.fullName ? 'has-error' : ''}`}
+                                placeholder="Nhập họ và tên đầy đủ"
+                                value={editFullName}
+                                onChange={(e) => {
+                                  setEditFullName(e.target.value);
+                                  if (editErrors.fullName)
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      fullName: '',
+                                    }));
+                                }}
+                              />
+                              {editErrors.fullName && (
+                                <div className="pb-input-error">
+                                  {editErrors.fullName}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pb-form-group">
+                              <label className="pb-label">
+                                Ngày sinh <span className="required">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                className={`pb-input ${editErrors.dateOfBirth ? 'has-error' : ''}`}
+                                value={editDateOfBirth}
+                                onChange={(e) => {
+                                  setEditDateOfBirth(e.target.value);
+                                  if (editErrors.dateOfBirth)
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      dateOfBirth: '',
+                                    }));
+                                }}
+                              />
+                              {editErrors.dateOfBirth && (
+                                <div className="pb-input-error">
+                                  {editErrors.dateOfBirth}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pb-form-group">
+                              <label className="pb-label">
+                                Số điện thoại{' '}
+                                <span className="required">*</span>
+                              </label>
+                              <input
+                                type="tel"
+                                className={`pb-input ${editErrors.phoneNumber ? 'has-error' : ''}`}
+                                placeholder="ví dụ: 0901234567"
+                                value={editPhoneNumber}
+                                onChange={(e) => {
+                                  setEditPhoneNumber(e.target.value);
+                                  if (editErrors.phoneNumber)
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      phoneNumber: '',
+                                    }));
+                                }}
+                              />
+                              {editErrors.phoneNumber && (
+                                <div className="pb-input-error">
+                                  {editErrors.phoneNumber}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pb-form-group">
+                              <label className="pb-label">
+                                Số CCCD / Định danh{' '}
+                                <span className="required">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className={`pb-input ${editErrors.nationalId ? 'has-error' : ''}`}
+                                placeholder="9 hoặc 12 chữ số"
+                                value={editNationalId}
+                                onChange={(e) => {
+                                  setEditNationalId(e.target.value);
+                                  if (editErrors.nationalId)
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      nationalId: '',
+                                    }));
+                                }}
+                              />
+                              {editErrors.nationalId && (
+                                <div className="pb-input-error">
+                                  {editErrors.nationalId}
+                                </div>
+                              )}
+                            </div>
+
+                            <div
+                              className="pb-form-group pb-col-full"
+                              style={{ gridColumn: 'span 2' }}
+                            >
+                              <label className="pb-label">
+                                Địa chỉ cư trú{' '}
+                                <span className="required">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className={`pb-input ${editErrors.address ? 'has-error' : ''}`}
+                                placeholder="Số nhà, đường/phố, phường/xã, quận/huyện, tỉnh/thành phố"
+                                value={editAddress}
+                                onChange={(e) => {
+                                  setEditAddress(e.target.value);
+                                  if (editErrors.address)
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      address: '',
+                                    }));
+                                }}
+                              />
+                              {editErrors.address && (
+                                <div className="pb-input-error">
+                                  {editErrors.address}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pb-edit-actions">
                             <button
                               type="button"
-                              className="pb-btn-edit-profile"
-                              onClick={handleStartEditProfile}
-                              title="Chỉnh sửa thông tin hồ sơ người khám"
+                              className="pb-btn-cancel-edit"
+                              onClick={() => {
+                                setIsEditingProfile(false);
+                                setEditErrors({});
+                              }}
+                              disabled={isSavingEdit}
                             >
-                              <Edit2 size={13} />
-                              <span>Chỉnh sửa hồ sơ</span>
+                              Hủy bỏ
+                            </button>
+                            <button
+                              type="button"
+                              className="pb-btn-save-edit"
+                              onClick={handleSaveProfileEdit}
+                              disabled={isSavingEdit}
+                            >
+                              {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
                             </button>
                           </div>
                         </div>
+                      )}
 
-                        <div className="pb-verified-grid">
-                          <div className="pb-verified-item">
-                            <span className="pb-verified-label">Họ và tên</span>
-                            <span className="pb-verified-val">{patientProfile?.fullName}</span>
-                          </div>
-
-                          <div className="pb-verified-item">
-                            <span className="pb-verified-label">Ngày sinh</span>
-                            <span className="pb-verified-val">
-                              {formatDateDisplay(patientProfile?.dateOfBirth)}
-                            </span>
-                          </div>
-
-                          <div className="pb-verified-item">
-                            <span className="pb-verified-label">Số điện thoại</span>
-                            <span className="pb-verified-val">{formatPhoneNumber(patientProfile?.phoneNumber)}</span>
-                          </div>
-
-                          <div className="pb-verified-item">
-                            <span className="pb-verified-label">Số CCCD / Định danh</span>
-                            <span className="pb-verified-val">
-                              {(patientProfile as any)?.nationalId || formNationalId || patientProfile?.nationalIdMasked || '001195000101'}
-                            </span>
-                          </div>
-
-                          <div className="pb-verified-item pb-col-full">
-                            <span className="pb-verified-label">Địa chỉ cư trú</span>
-                            <span className="pb-verified-val">{patientProfile?.address || 'Chưa cập nhật'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="pb-verified-profile-card is-editing">
-                        <div className="pb-verified-header">
-                          <div className="pb-verified-title-left">
-                            <Edit2 size={18} color="#0b4f9c" />
-                            <span style={{ color: '#0b4f9c' }}>Chỉnh sửa thông tin hồ sơ người khám</span>
-                          </div>
-                          <span className="pb-verified-id-badge">
-                            Mã bệnh nhân: <strong>{patientProfile?.id ? patientProfile.id.slice(0, 8).toUpperCase() : '98942BA2'}</strong>
-                          </span>
-                        </div>
-
-                        {editErrors.form && (
-                          <div className="pb-edit-error-banner">
-                            <AlertCircle size={15} />
-                            <span>{editErrors.form}</span>
-                          </div>
-                        )}
-
-                        <div className="pb-form-grid" style={{ marginBottom: '16px' }}>
-                          <div className="pb-form-group">
-                            <label className="pb-label">
-                              Họ và tên <span className="required">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className={`pb-input ${editErrors.fullName ? 'has-error' : ''}`}
-                              placeholder="Nhập họ và tên đầy đủ"
-                              value={editFullName}
-                              onChange={(e) => {
-                                setEditFullName(e.target.value);
-                                if (editErrors.fullName) setEditErrors((prev) => ({ ...prev, fullName: '' }));
-                              }}
-                            />
-                            {editErrors.fullName && <div className="pb-input-error">{editErrors.fullName}</div>}
-                          </div>
-
-                          <div className="pb-form-group">
-                            <label className="pb-label">
-                              Ngày sinh <span className="required">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              className={`pb-input ${editErrors.dateOfBirth ? 'has-error' : ''}`}
-                              value={editDateOfBirth}
-                              onChange={(e) => {
-                                setEditDateOfBirth(e.target.value);
-                                if (editErrors.dateOfBirth) setEditErrors((prev) => ({ ...prev, dateOfBirth: '' }));
-                              }}
-                            />
-                            {editErrors.dateOfBirth && <div className="pb-input-error">{editErrors.dateOfBirth}</div>}
-                          </div>
-
-                          <div className="pb-form-group">
-                            <label className="pb-label">
-                              Số điện thoại <span className="required">*</span>
-                            </label>
-                            <input
-                              type="tel"
-                              className={`pb-input ${editErrors.phoneNumber ? 'has-error' : ''}`}
-                              placeholder="ví dụ: 0901234567"
-                              value={editPhoneNumber}
-                              onChange={(e) => {
-                                setEditPhoneNumber(e.target.value);
-                                if (editErrors.phoneNumber) setEditErrors((prev) => ({ ...prev, phoneNumber: '' }));
-                              }}
-                            />
-                            {editErrors.phoneNumber && <div className="pb-input-error">{editErrors.phoneNumber}</div>}
-                          </div>
-
-                          <div className="pb-form-group">
-                            <label className="pb-label">
-                              Số CCCD / Định danh <span className="required">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className={`pb-input ${editErrors.nationalId ? 'has-error' : ''}`}
-                              placeholder="9 hoặc 12 chữ số"
-                              value={editNationalId}
-                              onChange={(e) => {
-                                setEditNationalId(e.target.value);
-                                if (editErrors.nationalId) setEditErrors((prev) => ({ ...prev, nationalId: '' }));
-                              }}
-                            />
-                            {editErrors.nationalId && <div className="pb-input-error">{editErrors.nationalId}</div>}
-                          </div>
-
-                          <div className="pb-form-group pb-col-full" style={{ gridColumn: 'span 2' }}>
-                            <label className="pb-label">
-                              Địa chỉ cư trú <span className="required">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className={`pb-input ${editErrors.address ? 'has-error' : ''}`}
-                              placeholder="Số nhà, đường/phố, phường/xã, quận/huyện, tỉnh/thành phố"
-                              value={editAddress}
-                              onChange={(e) => {
-                                setEditAddress(e.target.value);
-                                if (editErrors.address) setEditErrors((prev) => ({ ...prev, address: '' }));
-                              }}
-                            />
-                            {editErrors.address && <div className="pb-input-error">{editErrors.address}</div>}
-                          </div>
-                        </div>
-
-                        <div className="pb-edit-actions">
-                          <button
-                            type="button"
-                            className="pb-btn-cancel-edit"
-                            onClick={() => {
-                              setIsEditingProfile(false);
-                              setEditErrors({});
-                            }}
-                            disabled={isSavingEdit}
-                          >
-                            Hủy bỏ
-                          </button>
-                          <button
-                            type="button"
-                            className="pb-btn-save-edit"
-                            onClick={handleSaveProfileEdit}
-                            disabled={isSavingEdit}
-                          >
-                            {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Lý do khám / Triệu chứng lâm sàng */}
-                    <div className="pb-form-group" style={{ marginTop: '20px' }}>
-                      <label className="pb-label">Lý do khám / Triệu chứng ban đầu (nếu có)</label>
-                      <textarea
-                        className="pb-textarea"
-                        rows={4}
-                        placeholder="Mô tả ngắn gọn tuần thai hiện tại hoặc triệu chứng khó chịu để bác sĩ chuẩn bị trước..."
-                        value={clinicalNotes}
-                        onChange={(e) => setClinicalNotes(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TRƯỜNG HỢP C: ĐÃ ĐĂNG NHẬP NHƯNG LÀ TÀI KHOẢN MỚI CHƯA CÓ HỒ SƠ */}
-                {auth.status === 'authenticated' && profileStatus === 'incomplete' && (
-                  <div>
-                    <div className="pb-new-patient-alert">
-                      <AlertCircle size={20} style={{ flexShrink: 0 }} />
-                      <div>
-                        <strong>Bạn đang dùng tài khoản mới:</strong> Vui lòng điền thông tin để Bệnh viện thiết lập hồ sơ
-                        bệnh án điện tử và đồng bộ tiếp đón khi bạn đến khám.
-                      </div>
-                    </div>
-
-                    <div className="pb-form-grid">
-                      <div className="pb-form-group">
+                      {/* Lý do khám / Triệu chứng lâm sàng */}
+                      <div
+                        className="pb-form-group"
+                        style={{ marginTop: '20px' }}
+                      >
                         <label className="pb-label">
-                          Họ và tên người khám <span className="required">*</span>
+                          Lý do khám / Triệu chứng ban đầu (nếu có)
                         </label>
-                        <input
-                          type="text"
-                          className={`pb-input ${formErrors.fullName ? 'has-error' : ''}`}
-                          placeholder="Nhập họ và tên đầy đủ (IN HOA hoặc chữ thường)"
-                          value={formFullName}
-                          onChange={(e) => setFormFullName(e.target.value)}
-                        />
-                        {formErrors.fullName && <div className="pb-input-error">{formErrors.fullName}</div>}
-                      </div>
-
-                      <div className="pb-form-group">
-                        <label className="pb-label">
-                          Ngày sinh <span className="required">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          className={`pb-input ${formErrors.dateOfBirth ? 'has-error' : ''}`}
-                          value={formDateOfBirth}
-                          onChange={(e) => setFormDateOfBirth(e.target.value)}
-                        />
-                        {formErrors.dateOfBirth && <div className="pb-input-error">{formErrors.dateOfBirth}</div>}
-                      </div>
-
-                      <div className="pb-form-group">
-                        <label className="pb-label">
-                          Số điện thoại nhận tin nhắn <span className="required">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          className={`pb-input ${formErrors.phoneNumber ? 'has-error' : ''}`}
-                          placeholder="ví dụ: 0901234567"
-                          value={formPhoneNumber}
-                          onChange={(e) => setFormPhoneNumber(e.target.value)}
-                        />
-                        {formErrors.phoneNumber && <div className="pb-input-error">{formErrors.phoneNumber}</div>}
-                      </div>
-
-                      <div className="pb-form-group">
-                        <label className="pb-label">
-                          Số CCCD / Hộ chiếu <span className="required">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          className={`pb-input ${formErrors.nationalId ? 'has-error' : ''}`}
-                          placeholder="Số căn cước 12 chữ số"
-                          value={formNationalId}
-                          onChange={(e) => setFormNationalId(e.target.value)}
-                        />
-                        {formErrors.nationalId && <div className="pb-input-error">{formErrors.nationalId}</div>}
-                      </div>
-
-                      <div className="pb-form-group col-span-2">
-                        <label className="pb-label">Địa chỉ nơi cư trú</label>
-                        <input
-                          type="text"
-                          className="pb-input"
-                          placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                          value={formAddress}
-                          onChange={(e) => setFormAddress(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="pb-form-group col-span-2">
-                        <label className="pb-label">Lý do khám / Triệu chứng lâm sàng</label>
                         <textarea
                           className="pb-textarea"
-                          rows={3}
-                          placeholder="Mô tả tuần thai hoặc triệu chứng khó chịu hiện tại..."
+                          rows={4}
+                          placeholder="Mô tả ngắn gọn tuần thai hiện tại hoặc triệu chứng khó chịu để bác sĩ chuẩn bị trước..."
                           value={clinicalNotes}
                           onChange={(e) => setClinicalNotes(e.target.value)}
                         />
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                {/* TRƯỜNG HỢP C: ĐÃ ĐĂNG NHẬP NHƯNG LÀ TÀI KHOẢN MỚI CHƯA CÓ HỒ SƠ */}
+                {auth.status === 'authenticated' &&
+                  profileStatus === 'incomplete' && (
+                    <div>
+                      <div className="pb-new-patient-alert">
+                        <AlertCircle size={20} style={{ flexShrink: 0 }} />
+                        <div>
+                          <strong>Bạn đang dùng tài khoản mới:</strong> Vui lòng
+                          điền thông tin để Bệnh viện thiết lập hồ sơ bệnh án
+                          điện tử và đồng bộ tiếp đón khi bạn đến khám.
+                        </div>
+                      </div>
+
+                      <div className="pb-form-grid">
+                        <div className="pb-form-group">
+                          <label className="pb-label">
+                            Họ và tên người khám{' '}
+                            <span className="required">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className={`pb-input ${formErrors.fullName ? 'has-error' : ''}`}
+                            placeholder="Nhập họ và tên đầy đủ (IN HOA hoặc chữ thường)"
+                            value={formFullName}
+                            onChange={(e) => setFormFullName(e.target.value)}
+                          />
+                          {formErrors.fullName && (
+                            <div className="pb-input-error">
+                              {formErrors.fullName}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pb-form-group">
+                          <label className="pb-label">
+                            Ngày sinh <span className="required">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            className={`pb-input ${formErrors.dateOfBirth ? 'has-error' : ''}`}
+                            value={formDateOfBirth}
+                            onChange={(e) => setFormDateOfBirth(e.target.value)}
+                          />
+                          {formErrors.dateOfBirth && (
+                            <div className="pb-input-error">
+                              {formErrors.dateOfBirth}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pb-form-group">
+                          <label className="pb-label">
+                            Số điện thoại nhận tin nhắn{' '}
+                            <span className="required">*</span>
+                          </label>
+                          <input
+                            type="tel"
+                            className={`pb-input ${formErrors.phoneNumber ? 'has-error' : ''}`}
+                            placeholder="ví dụ: 0901234567"
+                            value={formPhoneNumber}
+                            onChange={(e) => setFormPhoneNumber(e.target.value)}
+                          />
+                          {formErrors.phoneNumber && (
+                            <div className="pb-input-error">
+                              {formErrors.phoneNumber}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pb-form-group">
+                          <label className="pb-label">
+                            Số CCCD / Hộ chiếu{' '}
+                            <span className="required">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className={`pb-input ${formErrors.nationalId ? 'has-error' : ''}`}
+                            placeholder="Số căn cước 12 chữ số"
+                            value={formNationalId}
+                            onChange={(e) => setFormNationalId(e.target.value)}
+                          />
+                          {formErrors.nationalId && (
+                            <div className="pb-input-error">
+                              {formErrors.nationalId}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pb-form-group col-span-2">
+                          <label className="pb-label">Địa chỉ nơi cư trú</label>
+                          <input
+                            type="text"
+                            className="pb-input"
+                            placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                            value={formAddress}
+                            onChange={(e) => setFormAddress(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="pb-form-group col-span-2">
+                          <label className="pb-label">
+                            Lý do khám / Triệu chứng lâm sàng
+                          </label>
+                          <textarea
+                            className="pb-textarea"
+                            rows={3}
+                            placeholder="Mô tả tuần thai hoặc triệu chứng khó chịu hiện tại..."
+                            value={clinicalNotes}
+                            onChange={(e) => setClinicalNotes(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {/* CỘT PHẢI (BƯỚC 3): CHI TIẾT LỊCH HẸN, CHI PHÍ KHÁM & NÚT XÁC NHẬN */}
@@ -1935,7 +2437,8 @@ export function PatientBookingPage() {
                     Chi Tiết Lịch Hẹn &amp; Chi Phí Khám
                   </h3>
                   <p className="pb-step-subtitle">
-                    Vui lòng rà soát lại thông tin trước khi hoàn tất đăng ký đặt lịch khám.
+                    Vui lòng rà soát lại thông tin trước khi hoàn tất đăng ký
+                    đặt lịch khám.
                   </p>
                 </div>
 
@@ -1943,21 +2446,27 @@ export function PatientBookingPage() {
                 <div className="pb-confirm-review-table">
                   <div className="pb-review-row">
                     <span className="pb-review-label">Cơ sở khám</span>
-                    <span className="pb-review-val">Bệnh viện Phụ sản Tâm An (Hà Nội)</span>
+                    <span className="pb-review-val">
+                      Bệnh viện Phụ sản Tâm An (Hà Nội)
+                    </span>
                   </div>
 
                   <div className="pb-review-row">
                     <span className="pb-review-label">Chuyên khoa</span>
                     <span className="pb-review-val">
                       {selectedService
-                        ? specialties.find((s) => s.id === selectedService.specialtyId)?.name || 'Sản Phụ khoa'
+                        ? specialties.find(
+                            (s) => s.id === selectedService.specialtyId,
+                          )?.name || 'Sản Phụ khoa'
                         : currentSpecialtyName}
                     </span>
                   </div>
 
                   <div className="pb-review-row">
                     <span className="pb-review-label">Dịch vụ đăng ký</span>
-                    <span className="pb-review-val is-black-bold">{selectedService?.name}</span>
+                    <span className="pb-review-val is-black-bold">
+                      {selectedService?.name}
+                    </span>
                   </div>
 
                   <div className="pb-review-row">
@@ -1974,14 +2483,23 @@ export function PatientBookingPage() {
                   <div className="pb-review-row">
                     <span className="pb-review-label">Thời gian khám</span>
                     <span className="pb-review-val is-black-bold">
-                      {formatDateDisplay(selectedDate)} lúc {selectedSlot ? formatTimeRange(selectedSlot.startAt, selectedSlot.endAt) : ''}
+                      {formatDateDisplay(selectedDate)} lúc{' '}
+                      {selectedSlot
+                        ? formatTimeRange(
+                            selectedSlot.startAt,
+                            selectedSlot.endAt,
+                          )
+                        : ''}
                     </span>
                   </div>
 
                   <div className="pb-review-row">
-                    <span className="pb-review-label">Phòng khám tiếp nhận</span>
+                    <span className="pb-review-label">
+                      Phòng khám tiếp nhận
+                    </span>
                     <span className="pb-review-val">
-                      Quầy tiếp đón Tầng 1 (Bệnh viện sẽ phân bổ phòng theo ca trực)
+                      Quầy tiếp đón Tầng 1 (Bệnh viện sẽ phân bổ phòng theo ca
+                      trực)
                     </span>
                   </div>
                 </div>
@@ -1989,12 +2507,18 @@ export function PatientBookingPage() {
                 {/* Bảng chi phí & Tạm tính */}
                 <div className="pb-price-breakdown-card">
                   <div className="pb-price-row">
-                    <span className="pb-price-label">Giá dịch vụ niêm yết:</span>
-                    <span className="pb-price-val">{formatVnd(getServicePrice(selectedService))}</span>
+                    <span className="pb-price-label">
+                      Giá dịch vụ niêm yết:
+                    </span>
+                    <span className="pb-price-val">
+                      {formatVnd(getServicePrice(selectedService))}
+                    </span>
                   </div>
 
                   <div className="pb-price-row">
-                    <span className="pb-price-label">Phụ phí bác sĩ theo yêu cầu:</span>
+                    <span className="pb-price-label">
+                      Phụ phí bác sĩ theo yêu cầu:
+                    </span>
                     <span className="pb-price-val">
                       {doctorMode === 'DOCTOR' && selectedDoctorSurcharge > 0
                         ? `+${formatVnd(selectedDoctorSurcharge)}`
@@ -2005,12 +2529,17 @@ export function PatientBookingPage() {
                   <div className="pb-price-divider" />
 
                   <div className="pb-price-row pb-price-total">
-                    <span className="pb-price-total-label">Tổng chi phí tạm tính:</span>
-                    <span className="pb-price-total-val">{formatVnd(totalEstimatedPrice)}</span>
+                    <span className="pb-price-total-label">
+                      Tổng chi phí tạm tính:
+                    </span>
+                    <span className="pb-price-total-val">
+                      {formatVnd(totalEstimatedPrice)}
+                    </span>
                   </div>
 
                   <div className="pb-price-subnote">
-                    * Quý khách thanh toán tại Quầy tiếp đón khi đến khám. Miễn phí 100% đổi / hủy lịch hẹn trước 24 giờ.
+                    * Quý khách thanh toán tại Quầy tiếp đón khi đến khám. Miễn
+                    phí 100% đổi / hủy lịch hẹn trước 24 giờ.
                   </div>
                 </div>
 
@@ -2019,22 +2548,41 @@ export function PatientBookingPage() {
                   <div className="pb-hold-step3-notice">
                     <Clock size={16} className="pb-hold-icon" />
                     <div className="pb-hold-text">
-                      Khung giờ <strong>{formatTimeRange(selectedSlot.startAt, selectedSlot.endAt)}</strong> ngày <strong>{formatDateDisplay(selectedDate)}</strong> đã được giữ chỗ trong <strong className="pb-hold-countdown">{formattedHoldTimer}</strong>.
+                      Khung giờ{' '}
+                      <strong>
+                        {formatTimeRange(
+                          selectedSlot.startAt,
+                          selectedSlot.endAt,
+                        )}
+                      </strong>{' '}
+                      ngày <strong>{formatDateDisplay(selectedDate)}</strong> đã
+                      được giữ chỗ trong{' '}
+                      <strong className="pb-hold-countdown">
+                        {formattedHoldTimer}
+                      </strong>
+                      .
                     </div>
                   </div>
                 )}
 
                 {selectedSlot && holdExpired && (
                   <div className="pb-hold-step3-expired">
-                    ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5 phút đã kết thúc. Vui lòng quay lại bước 2 chọn lại khung giờ khám.
+                    ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5
+                    phút đã kết thúc. Vui lòng quay lại bước 2 chọn lại khung
+                    giờ khám.
                   </div>
                 )}
 
                 {/* Hộp lưu ý */}
                 <div className="pb-terms-notice">
-                  <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <AlertCircle
+                    size={18}
+                    style={{ flexShrink: 0, marginTop: '2px' }}
+                  />
                   <div>
-                    <strong>Lưu ý:</strong> Quý khách vui lòng có mặt trước giờ hẹn 10 - 15 phút và xuất trình CCCD tại Quầy tiếp đón Tầng 1 để được tiếp đón ưu tiên.
+                    <strong>Lưu ý:</strong> Quý khách vui lòng có mặt trước giờ
+                    hẹn 10 - 15 phút và xuất trình CCCD tại Quầy tiếp đón Tầng 1
+                    để được tiếp đón ưu tiên.
                   </div>
                 </div>
 
@@ -2044,7 +2592,11 @@ export function PatientBookingPage() {
                     type="button"
                     className="pb-btn-primary pb-btn-confirm-lg"
                     onClick={handleConfirmBooking}
-                    disabled={isSubmitting || auth.status !== 'authenticated' || holdExpired}
+                    disabled={
+                      isSubmitting ||
+                      auth.status !== 'authenticated' ||
+                      holdExpired
+                    }
                   >
                     {isSubmitting ? (
                       'Đang xử lý tạo lịch hẹn...'
@@ -2069,7 +2621,9 @@ export function PatientBookingPage() {
                 <div className="pb-step3-hotline">
                   <Phone size={15} color="#ef4444" />
                   <span>Hỗ trợ đặt lịch khẩn cấp:</span>
-                  <a href="tel:19006868" className="pb-step3-hotline-phone">1900 6868</a>
+                  <a href="tel:19006868" className="pb-step3-hotline-phone">
+                    1900 6868
+                  </a>
                 </div>
               </div>
             </div>
@@ -2096,9 +2650,14 @@ export function PatientBookingPage() {
             : 'Bác sĩ chuyên khoa Tâm An'
         }
         fallbackSpecialtyName={
-          specialties.find((s) => s.id === (selectedService?.specialtyId || selectedSpecialtyId))?.name || 'Sản Phụ khoa'
+          specialties.find(
+            (s) =>
+              s.id === (selectedService?.specialtyId || selectedSpecialtyId),
+          )?.name || 'Sản Phụ khoa'
         }
-        fallbackServiceName={selectedService?.name || 'Dịch vụ khám Sản Phụ khoa'}
+        fallbackServiceName={
+          selectedService?.name || 'Dịch vụ khám Sản Phụ khoa'
+        }
         fallbackRoomName={
           createdAppointment?.roomNameSnapshot ||
           (selectedSlot as any)?.roomName ||

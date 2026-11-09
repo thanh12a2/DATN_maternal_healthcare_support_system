@@ -7,7 +7,12 @@ import { AppointmentSyncService } from './appointment-sync.service';
 import { ClinicalEmailOutboxService } from './clinical-email-outbox.service';
 @Module({
   controllers: [MedicalController, MedicalGrpcController],
-  providers: [MedicalDomainService, DoctorIdentityGateway, AppointmentSyncService, ClinicalEmailOutboxService],
+  providers: [
+    MedicalDomainService,
+    DoctorIdentityGateway,
+    AppointmentSyncService,
+    ClinicalEmailOutboxService,
+  ],
   exports: [MedicalDomainService],
 })
 export class MedicalModule {}

@@ -402,7 +402,13 @@ export class QueueDomainService {
   async notifyTicketChange(ticketId: string, eventType: string): Promise<void> {
     const ticket = await this.db.stageTicket.findUnique({
       where: { id: ticketId },
-      select: { id: true, journeyId: true, state: true, version: true, journey: { select: { patientId: true } } },
+      select: {
+        id: true,
+        journeyId: true,
+        state: true,
+        version: true,
+        journey: { select: { patientId: true } },
+      },
     });
     if (!ticket) return;
     this.realtime.publish(ticket.journey.patientId, {

@@ -36,7 +36,7 @@
 .why-choose-accent-line {
   width: 68px;
   height: 4px;
-  background: #1677FF;
+  background: #1677ff;
   border-radius: 2px;
 }
 
@@ -84,7 +84,7 @@
 .why-pillar-icon {
   width: 44px;
   height: 44px;
-  color: #1677FF;
+  color: #1677ff;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -98,7 +98,7 @@
 .why-pillar-title {
   font-size: 19px;
   font-weight: 750;
-  color: #1677FF;
+  color: #1677ff;
   margin: 0;
   line-height: 1.35;
 }
@@ -106,7 +106,7 @@
 .why-pillar-desc {
   font-size: 14.5px;
   line-height: 1.65;
-  color: #5B6F8A;
+  color: #5b6f8a;
   margin: 0;
   text-align: justify;
 }
@@ -162,4 +162,3 @@
     text-align: left;
   }
 }
-

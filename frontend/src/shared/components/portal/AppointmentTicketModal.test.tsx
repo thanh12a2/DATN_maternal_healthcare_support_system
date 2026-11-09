@@ -23,7 +23,7 @@ describe('AppointmentTicketModal', () => {
         isOpen={false}
         onClose={vi.fn()}
         appointment={mockAppointment}
-      />
+      />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -39,7 +39,7 @@ describe('AppointmentTicketModal', () => {
         fallbackNationalId="001196000106"
         fallbackDoctorName="BS. Nguyễn Văn A"
         fallbackSpecialtyName="Phụ khoa"
-      />
+      />,
     );
 
     // Banner mã tiếp đón
@@ -48,7 +48,9 @@ describe('AppointmentTicketModal', () => {
 
     // 1. Thông tin lịch hẹn y tế (bên trái)
     expect(screen.getByText('1. Thông tin lịch hẹn y tế')).toBeDefined();
-    expect(screen.getByText('Khám phụ khoa tổng quát & Soi cổ tử cung kỹ thuật số')).toBeDefined();
+    expect(
+      screen.getByText('Khám phụ khoa tổng quát & Soi cổ tử cung kỹ thuật số'),
+    ).toBeDefined();
     expect(screen.getByText('BS. Nguyễn Văn A')).toBeDefined();
     expect(screen.getByText('Phụ khoa')).toBeDefined();
 
@@ -75,7 +77,7 @@ describe('AppointmentTicketModal', () => {
         isOpen={true}
         onClose={onClose}
         appointment={mockAppointment}
-      />
+      />,
     );
 
     const closeBtn = screen.getByText('Đóng');
@@ -92,7 +94,7 @@ describe('AppointmentTicketModal', () => {
         appointment={mockAppointment}
         showGoToAppointmentsBtn={true}
         onGoToAppointments={onGoToAppointments}
-      />
+      />,
     );
 
     const navBtn = screen.getByText('Xem lịch hẹn của tôi');
@@ -101,4 +103,3 @@ describe('AppointmentTicketModal', () => {
     expect(onGoToAppointments).toHaveBeenCalledTimes(1);
   });
 });
-

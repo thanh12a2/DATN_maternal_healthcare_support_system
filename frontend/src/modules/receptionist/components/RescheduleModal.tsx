@@ -92,14 +92,16 @@ export function RescheduleModal({
     return generateSlotsForShift(
       currentDoctorInfo.startTime || '07:30',
       currentDoctorInfo.endTime || '12:00',
-      30
+      30,
     );
   }, [currentDoctorInfo]);
 
   // Khởi tạo form khi mở modal
   useEffect(() => {
     if (open && appointment) {
-      const apptDate = appointment.startAt ? dayjs(appointment.startAt) : dayjs();
+      const apptDate = appointment.startAt
+        ? dayjs(appointment.startAt)
+        : dayjs();
       setSelectedDate(apptDate);
 
       // Tìm ID bác sĩ hiện tại
@@ -138,7 +140,7 @@ export function RescheduleModal({
           request,
           selectedDoctorId,
           dateStr,
-          appointment.id
+          appointment.id,
         );
         if (active) {
           setOccupiedSlots(occupied);
@@ -216,7 +218,15 @@ export function RescheduleModal({
       ? `${dayjs(appointment.startAt).format('HH:mm')} – ${dayjs(appointment.endAt).format('HH:mm')}`
       : '—';
 
-  const dayOfWeekNames = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayOfWeekNames = [
+    'Chủ nhật',
+    'Thứ Hai',
+    'Thứ Ba',
+    'Thứ Tư',
+    'Thứ Năm',
+    'Thứ Sáu',
+    'Thứ Bảy',
+  ];
   const selectedDayName = dayOfWeekNames[selectedDate.day()];
 
   return (
@@ -237,10 +247,24 @@ export function RescheduleModal({
             <SwapOutlined style={{ color: '#0B5CAD', fontSize: 16 }} />
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: '#0f172a',
+                lineHeight: 1.2,
+              }}
+            >
               Dời lịch khám & Điều phối bác sĩ
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 400, marginTop: 2 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: '#64748b',
+                fontWeight: 400,
+                marginTop: 2,
+              }}
+            >
               Thay đổi ngày hẹn, khung giờ hoặc chuyển bác sĩ phụ trách ca khám
             </div>
           </div>
@@ -274,7 +298,14 @@ export function RescheduleModal({
             marginBottom: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flexShrink: 0,
+            }}
+          >
             <span
               style={{
                 fontFamily: 'monospace, sans-serif',
@@ -313,27 +344,55 @@ export function RescheduleModal({
             title={appointment.service}
           >
             <span style={{ color: '#64748B' }}>Dịch vụ: </span>
-            <span style={{ fontWeight: 600, color: '#0F172A' }}>{appointment.service}</span>
+            <span style={{ fontWeight: 600, color: '#0F172A' }}>
+              {appointment.service}
+            </span>
           </div>
         </div>
 
         <Row gutter={[16, 6]}>
           <Col xs={24} sm={12}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 13,
+                color: '#475569',
+              }}
+            >
               <ClockCircleOutlined style={{ color: '#0B5CAD', fontSize: 14 }} />
               <span>
-                Thời gian hiện tại: <b style={{ color: '#0F172A' }}>{currentFormattedTime}</b> ({currentFormattedDate})
+                Thời gian hiện tại:{' '}
+                <b style={{ color: '#0F172A' }}>{currentFormattedTime}</b> (
+                {currentFormattedDate})
               </span>
             </div>
           </Col>
 
           <Col xs={24} sm={12}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 13,
+                color: '#475569',
+              }}
+            >
               <MedicineBoxOutlined style={{ color: '#0B5CAD', fontSize: 14 }} />
               <span>
-                Bác sĩ hiện tại: <b style={{ color: '#0F172A' }}>{appointment.doctorName}</b>
+                Bác sĩ hiện tại:{' '}
+                <b style={{ color: '#0F172A' }}>{appointment.doctorName}</b>
                 {appointment.roomCode ? (
-                  <Tag color="blue" style={{ marginLeft: 6, fontWeight: 600, marginInlineEnd: 0 }}>
+                  <Tag
+                    color="blue"
+                    style={{
+                      marginLeft: 6,
+                      fontWeight: 600,
+                      marginInlineEnd: 0,
+                    }}
+                  >
                     {appointment.roomCode}
                   </Tag>
                 ) : null}
@@ -361,13 +420,19 @@ export function RescheduleModal({
               name="date"
               label={
                 <span style={{ fontWeight: 600, color: '#1E293B' }}>
-                  <CalendarOutlined style={{ color: '#0B5CAD', marginRight: 6 }} />
+                  <CalendarOutlined
+                    style={{ color: '#0B5CAD', marginRight: 6 }}
+                  />
                   Ngày khám mới
                 </span>
               }
-              rules={[{ required: true, message: 'Vui lòng chọn ngày khám mới' }]}
+              rules={[
+                { required: true, message: 'Vui lòng chọn ngày khám mới' },
+              ]}
               extra={
-                <span style={{ fontSize: 12, color: '#0B5CAD', fontWeight: 500 }}>
+                <span
+                  style={{ fontSize: 12, color: '#0B5CAD', fontWeight: 500 }}
+                >
                   {selectedDayName}, {selectedDate.format('DD/MM/YYYY')}
                 </span>
               }
@@ -392,11 +457,15 @@ export function RescheduleModal({
               name="doctorId"
               label={
                 <span style={{ fontWeight: 600, color: '#1E293B' }}>
-                  <MedicineBoxOutlined style={{ color: '#0B5CAD', marginRight: 6 }} />
+                  <MedicineBoxOutlined
+                    style={{ color: '#0B5CAD', marginRight: 6 }}
+                  />
                   Bác sĩ & Phòng khám phụ trách
                 </span>
               }
-              rules={[{ required: true, message: 'Vui lòng chọn bác sĩ tiếp nhận' }]}
+              rules={[
+                { required: true, message: 'Vui lòng chọn bác sĩ tiếp nhận' },
+              ]}
             >
               <Select
                 placeholder="Chọn bác sĩ tiếp nhận"
@@ -407,7 +476,8 @@ export function RescheduleModal({
                 filterOption={(input, option) => {
                   const doc = doctorsList.find((d) => d.id === option?.value);
                   if (!doc) return false;
-                  const searchStr = `${doc.name} ${doc.roomCode} ${doc.shiftLabel} ${doc.specialtyName}`.toLowerCase();
+                  const searchStr =
+                    `${doc.name} ${doc.roomCode} ${doc.shiftLabel} ${doc.specialtyName}`.toLowerCase();
                   return searchStr.includes(input.toLowerCase());
                 }}
                 onChange={(id) => {
@@ -426,8 +496,21 @@ export function RescheduleModal({
                         width: '100%',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                        <span style={{ fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: '#0F172A',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {d.name}
                         </span>
                         <Tag
@@ -486,8 +569,11 @@ export function RescheduleModal({
               }}
             >
               <span style={{ fontWeight: 600, color: '#1E293B' }}>
-                <ClockCircleOutlined style={{ color: '#0B5CAD', marginRight: 6 }} />
-                Khung giờ khám ({currentDoctorInfo?.shiftLabel || 'Theo ca trực'})
+                <ClockCircleOutlined
+                  style={{ color: '#0B5CAD', marginRight: 6 }}
+                />
+                Khung giờ khám (
+                {currentDoctorInfo?.shiftLabel || 'Theo ca trực'})
               </span>
               {loadingOccupied && <Spin size="small" />}
             </div>
@@ -524,7 +610,13 @@ export function RescheduleModal({
                       opacity: 0.75,
                     }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: 500, textDecoration: 'line-through' }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        textDecoration: 'line-through',
+                      }}
+                    >
                       {slotTime}
                     </span>
                     <Tag
@@ -561,7 +653,9 @@ export function RescheduleModal({
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: 4,
-                    border: isSelected ? '1.5px solid #0B5CAD' : '1px solid #CBD5E1',
+                    border: isSelected
+                      ? '1.5px solid #0B5CAD'
+                      : '1px solid #CBD5E1',
                     background: isSelected ? '#0B5CAD' : '#FFFFFF',
                     color: isSelected ? '#FFFFFF' : '#1E293B',
                     boxShadow: isSelected
@@ -569,11 +663,22 @@ export function RescheduleModal({
                       : '0 1px 2px rgba(0, 0, 0, 0.02)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600 }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isSelected ? 700 : 600,
+                      }}
+                    >
                       {slotTime}
                     </span>
-                    {isSelected && <CheckCircleFilled style={{ color: '#FFFFFF', fontSize: 13 }} />}
+                    {isSelected && (
+                      <CheckCircleFilled
+                        style={{ color: '#FFFFFF', fontSize: 13 }}
+                      />
+                    )}
                   </div>
 
                   <Tag
@@ -585,7 +690,9 @@ export function RescheduleModal({
                       lineHeight: '16px',
                       borderRadius: 3,
                       border: 'none',
-                      background: isSelected ? 'rgba(255, 255, 255, 0.25)' : undefined,
+                      background: isSelected
+                        ? 'rgba(255, 255, 255, 0.25)'
+                        : undefined,
                       color: isSelected ? '#FFFFFF' : undefined,
                       fontWeight: 500,
                     }}
@@ -601,11 +708,24 @@ export function RescheduleModal({
         {/* KHỐI 4: LÝ DO THAY ĐỔI */}
         <Form.Item
           name="reason"
-          label={<span style={{ fontWeight: 600, color: '#1E293B' }}>Lý do thay đổi lịch hẹn</span>}
-          rules={[{ required: true, message: 'Vui lòng cung cấp lý do thay đổi' }]}
+          label={
+            <span style={{ fontWeight: 600, color: '#1E293B' }}>
+              Lý do thay đổi lịch hẹn
+            </span>
+          }
+          rules={[
+            { required: true, message: 'Vui lòng cung cấp lý do thay đổi' },
+          ]}
         >
           <div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 6,
+                flexWrap: 'wrap',
+                marginBottom: 8,
+              }}
+            >
               {QUICK_REASONS.map((r) => (
                 <Tag
                   key={r}
@@ -640,7 +760,11 @@ export function RescheduleModal({
             marginTop: 8,
           }}
         >
-          <Button onClick={onClose} disabled={submitting} style={{ borderRadius: 6 }}>
+          <Button
+            onClick={onClose}
+            disabled={submitting}
+            style={{ borderRadius: 6 }}
+          >
             Hủy bỏ
           </Button>
           <Button

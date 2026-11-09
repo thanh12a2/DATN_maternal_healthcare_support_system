@@ -1,1 +1,3 @@
-describe('reporting boundary',()=>{it('keeps service scope explicit',()=>expect('reporting').toBeTruthy());});
+describe('reporting boundary', () => {
+  it('keeps service scope explicit', () => expect('reporting').toBeTruthy());
+});

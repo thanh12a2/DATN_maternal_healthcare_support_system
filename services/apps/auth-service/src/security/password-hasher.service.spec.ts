@@ -12,7 +12,9 @@ describe('PasswordHasherService', () => {
       providers: [PasswordHasherService],
     }).compile();
 
-    passwordHasherService = moduleRef.get<PasswordHasherService>(PasswordHasherService);
+    passwordHasherService = moduleRef.get<PasswordHasherService>(
+      PasswordHasherService,
+    );
   });
 
   it('should hash password with Argon2id metadata', async () => {
@@ -32,12 +34,16 @@ describe('PasswordHasherService', () => {
   it('should verify the correct password', async () => {
     const passwordHash = await passwordHasherService.hashPassword(PASSWORD);
 
-    await expect(passwordHasherService.verifyPassword(passwordHash, PASSWORD)).resolves.toBe(true);
+    await expect(
+      passwordHasherService.verifyPassword(passwordHash, PASSWORD),
+    ).resolves.toBe(true);
   });
 
   it('should reject an incorrect password', async () => {
     const passwordHash = await passwordHasherService.hashPassword(PASSWORD);
 
-    await expect(passwordHasherService.verifyPassword(passwordHash, 'WrongPassword!')).resolves.toBe(false);
+    await expect(
+      passwordHasherService.verifyPassword(passwordHash, 'WrongPassword!'),
+    ).resolves.toBe(false);
   });
 });

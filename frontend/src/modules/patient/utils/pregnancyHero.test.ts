@@ -201,7 +201,9 @@ describe('pregnancyHero Utility Functions', () => {
 
       // Ngay sau nửa đêm 00:01:00 ngày 31/10 tại VN
       const justAfterMidnightVN = new Date('2026-10-31T00:01:00+07:00');
-      expect(calculateDaysLeft(nextMorningVN, justAfterMidnightVN)).toBe('Hôm nay');
+      expect(calculateDaysLeft(nextMorningVN, justAfterMidnightVN)).toBe(
+        'Hôm nay',
+      );
     });
   });
 
@@ -213,8 +215,9 @@ describe('pregnancyHero Utility Functions', () => {
     });
 
     it('fallback lấy tên từ email khi chưa có họ tên', () => {
-      expect(extractGreetingName(null, 'mai.nguyen@gmail.com')).toBe('Mai nguyen');
+      expect(extractGreetingName(null, 'mai.nguyen@gmail.com')).toBe(
+        'Mai nguyen',
+      );
     });
   });
 });
-

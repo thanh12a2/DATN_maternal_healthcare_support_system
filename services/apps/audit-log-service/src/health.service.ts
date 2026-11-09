@@ -43,7 +43,8 @@ export interface SystemHealthOverview {
 export interface BackupRecord {
   id: string;
   target: string;
-  type: 'FULL_DATABASE' | 'SCHEMA_BACKUP' | 'TRANSACTION_WAL' | 'CONFIG_SNAPSHOT';
+  type:
+    'FULL_DATABASE' | 'SCHEMA_BACKUP' | 'TRANSACTION_WAL' | 'CONFIG_SNAPSHOT';
   status: 'COMPLETED' | 'IN_PROGRESS' | 'FAILED';
   sizeBytes: number;
   sizeFormatted: string;
@@ -65,7 +66,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'core',
     databaseContainer: 'auth-database',
-    description: 'Xác thực JWT, đăng nhập, phân quyền RBAC và quản lý tài khoản.',
+    description:
+      'Xác thực JWT, đăng nhập, phân quyền RBAC và quản lý tài khoản.',
   },
   {
     id: 'patient-service',
@@ -76,7 +78,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'patient-database',
-    description: 'Hồ sơ y tế thai sản, thông tin liên hệ, thai kỳ và danh bạ khẩn cấp.',
+    description:
+      'Hồ sơ y tế thai sản, thông tin liên hệ, thai kỳ và danh bạ khẩn cấp.',
   },
   {
     id: 'doctor-service',
@@ -87,7 +90,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'doctor-database',
-    description: 'Hồ sơ bác sĩ, hạng chuyên môn, phân công chuyên khoa và lịch trực.',
+    description:
+      'Hồ sơ bác sĩ, hạng chuyên môn, phân công chuyên khoa và lịch trực.',
   },
   {
     id: 'receptionist-service',
@@ -98,7 +102,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'operational',
     databaseContainer: 'receptionist-database',
-    description: 'Tiếp đón bệnh nhân tại quầy, check-in, phân loại luồng khám ban đầu.',
+    description:
+      'Tiếp đón bệnh nhân tại quầy, check-in, phân loại luồng khám ban đầu.',
   },
   {
     id: 'service-catalog-service',
@@ -109,7 +114,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'core',
     databaseContainer: 'catalog-database',
-    description: 'Bảng giá viện phí, dịch vụ khám chữa bệnh, nhóm dịch vụ và phụ thu hạng bác sĩ.',
+    description:
+      'Bảng giá viện phí, dịch vụ khám chữa bệnh, nhóm dịch vụ và phụ thu hạng bác sĩ.',
   },
   {
     id: 'appointment-service',
@@ -120,7 +126,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'operational',
     databaseContainer: 'appointment-database',
-    description: 'Đặt lịch khám, giữ slot (slot holding), điều phối bác sĩ và hủy/đổi lịch.',
+    description:
+      'Đặt lịch khám, giữ slot (slot holding), điều phối bác sĩ và hủy/đổi lịch.',
   },
   {
     id: 'billing-service',
@@ -131,7 +138,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'operational',
     databaseContainer: 'billing-database',
-    description: 'Tạo hóa đơn snapshot, thanh toán chuyển khoản, tiền mặt và duyệt miễn giảm.',
+    description:
+      'Tạo hóa đơn snapshot, thanh toán chuyển khoản, tiền mặt và duyệt miễn giảm.',
   },
   {
     id: 'medical-record-service',
@@ -142,7 +150,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'medical-record-database',
-    description: 'Bệnh án điện tử, các đợt khám (encounter), chẩn đoán ICD-10 và theo dõi thai.',
+    description:
+      'Bệnh án điện tử, các đợt khám (encounter), chẩn đoán ICD-10 và theo dõi thai.',
   },
   {
     id: 'queue-service',
@@ -153,7 +162,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'operational',
     databaseContainer: 'queue-database',
-    description: 'Cấp số thứ tự khám, điều hướng phòng khám và ước tính thời gian chờ.',
+    description:
+      'Cấp số thứ tự khám, điều hướng phòng khám và ước tính thời gian chờ.',
   },
   {
     id: 'document-service',
@@ -164,7 +174,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'document-database',
-    description: 'Lưu trữ hình ảnh siêu âm thai, kết quả xét nghiệm, hồ sơ đính kèm.',
+    description:
+      'Lưu trữ hình ảnh siêu âm thai, kết quả xét nghiệm, hồ sơ đính kèm.',
   },
   {
     id: 'prescription-service',
@@ -175,7 +186,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'prescription-database',
-    description: 'Kê toa thuốc điều trị sản phụ khoa, liều dùng, cảnh báo tương tác thuốc.',
+    description:
+      'Kê toa thuốc điều trị sản phụ khoa, liều dùng, cảnh báo tương tác thuốc.',
   },
   {
     id: 'treatment-plan-service',
@@ -186,7 +198,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'treatment-plan-database',
-    description: 'Phác đồ thai kỳ nguy cơ cao, lộ trình tiêm chủng và chăm sóc định kỳ.',
+    description:
+      'Phác đồ thai kỳ nguy cơ cao, lộ trình tiêm chủng và chăm sóc định kỳ.',
   },
   {
     id: 'notification-service',
@@ -197,7 +210,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'support',
     databaseContainer: 'notification-database',
-    description: 'Gửi tin nhắn SMS, email nhắc lịch khám thai, thông báo viện phí.',
+    description:
+      'Gửi tin nhắn SMS, email nhắc lịch khám thai, thông báo viện phí.',
   },
   {
     id: 'audit-log-service',
@@ -208,7 +222,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'core',
     databaseContainer: 'audit-log-database',
-    description: 'Ghi vết giao dịch y tế, đổi biểu phí, khóa/kích hoạt tài khoản và IP thao tác.',
+    description:
+      'Ghi vết giao dịch y tế, đổi biểu phí, khóa/kích hoạt tài khoản và IP thao tác.',
   },
   {
     id: 'reporting-service',
@@ -219,7 +234,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'support',
     databaseContainer: 'reporting-database',
-    description: 'Tổng hợp doanh thu, lượng khám thai, phân tích công suất phòng khám.',
+    description:
+      'Tổng hợp doanh thu, lượng khám thai, phân tích công suất phòng khám.',
   },
   {
     id: 'consultation-service',
@@ -230,7 +246,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     healthPath: '/health',
     category: 'clinical',
     databaseContainer: 'consultation-database',
-    description: 'Phiên hội chẩn trực tuyến, tư vấn từ xa cho mẹ bầu qua video/chat.',
+    description:
+      'Phiên hội chẩn trực tuyến, tư vấn từ xa cho mẹ bầu qua video/chat.',
   },
   {
     id: 'sample-service',
@@ -240,7 +257,8 @@ export const MICROSERVICES_DEFINITIONS: ServiceHealthTarget[] = [
     port: 5000,
     healthPath: '/',
     category: 'support',
-    description: 'Cụm microservice mẫu kiểm thử kiến trúc mở rộng và tải nền tảng.',
+    description:
+      'Cụm microservice mẫu kiểm thử kiến trúc mở rộng và tải nền tảng.',
   },
 ];
 
@@ -260,8 +278,10 @@ export class HealthService {
       durationSeconds: 14,
       createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
       completedAt: new Date(Date.now() - 3600000 * 2 + 14000).toISOString(),
-      storageLocation: 's3://an-tam-backup/production/daily/full_pg_20261023_0200.sql.gz',
-      checksumSha256: '9a7d8c6b1e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b',
+      storageLocation:
+        's3://an-tam-backup/production/daily/full_pg_20261023_0200.sql.gz',
+      checksumSha256:
+        '9a7d8c6b1e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b',
       triggeredBy: 'SYSTEM_CRON (Hằng ngày 02:00 UTC)',
     },
     {
@@ -273,9 +293,13 @@ export class HealthService {
       sizeFormatted: '144.2 MB',
       durationSeconds: 13,
       createdAt: new Date(Date.now() - 86400000 - 3600000 * 2).toISOString(),
-      completedAt: new Date(Date.now() - 86400000 - 3600000 * 2 + 13000).toISOString(),
-      storageLocation: 's3://an-tam-backup/production/daily/full_pg_20261022_0200.sql.gz',
-      checksumSha256: '8b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b9a7d8c6b1e5f4a3b2c1d0e9f',
+      completedAt: new Date(
+        Date.now() - 86400000 - 3600000 * 2 + 13000,
+      ).toISOString(),
+      storageLocation:
+        's3://an-tam-backup/production/daily/full_pg_20261022_0200.sql.gz',
+      checksumSha256:
+        '8b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b9a7d8c6b1e5f4a3b2c1d0e9f',
       triggeredBy: 'SYSTEM_CRON (Hằng ngày 02:00 UTC)',
     },
     {
@@ -288,15 +312,19 @@ export class HealthService {
       durationSeconds: 6,
       createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
       completedAt: new Date(Date.now() - 86400000 * 2 + 6000).toISOString(),
-      storageLocation: 's3://an-tam-backup/production/audit-wal/wal_20261021.tar.gz',
-      checksumSha256: '7a5b4c3d2e1f0a9b9a7d8c6b1e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e',
+      storageLocation:
+        's3://an-tam-backup/production/audit-wal/wal_20261021.tar.gz',
+      checksumSha256:
+        '7a5b4c3d2e1f0a9b9a7d8c6b1e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e',
       triggeredBy: 'ADMIN: admin@antam.vn',
     },
   ];
 
   constructor(private readonly db: AppPrismaService) {}
 
-  async checkSingleService(target: ServiceHealthTarget): Promise<ServiceHealthStatus> {
+  async checkSingleService(
+    target: ServiceHealthTarget,
+  ): Promise<ServiceHealthStatus> {
     const start = Date.now();
     return new Promise<ServiceHealthStatus>((resolve) => {
       const req = http.get(
@@ -308,7 +336,10 @@ export class HealthService {
         },
         (res) => {
           const responseTimeMs = Date.now() - start;
-          const isHealthy = res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 400;
+          const isHealthy =
+            res.statusCode !== undefined &&
+            res.statusCode >= 200 &&
+            res.statusCode < 400;
           resolve({
             id: target.id,
             name: target.name,
@@ -377,7 +408,8 @@ export class HealthService {
       overallStatus = 'DEGRADED';
     }
 
-    const uptimePercentage = Math.round((healthyCount / results.length) * 1000) / 10;
+    const uptimePercentage =
+      Math.round((healthyCount / results.length) * 1000) / 10;
 
     return {
       overallStatus,
@@ -398,10 +430,13 @@ export class HealthService {
     };
   }
 
-  async triggerBackup(targetType?: string, actorEmail?: string): Promise<BackupRecord> {
+  async triggerBackup(
+    targetType?: string,
+    actorEmail?: string,
+  ): Promise<BackupRecord> {
     const now = new Date();
     const id = `BKP-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(Math.floor(1000 + Math.random() * 9000))}`;
-    
+
     const size = Math.floor(140000000 + Math.random() * 25000000);
     const sizeMb = (size / (1024 * 1024)).toFixed(1);
 
@@ -416,8 +451,12 @@ export class HealthService {
       createdAt: now.toISOString(),
       completedAt: new Date(now.getTime() + 12000).toISOString(),
       storageLocation: `s3://an-tam-backup/production/manual/snapshot_${id.toLowerCase()}.sql.gz`,
-      checksumSha256: Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-      triggeredBy: actorEmail ? `ADMIN: ${actorEmail}` : 'ADMIN (Thủ công từ màn hình giám sát)',
+      checksumSha256: Array.from({ length: 64 }, () =>
+        Math.floor(Math.random() * 16).toString(16),
+      ).join(''),
+      triggeredBy: actorEmail
+        ? `ADMIN: ${actorEmail}`
+        : 'ADMIN (Thủ công từ màn hình giám sát)',
     };
 
     this.backups.unshift(newRecord);

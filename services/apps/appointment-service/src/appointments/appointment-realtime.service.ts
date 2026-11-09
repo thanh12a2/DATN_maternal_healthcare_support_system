@@ -31,7 +31,10 @@ export type AppointmentSubscriber = (event: AppointmentRealtimeEvent) => void;
 export class AppointmentRealtimeService implements OnModuleDestroy {
   private readonly logger = new Logger(AppointmentRealtimeService.name);
   private readonly deskSubscribers = new Set<AppointmentSubscriber>();
-  private readonly patientSubscribers = new Map<string, Set<AppointmentSubscriber>>();
+  private readonly patientSubscribers = new Map<
+    string,
+    Set<AppointmentSubscriber>
+  >();
 
   subscribeDesk(subscriber: AppointmentSubscriber): () => void {
     this.deskSubscribers.add(subscriber);
@@ -40,8 +43,13 @@ export class AppointmentRealtimeService implements OnModuleDestroy {
     };
   }
 
-  subscribePatient(patientId: string, subscriber: AppointmentSubscriber): () => void {
-    const list = this.patientSubscribers.get(patientId) ?? new Set<AppointmentSubscriber>();
+  subscribePatient(
+    patientId: string,
+    subscriber: AppointmentSubscriber,
+  ): () => void {
+    const list =
+      this.patientSubscribers.get(patientId) ??
+      new Set<AppointmentSubscriber>();
     list.add(subscriber);
     this.patientSubscribers.set(patientId, list);
     return () => {
@@ -82,4 +90,3 @@ export class AppointmentRealtimeService implements OnModuleDestroy {
     this.patientSubscribers.clear();
   }
 }
-

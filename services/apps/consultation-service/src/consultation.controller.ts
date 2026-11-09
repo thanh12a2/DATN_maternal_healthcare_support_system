@@ -62,10 +62,7 @@ export class ConsultationController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['consultations/:id', ':id'])
-  async get(
-    @Param('id') id: string,
-    @CurrentAuth() auth: PublicAuthContext,
-  ) {
+  async get(@Param('id') id: string, @CurrentAuth() auth: PublicAuthContext) {
     await this.service.authorizeParticipant(id, auth, this.access);
     return this.service.getRest(id);
   }
@@ -80,13 +77,18 @@ export class ConsultationController {
   ) {
     await this.service.authorizeParticipant(id, auth, this.access);
     const after = afterSequence ? Number(afterSequence) : 0;
-    if (!Number.isSafeInteger(after) || after < 0) throw new ForbiddenException('INVALID_SEQUENCE');
+    if (!Number.isSafeInteger(after) || after < 0)
+      throw new ForbiddenException('INVALID_SEQUENCE');
     return this.service.messagesRest(id, limit ? Number(limit) : 50, after);
   }
 
   @UseGuards(PublicJwtGuard)
   @Post(['consultations/:id/read', ':id/read'])
-  async markRead(@Param('id') id: string, @Body() body: any, @CurrentAuth() auth: PublicAuthContext) {
+  async markRead(
+    @Param('id') id: string,
+    @Body() body: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     await this.service.authorizeParticipant(id, auth, this.access);
     return this.service.markRead(id, auth.userId, Number(body.sequenceNo));
   }
@@ -121,10 +123,7 @@ export class ConsultationController {
 
   @UseGuards(PublicJwtGuard)
   @Post(['consultations/:id/close', ':id/close'])
-  async close(
-    @Param('id') id: string,
-    @CurrentAuth() auth: PublicAuthContext,
-  ) {
+  async close(@Param('id') id: string, @CurrentAuth() auth: PublicAuthContext) {
     await this.service.authorizeParticipant(id, auth, this.access);
     return this.service.close(id);
   }

@@ -22,12 +22,7 @@ export class ReportingService implements OnModuleInit {
     if (!this.config.get('RABBITMQ_URL')) return;
     await this.mq.subscribe({
       queue: 'maternal.reporting.projection.v1',
-      routingKeys: [
-        'appointment.#',
-        'billing.#',
-        'queue.#',
-        'medical.#',
-      ],
+      routingKeys: ['appointment.#', 'billing.#', 'queue.#', 'medical.#'],
       handler: (event) => this.consume(event),
     });
   }
@@ -163,8 +158,7 @@ export class ReportingService implements OnModuleInit {
                   event.eventType.includes('opened') ||
                   event.eventType.includes('started')
                 ) {
-                  m.encountersStarted =
-                    Number(m.encountersStarted ?? 0) + 1;
+                  m.encountersStarted = Number(m.encountersStarted ?? 0) + 1;
                 }
                 if (event.eventType.includes('finalized')) {
                   m.encountersFinalized =
@@ -200,7 +194,8 @@ export class ReportingService implements OnModuleInit {
       {
         reportType: 'OVERVIEW',
         name: 'Báo cáo tổng quan phòng khám',
-        description: 'Tổng quan các chỉ số lịch hẹn, ca khám và tổng doanh thu thu được',
+        description:
+          'Tổng quan các chỉ số lịch hẹn, ca khám và tổng doanh thu thu được',
         endpoint: '/api/reports/overview',
         dimensions: ['period'],
         measures: [
@@ -214,7 +209,8 @@ export class ReportingService implements OnModuleInit {
       {
         reportType: 'APPOINTMENT_DAILY',
         name: 'Báo cáo lịch hẹn & lượt khám',
-        description: 'Thống kê chi tiết lịch hẹn theo ngày, bác sĩ và trạng thái',
+        description:
+          'Thống kê chi tiết lịch hẹn theo ngày, bác sĩ và trạng thái',
         endpoint: '/api/reports/appointments',
         dimensions: ['businessDate', 'doctorId', 'status'],
         measures: ['total', 'completed', 'cancelled'],
@@ -223,7 +219,8 @@ export class ReportingService implements OnModuleInit {
       {
         reportType: 'REVENUE_DAILY',
         name: 'Báo cáo doanh thu dịch vụ',
-        description: 'Thống kê số tiền thực thu theo ngày và phương thức thanh toán',
+        description:
+          'Thống kê số tiền thực thu theo ngày và phương thức thanh toán',
         endpoint: '/api/reports/revenue',
         dimensions: ['businessDate', 'paymentMethod'],
         measures: ['collected'],
@@ -233,7 +230,8 @@ export class ReportingService implements OnModuleInit {
       {
         reportType: 'QUEUE_DAILY',
         name: 'Báo cáo vận hành hàng chờ',
-        description: 'Thống kê lượt tiếp nhận, phục vụ, gọi số và thời gian chờ',
+        description:
+          'Thống kê lượt tiếp nhận, phục vụ, gọi số và thời gian chờ',
         endpoint: '/api/reports/queue',
         dimensions: ['businessDate', 'stageCode'],
         measures: ['tickets', 'served', 'skipped', 'averageWaitSeconds'],
@@ -242,7 +240,8 @@ export class ReportingService implements OnModuleInit {
       {
         reportType: 'CLINICAL_ACTIVITY_DAILY',
         name: 'Báo cáo hoạt động khám lâm sàng',
-        description: 'Thống kê ca khám khởi tạo, hoàn tất và chỉ định cận lâm sàng',
+        description:
+          'Thống kê ca khám khởi tạo, hoàn tất và chỉ định cận lâm sàng',
         endpoint: '/api/reports/clinical-activity',
         dimensions: ['businessDate', 'encounterType'],
         measures: ['encountersStarted', 'encountersFinalized', 'ordersCount'],
@@ -252,11 +251,17 @@ export class ReportingService implements OnModuleInit {
   }
 
   private parseDateRange(from?: string, to?: string) {
-    const fromDateStr = from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const fromDateStr =
+      from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
     const toDateStr = to || new Date().toISOString().slice(0, 10);
     const fromDate = new Date(`${fromDateStr.slice(0, 10)}T00:00:00.000Z`);
     const toDate = new Date(`${toDateStr.slice(0, 10)}T23:59:59.999Z`);
-    return { fromDate, toDate, fromDateStr: fromDateStr.slice(0, 10), toDateStr: toDateStr.slice(0, 10) };
+    return {
+      fromDate,
+      toDate,
+      fromDateStr: fromDateStr.slice(0, 10),
+      toDateStr: toDateStr.slice(0, 10),
+    };
   }
 
   rows(type: string, from?: string, to?: string) {
@@ -332,12 +337,12 @@ export class ReportingService implements OnModuleInit {
       reportType === 'appointments'
         ? 'APPOINTMENT_DAILY'
         : reportType === 'revenue'
-        ? 'REVENUE_DAILY'
-        : reportType === 'queue'
-        ? 'QUEUE_DAILY'
-        : reportType === 'clinical-activity'
-        ? 'CLINICAL_ACTIVITY_DAILY'
-        : reportType.toUpperCase();
+          ? 'REVENUE_DAILY'
+          : reportType === 'queue'
+            ? 'QUEUE_DAILY'
+            : reportType === 'clinical-activity'
+              ? 'CLINICAL_ACTIVITY_DAILY'
+              : reportType.toUpperCase();
 
     const dbRows = await this.db.dailyMetric.findMany({
       where: {

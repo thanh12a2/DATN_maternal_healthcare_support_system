@@ -7,7 +7,12 @@ import { QueueRealtimeService } from './queue-realtime.service';
 import { NotificationOutboxService } from './notification-outbox.service';
 @Module({
   controllers: [QueueController, QueueGrpcController],
-  providers: [QueueDomainService, PatientDependencyGateway, QueueRealtimeService, NotificationOutboxService],
+  providers: [
+    QueueDomainService,
+    PatientDependencyGateway,
+    QueueRealtimeService,
+    NotificationOutboxService,
+  ],
   exports: [QueueDomainService],
 })
 export class QueueModule {}

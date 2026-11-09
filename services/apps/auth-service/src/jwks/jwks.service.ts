@@ -9,7 +9,8 @@ export class JwksService {
 
   getJwks(): JsonWebKeySet {
     const publicKey = this.getRequiredConfig('AUTH_JWT_PUBLIC_KEY');
-    const keyId = this.configService.get<string>('AUTH_JWT_KEY_ID') ?? 'local-dev-key';
+    const keyId =
+      this.configService.get<string>('AUTH_JWT_KEY_ID') ?? 'local-dev-key';
     const jwk = createPublicKey(this.normalizePem(publicKey)).export({
       format: 'jwk',
     }) as unknown as JsonWebKey;
@@ -30,7 +31,9 @@ export class JwksService {
     const value = this.configService.get<string>(key);
 
     if (!value) {
-      throw new InternalServerErrorException(`Missing required configuration: ${key}`);
+      throw new InternalServerErrorException(
+        `Missing required configuration: ${key}`,
+      );
     }
 
     return value;
@@ -44,6 +47,9 @@ export class JwksService {
         ? trimmedValue.slice(1, -1)
         : trimmedValue;
 
-    return unquotedValue.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+    return unquotedValue
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\r\n/g, '\n');
   }
 }

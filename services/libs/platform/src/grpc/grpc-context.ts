@@ -27,17 +27,29 @@ export function callMetadata(context: unknown): Metadata {
   return context as Metadata;
 }
 
-export function metadataValue(metadata: Metadata, key: string): string | undefined {
+export function metadataValue(
+  metadata: Metadata,
+  key: string,
+): string | undefined {
   const value = metadata.get(key)[0];
   return typeof value === 'string' ? value : value?.toString('utf8');
 }
 
-export function timestampToDate(value?: { seconds?: string | number; nanos?: number } | null): Date | undefined {
+export function timestampToDate(
+  value?: { seconds?: string | number; nanos?: number } | null,
+): Date | undefined {
   if (value?.seconds === undefined) return undefined;
-  return new Date(Number(value.seconds) * 1000 + Math.floor((value.nanos ?? 0) / 1_000_000));
+  return new Date(
+    Number(value.seconds) * 1000 + Math.floor((value.nanos ?? 0) / 1_000_000),
+  );
 }
 
-export function dateToTimestamp(value?: Date | null): { seconds: string; nanos: number } | undefined {
+export function dateToTimestamp(
+  value?: Date | null,
+): { seconds: string; nanos: number } | undefined {
   if (!value) return undefined;
-  return { seconds: Math.floor(value.getTime() / 1000).toString(), nanos: (value.getTime() % 1000) * 1_000_000 };
+  return {
+    seconds: Math.floor(value.getTime() / 1000).toString(),
+    nanos: (value.getTime() % 1000) * 1_000_000,
+  };
 }

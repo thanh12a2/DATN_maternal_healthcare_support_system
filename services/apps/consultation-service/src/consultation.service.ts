@@ -51,7 +51,11 @@ export class ConsultationService {
     return { data: this.view(thread) };
   }
 
-  async list(q: any, auth: PublicAuthContext, access: ConsultationAccessGateway) {
+  async list(
+    q: any,
+    auth: PublicAuthContext,
+    access: ConsultationAccessGateway,
+  ) {
     const where: any = {};
     if (auth.role === 'PATIENT') {
       const patientId = await access.assertPatientOwner(undefined, auth);
@@ -59,7 +63,10 @@ export class ConsultationService {
     } else if (auth.role === 'DOCTOR') {
       const doctorId = await access.doctorId(auth);
       where.assignedDoctorId = doctorId;
-      where.OR = [{ status: ConsultationStatus.CLOSED }, { assignments: { some: { doctorId, status: 'ACTIVE' } } }];
+      where.OR = [
+        { status: ConsultationStatus.CLOSED },
+        { assignments: { some: { doctorId, status: 'ACTIVE' } } },
+      ];
     }
     if (q?.status) where.status = q.status;
 
@@ -71,13 +78,28 @@ export class ConsultationService {
       ...(q?.cursor ? { cursor: { id: String(q.cursor) }, skip: 1 } : {}),
     });
     const rows = found.slice(0, limit);
-    const meta = { nextCursor: found.length > limit ? rows[rows.length - 1].id : null };
-    if (auth.role !== 'DOCTOR') return { data: rows.map((x) => this.view(x)), meta };
-    const data = await Promise.all(rows.map(async (x) => {
-      const receipt = await this.db.consultationReadReceipt.findUnique({ where: { threadId_accountId: { threadId: x.id, accountId: auth.userId } } });
-      const unreadCount = await this.db.consultationMessage.count({ where: { threadId: x.id, sequenceNo: { gt: receipt?.lastReadSequence ?? 0n }, senderAccountId: { not: auth.userId } } });
+    const meta = {
+      nextCursor: found.length > limit ? rows[rows.length - 1].id : null,
+    };
+    if (auth.role !== 'DOCTOR')
+      return { data: rows.map((x) => this.view(x)), meta };
+    const data = await Promise.all(
+      rows.map(async (x) => {
+        const receipt = await this.db.consultationReadReceipt.findUnique({
+          where: {
+            threadId_accountId: { threadId: x.id, accountId: auth.userId },
+          },
+        });
+        const unreadCount = await this.db.consultationMessage.count({
+          where: {
+            threadId: x.id,
+            sequenceNo: { gt: receipt?.lastReadSequence ?? 0n },
+            senderAccountId: { not: auth.userId },
+          },
+        });
       return { ...this.view(x), unreadCount };
-    }));
+      }),
+    );
     return { data, meta };
   }
 
@@ -112,7 +134,8 @@ export class ConsultationService {
 
   async message(id: string, r: any) {
     const t = await this.raw(id);
-    if (t.status === ConsultationStatus.CLOSED) throw new ConflictException('CONSULTATION_CLOSED');
+    if (t.status === ConsultationStatus.CLOSED)
+      throw new ConflictException('CONSULTATION_CLOSED');
     const next = t.lastSequenceNo + 1n;
     const body = String(r.body ?? r.content ?? '').trim();
     const clientMessageId = r.clientMessageId || randomUUID();
@@ -141,9 +164,7 @@ export class ConsultationService {
         lastSequenceNo: next,
         lastMessageAt: new Date(),
         status:
-          r.senderType === 'DOCTOR'
-            ? ConsultationStatus.ANSWERED
-            : t.status,
+          r.senderType === 'DOCTOR' ? ConsultationStatus.ANSWERED : t.status,
         version: { increment: 1 },
       },
     });
@@ -227,11 +248,23 @@ export class ConsultationService {
   }
 
   async markRead(id: string, accountId: string, sequence: number) {
-    if (!Number.isSafeInteger(sequence) || sequence < 0) throw new ConflictException('INVALID_SEQUENCE');
+    if (!Number.isSafeInteger(sequence) || sequence < 0)
+      throw new ConflictException('INVALID_SEQUENCE');
     const thread = await this.raw(id);
-    if (BigInt(sequence) > thread.lastSequenceNo) throw new ConflictException('INVALID_SEQUENCE');
-    await this.db.consultationReadReceipt.createMany({ data: [{ threadId: id, accountId, lastReadSequence: 0n }], skipDuplicates: true });
-    await this.db.consultationReadReceipt.updateMany({ where: { threadId: id, accountId, lastReadSequence: { lt: BigInt(sequence) } }, data: { lastReadSequence: BigInt(sequence), updatedAt: new Date() } });
+    if (BigInt(sequence) > thread.lastSequenceNo)
+      throw new ConflictException('INVALID_SEQUENCE');
+    await this.db.consultationReadReceipt.createMany({
+      data: [{ threadId: id, accountId, lastReadSequence: 0n }],
+      skipDuplicates: true,
+    });
+    await this.db.consultationReadReceipt.updateMany({
+      where: {
+        threadId: id,
+        accountId,
+        lastReadSequence: { lt: BigInt(sequence) },
+      },
+      data: { lastReadSequence: BigInt(sequence), updatedAt: new Date() },
+    });
     return { data: { lastReadSequence: sequence } };
   }
 
@@ -247,9 +280,12 @@ export class ConsultationService {
     }
     if (auth.role === 'DOCTOR') {
       const doctorId = await access.doctorId(auth);
-      if (thread.assignedDoctorId !== doctorId) throw new ForbiddenException('NOT_ASSIGNED');
+      if (thread.assignedDoctorId !== doctorId)
+        throw new ForbiddenException('NOT_ASSIGNED');
       if (thread.status === ConsultationStatus.CLOSED) return;
-      const assigned = await this.db.consultationAssignment.findFirst({ where: { threadId: id, doctorId, status: 'ACTIVE' } });
+      const assigned = await this.db.consultationAssignment.findFirst({
+        where: { threadId: id, doctorId, status: 'ACTIVE' },
+      });
       if (assigned) return;
       throw new ForbiddenException('NOT_ASSIGNED');
     }
@@ -258,7 +294,9 @@ export class ConsultationService {
   }
 
   private raw(id: string) {
-    return this.db.consultationThread.findUnique({ where: { id } }).then((x) => {
+    return this.db.consultationThread
+      .findUnique({ where: { id } })
+      .then((x) => {
       if (!x) throw new NotFoundException('CONSULTATION_NOT_FOUND');
       return x;
     });

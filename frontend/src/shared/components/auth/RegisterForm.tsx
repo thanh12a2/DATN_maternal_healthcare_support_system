@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { hasValidationErrors, type RegisterFormValues, validateRegister } from '../../../schemas/auth';
+import {
+  hasValidationErrors,
+  type RegisterFormValues,
+  validateRegister,
+} from '../../../schemas/auth';
 import type { ValidationResult } from '../../../schemas/auth';
 import { login, register as registerRequest } from '../../../services/auth';
 import { FormField } from './FormField';
@@ -23,7 +27,10 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
   const [, setTouched] = useState<Partial<Record<RegisterField, boolean>>>({});
   const [, setConfirmTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{
+    type: 'error' | 'success';
+    message: string;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function setField(field: RegisterField, value: string) {
@@ -55,8 +62,8 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
         message: confirmationInvalid
           ? 'Mật khẩu xác nhận chưa khớp.'
           : !accepted
-          ? 'Vui lòng đồng ý điều khoản sử dụng.'
-          : 'Vui lòng kiểm tra lại email và mật khẩu.',
+            ? 'Vui lòng đồng ý điều khoản sử dụng.'
+            : 'Vui lòng kiểm tra lại email và mật khẩu.',
       });
       return;
     }
@@ -70,12 +77,16 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
         const response = await login(values);
         window.localStorage.setItem('accessToken', response.accessToken);
         window.localStorage.setItem('refreshToken', response.refreshToken);
-        setAlert({ type: 'success', message: 'Tạo tài khoản bệnh nhân thành công.' });
+        setAlert({
+          type: 'success',
+          message: 'Tạo tài khoản bệnh nhân thành công.',
+        });
       }
     } catch (error) {
       setAlert({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Tạo tài khoản thất bại.',
+        message:
+          error instanceof Error ? error.message : 'Tạo tài khoản thất bại.',
       });
     } finally {
       setSubmitting(false);
@@ -90,16 +101,25 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
         : 'error'
       : 'idle';
   const confirmVisible = submitted;
-  const confirmError = !confirm ? 'Vui lòng nhập lại mật khẩu.' : 'Mật khẩu chưa khớp.';
+  const confirmError = !confirm
+    ? 'Vui lòng nhập lại mật khẩu.'
+    : 'Mật khẩu chưa khớp.';
 
   return (
     <div className="form-view active" data-testid="register-view">
       <header className="auth-header">
         <span className="mode-indicator">Cổng thông tin bệnh nhân</span>
         <h2>Tạo tài khoản</h2>
-        <p>Đăng ký tài khoản bằng email. Thông tin bệnh nhân sẽ được hoàn thiện sau khi đăng nhập.</p>
+        <p>
+          Đăng ký tài khoản bằng email. Thông tin bệnh nhân sẽ được hoàn thiện
+          sau khi đăng nhập.
+        </p>
       </header>
-      {alert && <div className={`form-alert show ${alert.type}`} role="status">{alert.message}</div>}
+      {alert && (
+        <div className={`form-alert show ${alert.type}`} role="status">
+          {alert.message}
+        </div>
+      )}
       <form noValidate onSubmit={handleSubmit}>
         <div className="form-grid">
           <FormField
@@ -129,7 +149,9 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
             value={values.password}
             autoComplete="new-password"
             placeholder="Tối thiểu 8 ký tự"
-            message={visible('password') ? results.password?.message : undefined}
+            message={
+              visible('password') ? results.password?.message : undefined
+            }
             state={fieldState('password')}
             onChange={(value) => setField('password', value)}
             onBlur={() => validateField('password')}
@@ -140,8 +162,18 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
             value={confirm}
             autoComplete="new-password"
             placeholder="Nhập lại mật khẩu"
-            message={confirmVisible && confirm !== values.password ? confirmError : undefined}
-            state={confirmVisible ? (confirm && confirm === values.password ? 'success' : 'error') : 'idle'}
+            message={
+              confirmVisible && confirm !== values.password
+                ? confirmError
+                : undefined
+            }
+            state={
+              confirmVisible
+                ? confirm && confirm === values.password
+                  ? 'success'
+                  : 'error'
+                : 'idle'
+            }
             onChange={(value) => {
               setConfirmTouched(true);
               setConfirm(value);
@@ -183,7 +215,11 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
       </form>
       <p className="switch-copy">
         Đã có tài khoản?{' '}
-        <button className="text-link mode-switch" type="button" onClick={onSwitchMode}>
+        <button
+          className="text-link mode-switch"
+          type="button"
+          onClick={onSwitchMode}
+        >
           Đăng nhập
         </button>
       </p>

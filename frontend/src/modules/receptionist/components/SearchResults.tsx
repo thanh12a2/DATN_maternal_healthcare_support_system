@@ -1,5 +1,10 @@
 import { Button, Empty, Space } from 'antd';
-import type { DeskAppointment, DeskCatalog, DeskPatient, PatientMap } from '../../../services/receptionDesk';
+import type {
+  DeskAppointment,
+  DeskCatalog,
+  DeskPatient,
+  PatientMap,
+} from '../../../services/receptionDesk';
 import { PatientCard } from './PatientCard';
 
 interface Props {
@@ -10,6 +15,7 @@ interface Props {
   catalog?: DeskCatalog | null;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  autoPrintAppointment?: DeskAppointment | null;
   onOpen: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -28,6 +34,7 @@ export function SearchResults({
   catalog,
   busy,
   targetAppointmentId,
+  autoPrintAppointment,
   onOpen,
   onCheckIn,
   onCancel,
@@ -39,9 +46,16 @@ export function SearchResults({
 }: Props) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <span style={{ fontSize: 14 }}>
-          Tìm thấy <b style={{ color: '#0B5CAD' }}>{patients.length}</b> bệnh nhân cho “<b>{query}</b>”
+          Tìm thấy <b style={{ color: '#0B5CAD' }}>{patients.length}</b> bệnh
+          nhân cho “<b>{query}</b>”
         </span>
         <Button onClick={onClear}>Xóa tìm kiếm</Button>
       </div>
@@ -51,7 +65,8 @@ export function SearchResults({
           description={
             <div style={{ textAlign: 'center' }}>
               <p style={{ fontSize: 15, color: '#4b5563', margin: 0 }}>
-                Không tìm thấy bệnh nhân hoặc lịch hẹn phù hợp với “<b>{query}</b>”
+                Không tìm thấy bệnh nhân hoặc lịch hẹn phù hợp với “
+                <b>{query}</b>”
               </p>
             </div>
           }
@@ -67,6 +82,7 @@ export function SearchResults({
             catalog={catalog}
             busy={busy}
             targetAppointmentId={targetAppointmentId}
+            autoPrintAppointment={autoPrintAppointment}
             onOpen={onOpen}
             onCheckIn={onCheckIn}
             onCancel={onCancel}
