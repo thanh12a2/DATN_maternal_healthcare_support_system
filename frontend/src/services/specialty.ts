@@ -36,10 +36,14 @@ export async function fetchSpecialties(): Promise<SpecialtyItem[]> {
   pendingPromise = (async () => {
     // 1. Primary endpoint: GET /api/doctors/specialties (Doctor database)
     try {
-      const res = await apiRequest<{ data?: SpecialtyItem[] } | SpecialtyItem[]>('/api/doctors/specialties');
+      const res = await apiRequest<
+        { data?: SpecialtyItem[] } | SpecialtyItem[]
+      >('/api/doctors/specialties');
       const list = Array.isArray(res) ? res : res?.data;
       if (Array.isArray(list) && list.length > 0) {
-        cachedSpecialties = list.filter((item) => Boolean(item && item.slug && item.name));
+        cachedSpecialties = list.filter((item) =>
+          Boolean(item && item.slug && item.name),
+        );
         return cachedSpecialties;
       }
     } catch {
@@ -48,10 +52,14 @@ export async function fetchSpecialties(): Promise<SpecialtyItem[]> {
 
     // 2. Secondary fallback
     try {
-      const res = await apiRequest<{ data?: SpecialtyItem[] } | SpecialtyItem[]>('/specialties');
+      const res = await apiRequest<
+        { data?: SpecialtyItem[] } | SpecialtyItem[]
+      >('/specialties');
       const list = Array.isArray(res) ? res : res?.data;
       if (Array.isArray(list) && list.length > 0) {
-        cachedSpecialties = list.filter((item) => Boolean(item && item.slug && item.name));
+        cachedSpecialties = list.filter((item) =>
+          Boolean(item && item.slug && item.name),
+        );
         return cachedSpecialties;
       }
     } catch {

@@ -5,8 +5,13 @@ import { PatientPortalLayout } from '../components/PatientPortalLayout';
  */
 export function PatientNotificationsBillingPage() {
   return (
-    <PatientPortalLayout eyebrow="Tài khoản cá nhân" title="Thông báo & Hóa đơn">
-      <div style={{ padding: '80px 20px', textAlign: 'center', color: '#64748b' }}>
+    <PatientPortalLayout
+      eyebrow="Tài khoản cá nhân"
+      title="Thông báo & Hóa đơn"
+    >
+      <div
+        style={{ padding: '80px 20px', textAlign: 'center', color: '#64748b' }}
+      >
         <h2 style={{ fontSize: '20px', color: '#183153', marginBottom: '8px' }}>
           Thông báo & Hóa đơn thanh toán
         </h2>

@@ -1,8 +1,4 @@
-import {
-  Table,
-  Tag,
-  Typography,
-} from 'antd';
+import { Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
@@ -69,7 +65,10 @@ export function AppointmentTable({
       align: 'center',
       render: (v?: string) =>
         v ? (
-          <Tag color="blue" style={{ fontWeight: 700, fontSize: 12, margin: 0 }}>
+          <Tag
+            color="blue"
+            style={{ fontWeight: 700, fontSize: 12, margin: 0 }}
+          >
             {v}
           </Tag>
         ) : (
@@ -192,7 +191,10 @@ export function AppointmentTable({
       align: 'center',
       render: (v?: string) =>
         v ? (
-          <Tag color="blue" style={{ fontWeight: 700, fontSize: 12, margin: 0 }}>
+          <Tag
+            color="blue"
+            style={{ fontWeight: 700, fontSize: 12, margin: 0 }}
+          >
             {v}
           </Tag>
         ) : (
@@ -205,7 +207,10 @@ export function AppointmentTable({
       width: 130,
       render: (v: string, a: DeskAppointment) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Typography.Text strong style={{ color: '#0B5CAD', fontSize: 13, letterSpacing: '0.01em' }}>
+          <Typography.Text
+            strong
+            style={{ color: '#0B5CAD', fontSize: 13, letterSpacing: '0.01em' }}
+          >
             {v}
           </Typography.Text>
           <Tag

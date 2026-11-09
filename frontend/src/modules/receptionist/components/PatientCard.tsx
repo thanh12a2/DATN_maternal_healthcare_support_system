@@ -80,6 +80,7 @@ interface Props {
   request?: Requester;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  autoPrintAppointment?: DeskAppointment | null;
   onOpen?: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel?: (a: DeskAppointment) => void;
@@ -96,6 +97,7 @@ export function PatientCard({
   request: propRequest,
   busy,
   targetAppointmentId,
+  autoPrintAppointment,
   onOpen,
   onCheckIn,
   onCancel,
@@ -115,6 +117,12 @@ export function PatientCard({
   const [paymentRef, setPaymentRef] = useState<string>('');
   const [payingAndCheckingIn, setPayingAndCheckingIn] = useState<boolean>(false);
   const [printTicketApp, setPrintTicketApp] = useState<DeskAppointment | null>(null);
+
+  useEffect(() => {
+    if (autoPrintAppointment?.patientId === p.id && autoPrintAppointment.queueCode) {
+      setPrintTicketApp(autoPrintAppointment);
+    }
+  }, [autoPrintAppointment, p.id]);
 
   // Modal xem và in phiếu kết quả khám bệnh PDF
   const [reportModalOpen, setReportModalOpen] = useState(false);

@@ -12,7 +12,10 @@ import {
   UserCheck,
   Check,
 } from 'lucide-react';
-import type { Appointment, QueueTicketInfo } from '../../../services/appointment';
+import type {
+  Appointment,
+  QueueTicketInfo,
+} from '../../../services/appointment';
 
 export type ClinicalStatus =
   | 'BOOKED'
@@ -36,7 +39,9 @@ export interface ClinicalStatusMeta {
   icon: React.ReactNode;
 }
 
-export function getClinicalStatusMeta(status?: string | null): ClinicalStatusMeta {
+export function getClinicalStatusMeta(
+  status?: string | null,
+): ClinicalStatusMeta {
   switch (status) {
     case 'CHECKED_IN':
       return {
@@ -132,7 +137,7 @@ export interface PaymentMeta {
 
 export function getPaymentMeta(
   appointmentStatus?: string | null,
-  invoice?: any
+  invoice?: any,
 ): PaymentMeta {
   if (invoice) {
     const paid = Number(invoice.paid ?? invoice.paidMinor ?? 0);
@@ -423,7 +428,8 @@ export function QueueTicketBadge({
 
   if (hasCode || isCheckedInOrBeyond) {
     const displayCode = queueCode || 'Đã phát số';
-    const displayRoom = roomName || (roomCode ? `Phòng ${roomCode}` : 'Phòng khám Sản Phụ khoa');
+    const displayRoom =
+      roomName || (roomCode ? `Phòng ${roomCode}` : 'Phòng khám Sản Phụ khoa');
 
     return (
       <div className={`pap-queue-badge is-issued size-${size}`}>
@@ -492,4 +498,3 @@ export function PaymentStatusBadge({
     </div>
   );
 }
-

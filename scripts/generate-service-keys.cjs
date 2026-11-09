@@ -9,6 +9,12 @@ const pair = generateKeyPairSync('rsa', {
   privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   publicKeyEncoding: { type: 'spki', format: 'pem' },
 });
-fs.writeFileSync(path.join(outputDir, 'internal-service-private.pem'), pair.privateKey);
-fs.writeFileSync(path.join(outputDir, 'internal-service-public.pem'), pair.publicKey);
+fs.writeFileSync(
+  path.join(outputDir, 'internal-service-private.pem'),
+  pair.privateKey,
+);
+fs.writeFileSync(
+  path.join(outputDir, 'internal-service-public.pem'),
+  pair.publicKey,
+);
 console.log(`Generated internal service key pair in ${outputDir}`);

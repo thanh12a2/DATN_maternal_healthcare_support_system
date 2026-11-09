@@ -190,8 +190,7 @@ export class ReceptionistsService {
       changedFields.push('profile.address');
     if (department !== current.profile.department)
       changedFields.push('profile.department');
-    if (gender !== current.profile.gender)
-      changedFields.push('profile.gender');
+    if (gender !== current.profile.gender) changedFields.push('profile.gender');
     if (changedFields.length === 0) {
       return presentReceptionist(current, true);
     }

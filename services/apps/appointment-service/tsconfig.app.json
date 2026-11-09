@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": { "declaration": false, "outDir": "../../dist/apps/appointment-service" },
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../dist/apps/appointment-service"
+  },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

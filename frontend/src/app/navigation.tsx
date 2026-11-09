@@ -1,8 +1,15 @@
-import { useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useState,
+  type AnchorHTMLAttributes,
+  type MouseEvent,
+} from 'react';
 
 export function navigate(path: string, options?: { replace?: boolean }) {
   const currentPath = window.location.pathname;
-  const hasHashOrSearch = Boolean(window.location.hash || window.location.search);
+  const hasHashOrSearch = Boolean(
+    window.location.hash || window.location.search,
+  );
 
   // If already at the exact target path with no query or hash, scroll smoothly to top
   if (currentPath === path && !hasHashOrSearch) {
@@ -25,10 +32,22 @@ export function usePathname() {
   return path;
 }
 
-export function AppLink({ href, onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
+export function AppLink({
+  href,
+  onClick,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
     event.preventDefault();
     navigate(href);
   }

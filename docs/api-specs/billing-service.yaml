@@ -157,6 +157,30 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/VnpayIpnResponse'}
+  /return:
+    get:
+      servers:
+        - url: /api/payment-callbacks/vnpay
+      security: []
+      tags: [Payments]
+      operationId: receiveVnpayBrowserReturn
+      summary: Process the signed VNPay browser return
+      description: Verifies and processes the signed result returned to the user's browser. This closes canceled attempts when VNPay does not send an IPN.
+      parameters:
+        - name: vnp_TxnRef
+          in: query
+          required: true
+          schema: {type: string, maxLength: 100}
+        - name: vnp_SecureHash
+          in: query
+          required: true
+          schema: {type: string, pattern: '^[A-Fa-f0-9]{128}$'}
+      responses:
+        '200':
+          description: VNPay acknowledgement body; the result is processed only after signature validation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VnpayIpnResponse'}
   /payments/{id}/verify:
     post:
       tags: [Payments]

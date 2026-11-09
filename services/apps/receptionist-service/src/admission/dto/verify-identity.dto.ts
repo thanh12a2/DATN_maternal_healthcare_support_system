@@ -11,8 +11,17 @@ import {
 } from 'class-validator';
 
 export class VerifyIdentityDto {
-  @IsIn(['APPOINTMENT_CODE', 'PHONE_AND_DOB', 'NATIONAL_ID_DOCUMENT', 'OTHER_DOCUMENT'])
-  method!: 'APPOINTMENT_CODE' | 'PHONE_AND_DOB' | 'NATIONAL_ID_DOCUMENT' | 'OTHER_DOCUMENT';
+  @IsIn([
+    'APPOINTMENT_CODE',
+    'PHONE_AND_DOB',
+    'NATIONAL_ID_DOCUMENT',
+    'OTHER_DOCUMENT',
+  ])
+  method!:
+    | 'APPOINTMENT_CODE'
+    | 'PHONE_AND_DOB'
+    | 'NATIONAL_ID_DOCUMENT'
+    | 'OTHER_DOCUMENT';
 
   @IsIn(['VERIFIED', 'MISMATCH', 'INCONCLUSIVE'])
   result!: 'VERIFIED' | 'MISMATCH' | 'INCONCLUSIVE';

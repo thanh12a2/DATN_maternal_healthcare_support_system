@@ -75,22 +75,29 @@ export function AdminPatientsPage() {
 
   // Drawer detail state
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<PatientItem | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientItem | null>(
+    null,
+  );
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<PatientItem | null>(null);
+  const [editingPatient, setEditingPatient] = useState<PatientItem | null>(
+    null,
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState<PatientItem | null>(null);
+  const [patientToDelete, setPatientToDelete] = useState<PatientItem | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
 
   // Status toggle modal state (Tạm khóa / Kích hoạt)
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [statusTargetPatient, setStatusTargetPatient] = useState<PatientItem | null>(null);
+  const [statusTargetPatient, setStatusTargetPatient] =
+    useState<PatientItem | null>(null);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [togglingStatus, setTogglingStatus] = useState(false);
 
@@ -99,7 +106,8 @@ export function AdminPatientsPage() {
 
   // Emergency contact modal state (Thêm / Chỉnh sửa người liên hệ)
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState<PatientEmergencyContact | null>(null);
+  const [editingContact, setEditingContact] =
+    useState<PatientEmergencyContact | null>(null);
   const [submittingContact, setSubmittingContact] = useState(false);
   const [reorderingContact, setReorderingContact] = useState(false);
   const [contactForm] = Form.useForm<{
@@ -139,14 +147,18 @@ export function AdminPatientsPage() {
         page,
         limit: pageSize,
         query: q || undefined,
-        phoneNumber: isOnlyDigits && q.length >= 10 && q.length <= 11 ? q : undefined,
+        phoneNumber:
+          isOnlyDigits && q.length >= 10 && q.length <= 11 ? q : undefined,
         nationalId: isOnlyDigits && q.length === 12 ? q : undefined,
         fullName: !isOnlyDigits && q.length >= 2 ? q : undefined,
       });
       setPatients(res.items ?? []);
       setTotal(res.total ?? 0);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể tải danh sách bệnh nhân.';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Không thể tải danh sách bệnh nhân.';
       setError(msg);
       setPatients([]);
       setTotal(0);
@@ -174,7 +186,10 @@ export function AdminPatientsPage() {
   // Mở modal chỉnh sửa
   const openEditModal = (record: PatientItem) => {
     setEditingPatient(record);
-    const savedAvatar = typeof window !== 'undefined' ? localStorage.getItem(`patient_avatar_${record.id}`) : null;
+    const savedAvatar =
+      typeof window !== 'undefined'
+        ? localStorage.getItem(`patient_avatar_${record.id}`)
+        : null;
     editForm.setFieldsValue({
       fullName: record.fullName,
       email: record.email ?? '',
@@ -208,34 +223,45 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Chưa có tài khoản đăng nhập!',
-        description: 'Bệnh nhân này đang ở dạng hồ sơ nháp (chưa có tài khoản). Vui lòng cập nhật email để tạo tài khoản trước.',
+        description:
+          'Bệnh nhân này đang ở dạng hồ sơ nháp (chưa có tài khoản). Vui lòng cập nhật email để tạo tài khoản trước.',
       });
       return;
     }
     setTogglingStatus(true);
-    const isTargetLocked = statusTargetPatient.status === 'LOCKED' || statusTargetPatient.status === 'INACTIVE';
+    const isTargetLocked =
+      statusTargetPatient.status === 'LOCKED' ||
+      statusTargetPatient.status === 'INACTIVE';
     const nextStatus = isTargetLocked ? 'ACTIVE' : 'LOCKED';
     const actionText = isTargetLocked ? 'Kích hoạt' : 'Tạm khóa';
 
-    if (!isTargetLocked && (!deactivateReason || deactivateReason.trim().length < 3)) {
+    if (
+      !isTargetLocked &&
+      (!deactivateReason || deactivateReason.trim().length < 3)
+    ) {
       setFeedback({
         open: true,
         type: 'error',
         title: 'Thiếu lý do tạm khóa!',
-        description: 'Vui lòng nhập lý do tạm khóa bệnh nhân (tối thiểu 3 ký tự).',
+        description:
+          'Vui lòng nhập lý do tạm khóa bệnh nhân (tối thiểu 3 ký tự).',
       });
       setTogglingStatus(false);
       return;
     }
 
     try {
-      await updateAdminUser(request, statusTargetPatient.authAccountId, { status: nextStatus });
+      await updateAdminUser(request, statusTargetPatient.authAccountId, {
+        status: nextStatus,
+      });
       const targetName = statusTargetPatient.fullName;
       const targetId = statusTargetPatient.id;
       setStatusModalOpen(false);
       setStatusTargetPatient(null);
       if (selectedPatient?.id === targetId) {
-        setSelectedPatient((prev) => (prev ? { ...prev, status: nextStatus } : null));
+        setSelectedPatient((prev) =>
+          prev ? { ...prev, status: nextStatus } : null,
+        );
       }
       setFeedback({
         open: true,
@@ -252,7 +278,10 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: `${actionText} thất bại!`,
-        description: err instanceof Error ? err.message : `Không thể ${actionText.toLowerCase()} tài khoản bệnh nhân này.`,
+        description:
+          err instanceof Error
+            ? err.message
+            : `Không thể ${actionText.toLowerCase()} tài khoản bệnh nhân này.`,
       });
     } finally {
       setTogglingStatus(false);
@@ -287,9 +316,14 @@ export function AdminPatientsPage() {
       // Đưa tài khoản về Bản nháp (LOCKED/DRAFT) ngay sau khi tạo, đợi admin kích hoạt
       if (created.authAccountId) {
         try {
-          await updateAdminUser(request, created.authAccountId, { status: 'LOCKED' });
+          await updateAdminUser(request, created.authAccountId, {
+            status: 'LOCKED',
+          });
         } catch (lockErr) {
-          console.warn('Could not set initial patient account status to LOCKED:', lockErr);
+          console.warn(
+            'Could not set initial patient account status to LOCKED:',
+            lockErr,
+          );
         }
       }
 
@@ -307,7 +341,10 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Tạo hồ sơ thất bại!',
-        description: err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi tạo hồ sơ bệnh nhân.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Đã có lỗi xảy ra khi tạo hồ sơ bệnh nhân.',
       });
     } finally {
       setSubmitting(false);
@@ -329,7 +366,9 @@ export function AdminPatientsPage() {
     try {
       const payload: UpdatePatientPayload = {
         fullName: values.fullName.trim(),
-        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : undefined,
+        dateOfBirth: values.dateOfBirth
+          ? values.dateOfBirth.format('YYYY-MM-DD')
+          : undefined,
         phoneNumber: formatPhoneNumber(values.phoneNumber),
         nationalId: values.nationalId.trim(),
         address: values.address.trim(),
@@ -338,10 +377,16 @@ export function AdminPatientsPage() {
       const updated = await updatePatient(request, editingPatient.id, payload);
 
       // Cập nhật email trong tài khoản auth-service nếu có tài khoản liên kết
-      if (values.email && values.email.trim() && values.email.trim() !== (editingPatient.email || '')) {
+      if (
+        values.email &&
+        values.email.trim() &&
+        values.email.trim() !== (editingPatient.email || '')
+      ) {
         if (editingPatient.authAccountId) {
           try {
-            await updateAdminUser(request, editingPatient.authAccountId, { email: values.email.trim() });
+            await updateAdminUser(request, editingPatient.authAccountId, {
+              email: values.email.trim(),
+            });
           } catch {
             // bỏ qua nếu cập nhật tài khoản auth thất bại
           }
@@ -351,7 +396,10 @@ export function AdminPatientsPage() {
       // Lưu ảnh đại diện vào localStorage theo patientId
       if (typeof window !== 'undefined') {
         if (values.photoUrl) {
-          localStorage.setItem(`patient_avatar_${editingPatient.id}`, values.photoUrl);
+          localStorage.setItem(
+            `patient_avatar_${editingPatient.id}`,
+            values.photoUrl,
+          );
         } else {
           localStorage.removeItem(`patient_avatar_${editingPatient.id}`);
         }
@@ -375,7 +423,10 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Cập nhật thất bại!',
-        description: err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi cập nhật hồ sơ bệnh nhân.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Đã có lỗi xảy ra khi cập nhật hồ sơ bệnh nhân.',
       });
     } finally {
       setSubmitting(false);
@@ -407,7 +458,8 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Xóa bệnh nhân thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể xóa hồ sơ bệnh nhân.',
+        description:
+          err instanceof Error ? err.message : 'Không thể xóa hồ sơ bệnh nhân.',
       });
     } finally {
       setDeleting(false);
@@ -452,7 +504,12 @@ export function AdminPatientsPage() {
       };
 
       if (editingContact) {
-        await updateEmergencyContact(request, selectedPatient.id, editingContact.id, payload);
+        await updateEmergencyContact(
+          request,
+          selectedPatient.id,
+          editingContact.id,
+          payload,
+        );
       } else {
         await createEmergencyContact(request, selectedPatient.id, payload);
       }
@@ -469,7 +526,9 @@ export function AdminPatientsPage() {
       setFeedback({
         open: true,
         type: 'success',
-        title: editingContact ? 'Cập nhật người liên hệ thành công!' : 'Thêm người liên hệ thành công!',
+        title: editingContact
+          ? 'Cập nhật người liên hệ thành công!'
+          : 'Thêm người liên hệ thành công!',
         description: `Thông tin người liên hệ (${values.fullName}) đã được lưu vào hồ sơ bệnh nhân.`,
       });
     } catch (err: unknown) {
@@ -477,14 +536,20 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Thao tác thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể lưu thông tin người liên hệ.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Không thể lưu thông tin người liên hệ.',
       });
     } finally {
       setSubmittingContact(false);
     }
   };
 
-  const handleDeleteContact = async (contactId: string, contactName: string) => {
+  const handleDeleteContact = async (
+    contactId: string,
+    contactName: string,
+  ) => {
     if (!selectedPatient) return;
     try {
       await deleteEmergencyContact(request, selectedPatient.id, contactId);
@@ -502,7 +567,8 @@ export function AdminPatientsPage() {
         open: true,
         type: 'error',
         title: 'Xóa người liên hệ thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể xóa người liên hệ.',
+        description:
+          err instanceof Error ? err.message : 'Không thể xóa người liên hệ.',
       });
     }
   };
@@ -513,12 +579,19 @@ export function AdminPatientsPage() {
     const targetIndex = currentIndex + direction;
     if (targetIndex < 0 || targetIndex >= list.length) return;
 
-    [list[currentIndex], list[targetIndex]] = [list[targetIndex], list[currentIndex]];
+    [list[currentIndex], list[targetIndex]] = [
+      list[targetIndex],
+      list[currentIndex],
+    ];
     const newContactIds = list.map((c) => c.id);
 
     setReorderingContact(true);
     try {
-      await reorderEmergencyContacts(request, selectedPatient.id, newContactIds);
+      await reorderEmergencyContacts(
+        request,
+        selectedPatient.id,
+        newContactIds,
+      );
       const refreshed = await getPatient(request, selectedPatient.id);
       setSelectedPatient(refreshed);
       void loadData();
@@ -526,14 +599,18 @@ export function AdminPatientsPage() {
         open: true,
         type: 'success',
         title: 'Đã cập nhật thứ tự ưu tiên!',
-        description: 'Thứ tự ưu tiên của danh bạ người liên hệ khẩn cấp đã được cập nhật thành công.',
+        description:
+          'Thứ tự ưu tiên của danh bạ người liên hệ khẩn cấp đã được cập nhật thành công.',
       });
     } catch (err: unknown) {
       setFeedback({
         open: true,
         type: 'error',
         title: 'Thay đổi thứ tự thất bại!',
-        description: err instanceof Error ? err.message : 'Không thể cập nhật thứ tự ưu tiên liên hệ.',
+        description:
+          err instanceof Error
+            ? err.message
+            : 'Không thể cập nhật thứ tự ưu tiên liên hệ.',
       });
     } finally {
       setReorderingContact(false);
@@ -546,9 +623,15 @@ export function AdminPatientsPage() {
       render: (_, record) => {
         const name = record.fullName || 'Bệnh nhân';
         const words = name.trim().split(/\s+/);
-        const initial = words.length > 0 ? words[words.length - 1].charAt(0).toUpperCase() : 'B';
+        const initial =
+          words.length > 0
+            ? words[words.length - 1].charAt(0).toUpperCase()
+            : 'B';
 
-        const savedAvatar = typeof window !== 'undefined' ? localStorage.getItem(`patient_avatar_${record.id}`) : null;
+        const savedAvatar =
+          typeof window !== 'undefined'
+            ? localStorage.getItem(`patient_avatar_${record.id}`)
+            : null;
         return (
           <Space orientation="horizontal" size={12}>
             <Avatar
@@ -567,13 +650,19 @@ export function AdminPatientsPage() {
             </Avatar>
             <div>
               <div
-                style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', cursor: 'pointer' }}
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: '#1e293b',
+                  cursor: 'pointer',
+                }}
                 onClick={() => void handleOpenDetail(record)}
               >
                 {record.fullName}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                Mã: <span className="admin-code">{record.id.slice(0, 8)}...</span>
+                Mã:{' '}
+                <span className="admin-code">{record.id.slice(0, 8)}...</span>
               </div>
             </div>
           </Space>
@@ -602,7 +691,11 @@ export function AdminPatientsPage() {
       render: (phone?: string) => {
         const formatted = formatPhoneNumber(phone);
         return formatted ? (
-          <Tag color="green" icon={<PhoneOutlined />} style={{ fontSize: 13, fontWeight: 500, padding: '2px 8px' }}>
+          <Tag
+            color="green"
+            icon={<PhoneOutlined />}
+            style={{ fontSize: 13, fontWeight: 500, padding: '2px 8px' }}
+          >
             {formatted}
           </Tag>
         ) : (
@@ -617,9 +710,13 @@ export function AdminPatientsPage() {
       render: (_, record) => {
         const nid = record.nationalId || record.nationalIdMasked;
         return nid ? (
-          <span className="admin-code" style={{ fontWeight: 600 }}>{nid}</span>
+          <span className="admin-code" style={{ fontWeight: 600 }}>
+            {nid}
+          </span>
         ) : (
-          <span style={{ color: 'var(--muted)', fontSize: 12 }}>Chưa cập nhật</span>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+            Chưa cập nhật
+          </span>
         );
       },
     },
@@ -629,7 +726,8 @@ export function AdminPatientsPage() {
       width: 130,
       align: 'center',
       render: (_, record) => {
-        const rawStatus = record.status || (record.authAccountId ? 'ACTIVE' : 'DRAFT');
+        const rawStatus =
+          record.status || (record.authAccountId ? 'ACTIVE' : 'DRAFT');
         return <StatusTag status={rawStatus} />;
       },
     },
@@ -639,7 +737,8 @@ export function AdminPatientsPage() {
       width: 200,
       align: 'center',
       render: (_, record) => {
-        const isLocked = record.status === 'LOCKED' || record.status === 'INACTIVE';
+        const isLocked =
+          record.status === 'LOCKED' || record.status === 'INACTIVE';
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <Space size="small">
@@ -650,12 +749,14 @@ export function AdminPatientsPage() {
                   onClick={() => void handleOpenDetail(record)}
                 />
               </Tooltip>
-              {record.authAccountId && (
-                isLocked ? (
+              {record.authAccountId &&
+                (isLocked ? (
                   <Tooltip title="Kích hoạt bệnh nhân">
                     <Button
                       type="text"
-                      icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                      icon={
+                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      }
                       onClick={() => openStatusModal(record)}
                     />
                   </Tooltip>
@@ -663,33 +764,34 @@ export function AdminPatientsPage() {
                   <Tooltip title="Tạm khóa bệnh nhân">
                     <Button
                       type="text"
-                      icon={<PauseCircleOutlined style={{ color: '#fa8c16' }} />}
+                      icon={
+                        <PauseCircleOutlined style={{ color: '#fa8c16' }} />
+                      }
                       onClick={() => openStatusModal(record)}
                     />
                   </Tooltip>
-                )
-              )}
-            <Tooltip title="Chỉnh sửa">
-              <Button
-                type="text"
-                icon={<EditOutlined style={{ color: 'var(--deep)' }} />}
-                onClick={() => openEditModal(record)}
-              />
-            </Tooltip>
-            <Tooltip title="Xóa bệnh nhân">
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => openDeleteModal(record)}
-              />
-            </Tooltip>
-          </Space>
-        </div>
-      );
+                ))}
+              <Tooltip title="Chỉnh sửa">
+                <Button
+                  type="text"
+                  icon={<EditOutlined style={{ color: 'var(--deep)' }} />}
+                  onClick={() => openEditModal(record)}
+                />
+              </Tooltip>
+              <Tooltip title="Xóa bệnh nhân">
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => openDeleteModal(record)}
+                />
+              </Tooltip>
+            </Space>
+          </div>
+        );
+      },
     },
-  },
-];
+  ];
 
   return (
     <div className="admin-table-card">
@@ -771,7 +873,8 @@ export function AdminPatientsPage() {
         const displayedPatients = selectedStatus
           ? patients.filter((p) => {
               const st = p.status || (p.authAccountId ? 'ACTIVE' : 'DRAFT');
-              if (selectedStatus === 'LOCKED') return st === 'LOCKED' || st === 'INACTIVE';
+              if (selectedStatus === 'LOCKED')
+                return st === 'LOCKED' || st === 'INACTIVE';
               return st === selectedStatus;
             })
           : patients;
@@ -798,7 +901,8 @@ export function AdminPatientsPage() {
             onRow={(record) => ({
               onClick: (e) => {
                 const target = e.target as HTMLElement;
-                if (target.closest('button') || target.closest('.ant-tooltip')) return;
+                if (target.closest('button') || target.closest('.ant-tooltip'))
+                  return;
                 void handleOpenDetail(record);
               },
               style: { cursor: 'pointer' },
@@ -813,7 +917,13 @@ export function AdminPatientsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Avatar
               size={48}
-              src={typeof window !== 'undefined' && selectedPatient ? localStorage.getItem(`patient_avatar_${selectedPatient.id}`) || undefined : undefined}
+              src={
+                typeof window !== 'undefined' && selectedPatient
+                  ? localStorage.getItem(
+                      `patient_avatar_${selectedPatient.id}`,
+                    ) || undefined
+                  : undefined
+              }
               icon={<UserOutlined />}
               style={{ backgroundColor: '#52c41a' }}
             >
@@ -824,10 +934,20 @@ export function AdminPatientsPage() {
                 <span style={{ fontSize: 16, fontWeight: 700 }}>
                   {selectedPatient?.fullName}
                 </span>
-                <StatusTag status={selectedPatient?.status || (selectedPatient?.authAccountId ? 'ACTIVE' : 'DRAFT')} />
+                <StatusTag
+                  status={
+                    selectedPatient?.status ||
+                    (selectedPatient?.authAccountId ? 'ACTIVE' : 'DRAFT')
+                  }
+                />
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                SĐT: <span className="admin-code">{formatPhoneNumber(selectedPatient?.phoneNumber)}</span>
+              <div
+                style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}
+              >
+                SĐT:{' '}
+                <span className="admin-code">
+                  {formatPhoneNumber(selectedPatient?.phoneNumber)}
+                </span>
               </div>
             </div>
           </div>
@@ -842,16 +962,25 @@ export function AdminPatientsPage() {
         destroyOnClose
       >
         {selectedPatient && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          >
             <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
               <Descriptions
                 bordered
                 column={1}
                 size="small"
-                labelStyle={{ width: '38%', fontWeight: 600, color: 'var(--fg-muted)' }}
+                labelStyle={{
+                  width: '38%',
+                  fontWeight: 600,
+                  color: 'var(--fg-muted)',
+                }}
               >
                 <Descriptions.Item label="Mã bệnh nhân">
-                  <span className="admin-code" style={{ wordBreak: 'break-all' }}>
+                  <span
+                    className="admin-code"
+                    style={{ wordBreak: 'break-all' }}
+                  >
                     {selectedPatient.id}
                   </span>
                 </Descriptions.Item>
@@ -859,37 +988,52 @@ export function AdminPatientsPage() {
                   <strong>{selectedPatient.fullName}</strong>
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
-                  <StatusTag status={selectedPatient.status || (selectedPatient.authAccountId ? 'ACTIVE' : 'DRAFT')} />
+                  <StatusTag
+                    status={
+                      selectedPatient.status ||
+                      (selectedPatient.authAccountId ? 'ACTIVE' : 'DRAFT')
+                    }
+                  />
                 </Descriptions.Item>
                 <Descriptions.Item label="Email đăng nhập">
                   {selectedPatient.email ? (
                     <Space size={6}>
                       <MailOutlined style={{ color: '#1677ff' }} />
-                      <strong style={{ color: '#1677ff' }}>{selectedPatient.email}</strong>
+                      <strong style={{ color: '#1677ff' }}>
+                        {selectedPatient.email}
+                      </strong>
                     </Space>
                   ) : (
                     <span style={{ color: 'var(--muted)' }}>Chưa liên kết</span>
                   )}
                 </Descriptions.Item>
                 <Descriptions.Item label="Số điện thoại">
-                  <Tag color="green" icon={<PhoneOutlined />} style={{ fontSize: 13, fontWeight: 600 }}>
+                  <Tag
+                    color="green"
+                    icon={<PhoneOutlined />}
+                    style={{ fontSize: 13, fontWeight: 600 }}
+                  >
                     {formatPhoneNumber(selectedPatient.phoneNumber)}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày sinh">
                   {selectedPatient.dateOfBirth ? (
                     <span>
-                      {dayjs(selectedPatient.dateOfBirth).format('DD/MM/YYYY')} (
-                      {dayjs().diff(dayjs(selectedPatient.dateOfBirth), 'year')} tuổi)
+                      {dayjs(selectedPatient.dateOfBirth).format('DD/MM/YYYY')}{' '}
+                      (
+                      {dayjs().diff(dayjs(selectedPatient.dateOfBirth), 'year')}{' '}
+                      tuổi)
                     </span>
                   ) : (
                     'Chưa cập nhật'
                   )}
                 </Descriptions.Item>
                 <Descriptions.Item label="Số CCCD / Định danh">
-                  {selectedPatient.nationalId || selectedPatient.nationalIdMasked ? (
+                  {selectedPatient.nationalId ||
+                  selectedPatient.nationalIdMasked ? (
                     <span className="admin-code" style={{ fontWeight: 600 }}>
-                      {selectedPatient.nationalId || selectedPatient.nationalIdMasked}
+                      {selectedPatient.nationalId ||
+                        selectedPatient.nationalIdMasked}
                     </span>
                   ) : (
                     <span style={{ color: 'var(--muted)' }}>Chưa cập nhật</span>
@@ -911,9 +1055,17 @@ export function AdminPatientsPage() {
 
               {/* Danh sách người liên hệ khẩn cấp */}
               <div style={{ marginTop: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
                   <Typography.Title level={5} style={{ margin: 0 }}>
-                    <span>Người liên hệ khẩn cấp</span> ({selectedPatient.emergencyContacts?.length || 0})
+                    <span>Người liên hệ khẩn cấp</span> (
+                    {selectedPatient.emergencyContacts?.length || 0})
                   </Typography.Title>
                   <Button
                     type="primary"
@@ -925,7 +1077,8 @@ export function AdminPatientsPage() {
                     Thêm người liên hệ
                   </Button>
                 </div>
-                {selectedPatient.emergencyContacts && selectedPatient.emergencyContacts.length > 0 ? (
+                {selectedPatient.emergencyContacts &&
+                selectedPatient.emergencyContacts.length > 0 ? (
                   <Table
                     rowKey="id"
                     size="small"
@@ -938,7 +1091,10 @@ export function AdminPatientsPage() {
                         width: 70,
                         align: 'center',
                         render: (_, __, index) => (
-                          <Tag color={index === 0 ? 'gold' : 'default'} style={{ fontWeight: 600, margin: 0 }}>
+                          <Tag
+                            color={index === 0 ? 'gold' : 'default'}
+                            style={{ fontWeight: 600, margin: 0 }}
+                          >
                             #{index + 1}
                           </Tag>
                         ),
@@ -956,7 +1112,11 @@ export function AdminPatientsPage() {
                       {
                         title: 'Số điện thoại',
                         dataIndex: 'phoneNumber',
-                        render: (p) => <span className="admin-code">{formatPhoneNumber(p)}</span>,
+                        render: (p) => (
+                          <span className="admin-code">
+                            {formatPhoneNumber(p)}
+                          </span>
+                        ),
                       },
                       {
                         title: 'Thao tác',
@@ -964,7 +1124,8 @@ export function AdminPatientsPage() {
                         width: 140,
                         align: 'center',
                         render: (_, rec, index) => {
-                          const total = selectedPatient.emergencyContacts?.length || 0;
+                          const total =
+                            selectedPatient.emergencyContacts?.length || 0;
                           return (
                             <Space size={4}>
                               <Tooltip title="Tăng mức độ ưu tiên (lên trước)">
@@ -973,7 +1134,9 @@ export function AdminPatientsPage() {
                                   size="small"
                                   icon={<ArrowUpOutlined />}
                                   disabled={index === 0 || reorderingContact}
-                                  onClick={() => void handleMoveContact(index, -1)}
+                                  onClick={() =>
+                                    void handleMoveContact(index, -1)
+                                  }
                                 />
                               </Tooltip>
                               <Tooltip title="Giảm mức độ ưu tiên (xuống sau)">
@@ -981,15 +1144,23 @@ export function AdminPatientsPage() {
                                   type="text"
                                   size="small"
                                   icon={<ArrowDownOutlined />}
-                                  disabled={index === total - 1 || reorderingContact}
-                                  onClick={() => void handleMoveContact(index, 1)}
+                                  disabled={
+                                    index === total - 1 || reorderingContact
+                                  }
+                                  onClick={() =>
+                                    void handleMoveContact(index, 1)
+                                  }
                                 />
                               </Tooltip>
                               <Tooltip title="Chỉnh sửa">
                                 <Button
                                   type="text"
                                   size="small"
-                                  icon={<EditOutlined style={{ color: 'var(--deep)' }} />}
+                                  icon={
+                                    <EditOutlined
+                                      style={{ color: 'var(--deep)' }}
+                                    />
+                                  }
                                   disabled={reorderingContact}
                                   onClick={() => openEditContact(rec)}
                                 />
@@ -1001,7 +1172,12 @@ export function AdminPatientsPage() {
                                   danger
                                   icon={<DeleteOutlined />}
                                   disabled={reorderingContact}
-                                  onClick={() => void handleDeleteContact(rec.id, rec.fullName)}
+                                  onClick={() =>
+                                    void handleDeleteContact(
+                                      rec.id,
+                                      rec.fullName,
+                                    )
+                                  }
                                 />
                               </Tooltip>
                             </Space>
@@ -1011,8 +1187,16 @@ export function AdminPatientsPage() {
                     ]}
                   />
                 ) : (
-                  <div style={{ color: 'var(--muted)', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>
-                    Chưa có người liên hệ khẩn cấp được đăng ký. Bấm "Thêm người liên hệ" để thêm mới.
+                  <div
+                    style={{
+                      color: 'var(--muted)',
+                      fontSize: 13,
+                      padding: '12px 0',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Chưa có người liên hệ khẩn cấp được đăng ký. Bấm "Thêm người
+                    liên hệ" để thêm mới.
                   </div>
                 )}
               </div>
@@ -1021,7 +1205,9 @@ export function AdminPatientsPage() {
             <Divider style={{ margin: '16px 0 12px' }} />
 
             {/* Footer actions inside Drawer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}
+            >
               <Button
                 type="primary"
                 icon={<EditOutlined />}
@@ -1033,10 +1219,15 @@ export function AdminPatientsPage() {
                 Chỉnh sửa
               </Button>
 
-              {selectedPatient.authAccountId && (
-                (selectedPatient.status === 'LOCKED' || selectedPatient.status === 'INACTIVE') ? (
+              {selectedPatient.authAccountId &&
+                (selectedPatient.status === 'LOCKED' ||
+                selectedPatient.status === 'INACTIVE' ? (
                   <Button
-                    style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
+                    style={{
+                      backgroundColor: '#52c41a',
+                      borderColor: '#52c41a',
+                      color: '#fff',
+                    }}
                     icon={<CheckCircleOutlined />}
                     onClick={() => openStatusModal(selectedPatient)}
                   >
@@ -1044,14 +1235,17 @@ export function AdminPatientsPage() {
                   </Button>
                 ) : (
                   <Button
-                    style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: '#fff' }}
+                    style={{
+                      backgroundColor: '#fa8c16',
+                      borderColor: '#fa8c16',
+                      color: '#fff',
+                    }}
                     icon={<PauseCircleOutlined />}
                     onClick={() => openStatusModal(selectedPatient)}
                   >
                     Tạm khóa tài khoản
                   </Button>
-                )
-              )}
+                ))}
 
               <Button
                 danger
@@ -1094,7 +1288,9 @@ export function AdminPatientsPage() {
           onFinish={(values) => void handleCreate(values)}
           style={{ marginTop: 16 }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+          >
             <Form.Item
               name="fullName"
               label="Họ và tên bệnh nhân"
@@ -1108,14 +1304,22 @@ export function AdminPatientsPage() {
               label="Số điện thoại (Mật khẩu ban đầu)"
               rules={[
                 { required: true, message: 'Vui lòng nhập số điện thoại' },
-                { pattern: /^[0-9+ ]{8,15}$/, message: 'Số điện thoại không hợp lệ' },
+                {
+                  pattern: /^[0-9+ ]{8,15}$/,
+                  message: 'Số điện thoại không hợp lệ',
+                },
               ]}
             >
-              <Input prefix={<PhoneOutlined style={{ color: '#52c41a' }} />} placeholder="Ví dụ: 0987654321" />
+              <Input
+                prefix={<PhoneOutlined style={{ color: '#52c41a' }} />}
+                placeholder="Ví dụ: 0987654321"
+              />
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+          >
             <Form.Item
               name="email"
               label="Email đăng nhập"
@@ -1124,7 +1328,10 @@ export function AdminPatientsPage() {
                 { type: 'email', message: 'Email không đúng định dạng' },
               ]}
             >
-              <Input prefix={<MailOutlined style={{ color: '#1677ff' }} />} placeholder="Ví dụ: mai.nguyen@gmail.com" />
+              <Input
+                prefix={<MailOutlined style={{ color: '#1677ff' }} />}
+                placeholder="Ví dụ: mai.nguyen@gmail.com"
+              />
             </Form.Item>
 
             <Form.Item
@@ -1136,27 +1343,42 @@ export function AdminPatientsPage() {
                 format="DD/MM/YYYY"
                 placeholder="Chọn ngày sinh"
                 style={{ width: '100%' }}
-                disabledDate={(current) => current && current > dayjs().endOf('day')}
+                disabledDate={(current) =>
+                  current && current > dayjs().endOf('day')
+                }
               />
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+          >
             <Form.Item
               name="nationalId"
               label="Số CCCD / Định danh"
               rules={[
-                { required: true, message: 'Vui lòng nhập số CCCD / Định danh' },
-                { pattern: /^\d{9,12}$/, message: 'Số CCCD gồm 9 đến 12 chữ số' },
+                {
+                  required: true,
+                  message: 'Vui lòng nhập số CCCD / Định danh',
+                },
+                {
+                  pattern: /^\d{9,12}$/,
+                  message: 'Số CCCD gồm 9 đến 12 chữ số',
+                },
               ]}
             >
-              <Input prefix={<IdcardOutlined style={{ color: '#fa8c16' }} />} placeholder="Ví dụ: 001201012345" />
+              <Input
+                prefix={<IdcardOutlined style={{ color: '#fa8c16' }} />}
+                placeholder="Ví dụ: 001201012345"
+              />
             </Form.Item>
 
             <Form.Item
               name="address"
               label="Địa chỉ cư trú"
-              rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cư trú' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập địa chỉ cư trú' },
+              ]}
             >
               <Input placeholder="Số nhà, đường, phường/xã, quận/huyện..." />
             </Form.Item>
@@ -1201,14 +1423,19 @@ export function AdminPatientsPage() {
           >
             {({ getFieldValue }) => (
               <Form.Item name="photoUrl" noStyle>
-                <DoctorPhotoUpload
-                  doctorName={getFieldValue('fullName')}
-                />
+                <DoctorPhotoUpload doctorName={getFieldValue('fullName')} />
               </Form.Item>
             )}
           </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+              marginTop: 12,
+            }}
+          >
             <Form.Item
               name="fullName"
               label="Họ và tên bệnh nhân"
@@ -1222,14 +1449,22 @@ export function AdminPatientsPage() {
               label="Số điện thoại"
               rules={[
                 { required: true, message: 'Vui lòng nhập số điện thoại' },
-                { pattern: /^[0-9+ ]{8,15}$/, message: 'Số điện thoại không hợp lệ' },
+                {
+                  pattern: /^[0-9+ ]{8,15}$/,
+                  message: 'Số điện thoại không hợp lệ',
+                },
               ]}
             >
-              <Input prefix={<PhoneOutlined style={{ color: '#52c41a' }} />} placeholder="Số điện thoại" />
+              <Input
+                prefix={<PhoneOutlined style={{ color: '#52c41a' }} />}
+                placeholder="Số điện thoại"
+              />
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+          >
             <Form.Item
               name="email"
               label="Email đăng nhập"
@@ -1238,7 +1473,10 @@ export function AdminPatientsPage() {
                 { type: 'email', message: 'Email không đúng định dạng' },
               ]}
             >
-              <Input prefix={<MailOutlined style={{ color: '#1677ff' }} />} placeholder="Ví dụ: benhnhan@gmail.com" />
+              <Input
+                prefix={<MailOutlined style={{ color: '#1677ff' }} />}
+                placeholder="Ví dụ: benhnhan@gmail.com"
+              />
             </Form.Item>
 
             <Form.Item
@@ -1249,27 +1487,42 @@ export function AdminPatientsPage() {
               <DatePicker
                 format="DD/MM/YYYY"
                 style={{ width: '100%' }}
-                disabledDate={(current) => current && current > dayjs().endOf('day')}
+                disabledDate={(current) =>
+                  current && current > dayjs().endOf('day')
+                }
               />
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+          >
             <Form.Item
               name="nationalId"
               label="Số CCCD / Định danh"
               rules={[
-                { required: true, message: 'Vui lòng nhập số CCCD / Định danh' },
-                { pattern: /^\d{9,12}$/, message: 'Số CCCD gồm 9 đến 12 chữ số' },
+                {
+                  required: true,
+                  message: 'Vui lòng nhập số CCCD / Định danh',
+                },
+                {
+                  pattern: /^\d{9,12}$/,
+                  message: 'Số CCCD gồm 9 đến 12 chữ số',
+                },
               ]}
             >
-              <Input prefix={<IdcardOutlined style={{ color: '#fa8c16' }} />} placeholder="Số CCCD" />
+              <Input
+                prefix={<IdcardOutlined style={{ color: '#fa8c16' }} />}
+                placeholder="Số CCCD"
+              />
             </Form.Item>
 
             <Form.Item
               name="address"
               label="Địa chỉ cư trú"
-              rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cư trú' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập địa chỉ cư trú' },
+              ]}
             >
               <Input placeholder="Địa chỉ thường trú" />
             </Form.Item>
@@ -1319,17 +1572,21 @@ export function AdminPatientsPage() {
         <div style={{ padding: '8px 0' }}>
           <p style={{ margin: '0 0 8px', fontSize: 14 }}>
             Bạn có chắc muốn xóa hồ sơ bệnh nhân{' '}
-            <strong>{patientToDelete?.fullName}</strong> (SĐT: {patientToDelete?.phoneNumber})?
+            <strong>{patientToDelete?.fullName}</strong> (SĐT:{' '}
+            {patientToDelete?.phoneNumber})?
           </p>
           <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)' }}>
-            Hành động này sẽ xóa vĩnh viễn hồ sơ bệnh nhân cùng danh bạ người thân khẩn cấp khỏi hệ thống.
+            Hành động này sẽ xóa vĩnh viễn hồ sơ bệnh nhân cùng danh bạ người
+            thân khẩn cấp khỏi hệ thống.
           </p>
         </div>
       </Modal>
 
       {/* Modal Xác nhận Tạm khóa / Kích hoạt bệnh nhân */}
       {(() => {
-        const isTargetLocked = statusTargetPatient?.status === 'LOCKED' || statusTargetPatient?.status === 'INACTIVE';
+        const isTargetLocked =
+          statusTargetPatient?.status === 'LOCKED' ||
+          statusTargetPatient?.status === 'INACTIVE';
         return (
           <Modal
             title={
@@ -1355,7 +1612,9 @@ export function AdminPatientsPage() {
               }
             }}
             footer={
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}
+              >
                 <Button
                   type="primary"
                   style={
@@ -1364,7 +1623,10 @@ export function AdminPatientsPage() {
                       : { backgroundColor: '#52c41a', borderColor: '#52c41a' }
                   }
                   loading={togglingStatus}
-                  disabled={togglingStatus || (!isTargetLocked && deactivateReason.trim().length < 3)}
+                  disabled={
+                    togglingStatus ||
+                    (!isTargetLocked && deactivateReason.trim().length < 3)
+                  }
                   onClick={() => void handleToggleStatus()}
                 >
                   {!isTargetLocked ? 'Xác nhận tạm khóa' : 'Kích hoạt'}
@@ -1387,23 +1649,38 @@ export function AdminPatientsPage() {
                 {!isTargetLocked ? (
                   <>
                     Bạn có chắc muốn tạm khóa tài khoản của bệnh nhân{' '}
-                    <strong>{statusTargetPatient?.fullName}</strong> ({statusTargetPatient?.email})?
+                    <strong>{statusTargetPatient?.fullName}</strong> (
+                    {statusTargetPatient?.email})?
                   </>
                 ) : (
                   <>
                     Kích hoạt lại tài khoản của bệnh nhân{' '}
-                    <strong>{statusTargetPatient?.fullName}</strong> ({statusTargetPatient?.email})?
+                    <strong>{statusTargetPatient?.fullName}</strong> (
+                    {statusTargetPatient?.email})?
                   </>
                 )}
               </p>
-              <p style={{ margin: '0 0 12px', fontSize: 12.5, color: 'var(--muted)' }}>
+              <p
+                style={{
+                  margin: '0 0 12px',
+                  fontSize: 12.5,
+                  color: 'var(--muted)',
+                }}
+              >
                 {!isTargetLocked
                   ? 'Khi bị tạm khóa, bệnh nhân sẽ không thể đăng nhập vào cổng thông tin bệnh nhân cho đến khi được kích hoạt lại.'
                   : 'Sau khi kích hoạt, bệnh nhân có thể đăng nhập và đặt lịch hẹn khám bình thường.'}
               </p>
               {!isTargetLocked && (
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontWeight: 500,
+                      fontSize: 13,
+                    }}
+                  >
                     Lý do tạm khóa (tối thiểu 3 ký tự):
                   </label>
                   <Input
@@ -1423,7 +1700,11 @@ export function AdminPatientsPage() {
         title={
           <Space>
             <UserOutlined style={{ color: '#0284c7' }} />
-            <span>{editingContact ? 'Chỉnh sửa người liên hệ' : 'Thêm người liên hệ khẩn cấp'}</span>
+            <span>
+              {editingContact
+                ? 'Chỉnh sửa người liên hệ'
+                : 'Thêm người liên hệ khẩn cấp'}
+            </span>
           </Space>
         }
         open={contactModalOpen}
@@ -1447,7 +1728,12 @@ export function AdminPatientsPage() {
           <Form.Item
             name="fullName"
             label="Họ và tên người liên hệ"
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên người liên hệ' }]}
+            rules={[
+              {
+                required: true,
+                message: 'Vui lòng nhập họ và tên người liên hệ',
+              },
+            ]}
           >
             <Input placeholder="Ví dụ: Nguyễn Văn A" />
           </Form.Item>
@@ -1455,7 +1741,12 @@ export function AdminPatientsPage() {
           <Form.Item
             name="relationship"
             label="Mối quan hệ với bệnh nhân"
-            rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập mối quan hệ' }]}
+            rules={[
+              {
+                required: true,
+                message: 'Vui lòng chọn hoặc nhập mối quan hệ',
+              },
+            ]}
           >
             <Select
               placeholder="Chọn hoặc nhập mối quan hệ"
@@ -1486,13 +1777,8 @@ export function AdminPatientsPage() {
             <Input placeholder="0901234567" />
           </Form.Item>
 
-          <Form.Item
-            name="isPrimary"
-            valuePropName="checked"
-          >
-            <Select
-              style={{ display: 'none' }}
-            />
+          <Form.Item name="isPrimary" valuePropName="checked">
+            <Select style={{ display: 'none' }} />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -1507,7 +1793,12 @@ export function AdminPatientsPage() {
               >
                 Hủy
               </Button>
-              <Button type="primary" htmlType="submit" loading={submittingContact} style={{ background: '#0284c7' }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submittingContact}
+                style={{ background: '#0284c7' }}
+              >
                 {editingContact ? 'Lưu thay đổi' : 'Thêm người liên hệ'}
               </Button>
             </Space>

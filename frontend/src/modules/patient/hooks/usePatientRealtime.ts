@@ -19,7 +19,8 @@ export function usePatientRealtime({
   enabled = true,
   streamFn,
 }: UsePatientRealtimeProps) {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('DISCONNECTED');
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>('DISCONNECTED');
   const onEventRef = useRef(onAppointmentEvent);
   const onRefetchRef = useRef(onRefetch);
 
@@ -55,4 +56,3 @@ export function usePatientRealtime({
     isLive: connectionStatus === 'CONNECTED',
   };
 }
-

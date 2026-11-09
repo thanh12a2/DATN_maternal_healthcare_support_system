@@ -26,4 +26,3 @@ export const STAGE_TIPS = [
   'Mẹ hãy chuẩn bị kế hoạch sinh và tìm hiểu quy trình nhập viện nhé.',
   'Mẹ hãy chuẩn bị đồ đi sinh và lưu sẵn số liên hệ khi cần nhé.',
 ] as const;
-

@@ -29,11 +29,15 @@ export function PatientPortalLayout({
         <div className="portal-container">
           {(eyebrow || title) && (
             <div className="patient-page-top-header">
-              {eyebrow && <span className="patient-page-eyebrow">{eyebrow}</span>}
+              {eyebrow && (
+                <span className="patient-page-eyebrow">{eyebrow}</span>
+              )}
               {title && <h1 className="patient-page-title">{title}</h1>}
             </div>
           )}
-          <div className={`patient-page-content-wrapper ${contentClassName}`.trim()}>
+          <div
+            className={`patient-page-content-wrapper ${contentClassName}`.trim()}
+          >
             {children}
           </div>
         </div>

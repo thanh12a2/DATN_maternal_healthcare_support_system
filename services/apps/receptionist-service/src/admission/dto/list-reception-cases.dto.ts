@@ -1,13 +1,35 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListReceptionCasesDto {
   @IsOptional()
-  @IsIn(['OPEN', 'IDENTITY_VERIFIED', 'ADMISSION_IN_PROGRESS', 'ADMITTED', 'CANCELLED', 'MANUAL_REVIEW'])
+  @IsIn([
+    'OPEN',
+    'IDENTITY_VERIFIED',
+    'ADMISSION_IN_PROGRESS',
+    'ADMITTED',
+    'CANCELLED',
+    'MANUAL_REVIEW',
+  ])
   status?: string;
 
   @IsOptional()
-  @IsIn(['IN_PROGRESS', 'AWAITING_PAYMENT', 'FAILED_RETRYABLE', 'COMPLETED', 'CANCELLED', 'MANUAL_REVIEW'])
+  @IsIn([
+    'IN_PROGRESS',
+    'AWAITING_PAYMENT',
+    'FAILED_RETRYABLE',
+    'COMPLETED',
+    'CANCELLED',
+    'MANUAL_REVIEW',
+  ])
   admissionStatus?: string;
 
   @IsOptional()

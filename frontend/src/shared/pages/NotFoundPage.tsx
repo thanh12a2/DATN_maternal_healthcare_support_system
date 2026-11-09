@@ -1,16 +1,16 @@
-import { useEffect } from "react";
-import { useAuthSession } from "../../app/AuthSessionProvider";
-import { AppLink, navigate } from "../../app/navigation";
-import "../../styles/not-found.css";
+import { useEffect } from 'react';
+import { useAuthSession } from '../../app/AuthSessionProvider';
+import { AppLink, navigate } from '../../app/navigation';
+import '../../styles/not-found.css';
 
 export function NotFoundPage() {
   const auth = useAuthSession();
   const homePath =
-    auth.status === "authenticated" ? "/tong-quan" : "/dang-nhap";
+    auth.status === 'authenticated' ? '/tong-quan' : '/dang-nhap';
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = "Không tìm thấy trang — An Tâm Medical";
+    document.title = 'Không tìm thấy trang — An Tâm Medical';
     return () => {
       document.title = previousTitle;
     };

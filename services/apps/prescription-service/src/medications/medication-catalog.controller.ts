@@ -28,17 +28,26 @@ export class MedicationCatalogController {
   constructor(private readonly medications: MedicationCatalogService) {}
 
   @Get()
-  list(@Query() query: ListMedicationsQueryDto, @CurrentAuth() auth: PublicAuthContext) {
+  list(
+    @Query() query: ListMedicationsQueryDto,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     return this.medications.list(query, auth);
   }
 
   @Get(':id')
-  get(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() auth: PublicAuthContext) {
+  get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     return this.medications.get(id, auth);
   }
 
   @Post()
-  create(@Body() dto: CreateMedicationDto, @CurrentAuth() auth: PublicAuthContext) {
+  create(
+    @Body() dto: CreateMedicationDto,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     return this.medications.create(dto, auth);
   }
 

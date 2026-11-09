@@ -21,12 +21,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
     ) {
       status = 503;
     }
-    const payload = typeof http?.getResponse === 'function'
-      ? http.getResponse()
-      : undefined;
-    const body = payload && typeof payload === 'object'
-      ? (payload as Record<string, unknown>)
-      : {};
+    const payload =
+      typeof http?.getResponse === 'function' ? http.getResponse() : undefined;
+    const body =
+      payload && typeof payload === 'object'
+        ? (payload as Record<string, unknown>)
+        : {};
     const explicitCode = typeof body.code === 'string' ? body.code : undefined;
     const code = explicitCode ?? this.defaultCode(status);
     const message =

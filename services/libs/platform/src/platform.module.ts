@@ -8,7 +8,17 @@ import { PublicJwtGuard } from './http/public-jwt.guard';
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [ServiceTokenService, ServiceJwtGuard, GrpcClientFactory, PublicJwtGuard],
-  exports: [ServiceTokenService, ServiceJwtGuard, GrpcClientFactory, PublicJwtGuard],
+  providers: [
+    ServiceTokenService,
+    ServiceJwtGuard,
+    GrpcClientFactory,
+    PublicJwtGuard,
+  ],
+  exports: [
+    ServiceTokenService,
+    ServiceJwtGuard,
+    GrpcClientFactory,
+    PublicJwtGuard,
+  ],
 })
 export class PlatformModule {}

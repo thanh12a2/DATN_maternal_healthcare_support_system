@@ -88,20 +88,27 @@ export function DoctorClinicalDrawer({
 
   const canStart = encState === 'DRAFT' || appointment.status === 'CHECKED_IN';
   const canEdit = encState === 'IN_PROGRESS';
-  const isFinalized = encState === 'FINALIZED' || appointment.status === 'COMPLETED';
+  const isFinalized =
+    encState === 'FINALIZED' || appointment.status === 'COMPLETED';
 
   // API Action Sender
-  const sendAction = async (path: string, body: Record<string, unknown> = {}) => {
+  const sendAction = async (
+    path: string,
+    body: Record<string, unknown> = {},
+  ) => {
     if (!encId) {
       message.error('Không tìm thấy mã hồ sơ khám (Encounter ID).');
       return;
     }
     setBusy(true);
     try {
-      await request(`/api/medical-records/encounters/${encodeURIComponent(encId)}/${path}`, {
-        method: 'POST',
-        body: JSON.stringify({ ...body, expectedVersion: version }),
-      });
+      await request(
+        `/api/medical-records/encounters/${encodeURIComponent(encId)}/${path}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ ...body, expectedVersion: version }),
+        },
+      );
       message.success('Thao tác thành công.');
       onReload();
     } catch (err: any) {
@@ -138,7 +145,10 @@ export function DoctorClinicalDrawer({
       message.warning('Vui lòng nhập đầy đủ Mã chẩn đoán và Mô tả bệnh.');
       return;
     }
-    await sendAction('diagnoses', { code: icdCode.trim(), description: diagnosisDesc.trim() });
+    await sendAction('diagnoses', {
+      code: icdCode.trim(),
+      description: diagnosisDesc.trim(),
+    });
     setIcdCode('');
     setDiagnosisDesc('');
   };
@@ -154,11 +164,16 @@ export function DoctorClinicalDrawer({
   };
 
   // Dữ liệu sinh hiệu gần nhất
-  const vitalsList = Array.isArray(encounter?.vitalSigns) ? encounter.vitalSigns : [];
-  const latestVital = vitalsList.length > 0 ? vitalsList[vitalsList.length - 1] : null;
+  const vitalsList = Array.isArray(encounter?.vitalSigns)
+    ? encounter.vitalSigns
+    : [];
+  const latestVital =
+    vitalsList.length > 0 ? vitalsList[vitalsList.length - 1] : null;
 
   // Danh sách chẩn đoán & ghi chú
-  const diagnosesList = Array.isArray(encounter?.diagnoses) ? encounter.diagnoses : [];
+  const diagnosesList = Array.isArray(encounter?.diagnoses)
+    ? encounter.diagnoses
+    : [];
   const notesList = Array.isArray(encounter?.notes) ? encounter.notes : [];
 
   return (
@@ -172,19 +187,30 @@ export function DoctorClinicalDrawer({
         body: { padding: '20px 24px', background: '#f8fafc' },
       }}
       title={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <div>
             <Title level={4} style={{ margin: 0, color: '#0B5CAD' }}>
               HỒ SƠ BỆNH ÁN KHÁM BỆNH
             </Title>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Mã lịch: <strong style={{ color: '#0f172a' }}>{appointment.appointmentCode}</strong>
+              Mã lịch:{' '}
+              <strong style={{ color: '#0f172a' }}>
+                {appointment.appointmentCode}
+              </strong>
             </Text>
           </div>
           <div>
             {encState === 'DRAFT' && <Tag color="orange">CHỜ BẮT ĐẦU</Tag>}
             {encState === 'IN_PROGRESS' && <Tag color="green">ĐANG KHÁM</Tag>}
-            {encState === 'READY_FOR_REVIEW' && <Tag color="blue">CHỜ DUYỆT</Tag>}
+            {encState === 'READY_FOR_REVIEW' && (
+              <Tag color="blue">CHỜ DUYỆT</Tag>
+            )}
             {encState === 'FINALIZED' && <Tag color="purple">ĐÃ HOÀN TẤT</Tag>}
           </div>
         </div>
@@ -195,7 +221,11 @@ export function DoctorClinicalDrawer({
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Avatar
             size={52}
-            style={{ backgroundColor: '#0B5CAD', fontSize: 20, fontWeight: 700 }}
+            style={{
+              backgroundColor: '#0B5CAD',
+              fontSize: 20,
+              fontWeight: 700,
+            }}
             icon={<UserOutlined />}
           >
             {patientName ? patientName.slice(-1) : 'BN'}
@@ -206,7 +236,9 @@ export function DoctorClinicalDrawer({
             </Title>
             <Text type="secondary" style={{ fontSize: 13 }}>
               SĐT: <strong>{patientPhone || '0901000001'}</strong> · Dịch vụ:{' '}
-              <strong>{appointment.pricing?.serviceName || 'Khám thai định kỳ'}</strong>
+              <strong>
+                {appointment.pricing?.serviceName || 'Khám thai định kỳ'}
+              </strong>
             </Text>
             <div style={{ marginTop: 4 }}>
               <Tag color="cyan">Phòng: {appointment.roomCode || 'P.201'}</Tag>
@@ -222,7 +254,10 @@ export function DoctorClinicalDrawer({
 
       {/* 2. Workflow Action Controls */}
       <div className="clinical-action-bar">
-        <Text strong style={{ marginRight: 'auto', fontSize: 13, color: '#334155' }}>
+        <Text
+          strong
+          style={{ marginRight: 'auto', fontSize: 13, color: '#334155' }}
+        >
           Tiến trình buổi khám:
         </Text>
 
@@ -308,22 +343,33 @@ export function DoctorClinicalDrawer({
                     <div className="vital-metric-card">
                       <span>Huyết áp</span>
                       <strong>
-                        {latestVital?.systolic != null || latestVital?.diastolic != null
+                        {latestVital?.systolic != null ||
+                        latestVital?.diastolic != null
                           ? `${latestVital.systolic || '—'}/${latestVital.diastolic || '—'} mmHg`
                           : '—'}
                       </strong>
                     </div>
                     <div className="vital-metric-card">
                       <span>Nhịp tim</span>
-                      <strong>{latestVital?.heartRate ? `${latestVital.heartRate} bpm` : '—'}</strong>
+                      <strong>
+                        {latestVital?.heartRate
+                          ? `${latestVital.heartRate} bpm`
+                          : '—'}
+                      </strong>
                     </div>
                     <div className="vital-metric-card">
                       <span>Thân nhiệt</span>
-                      <strong>{latestVital?.temperature ? `${latestVital.temperature} °C` : '—'}</strong>
+                      <strong>
+                        {latestVital?.temperature
+                          ? `${latestVital.temperature} °C`
+                          : '—'}
+                      </strong>
                     </div>
                     <div className="vital-metric-card">
                       <span>Cân nặng</span>
-                      <strong>{latestVital?.weight ? `${latestVital.weight} kg` : '—'}</strong>
+                      <strong>
+                        {latestVital?.weight ? `${latestVital.weight} kg` : '—'}
+                      </strong>
                     </div>
                   </div>
 
@@ -342,7 +388,13 @@ export function DoctorClinicalDrawer({
                     </Title>
                     <Space wrap size="middle">
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Huyết áp tâm thu (mmHg):
                         </Text>
                         <InputNumber
@@ -355,7 +407,13 @@ export function DoctorClinicalDrawer({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Huyết áp tâm trương (mmHg):
                         </Text>
                         <InputNumber
@@ -368,7 +426,13 @@ export function DoctorClinicalDrawer({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Nhịp tim (lần/phút):
                         </Text>
                         <InputNumber
@@ -381,7 +445,13 @@ export function DoctorClinicalDrawer({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Nhiệt độ (°C):
                         </Text>
                         <InputNumber
@@ -395,7 +465,13 @@ export function DoctorClinicalDrawer({
                         />
                       </div>
                       <div>
-                        <Text style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>
+                        <Text
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            marginBottom: 4,
+                          }}
+                        >
                           Cân nặng (kg):
                         </Text>
                         <InputNumber
@@ -419,7 +495,10 @@ export function DoctorClinicalDrawer({
                         Lưu dấu hiệu sinh tồn
                       </Button>
                       {!canEdit && (
-                        <Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
+                        <Text
+                          type="secondary"
+                          style={{ marginLeft: 12, fontSize: 12 }}
+                        >
                           (Cần ấn "Bắt đầu khám bệnh" để nhập số liệu)
                         </Text>
                       )}
@@ -429,10 +508,23 @@ export function DoctorClinicalDrawer({
                   {/* Vitals History */}
                   {vitalsList.length > 0 && (
                     <div>
-                      <Text strong style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+                      <Text
+                        strong
+                        style={{
+                          fontSize: 13,
+                          marginBottom: 8,
+                          display: 'block',
+                        }}
+                      >
                         Lịch sử đo sinh hiệu:
                       </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
                         {vitalsList.map((v: any, idx: number) => (
                           <div
                             key={v.id || idx}
@@ -450,10 +542,15 @@ export function DoctorClinicalDrawer({
                               <strong>
                                 {v.systolic}/{v.diastolic} mmHg
                               </strong>{' '}
-                              · {v.heartRate} bpm · {v.temperature} °C · {v.weight} kg
+                              · {v.heartRate} bpm · {v.temperature} °C ·{' '}
+                              {v.weight} kg
                             </span>
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              {v.recordedAt ? new Date(v.recordedAt).toLocaleTimeString('vi-VN') : ''}
+                              {v.recordedAt
+                                ? new Date(v.recordedAt).toLocaleTimeString(
+                                    'vi-VN',
+                                  )
+                                : ''}
                             </Text>
                           </div>
                         ))}
@@ -485,7 +582,7 @@ export function DoctorClinicalDrawer({
                       {String(
                         encounter?.chiefComplaint ||
                           appointment.pricing?.serviceName ||
-                          'Khám thai định kỳ & tư vấn sức khỏe'
+                          'Khám thai định kỳ & tư vấn sức khỏe',
                       )}
                     </Paragraph>
                   </div>
@@ -506,7 +603,10 @@ export function DoctorClinicalDrawer({
 
                     {/* Quick ICD tags */}
                     <div style={{ marginBottom: 12 }}>
-                      <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 12, marginRight: 8 }}
+                      >
                         Gợi ý nhanh:
                       </Text>
                       <Space wrap size={[0, 6]}>
@@ -554,10 +654,23 @@ export function DoctorClinicalDrawer({
                   {/* Diagnoses List */}
                   {diagnosesList.length > 0 && (
                     <div>
-                      <Text strong style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+                      <Text
+                        strong
+                        style={{
+                          fontSize: 13,
+                          marginBottom: 8,
+                          display: 'block',
+                        }}
+                      >
                         Chẩn đoán đã ghi:
                       </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
                         {diagnosesList.map((d: any, idx: number) => (
                           <div
                             key={d.id || idx}
@@ -571,7 +684,9 @@ export function DoctorClinicalDrawer({
                             <Tag color="geekblue" style={{ fontWeight: 700 }}>
                               {d.code}
                             </Tag>
-                            <strong style={{ color: '#0f172a' }}>{d.description}</strong>
+                            <strong style={{ color: '#0f172a' }}>
+                              {d.description}
+                            </strong>
                           </div>
                         ))}
                       </div>
@@ -618,10 +733,23 @@ export function DoctorClinicalDrawer({
                   {/* Notes History */}
                   {notesList.length > 0 && (
                     <div>
-                      <Text strong style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+                      <Text
+                        strong
+                        style={{
+                          fontSize: 13,
+                          marginBottom: 8,
+                          display: 'block',
+                        }}
+                      >
                         Ghi chú đã lưu:
                       </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
                         {notesList.map((n: any, idx: number) => (
                           <div
                             key={n.id || idx}
@@ -637,10 +765,16 @@ export function DoctorClinicalDrawer({
                             </Paragraph>
                             <Text
                               type="secondary"
-                              style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 4,
+                              }}
                             >
                               Ghi nhận lúc:{' '}
-                              {n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''}
+                              {n.createdAt
+                                ? new Date(n.createdAt).toLocaleString('vi-VN')
+                                : ''}
                             </Text>
                           </div>
                         ))}
@@ -657,12 +791,17 @@ export function DoctorClinicalDrawer({
                 <DoctorClinicalResources
                   request={request}
                   encounterId={String(encId)}
-                  patientId={String(encounter?.patientId || appointment.patientId || '')}
+                  patientId={String(
+                    encounter?.patientId || appointment.patientId || '',
+                  )}
                   encounterState={encState}
                   kind="prescriptions"
                 />
               ) : (
-                <Alert message="Chưa tìm thấy hồ sơ khám để kê đơn thuốc." type="warning" />
+                <Alert
+                  message="Chưa tìm thấy hồ sơ khám để kê đơn thuốc."
+                  type="warning"
+                />
               ),
             },
             {
@@ -672,12 +811,17 @@ export function DoctorClinicalDrawer({
                 <DoctorClinicalResources
                   request={request}
                   encounterId={String(encId)}
-                  patientId={String(encounter?.patientId || appointment.patientId || '')}
+                  patientId={String(
+                    encounter?.patientId || appointment.patientId || '',
+                  )}
                   encounterState={encState}
                   kind="plans"
                 />
               ) : (
-                <Alert message="Chưa tìm thấy hồ sơ khám để chỉ định điều trị." type="warning" />
+                <Alert
+                  message="Chưa tìm thấy hồ sơ khám để chỉ định điều trị."
+                  type="warning"
+                />
               ),
             },
           ]}

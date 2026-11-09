@@ -20,7 +20,9 @@ export const presentPatient = (
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
   phoneNumber: patient.phoneNumber,
   nationalIdMasked: crypto.maskCiphertext(patient.nationalIdCiphertext),
-  nationalId: patient.nationalIdCiphertext ? crypto.decrypt(patient.nationalIdCiphertext) : null,
+  nationalId: patient.nationalIdCiphertext
+    ? crypto.decrypt(patient.nationalIdCiphertext)
+    : null,
   address: patient.address,
   profileStatus: 'COMPLETE' as const,
   version: patient.version,
@@ -49,5 +51,7 @@ export const presentSearchPatient = (
     '*'.repeat(Math.max(0, patient.phoneNumber.length - 4)) +
     patient.phoneNumber.slice(-4),
   nationalIdMasked: crypto.maskCiphertext(patient.nationalIdCiphertext),
-  nationalId: patient.nationalIdCiphertext ? crypto.decrypt(patient.nationalIdCiphertext) : null,
+  nationalId: patient.nationalIdCiphertext
+    ? crypto.decrypt(patient.nationalIdCiphertext)
+    : null,
 });

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { AppLink, navigate } from '../../../app/navigation';
 import { UserChip } from '../navigation/UserChip';
-import { fetchSpecialties, type SpecialtyItem } from '../../../services/specialty';
+import {
+  fetchSpecialties,
+  type SpecialtyItem,
+} from '../../../services/specialty';
 
 function CalendarIcon() {
   return (
@@ -69,7 +72,8 @@ export function PublicPortalHeader() {
   const closeTimeoutRef = useRef<number | null>(null);
 
   const isAuthenticated = auth.status === 'authenticated' && Boolean(auth.user);
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const currentPath =
+    typeof window !== 'undefined' ? window.location.pathname : '/';
   const isHomePage = currentPath === '/';
   const isServicesPage = currentPath.startsWith('/dich-vu');
   const isDoctorsPage = currentPath.startsWith('/bac-si');
@@ -182,7 +186,8 @@ export function PublicPortalHeader() {
                 <span className="brand-badge-sub">HOSPITAL</span>
               </div>
               <span className="portal-brand-slogan-text">
-                Trọn vẹn yêu thương, vẹn toàn <strong className="slogan-accent">yên tâm</strong>
+                Trọn vẹn yêu thương, vẹn toàn{' '}
+                <strong className="slogan-accent">yên tâm</strong>
               </span>
             </div>
           </AppLink>
@@ -197,14 +202,20 @@ export function PublicPortalHeader() {
                 <AppLink href="/dang-ky" className="portal-top-btn-register">
                   Đăng ký
                 </AppLink>
-                <AppLink href="/dang-nhap?returnUrl=/dat-lich" className="portal-top-btn-booking hide-on-mobile">
+                <AppLink
+                  href="/dang-nhap?returnUrl=/dat-lich"
+                  className="portal-top-btn-booking hide-on-mobile"
+                >
                   <CalendarIcon />
                   <span>Đặt lịch khám</span>
                 </AppLink>
               </div>
             ) : (
               <div className="portal-authenticated-group">
-                <AppLink href="/dat-lich" className="portal-top-btn-booking hide-on-mobile">
+                <AppLink
+                  href="/dat-lich"
+                  className="portal-top-btn-booking hide-on-mobile"
+                >
                   <CalendarIcon />
                   <span>Đặt lịch khám</span>
                 </AppLink>
@@ -270,7 +281,10 @@ export function PublicPortalHeader() {
                     {loadingSpecialties ? (
                       <div className="portal-specialties-grid portal-specialties-loading">
                         {Array.from({ length: 6 }).map((_, idx) => (
-                          <div key={idx} className="portal-specialty-skeleton-item">
+                          <div
+                            key={idx}
+                            className="portal-specialty-skeleton-item"
+                          >
                             <div className="portal-specialty-skeleton-bar" />
                           </div>
                         ))}
@@ -285,8 +299,13 @@ export function PublicPortalHeader() {
                             role="menuitem"
                             onClick={handleCloseDropdown}
                           >
-                            <span className="portal-specialty-name">{item.name}</span>
-                            <span className="portal-specialty-arrow" aria-hidden="true">
+                            <span className="portal-specialty-name">
+                              {item.name}
+                            </span>
+                            <span
+                              className="portal-specialty-arrow"
+                              aria-hidden="true"
+                            >
                               <ArrowRightIcon />
                             </span>
                           </AppLink>

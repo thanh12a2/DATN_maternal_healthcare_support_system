@@ -13,13 +13,19 @@ describe('AuthShell', () => {
     const user = userEvent.setup();
     render(<AuthShell />);
 
-    expect(screen.getByRole('heading', { name: /chào mừng trở lại/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /chào mừng trở lại/i }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /đăng ký ngay/i }));
-    expect(screen.getByRole('heading', { name: /tạo tài khoản/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /tạo tài khoản/i }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /đăng nhập/i }));
-    expect(screen.getByRole('heading', { name: /chào mừng trở lại/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /chào mừng trở lại/i }),
+    ).toBeInTheDocument();
   });
 
   it('toggles password visibility', async () => {
@@ -43,6 +49,8 @@ describe('AuthShell', () => {
     await user.click(screen.getByRole('button', { name: /^đăng nhập$/i }));
 
     expect(screen.getByText('Vui lòng nhập email.')).toBeInTheDocument();
-    expect(screen.getByText('Mật khẩu cần ít nhất 8 ký tự.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Mật khẩu cần ít nhất 8 ký tự.'),
+    ).toBeInTheDocument();
   });
 });

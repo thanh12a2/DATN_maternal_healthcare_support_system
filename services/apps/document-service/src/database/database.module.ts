@@ -1,1 +1,8 @@
-import { Global,Module } from '@nestjs/common';import { DocumentPrismaService } from './prisma.service';@Global()@Module({providers:[DocumentPrismaService],exports:[DocumentPrismaService]})export class DocumentDatabaseModule{}
+import { Global, Module } from '@nestjs/common';
+import { DocumentPrismaService } from './prisma.service';
+@Global()
+@Module({
+  providers: [DocumentPrismaService],
+  exports: [DocumentPrismaService],
+})
+export class DocumentDatabaseModule {}

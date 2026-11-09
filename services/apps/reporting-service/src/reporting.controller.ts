@@ -1,4 +1,12 @@
-import { Controller, ForbiddenException, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import type { Response } from 'express';
 import {
@@ -36,7 +44,10 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/overview', 'overview'])
-  async overviewRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+  async overviewRest(
+    @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
@@ -48,7 +59,10 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/appointments', 'appointments'])
-  async appointmentsRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+  async appointmentsRest(
+    @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||
@@ -67,7 +81,10 @@ export class ReportingController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['reports/revenue', 'revenue'])
-  async revenueRest(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+  async revenueRest(
+    @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
     this.requireClinicManager(auth);
     const fromDate =
       query?.fromDate ||

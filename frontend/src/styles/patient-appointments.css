@@ -125,7 +125,9 @@
   align-items: center;
   gap: 16px;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .pap-stat-card:hover {
@@ -1361,13 +1363,23 @@
 
 /* Animations */
 @keyframes pbFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes pbScaleUp {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Print Styling */
@@ -1375,7 +1387,8 @@
   body * {
     visibility: hidden;
   }
-  .pap-modal-card, .pap-modal-card * {
+  .pap-modal-card,
+  .pap-modal-card * {
     visibility: visible;
   }
   .pap-modal-card {
@@ -1387,7 +1400,8 @@
     box-shadow: none;
     border: none;
   }
-  .pap-modal-footer, .pap-btn-modal-close {
+  .pap-modal-footer,
+  .pap-btn-modal-close {
     display: none !important;
   }
 }
@@ -1497,9 +1511,15 @@
 }
 
 @keyframes pulseNode {
-  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(2, 132, 199, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+  }
 }
 
 .pap-journey-node-text {

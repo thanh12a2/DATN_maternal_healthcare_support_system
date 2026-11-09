@@ -12,4 +12,5 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-export type Role = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'CLINIC_MANAGER' | 'ADMIN';
+export type Role =
+  'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'NURSE' | 'CLINIC_MANAGER' | 'ADMIN';

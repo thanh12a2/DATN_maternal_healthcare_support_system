@@ -14,7 +14,7 @@ import { QueueRealtimeService } from './queue-realtime.service';
 
 @Injectable()
 export class QueueDomainService {
-    private getRoomPrefix(roomCode?: string | null, stageCode?: string): string {
+  private getRoomPrefix(roomCode?: string | null, stageCode?: string): string {
     if (roomCode && typeof roomCode === 'string') {
       const trimmed = roomCode.trim();
       const pRoomMatch = trimmed.match(/^(?:P\.?|Phòng\s*)?(\d{2,4})$/i);
@@ -389,7 +389,13 @@ export class QueueDomainService {
   async notifyTicketChange(ticketId: string, eventType: string): Promise<void> {
     const ticket = await this.db.stageTicket.findUnique({
       where: { id: ticketId },
-      select: { id: true, journeyId: true, state: true, version: true, journey: { select: { patientId: true } } },
+      select: {
+        id: true,
+        journeyId: true,
+        state: true,
+        version: true,
+        journey: { select: { patientId: true } },
+      },
     });
     if (!ticket) return;
     this.realtime.publish(ticket.journey.patientId, {

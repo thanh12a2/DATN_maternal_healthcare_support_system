@@ -13,12 +13,16 @@ export class InternalJwtVerifierService {
 
   verify(token: string): InternalAuthContext {
     try {
-      const decoded = verify(token, this.normalizePem(this.required('PATIENT_INTERNAL_JWT_PUBLIC_KEY')), {
-        algorithms: ['RS256'],
-        issuer: this.required('PATIENT_INTERNAL_JWT_ISSUER'),
-        audience: this.required('PATIENT_INTERNAL_JWT_AUDIENCE'),
-        complete: true,
-      });
+      const decoded = verify(
+        token,
+        this.normalizePem(this.required('PATIENT_INTERNAL_JWT_PUBLIC_KEY')),
+        {
+          algorithms: ['RS256'],
+          issuer: this.required('PATIENT_INTERNAL_JWT_ISSUER'),
+          audience: this.required('PATIENT_INTERNAL_JWT_AUDIENCE'),
+          complete: true,
+        },
+      );
       if (typeof decoded === 'string' || typeof decoded.payload === 'string') {
         throw new UnauthorizedException('Invalid internal access token');
       }
@@ -51,7 +55,8 @@ export class InternalJwtVerifierService {
       if (
         error instanceof UnauthorizedException ||
         error instanceof InternalServerErrorException
-      ) throw error;
+      )
+        throw error;
       throw new UnauthorizedException('Invalid internal access token');
     }
   }

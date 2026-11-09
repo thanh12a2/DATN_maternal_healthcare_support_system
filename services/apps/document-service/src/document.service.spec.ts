@@ -1,1 +1,4 @@
-describe('Document invariants',()=>{it('requires CLEAN before access',()=>expect(['PENDING','CLEAN']).toContain('CLEAN'));});
+describe('Document invariants', () => {
+  it('requires CLEAN before access', () =>
+    expect(['PENDING', 'CLEAN']).toContain('CLEAN'));
+});

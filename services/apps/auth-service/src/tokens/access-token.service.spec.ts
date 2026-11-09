@@ -85,7 +85,9 @@ describe('AccessTokenService', () => {
       role: AuthRole.Patient,
     });
 
-    expect(accessTokenService.verifyAccessToken(signedToken.accessToken)).toEqual({
+    expect(
+      accessTokenService.verifyAccessToken(signedToken.accessToken),
+    ).toEqual({
       userId: 'account-id',
       role: AuthRole.Patient,
       tokenId: expect.any(String),
@@ -93,7 +95,9 @@ describe('AccessTokenService', () => {
   });
 
   it('should reject invalid access token', () => {
-    expect(() => accessTokenService.verifyAccessToken('invalid-token')).toThrow(UnauthorizedException);
+    expect(() => accessTokenService.verifyAccessToken('invalid-token')).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should reject token signed with wrong audience', () => {
@@ -112,8 +116,8 @@ describe('AccessTokenService', () => {
       },
     );
 
-    expect(() => accessTokenService.verifyAccessToken(invalidAudienceToken)).toThrow(
-      UnauthorizedException,
-    );
+    expect(() =>
+      accessTokenService.verifyAccessToken(invalidAudienceToken),
+    ).toThrow(UnauthorizedException);
   });
 });

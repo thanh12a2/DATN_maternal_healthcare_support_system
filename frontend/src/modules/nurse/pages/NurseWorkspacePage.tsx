@@ -4,7 +4,11 @@ import { UserChip } from '../../../shared/components/navigation/UserChip';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate, usePathname } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
-import { listEncounters, listPrescriptions, listTreatmentPlans } from '../../../services/clinical';
+import {
+  listEncounters,
+  listPrescriptions,
+  listTreatmentPlans,
+} from '../../../services/clinical';
 import '../../../styles/patient-home.css';
 import '../../../styles/patient-portal.css';
 
@@ -12,9 +16,13 @@ type WorkspaceState = 'loading' | 'ready' | 'error' | 'unavailable';
 type Summary = { label: string; value: string; detail: string };
 
 function apiMessage(error: unknown) {
-  if (error instanceof ApiError && error.statusCode === 403) return 'Tài khoản không có quyền xem dữ liệu này.';
-  if (error instanceof ApiError && error.statusCode === 404) return 'API chưa có dữ liệu cho khu vực này.';
-  return error instanceof Error ? error.message : 'Không thể tải dữ liệu workspace.';
+  if (error instanceof ApiError && error.statusCode === 403)
+    return 'Tài khoản không có quyền xem dữ liệu này.';
+  if (error instanceof ApiError && error.statusCode === 404)
+    return 'API chưa có dữ liệu cho khu vực này.';
+  return error instanceof Error
+    ? error.message
+    : 'Không thể tải dữ liệu workspace.';
 }
 
 export function NurseWorkspacePage() {
@@ -39,20 +47,41 @@ export function NurseWorkspacePage() {
         ]);
         if (active) {
           setSummaries([
-            { label: 'Encounter được phân công', value: String(encounters.length), detail: 'Không tự suy diễn quyền clinical' },
-            { label: 'Đơn thuốc liên quan', value: String(prescriptions.length), detail: 'Dữ liệu do backend trả về' },
-            { label: 'Kế hoạch điều trị', value: String(plans.length), detail: 'Theo assignment/permission' },
+            {
+              label: 'Encounter được phân công',
+              value: String(encounters.length),
+              detail: 'Không tự suy diễn quyền clinical',
+            },
+            {
+              label: 'Đơn thuốc liên quan',
+              value: String(prescriptions.length),
+              detail: 'Dữ liệu do backend trả về',
+            },
+            {
+              label: 'Kế hoạch điều trị',
+              value: String(plans.length),
+              detail: 'Theo assignment/permission',
+            },
           ]);
           setState('ready');
         }
       } catch (reason) {
         if (!active) return;
-        if (reason instanceof ApiError && [404, 501].includes(reason.statusCode)) setState('unavailable');
-        else { setError(apiMessage(reason)); setState('error'); }
+        if (
+          reason instanceof ApiError &&
+          [404, 501].includes(reason.statusCode)
+        )
+          setState('unavailable');
+        else {
+          setError(apiMessage(reason));
+          setState('error');
+        }
       }
     };
     void load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [auth.request, section]);
 
   async function logout() {
@@ -87,7 +116,11 @@ export function NurseWorkspacePage() {
             <article className="portal-card" role="alert">
               <h2>Không thể tải workspace</h2>
               <p>{error}</p>
-              <button className="patient-primary-action" type="button" onClick={() => window.location.reload()}>
+              <button
+                className="patient-primary-action"
+                type="button"
+                onClick={() => window.location.reload()}
+              >
                 Thử lại
               </button>
             </article>
@@ -95,15 +128,23 @@ export function NurseWorkspacePage() {
           {state === 'unavailable' && (
             <article className="portal-card portal-empty">
               <div>
-                <div className="portal-empty-icon" aria-hidden="true">!</div>
+                <div className="portal-empty-icon" aria-hidden="true">
+                  !
+                </div>
                 <h2>Tính năng chưa khả dụng</h2>
-                <p>Backend chưa expose dữ liệu cho khu vực này hoặc tài khoản chưa được provision.</p>
+                <p>
+                  Backend chưa expose dữ liệu cho khu vực này hoặc tài khoản
+                  chưa được provision.
+                </p>
               </div>
             </article>
           )}
           {state === 'ready' && (
             <>
-              <div className="patient-dashboard-grid" aria-label="Tóm tắt workspace">
+              <div
+                className="patient-dashboard-grid"
+                aria-label="Tóm tắt workspace"
+              >
                 {summaries.map((item) => (
                   <article className="patient-dashboard-card" key={item.label}>
                     <span>{item.label}</span>
@@ -115,7 +156,10 @@ export function NurseWorkspacePage() {
               <article className="portal-card" style={{ marginTop: 20 }}>
                 <span className="portal-badge">Trạng thái hệ thống</span>
                 <h2 style={{ marginTop: 12 }}>Đã kết nối API</h2>
-                <p className="portal-note">Các thao tác thay đổi dữ liệu clinical chỉ được thực hiện khi backend trả về permission và state hợp lệ.</p>
+                <p className="portal-note">
+                  Các thao tác thay đổi dữ liệu clinical chỉ được thực hiện khi
+                  backend trả về permission và state hợp lệ.
+                </p>
               </article>
             </>
           )}

@@ -1,6 +1,8 @@
 /* Biến dành riêng cho Auth Scope */
 .auth-page {
-  --shadow-lg: 0 34px 90px color-mix(in oklch, var(--deep) 18%, transparent), -14px 14px 0 color-mix(in oklch, var(--accent) 11%, transparent);
+  --shadow-lg:
+    0 34px 90px color-mix(in oklch, var(--deep) 18%, transparent),
+    -14px 14px 0 color-mix(in oklch, var(--accent) 11%, transparent);
   --shadow-sm: 0 12px 32px color-mix(in oklch, var(--deep) 10%, transparent);
 
   position: fixed;
@@ -18,16 +20,50 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.auth-page *, .auth-page *::before, .auth-page *::after { box-sizing: border-box; }
-.auth-page button, .auth-page input, .auth-page select { font: inherit; }
-.auth-page button, .auth-page a, .auth-page input, .auth-page select { -webkit-tap-highlight-color: transparent; }
-.auth-page button { cursor: pointer; }
-.auth-page a { color: inherit; }
-.auth-page svg { display: block; }
-.auth-page h1, .auth-page h2, .auth-page h3, .auth-page p { margin: 0; }
-.auth-page h1, .auth-page h2, .auth-page h3 { font-family: var(--font-display); text-wrap: balance; }
-.auth-page :focus-visible { outline: 3px solid color-mix(in oklch, var(--accent) 35%, transparent); outline-offset: 3px; }
-.auth-page::before { display: none !important; }
+.auth-page *,
+.auth-page *::before,
+.auth-page *::after {
+  box-sizing: border-box;
+}
+.auth-page button,
+.auth-page input,
+.auth-page select {
+  font: inherit;
+}
+.auth-page button,
+.auth-page a,
+.auth-page input,
+.auth-page select {
+  -webkit-tap-highlight-color: transparent;
+}
+.auth-page button {
+  cursor: pointer;
+}
+.auth-page a {
+  color: inherit;
+}
+.auth-page svg {
+  display: block;
+}
+.auth-page h1,
+.auth-page h2,
+.auth-page h3,
+.auth-page p {
+  margin: 0;
+}
+.auth-page h1,
+.auth-page h2,
+.auth-page h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+.auth-page :focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--accent) 35%, transparent);
+  outline-offset: 3px;
+}
+.auth-page::before {
+  display: none !important;
+}
 
 /* 0. Brand Logo: Giữ nguyên tuyệt đối font, màu, kích thước, vị trí, chữ HOSPITAL */
 .auth-page .brand-logo {
@@ -118,31 +154,192 @@
   margin: 0;
   z-index: 1;
 }
-.auth-page .visual-stage::before, .auth-page .visual-stage::after {
+.auth-page .visual-stage::before,
+.auth-page .visual-stage::after {
   content: '';
   position: absolute;
   pointer-events: none;
   will-change: transform;
 }
-.auth-page .visual-stage::before { width: 64px; height: 64px; left: 22%; top: 24%; border-radius: 50%; background: color-mix(in oklch, var(--accent) 13%, transparent); box-shadow: 0 0 0 22px color-mix(in oklch, var(--accent) 5%, transparent); animation: drift-circle 8s ease-in-out infinite alternate; animation-delay: -2s; }
-.auth-page .visual-stage::after { width: 104px; height: 104px; left: 17%; bottom: 18%; border-radius: 30px; border: 1px solid color-mix(in oklch, var(--deep) 13%, transparent); background: color-mix(in oklch, var(--surface) 52%, transparent); transform: rotate(18deg); animation: drift-square 11s ease-in-out infinite alternate; animation-delay: -7s; }
-.auth-page .orb-ring { position: absolute; width: 280px; height: 280px; left: 10%; top: -132px; border: 42px solid color-mix(in oklch, var(--accent) 17%, transparent); border-radius: 50%; opacity: .42; animation: drift-ring 12s -6s ease-in-out infinite alternate; }
-.auth-page .semi-shape { position: absolute; width: 300px; height: 142px; right: -58px; bottom: 5%; border-radius: 160px 160px 30px 30px; background: color-mix(in oklch, var(--success) 24%, var(--surface)); opacity: .48; animation: drift-semi 9s -3s ease-in-out infinite alternate; }
-.auth-page .red-dot { position: absolute; width: 18px; height: 18px; right: 17%; top: 18%; border-radius: 50%; background: var(--danger); opacity: .58; box-shadow: 0 0 0 9px color-mix(in oklch, var(--danger) 12%, transparent); animation: pulse-dot 5s ease-in-out infinite; animation-delay: -1s; }
-.auth-page .green-pill { position: absolute; width: 152px; height: 34px; right: 8%; top: 12%; border-radius: 999px; background: var(--success); opacity: .42; transform: rotate(-10deg); animation: drift-pill 8s ease-in-out infinite alternate; animation-delay: -4s; }
-.auth-page .dot-grid { position: absolute; right: 17%; bottom: 18%; width: 126px; height: 98px; opacity: .26; background-image: radial-gradient(var(--deep) 1.7px, transparent 1.7px); background-size: 14px 14px; animation: drift-grid 10s ease-in-out infinite alternate; animation-delay: -7s; }
-.auth-page .medical-cross { position: absolute; left: 8%; top: 58%; width: 108px; height: 108px; opacity: .28; transform: rotate(-9deg); animation: drift-cross 9s ease-in-out infinite alternate; animation-delay: -5s; }
-.auth-page .medical-cross::before, .auth-page .medical-cross::after { content: ''; position: absolute; border-radius: 18px; background: color-mix(in oklch, var(--accent) 32%, var(--surface)); }
-.auth-page .medical-cross::before { inset: 0 36px; }
-.auth-page .medical-cross::after { inset: 36px 0; }
-.auth-page .palette-shape { position: absolute; display: block; pointer-events: none; will-change: transform; }
-.auth-page .shape-blue-disc { width: 112px; height: 112px; left: 6%; top: 37%; border-radius: 50%; background: color-mix(in oklch, var(--accent) 13%, transparent); animation: drift-circle 9s -5s ease-in-out infinite alternate; }
-.auth-page .shape-green-ring { width: 136px; height: 136px; right: 7%; bottom: 11%; border: 22px solid color-mix(in oklch, var(--success) 18%, transparent); border-radius: 50%; animation: drift-ring 13s -8s ease-in-out infinite alternate-reverse; }
-.auth-page .shape-red-square { width: 58px; height: 58px; left: 20%; bottom: 13%; border-radius: 18px; background: color-mix(in oklch, var(--danger) 16%, transparent); transform: rotate(16deg); animation: drift-square 8s -3s ease-in-out infinite alternate; }
-.auth-page .shape-navy-pill { width: 196px; height: 44px; right: 3%; top: 42%; border-radius: 999px; background: color-mix(in oklch, var(--deep) 12%, transparent); transform: rotate(14deg); animation: drift-pill 10s -6s ease-in-out infinite alternate-reverse; }
-.auth-page .shape-green-capsule { width: 96px; height: 46px; left: 9%; top: 72%; border-radius: 999px; background: color-mix(in oklch, var(--success) 20%, transparent); transform: rotate(-18deg); animation: drift-pill 7s -2s ease-in-out infinite alternate; }
-.auth-page .shape-red-semi { width: 108px; height: 54px; right: 18%; bottom: 20%; border-radius: 60px 60px 15px 15px; background: color-mix(in oklch, var(--danger) 12%, transparent); animation: drift-semi 11s -7s ease-in-out infinite alternate; }
-.auth-page .shape-blue-ring-small { width: 74px; height: 74px; right: 24%; top: 8%; border: 13px solid color-mix(in oklch, var(--accent) 17%, transparent); border-radius: 50%; animation: drift-ring 8s -4s ease-in-out infinite alternate; }
+.auth-page .visual-stage::before {
+  width: 64px;
+  height: 64px;
+  left: 22%;
+  top: 24%;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--accent) 13%, transparent);
+  box-shadow: 0 0 0 22px color-mix(in oklch, var(--accent) 5%, transparent);
+  animation: drift-circle 8s ease-in-out infinite alternate;
+  animation-delay: -2s;
+}
+.auth-page .visual-stage::after {
+  width: 104px;
+  height: 104px;
+  left: 17%;
+  bottom: 18%;
+  border-radius: 30px;
+  border: 1px solid color-mix(in oklch, var(--deep) 13%, transparent);
+  background: color-mix(in oklch, var(--surface) 52%, transparent);
+  transform: rotate(18deg);
+  animation: drift-square 11s ease-in-out infinite alternate;
+  animation-delay: -7s;
+}
+.auth-page .orb-ring {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  left: 10%;
+  top: -132px;
+  border: 42px solid color-mix(in oklch, var(--accent) 17%, transparent);
+  border-radius: 50%;
+  opacity: 0.42;
+  animation: drift-ring 12s -6s ease-in-out infinite alternate;
+}
+.auth-page .semi-shape {
+  position: absolute;
+  width: 300px;
+  height: 142px;
+  right: -58px;
+  bottom: 5%;
+  border-radius: 160px 160px 30px 30px;
+  background: color-mix(in oklch, var(--success) 24%, var(--surface));
+  opacity: 0.48;
+  animation: drift-semi 9s -3s ease-in-out infinite alternate;
+}
+.auth-page .red-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  right: 17%;
+  top: 18%;
+  border-radius: 50%;
+  background: var(--danger);
+  opacity: 0.58;
+  box-shadow: 0 0 0 9px color-mix(in oklch, var(--danger) 12%, transparent);
+  animation: pulse-dot 5s ease-in-out infinite;
+  animation-delay: -1s;
+}
+.auth-page .green-pill {
+  position: absolute;
+  width: 152px;
+  height: 34px;
+  right: 8%;
+  top: 12%;
+  border-radius: 999px;
+  background: var(--success);
+  opacity: 0.42;
+  transform: rotate(-10deg);
+  animation: drift-pill 8s ease-in-out infinite alternate;
+  animation-delay: -4s;
+}
+.auth-page .dot-grid {
+  position: absolute;
+  right: 17%;
+  bottom: 18%;
+  width: 126px;
+  height: 98px;
+  opacity: 0.26;
+  background-image: radial-gradient(var(--deep) 1.7px, transparent 1.7px);
+  background-size: 14px 14px;
+  animation: drift-grid 10s ease-in-out infinite alternate;
+  animation-delay: -7s;
+}
+.auth-page .medical-cross {
+  position: absolute;
+  left: 8%;
+  top: 58%;
+  width: 108px;
+  height: 108px;
+  opacity: 0.28;
+  transform: rotate(-9deg);
+  animation: drift-cross 9s ease-in-out infinite alternate;
+  animation-delay: -5s;
+}
+.auth-page .medical-cross::before,
+.auth-page .medical-cross::after {
+  content: '';
+  position: absolute;
+  border-radius: 18px;
+  background: color-mix(in oklch, var(--accent) 32%, var(--surface));
+}
+.auth-page .medical-cross::before {
+  inset: 0 36px;
+}
+.auth-page .medical-cross::after {
+  inset: 36px 0;
+}
+.auth-page .palette-shape {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  will-change: transform;
+}
+.auth-page .shape-blue-disc {
+  width: 112px;
+  height: 112px;
+  left: 6%;
+  top: 37%;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--accent) 13%, transparent);
+  animation: drift-circle 9s -5s ease-in-out infinite alternate;
+}
+.auth-page .shape-green-ring {
+  width: 136px;
+  height: 136px;
+  right: 7%;
+  bottom: 11%;
+  border: 22px solid color-mix(in oklch, var(--success) 18%, transparent);
+  border-radius: 50%;
+  animation: drift-ring 13s -8s ease-in-out infinite alternate-reverse;
+}
+.auth-page .shape-red-square {
+  width: 58px;
+  height: 58px;
+  left: 20%;
+  bottom: 13%;
+  border-radius: 18px;
+  background: color-mix(in oklch, var(--danger) 16%, transparent);
+  transform: rotate(16deg);
+  animation: drift-square 8s -3s ease-in-out infinite alternate;
+}
+.auth-page .shape-navy-pill {
+  width: 196px;
+  height: 44px;
+  right: 3%;
+  top: 42%;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--deep) 12%, transparent);
+  transform: rotate(14deg);
+  animation: drift-pill 10s -6s ease-in-out infinite alternate-reverse;
+}
+.auth-page .shape-green-capsule {
+  width: 96px;
+  height: 46px;
+  left: 9%;
+  top: 72%;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--success) 20%, transparent);
+  transform: rotate(-18deg);
+  animation: drift-pill 7s -2s ease-in-out infinite alternate;
+}
+.auth-page .shape-red-semi {
+  width: 108px;
+  height: 54px;
+  right: 18%;
+  bottom: 20%;
+  border-radius: 60px 60px 15px 15px;
+  background: color-mix(in oklch, var(--danger) 12%, transparent);
+  animation: drift-semi 11s -7s ease-in-out infinite alternate;
+}
+.auth-page .shape-blue-ring-small {
+  width: 74px;
+  height: 74px;
+  right: 24%;
+  top: 8%;
+  border: 13px solid color-mix(in oklch, var(--accent) 17%, transparent);
+  border-radius: 50%;
+  animation: drift-ring 8s -4s ease-in-out infinite alternate;
+}
 
 /* 1. Modal: Luôn luôn nằm CHÍNH GIỮA theo cả chiều dọc và chiều ngang */
 .auth-page .form-panel {
@@ -215,13 +412,16 @@
   backdrop-filter: blur(18px);
   pointer-events: auto;
   box-sizing: border-box;
-  transition: width 0.36s cubic-bezier(0.16, 1, 0.3, 1),
-              border-radius 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    width 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 0.36s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: width, border-radius;
   display: flex;
   flex-direction: column;
 }
-.auth-page .auth-card::-webkit-scrollbar { display: none; }
+.auth-page .auth-card::-webkit-scrollbar {
+  display: none;
+}
 .auth-page .auth-card::before {
   content: '';
   position: absolute;
@@ -247,8 +447,12 @@
   animation: formCrossFade 0.28s ease-out both;
 }
 @keyframes formCrossFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Header */
@@ -263,7 +467,7 @@
   margin-bottom: 10px;
   color: var(--deep);
   font: 750 11px/1 var(--font-mono);
-  letter-spacing: .09em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 .auth-page .mode-indicator::before {
@@ -279,7 +483,7 @@
   font-weight: 800;
   color: var(--fg);
   line-height: 1.1;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   margin-bottom: 6px;
 }
 .auth-page .auth-header p {
@@ -328,7 +532,8 @@
   width: 18px;
   height: 18px;
 }
-.auth-page .input, .auth-page .select {
+.auth-page .input,
+.auth-page .select {
   width: 100%;
   min-height: 50px;
   height: 50px;
@@ -338,27 +543,36 @@
   background: var(--bg);
   color: var(--fg);
   font-size: 14.5px;
-  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
   box-sizing: border-box;
 }
-.auth-page .select { appearance: none; }
+.auth-page .select {
+  appearance: none;
+}
 .auth-page .input::placeholder {
   color: color-mix(in oklch, var(--muted) 72%, var(--surface));
 }
-.auth-page .input:hover, .auth-page .select:hover {
+.auth-page .input:hover,
+.auth-page .select:hover {
   border-color: color-mix(in oklch, var(--accent) 42%, var(--border));
 }
-.auth-page .input:focus, .auth-page .select:focus {
+.auth-page .input:focus,
+.auth-page .select:focus {
   outline: none;
   border-color: var(--accent);
   background: var(--surface);
   box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 12%, transparent);
 }
-.auth-page .field.error .input, .auth-page .field.error .select {
+.auth-page .field.error .input,
+.auth-page .field.error .select {
   border-color: var(--danger);
   background: var(--danger-soft);
 }
-.auth-page .field.success .input, .auth-page .field.success .select {
+.auth-page .field.success .input,
+.auth-page .field.success .select {
   border-color: var(--success);
   background: var(--success-soft);
 }
@@ -389,7 +603,10 @@
   background: transparent;
   color: var(--muted);
   transform: translateY(-50%);
-  transition: transform .2s ease, background .2s ease, color .2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 .auth-page .icon-button:hover {
   background: transparent;
@@ -397,7 +614,7 @@
   transform: translateY(-50%) scale(1.06);
 }
 .auth-page .icon-button:active {
-  transform: translateY(-50%) scale(.94);
+  transform: translateY(-50%) scale(0.94);
 }
 .auth-page .icon-button svg {
   width: 18px;
@@ -448,7 +665,7 @@
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: color .15s ease;
+  transition: color 0.15s ease;
 }
 .auth-page .inline-link:hover {
   color: var(--deep);
@@ -462,7 +679,10 @@
   text-decoration: underline;
   text-decoration-color: color-mix(in oklch, var(--deep) 28%, transparent);
   text-underline-offset: 4px;
-  transition: transform .2s ease, color .2s ease, text-decoration-color .2s ease;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
   cursor: pointer;
 }
 .auth-page .text-link:hover {
@@ -489,7 +709,10 @@
   font-weight: 750;
   font-size: 15px;
   box-shadow: 0 10px 24px color-mix(in oklch, var(--accent) 24%, transparent);
-  transition: transform .12s ease, background .18s ease, box-shadow .18s ease;
+  transition:
+    transform 0.12s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
   cursor: pointer;
 }
 .auth-page .primary-button:hover {
@@ -502,7 +725,7 @@
 }
 .auth-page .primary-button[disabled] {
   cursor: not-allowed;
-  opacity: .62;
+  opacity: 0.62;
   box-shadow: none;
 }
 
@@ -583,16 +806,92 @@
 }
 
 /* Keyframes */
-@keyframes orbit-halo { from { transform: translate3d(-50%, -50%, 0) scale(1); } to { transform: translate3d(calc(-50% + 18px), calc(-50% - 14px), 0) scale(1.045); } }
-@keyframes morph-blob { from { transform: translate3d(-50%, -50%, 0) rotate(14deg) scale(1); border-radius: 42% 58% 61% 39% / 45% 42% 58% 55%; } to { transform: translate3d(calc(-50% - 20px), calc(-50% + 13px), 0) rotate(22deg) scale(1.055); border-radius: 58% 42% 38% 62% / 52% 61% 39% 48%; } }
-@keyframes drift-ring { from { transform: translate3d(0, 0, 0) rotate(0); } to { transform: translate3d(32px, 24px, 0) rotate(14deg); } }
-@keyframes drift-semi { from { transform: translate3d(0, 0, 0) rotate(-4deg); } to { transform: translate3d(-34px, -22px, 0) rotate(8deg); } }
-@keyframes drift-circle { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(24px, -30px, 0) scale(1.08); } }
-@keyframes drift-square { from { transform: translate3d(0, 0, 0) rotate(18deg); } to { transform: translate3d(-26px, -28px, 0) rotate(34deg); } }
-@keyframes drift-pill { from { transform: translate3d(0, 0, 0) rotate(-10deg); } to { transform: translate3d(-30px, 22px, 0) rotate(1deg); } }
-@keyframes drift-grid { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-24px, -28px, 0) rotate(4deg); } }
-@keyframes drift-cross { from { transform: translate3d(0, 0, 0) rotate(-9deg); } to { transform: translate3d(26px, -30px, 0) rotate(8deg); } }
-@keyframes pulse-dot { 0%, 100% { transform: translate3d(0, 0, 0) scale(.82); opacity: .42; } 50% { transform: translate3d(-12px, 18px, 0) scale(1.28); opacity: .72; } }
+@keyframes orbit-halo {
+  from {
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(calc(-50% + 18px), calc(-50% - 14px), 0) scale(1.045);
+  }
+}
+@keyframes morph-blob {
+  from {
+    transform: translate3d(-50%, -50%, 0) rotate(14deg) scale(1);
+    border-radius: 42% 58% 61% 39% / 45% 42% 58% 55%;
+  }
+  to {
+    transform: translate3d(calc(-50% - 20px), calc(-50% + 13px), 0)
+      rotate(22deg) scale(1.055);
+    border-radius: 58% 42% 38% 62% / 52% 61% 39% 48%;
+  }
+}
+@keyframes drift-ring {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0);
+  }
+  to {
+    transform: translate3d(32px, 24px, 0) rotate(14deg);
+  }
+}
+@keyframes drift-semi {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-4deg);
+  }
+  to {
+    transform: translate3d(-34px, -22px, 0) rotate(8deg);
+  }
+}
+@keyframes drift-circle {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(24px, -30px, 0) scale(1.08);
+  }
+}
+@keyframes drift-square {
+  from {
+    transform: translate3d(0, 0, 0) rotate(18deg);
+  }
+  to {
+    transform: translate3d(-26px, -28px, 0) rotate(34deg);
+  }
+}
+@keyframes drift-pill {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-10deg);
+  }
+  to {
+    transform: translate3d(-30px, 22px, 0) rotate(1deg);
+  }
+}
+@keyframes drift-grid {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-24px, -28px, 0) rotate(4deg);
+  }
+}
+@keyframes drift-cross {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-9deg);
+  }
+  to {
+    transform: translate3d(26px, -30px, 0) rotate(8deg);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.82);
+    opacity: 0.42;
+  }
+  50% {
+    transform: translate3d(-12px, 18px, 0) scale(1.28);
+    opacity: 0.72;
+  }
+}
 
 /* Responsive: Màn hình điện thoại hoặc chiều cao nhỏ dưới 640px */
 @media (max-width: 620px), (max-height: 640px) {
@@ -608,7 +907,8 @@
     padding: 86px 14px 40px;
     justify-content: center;
   }
-  .auth-page .auth-card, .auth-page .auth-card[data-mode='register'] {
+  .auth-page .auth-card,
+  .auth-page .auth-card[data-mode='register'] {
     width: 100%;
     height: auto;
     min-height: auto;
@@ -623,18 +923,55 @@
 }
 
 @media (max-width: 620px) {
-  .auth-page .brand-logo { left: 20px; top: 20px; gap: 8px; }
-  .auth-page .brand-logo-img { width: 36px; height: 36px; }
-  .auth-page .brand-main-name { font-size: 18px; }
-  .auth-page .brand-slogan-text { display: none; }
-  .auth-page .auth-card::before { left: 24px; width: 60px; }
-  .auth-page .auth-header h2 { font-size: 28px; }
-  .auth-page .form-grid { grid-template-columns: 1fr; gap: 14px; }
-  .auth-page .field.full { grid-column: auto; }
-  .auth-page .dot-grid, .auth-page .medical-cross, .auth-page .shape-red-square, .auth-page .shape-navy-pill, .auth-page .shape-blue-ring-small { display: none; }
+  .auth-page .brand-logo {
+    left: 20px;
+    top: 20px;
+    gap: 8px;
+  }
+  .auth-page .brand-logo-img {
+    width: 36px;
+    height: 36px;
+  }
+  .auth-page .brand-main-name {
+    font-size: 18px;
+  }
+  .auth-page .brand-slogan-text {
+    display: none;
+  }
+  .auth-page .auth-card::before {
+    left: 24px;
+    width: 60px;
+  }
+  .auth-page .auth-header h2 {
+    font-size: 28px;
+  }
+  .auth-page .form-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .auth-page .field.full {
+    grid-column: auto;
+  }
+  .auth-page .dot-grid,
+  .auth-page .medical-cross,
+  .auth-page .shape-red-square,
+  .auth-page .shape-navy-pill,
+  .auth-page .shape-blue-ring-small {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-page *, .auth-page *::before, .auth-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  .auth-page .visual-stage *, .auth-page .visual-stage::before, .auth-page .visual-stage::after { animation: none !important; }
+  .auth-page *,
+  .auth-page *::before,
+  .auth-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .auth-page .visual-stage *,
+  .auth-page .visual-stage::before,
+  .auth-page .visual-stage::after {
+    animation: none !important;
+  }
 }

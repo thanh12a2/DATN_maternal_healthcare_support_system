@@ -24,10 +24,10 @@ export const LucideIcon: React.FC<LucideIconProps> = ({
   }
 
   const pascalName = toPascalCase(name);
-  const IconComponent = (LucideIcons as Record<string, any>)[pascalName] ||
+  const IconComponent =
+    (LucideIcons as Record<string, any>)[pascalName] ||
     (LucideIcons as Record<string, any>)[name] ||
     Fallback;
 
   return <IconComponent {...props} />;
 };
-

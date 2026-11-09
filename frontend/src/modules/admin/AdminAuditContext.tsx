@@ -11,7 +11,11 @@ const AdminAuditContext = createContext<AdminAuditContextValue | null>(null);
 /**
  * Context cung cấp request đã được bọc ghi vết kiểm toán toàn diện ở tầng AuthSessionProvider
  */
-export function AdminAuditProvider({ children }: { children: React.ReactNode }) {
+export function AdminAuditProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { request } = useAuthSession();
 
   return (

@@ -113,7 +113,9 @@ export async function listDoctors(
   if (params.accountId) query.set('accountId', params.accountId);
 
   const path = `/api/doctors${query.toString() ? `?${query.toString()}` : ''}`;
-  const res = await request<{ data: DoctorItem[]; nextCursor?: string } | DoctorItem[]>(path);
+  const res = await request<
+    { data: DoctorItem[]; nextCursor?: string } | DoctorItem[]
+  >(path);
   if (Array.isArray(res)) {
     return { data: res };
   }
@@ -127,7 +129,9 @@ export async function getDoctor(
   request: Requester,
   doctorId: string,
 ): Promise<DoctorItem> {
-  const res = await request<{ data: DoctorItem } | DoctorItem>(`/api/doctors/${encodeURIComponent(doctorId)}`);
+  const res = await request<{ data: DoctorItem } | DoctorItem>(
+    `/api/doctors/${encodeURIComponent(doctorId)}`,
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -151,13 +155,16 @@ export async function updateDoctor(
   version: number,
   payload: UpdateDoctorPayload,
 ): Promise<DoctorItem> {
-  const res = await request<{ data: DoctorItem } | DoctorItem>(`/api/doctors/${encodeURIComponent(doctorId)}`, {
-    method: 'PATCH',
-    headers: {
-      'if-match': String(version),
+  const res = await request<{ data: DoctorItem } | DoctorItem>(
+    `/api/doctors/${encodeURIComponent(doctorId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'if-match': String(version),
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -166,13 +173,16 @@ export async function activateDoctor(
   doctorId: string,
   version: number,
 ): Promise<DoctorItem> {
-  const res = await request<{ data: DoctorItem } | DoctorItem>(`/api/doctors/${encodeURIComponent(doctorId)}/activate`, {
-    method: 'POST',
-    headers: {
-      'if-match': String(version),
+  const res = await request<{ data: DoctorItem } | DoctorItem>(
+    `/api/doctors/${encodeURIComponent(doctorId)}/activate`,
+    {
+      method: 'POST',
+      headers: {
+        'if-match': String(version),
+      },
+      body: '{}',
     },
-    body: '{}',
-  });
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -182,13 +192,16 @@ export async function deactivateDoctor(
   version: number,
   reason: string,
 ): Promise<DoctorItem> {
-  const res = await request<{ data: DoctorItem } | DoctorItem>(`/api/doctors/${encodeURIComponent(doctorId)}/deactivate`, {
-    method: 'POST',
-    headers: {
-      'if-match': String(version),
+  const res = await request<{ data: DoctorItem } | DoctorItem>(
+    `/api/doctors/${encodeURIComponent(doctorId)}/deactivate`,
+    {
+      method: 'POST',
+      headers: {
+        'if-match': String(version),
+      },
+      body: JSON.stringify({ reason }),
     },
-    body: JSON.stringify({ reason }),
-  });
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -263,13 +276,16 @@ export async function createSpecialty(
   request: Requester,
   payload: CreateSpecialtyPayload,
 ): Promise<SpecialtyItem> {
-  const res = await request<{ data: SpecialtyItem } | SpecialtyItem>('/api/doctors/specialties', {
-    method: 'POST',
-    headers: {
-      'idempotency-key': `specialty-create-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  const res = await request<{ data: SpecialtyItem } | SpecialtyItem>(
+    '/api/doctors/specialties',
+    {
+      method: 'POST',
+      headers: {
+        'idempotency-key': `specialty-create-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -331,9 +347,9 @@ export async function listConsultationRanks(
   request: Requester,
 ): Promise<ConsultationRankItem[]> {
   try {
-    const res = await request<{ data: ConsultationRankItem[] } | ConsultationRankItem[]>(
-      '/api/doctors/consultation-ranks',
-    );
+    const res = await request<
+      { data: ConsultationRankItem[] } | ConsultationRankItem[]
+    >('/api/doctors/consultation-ranks');
     if (Array.isArray(res)) return res;
     return res.data ?? [];
   } catch {
@@ -345,13 +361,12 @@ export async function createConsultationRank(
   request: Requester,
   payload: CreateConsultationRankPayload,
 ): Promise<ConsultationRankItem> {
-  const res = await request<{ data: ConsultationRankItem } | ConsultationRankItem>(
-    '/api/doctors/consultation-ranks',
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  );
+  const res = await request<
+    { data: ConsultationRankItem } | ConsultationRankItem
+  >('/api/doctors/consultation-ranks', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
   return 'data' in res ? res.data : res;
 }
 
@@ -360,13 +375,12 @@ export async function updateConsultationRank(
   id: string,
   payload: UpdateConsultationRankPayload,
 ): Promise<ConsultationRankItem> {
-  const res = await request<{ data: ConsultationRankItem } | ConsultationRankItem>(
-    `/api/doctors/consultation-ranks/${encodeURIComponent(id)}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    },
-  );
+  const res = await request<
+    { data: ConsultationRankItem } | ConsultationRankItem
+  >(`/api/doctors/consultation-ranks/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
   return 'data' in res ? res.data : res;
 }
 

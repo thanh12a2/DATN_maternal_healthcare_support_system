@@ -21,7 +21,12 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
           borderRadius: 10,
         },
         components: {
-          Table: { headerBg: '#eaf4ff', headerColor: '#0b4f9c', borderColor: '#dfeaf3', rowHoverBg: '#f6fafd' },
+          Table: {
+            headerBg: '#eaf4ff',
+            headerColor: '#0b4f9c',
+            borderColor: '#dfeaf3',
+            rowHoverBg: '#f6fafd',
+          },
           Button: { fontWeight: 600 },
         },
       }}

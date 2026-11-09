@@ -9,7 +9,11 @@ interface Props {
   value?: string;
 }
 
-export function PatientSearchBar({ onSearch, resetSignal, value: propValue }: Props) {
+export function PatientSearchBar({
+  onSearch,
+  resetSignal,
+  value: propValue,
+}: Props) {
   const ref = useRef<InputRef>(null);
   const [value, setValue] = useState(propValue ?? '');
 
@@ -31,8 +35,14 @@ export function PatientSearchBar({ onSearch, resetSignal, value: propValue }: Pr
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      const typing = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
-      if ((e.ctrlKey && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing)) {
+      const typing =
+        el?.tagName === 'INPUT' ||
+        el?.tagName === 'TEXTAREA' ||
+        el?.isContentEditable;
+      if (
+        (e.ctrlKey && e.key.toLowerCase() === 'k') ||
+        (e.key === '/' && !typing)
+      ) {
         e.preventDefault();
         ref.current?.focus();
       }
@@ -48,7 +58,11 @@ export function PatientSearchBar({ onSearch, resetSignal, value: propValue }: Pr
       allowClear
       enterButton="Tìm kiếm"
       size="middle"
-      prefix={<SearchOutlined style={{ color: '#0B5CAD', marginRight: 4, fontSize: 16 }} />}
+      prefix={
+        <SearchOutlined
+          style={{ color: '#0B5CAD', marginRight: 4, fontSize: 16 }}
+        />
+      }
       suffix={
         <span
           style={{

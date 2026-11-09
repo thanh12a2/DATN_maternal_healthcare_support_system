@@ -171,7 +171,9 @@ export class DoctorDomainService {
     if (dto.code !== undefined) {
       const code = dto.code.trim().toUpperCase();
       if (code !== existing.code) {
-        const dup = await this.prisma.clinicRoom.findUnique({ where: { code } });
+        const dup = await this.prisma.clinicRoom.findUnique({
+          where: { code },
+        });
         if (dup) this.fail(409, 'ROOM_CODE_EXISTS');
       }
       data.code = code;
@@ -290,7 +292,10 @@ export class DoctorDomainService {
   }
 
   async findDoctorIdByAccount(accountId: string) {
-    const doctor = await this.prisma.doctor.findUnique({ where: { accountId }, select: { id: true } });
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { accountId },
+      select: { id: true },
+    });
     return doctor?.id ?? null;
   }
 
@@ -343,7 +348,7 @@ export class DoctorDomainService {
     const allowed = admin
       ? [
           'fullName',
-    
+
           'biography',
           'practiceStartYear',
           'languages',
@@ -353,7 +358,7 @@ export class DoctorDomainService {
       : manager
         ? [
             'fullName',
-      
+
             'biography',
             'practiceStartYear',
             'languages',
@@ -373,7 +378,6 @@ export class DoctorDomainService {
       dto.languages ||
       dto.photoUrl ||
       dto.practiceStartYear
-
     )
       this.validateProfile({
         ...doctor.profile,
@@ -1188,16 +1192,15 @@ export class DoctorDomainService {
           intervalStart,
           intervalEnd,
         );
-        const isSingleSlot = (intervalEnd.getTime() - intervalStart.getTime()) <= 4 * 3600 * 1000;
-        const covers = availability.intervals.some(
-          (item: any) => {
-            const s = new Date(item.startAt);
-            const e = new Date(item.endAt);
-            return isSingleSlot
-              ? (s <= intervalStart && e >= intervalEnd)
-              : (s < intervalEnd && e > intervalStart);
-          },
-        );
+        const isSingleSlot =
+          intervalEnd.getTime() - intervalStart.getTime() <= 4 * 3600 * 1000;
+        const covers = availability.intervals.some((item: any) => {
+          const s = new Date(item.startAt);
+          const e = new Date(item.endAt);
+          return isSingleSlot
+            ? s <= intervalStart && e >= intervalEnd
+            : s < intervalEnd && e > intervalStart;
+        });
         if (!covers) continue;
       }
       result.push(await this.getInternalEligibility(doctor.id, specialtyId));
@@ -1389,13 +1392,7 @@ export class DoctorDomainService {
   }
   private profilePatch(p: AnyRecord) {
     const x: AnyRecord = {};
-    for (const k of [
-      'fullName',
-
-      'biography',
-      'practiceStartYear',
-      'photoUrl',
-    ])
+    for (const k of ['fullName', 'biography', 'practiceStartYear', 'photoUrl'])
       if (p[k] !== undefined)
         x[k] = typeof p[k] === 'string' ? p[k].trim() : p[k];
     if (p.languages !== undefined)
@@ -1516,7 +1513,11 @@ export class DoctorDomainService {
       createdAt: x.createdAt,
       updatedAt: x.updatedAt,
       ...(x.schedules
-        ? { schedules: x.schedules.map((s: AnyRecord) => this.formatSchedule(s)) }
+        ? {
+            schedules: x.schedules.map((s: AnyRecord) =>
+              this.formatSchedule(s),
+            ),
+          }
         : {}),
       ...(x.availabilities
         ? {
@@ -1534,7 +1535,11 @@ export class DoctorDomainService {
       createdAt: x.createdAt,
       updatedAt: x.updatedAt,
       ...(x.schedules
-        ? { schedules: x.schedules.map((s: AnyRecord) => this.formatSchedule(s)) }
+        ? {
+            schedules: x.schedules.map((s: AnyRecord) =>
+              this.formatSchedule(s),
+            ),
+          }
         : {}),
       ...(x.availabilities
         ? {

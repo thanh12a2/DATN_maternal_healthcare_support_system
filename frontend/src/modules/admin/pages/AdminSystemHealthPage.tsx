@@ -64,7 +64,10 @@ export function AdminSystemHealthPage() {
     try {
       const [hRes, bRes] = await Promise.all([
         fetchSystemHealth(request),
-        fetchBackupRecords(request).catch(() => ({ items: [], lastBackup: null })),
+        fetchBackupRecords(request).catch(() => ({
+          items: [],
+          lastBackup: null,
+        })),
       ]);
       setHealth(hRes);
       setBackups(bRes.items || []);
@@ -96,9 +99,17 @@ export function AdminSystemHealthPage() {
         message={
           <Space>
             <ApiOutlined />
-            <Text strong>Hạ tầng Vi mô Đa dịch vụ (17 Microservices Cluster)</Text>
-            <Tag color={health?.overallStatus === 'OPERATIONAL' ? 'green' : 'orange'}>
-              {health?.overallStatus === 'OPERATIONAL' ? 'Hoạt động ổn định' : 'Có cảnh báo'}
+            <Text strong>
+              Hạ tầng Vi mô Đa dịch vụ (17 Microservices Cluster)
+            </Text>
+            <Tag
+              color={
+                health?.overallStatus === 'OPERATIONAL' ? 'green' : 'orange'
+              }
+            >
+              {health?.overallStatus === 'OPERATIONAL'
+                ? 'Hoạt động ổn định'
+                : 'Có cảnh báo'}
             </Tag>
           </Space>
         }
@@ -215,7 +226,9 @@ export function AdminSystemHealthPage() {
         title={
           <Space>
             <ApiOutlined style={{ color: '#0284c7' }} />
-            <span>Trạng thái hoạt động 17 Cụm Microservices (Live Probing)</span>
+            <span>
+              Trạng thái hoạt động 17 Cụm Microservices (Live Probing)
+            </span>
           </Space>
         }
         extra={
@@ -258,7 +271,11 @@ export function AdminSystemHealthPage() {
           </Space>
         }
         bordered={false}
-        style={{ borderRadius: 12, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+        style={{
+          borderRadius: 12,
+          marginBottom: 24,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        }}
       >
         <Row gutter={[16, 16]}>
           {filteredServices.map((svc) => {
@@ -274,9 +291,13 @@ export function AdminSystemHealthPage() {
                     border: isHealthy
                       ? '1px solid #bbf7d0'
                       : isDegraded
-                      ? '1px solid #fde68a'
-                      : '1px solid #fecaca',
-                    background: isHealthy ? '#f0fdf4' : isDegraded ? '#fffbeb' : '#fef2f2',
+                        ? '1px solid #fde68a'
+                        : '1px solid #fecaca',
+                    background: isHealthy
+                      ? '#f0fdf4'
+                      : isDegraded
+                        ? '#fffbeb'
+                        : '#fef2f2',
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -299,26 +320,48 @@ export function AdminSystemHealthPage() {
                         {CATEGORY_NAMES[svc.category] || svc.category}
                       </Tag>
                       <Badge
-                        status={isHealthy ? 'success' : isDegraded ? 'warning' : 'error'}
+                        status={
+                          isHealthy
+                            ? 'success'
+                            : isDegraded
+                              ? 'warning'
+                              : 'error'
+                        }
                         text={
                           <span
                             style={{
                               fontWeight: 600,
                               fontSize: 12,
-                              color: isHealthy ? '#15803d' : isDegraded ? '#b45309' : '#b91c1c',
+                              color: isHealthy
+                                ? '#15803d'
+                                : isDegraded
+                                  ? '#b45309'
+                                  : '#b91c1c',
                             }}
                           >
-                            {isHealthy ? 'Online' : isDegraded ? 'Degraded' : 'Offline'}
+                            {isHealthy
+                              ? 'Online'
+                              : isDegraded
+                                ? 'Degraded'
+                                : 'Offline'}
                           </span>
                         }
                       />
                     </div>
-                    <Text strong style={{ fontSize: 14, display: 'block', minHeight: 40 }}>
+                    <Text
+                      strong
+                      style={{ fontSize: 14, display: 'block', minHeight: 40 }}
+                    >
                       {svc.displayName}
                     </Text>
                     <Text
                       type="secondary"
-                      style={{ fontSize: 12, display: 'block', margin: '6px 0', minHeight: 36 }}
+                      style={{
+                        fontSize: 12,
+                        display: 'block',
+                        margin: '6px 0',
+                        minHeight: 36,
+                      }}
                     >
                       {svc.description}
                     </Text>
@@ -414,7 +457,8 @@ export function AdminSystemHealthPage() {
               title: 'Thời điểm tạo',
               dataIndex: 'createdAt',
               key: 'createdAt',
-              render: (d: string) => (d ? new Date(d).toLocaleString('vi-VN') : '—'),
+              render: (d: string) =>
+                d ? new Date(d).toLocaleString('vi-VN') : '—',
             },
           ]}
         />

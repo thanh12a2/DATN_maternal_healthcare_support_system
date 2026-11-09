@@ -1,4 +1,5 @@
-export type CatalogRole = 'ADMIN' | 'CLINIC_MANAGER' | 'DOCTOR' | 'PATIENT' | 'RECEPTIONIST';
+export type CatalogRole =
+  'ADMIN' | 'CLINIC_MANAGER' | 'DOCTOR' | 'PATIENT' | 'RECEPTIONIST';
 
 export interface CatalogIdentity {
   userId: string;

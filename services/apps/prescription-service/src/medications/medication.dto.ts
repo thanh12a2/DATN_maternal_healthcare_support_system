@@ -20,7 +20,8 @@ export const PREGNANCY_SAFETY_CATEGORIES = [
   'CATEGORY_X',
 ] as const;
 
-export type PregnancySafetyCategory = (typeof PREGNANCY_SAFETY_CATEGORIES)[number];
+export type PregnancySafetyCategory =
+  (typeof PREGNANCY_SAFETY_CATEGORIES)[number];
 
 const optionalBoolean = ({ value }: { value: unknown }) => {
   if (value === 'true') return true;

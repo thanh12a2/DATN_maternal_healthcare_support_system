@@ -1,5 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class SearchBookableSlotsDto {
   @IsUUID()

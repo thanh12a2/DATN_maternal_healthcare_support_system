@@ -7,9 +7,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AccountStatus } from '@prisma/client';
-import { AccountsRepository, AuthRoleNotSeededError } from '../accounts/accounts.repository';
+import {
+  AccountsRepository,
+  AuthRoleNotSeededError,
+} from '../accounts/accounts.repository';
 import { PasswordHasherService } from '../security/password-hasher.service';
-import { InvalidRefreshSessionError, SessionsService } from '../sessions/sessions.service';
+import {
+  InvalidRefreshSessionError,
+  SessionsService,
+} from '../sessions/sessions.service';
 import { AccessTokenService } from '../tokens/access-token.service';
 import { AuthRole } from './dto/auth-role.enum';
 import { ChangeStaffStatusDto } from './dto/change-staff-status.dto';
@@ -33,14 +39,17 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     const normalizedEmail = this.normalizeEmail(registerDto.email);
-    const passwordHash = await this.passwordHasherService.hashPassword(registerDto.password);
+    const passwordHash = await this.passwordHasherService.hashPassword(
+      registerDto.password,
+    );
 
     try {
-      const registeredAccount = await this.accountsRepository.createAccountWithCredential({
-        email: normalizedEmail,
-        passwordHash,
-        role: AuthRole.Patient,
-      });
+      const registeredAccount =
+        await this.accountsRepository.createAccountWithCredential({
+          email: normalizedEmail,
+          passwordHash,
+          role: AuthRole.Patient,
+        });
 
       return {
         user: registeredAccount,
@@ -51,7 +60,9 @@ export class AuthService {
       }
 
       if (error instanceof AuthRoleNotSeededError) {
-        throw new InternalServerErrorException('Auth role configuration is incomplete');
+        throw new InternalServerErrorException(
+          'Auth role configuration is incomplete',
+        );
       }
 
       throw error;
@@ -60,7 +71,8 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const normalizedEmail = this.normalizeEmail(loginDto.email);
-    const account = await this.accountsRepository.findAccountForLoginByEmail(normalizedEmail);
+    const account =
+      await this.accountsRepository.findAccountForLoginByEmail(normalizedEmail);
 
     if (!account || account.status !== AccountStatus.ACTIVE) {
       throw this.invalidCredentialsException();
@@ -81,7 +93,9 @@ export class AuthService {
       userId: account.userId,
       role: account.role,
     });
-    const refreshSession = await this.sessionsService.createRefreshSession(account.userId);
+    const refreshSession = await this.sessionsService.createRefreshSession(
+      account.userId,
+    );
 
     return {
       ...signedAccessToken,
@@ -96,8 +110,12 @@ export class AuthService {
 
   async refresh(refreshTokenDto: RefreshTokenDto): Promise<TokenResponseDto> {
     try {
-      const refreshedSession = await this.sessionsService.refreshSession(refreshTokenDto.refreshToken);
-      const account = await this.accountsRepository.findAuthProfileById(refreshedSession.accountId);
+      const refreshedSession = await this.sessionsService.refreshSession(
+        refreshTokenDto.refreshToken,
+      );
+      const account = await this.accountsRepository.findAuthProfileById(
+        refreshedSession.accountId,
+      );
 
       if (!account || account.status !== AccountStatus.ACTIVE) {
         throw this.invalidCredentialsException();
@@ -127,8 +145,11 @@ export class AuthService {
   }
 
   async getMe(accessToken: string): Promise<MeResponseDto> {
-    const verifiedToken = this.accessTokenService.verifyAccessToken(accessToken);
-    const account = await this.accountsRepository.findAuthProfileById(verifiedToken.userId);
+    const verifiedToken =
+      this.accessTokenService.verifyAccessToken(accessToken);
+    const account = await this.accountsRepository.findAuthProfileById(
+      verifiedToken.userId,
+    );
 
     if (!account || account.status !== AccountStatus.ACTIVE) {
       throw this.invalidCredentialsException();
@@ -158,9 +179,13 @@ export class AuthService {
       throw new ForbiddenException('Role is not managed by clinic manager');
     }
     if (dto.role === AuthRole.ClinicManager && actorRole !== AuthRole.Admin) {
-      throw new ForbiddenException('Only an administrator can create a clinic manager');
+      throw new ForbiddenException(
+        'Only an administrator can create a clinic manager',
+      );
     }
-    const passwordHash = await this.passwordHasherService.hashPassword(dto.password);
+    const passwordHash = await this.passwordHasherService.hashPassword(
+      dto.password,
+    );
     try {
       const user = await this.accountsRepository.createAccountWithCredential({
         email: this.normalizeEmail(dto.email),
@@ -173,7 +198,9 @@ export class AuthService {
         throw new ConflictException('Account already exists');
       }
       if (error instanceof AuthRoleNotSeededError) {
-        throw new InternalServerErrorException('Auth role configuration is incomplete');
+        throw new InternalServerErrorException(
+          'Auth role configuration is incomplete',
+        );
       }
       throw error;
     }
@@ -215,7 +242,8 @@ export class AuthService {
   }
 
   private async requireClinicOperator(accessToken: string): Promise<AuthRole> {
-    const verifiedToken = this.accessTokenService.verifyAccessToken(accessToken);
+    const verifiedToken =
+      this.accessTokenService.verifyAccessToken(accessToken);
     const account = await this.accountsRepository.findAuthProfileById(
       verifiedToken.userId,
     );

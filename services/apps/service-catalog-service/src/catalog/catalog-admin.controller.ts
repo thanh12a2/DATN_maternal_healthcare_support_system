@@ -23,7 +23,10 @@ export class CatalogAdminController {
   }
 
   @Patch('services/:serviceId')
-  updateService(@Param('serviceId') serviceId: string, @Body() dto: UpdateServiceDto) {
+  updateService(
+    @Param('serviceId') serviceId: string,
+    @Body() dto: UpdateServiceDto,
+  ) {
     return this.service.updateService(serviceId, dto);
   }
 
@@ -43,7 +46,10 @@ export class CatalogAdminController {
   }
 
   @Patch('categories/:categoryId')
-  updateCategory(@Param('categoryId') categoryId: string, @Body() dto: UpdateCategoryDto) {
+  updateCategory(
+    @Param('categoryId') categoryId: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
     return this.service.updateCategory(categoryId, dto);
   }
 
@@ -58,7 +64,10 @@ export class CatalogAdminController {
   }
 
   @Post('services/:serviceId/prices')
-  scheduleBasePrice(@Param('serviceId') serviceId: string, @Body() dto: ScheduleBasePriceDto) {
+  scheduleBasePrice(
+    @Param('serviceId') serviceId: string,
+    @Body() dto: ScheduleBasePriceDto,
+  ) {
     return this.service.scheduleBasePrice(serviceId, dto);
   }
 

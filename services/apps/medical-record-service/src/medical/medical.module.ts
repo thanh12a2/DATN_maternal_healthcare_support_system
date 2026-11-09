@@ -6,7 +6,11 @@ import { DoctorIdentityGateway } from './doctor-identity.gateway';
 import { AppointmentSyncService } from './appointment-sync.service';
 @Module({
   controllers: [MedicalController, MedicalGrpcController],
-  providers: [MedicalDomainService, DoctorIdentityGateway, AppointmentSyncService],
+  providers: [
+    MedicalDomainService,
+    DoctorIdentityGateway,
+    AppointmentSyncService,
+  ],
   exports: [MedicalDomainService],
 })
 export class MedicalModule {}

@@ -30,7 +30,8 @@ export function useDoctorRealtime({
   enabled = true,
   streamFn,
 }: UseDoctorRealtimeProps) {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('DISCONNECTED');
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>('DISCONNECTED');
 
   const doctorIdRef = useRef(doctorId);
   const roomCodeRef = useRef(roomCode);
@@ -67,8 +68,12 @@ export function useDoctorRealtime({
         const myRoomCode = roomCodeRef.current;
 
         // Xác định lịch hẹn có thuộc về bác sĩ hoặc phòng trực này không
-        const isDoctorMatch = !event.assignedDoctorId || !myDoctorId || event.assignedDoctorId === myDoctorId;
-        const isRoomMatch = !event.roomCode || !myRoomCode || event.roomCode === myRoomCode;
+        const isDoctorMatch =
+          !event.assignedDoctorId ||
+          !myDoctorId ||
+          event.assignedDoctorId === myDoctorId;
+        const isRoomMatch =
+          !event.roomCode || !myRoomCode || event.roomCode === myRoomCode;
         const isRelevant = isDoctorMatch || isRoomMatch;
 
         if (!isRelevant) {
@@ -77,7 +82,10 @@ export function useDoctorRealtime({
 
         if (event.eventType === 'appointment.checked_in') {
           // Bệnh nhân vừa check-in tại quầy tiếp đón
-          const pInfo = patientMapRef.current[event.patientId] || { name: 'Bệnh nhân', phone: '' };
+          const pInfo = patientMapRef.current[event.patientId] || {
+            name: 'Bệnh nhân',
+            phone: '',
+          };
           const patientName = pInfo.name || 'Bệnh nhân';
           const roomDisplay = event.roomCode || myRoomCode || '';
 
@@ -93,7 +101,10 @@ export function useDoctorRealtime({
           });
         } else if (event.eventType === 'appointment.cancelled') {
           onUpdateRef.current?.(event);
-          const pInfo = patientMapRef.current[event.patientId] || { name: 'Bệnh nhân', phone: '' };
+          const pInfo = patientMapRef.current[event.patientId] || {
+            name: 'Bệnh nhân',
+            phone: '',
+          };
           notification.warning({
             message: '⚠️ Lịch hẹn đã hủy',
             description: `Lịch hẹn của bệnh nhân ${pInfo.name || 'bệnh nhân'} (Mã: ${event.appointmentCode || ''}) đã bị hủy.`,
@@ -117,4 +128,3 @@ export function useDoctorRealtime({
     isLive: connectionStatus === 'CONNECTED',
   };
 }
-

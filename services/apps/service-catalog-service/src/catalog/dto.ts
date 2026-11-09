@@ -41,12 +41,26 @@ export class CreateServiceDto {
   @IsOptional() @IsString() @MaxLength(10000) description?: string;
   @IsEnum(MedicalServiceKind) kind!: MedicalServiceKind;
   @IsOptional() @IsUUID() specialtyId?: string;
-  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
-  @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  thumbnailUrl?: string;
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(600)
+  @Type(() => Number)
+  durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
-  @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
+  @IsOptional()
+  @IsEnum(DoctorRankSelectionPolicy)
+  doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
   @IsOptional() content?: any;
-  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }
 
 export class UpdateServiceDto {
@@ -57,12 +71,26 @@ export class UpdateServiceDto {
   @IsOptional() @IsString() @MaxLength(10000) description?: string;
   @IsOptional() @IsEnum(MedicalServiceKind) kind?: MedicalServiceKind;
   @IsOptional() @IsUUID() specialtyId?: string;
-  @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) @MaxLength(2048) thumbnailUrl?: string;
-  @IsOptional() @IsInt() @Min(5) @Max(600) @Type(() => Number) durationMinutes?: number;
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  thumbnailUrl?: string;
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(600)
+  @Type(() => Number)
+  durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
-  @IsOptional() @IsEnum(DoctorRankSelectionPolicy) doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
+  @IsOptional()
+  @IsEnum(DoctorRankSelectionPolicy)
+  doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;
   @IsOptional() content?: any;
-  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsUUID('4', { each: true }) tagIds?: string[];
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }
 
 export class CreateCategoryDto {
@@ -84,7 +112,12 @@ export class CreateTagDto {
   @IsEnum(TagGroup) group!: TagGroup;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
   @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
-  @IsOptional() @IsInt() @Min(0) @Max(100000) @Type(() => Number) sortOrder?: number;
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100000)
+  @Type(() => Number)
+  sortOrder?: number;
 }
 
 export class UpdateTagDto {
@@ -94,7 +127,12 @@ export class UpdateTagDto {
   @IsOptional() @IsEnum(TagGroup) group?: TagGroup;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
   @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
-  @IsOptional() @IsInt() @Min(0) @Max(100000) @Type(() => Number) sortOrder?: number;
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100000)
+  @Type(() => Number)
+  sortOrder?: number;
 }
 
 export class ScheduleBasePriceDto {
@@ -121,7 +159,10 @@ export class EligibilityQueryDto {
 }
 
 export class ResolveServicesDto {
-  @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) serviceIds!: string[];
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  serviceIds!: string[];
   @IsOptional() @IsString() @Length(2, 50) doctorRankCode?: string;
   @IsOptional() @IsISO8601() at?: string;
   @IsOptional() @IsString() @Length(3, 3) currency?: string;

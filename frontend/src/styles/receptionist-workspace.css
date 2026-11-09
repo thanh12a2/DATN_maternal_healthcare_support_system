@@ -101,13 +101,17 @@
   border-radius: 16px;
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
-  box-shadow: 0 4px 16px color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 16px
+    color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .reception-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px color-mix(in oklch, var(--deep, #0f172a) 8%, transparent);
+  box-shadow: 0 8px 24px
+    color-mix(in oklch, var(--deep, #0f172a) 8%, transparent);
 }
 
 .reception-kpi-card .kpi-label {
@@ -133,19 +137,25 @@
   border-color: #fcd34d;
   background: linear-gradient(180deg, var(--surface, #fff), #fffbeb);
 }
-.reception-kpi-card.kpi-warning .kpi-value { color: #d97706; }
+.reception-kpi-card.kpi-warning .kpi-value {
+  color: #d97706;
+}
 
 .reception-kpi-card.kpi-info {
   border-color: #93c5fd;
   background: linear-gradient(180deg, var(--surface, #fff), #eff6ff);
 }
-.reception-kpi-card.kpi-info .kpi-value { color: #2563eb; }
+.reception-kpi-card.kpi-info .kpi-value {
+  color: #2563eb;
+}
 
 .reception-kpi-card.kpi-success {
   border-color: #86efac;
   background: linear-gradient(180deg, var(--surface, #fff), #f0fdf4);
 }
-.reception-kpi-card.kpi-success .kpi-value { color: #16a34a; }
+.reception-kpi-card.kpi-success .kpi-value {
+  color: #16a34a;
+}
 
 .reception-kpi-card.kpi-muted {
   border-color: #cbd5e1;
@@ -161,7 +171,8 @@
   border-radius: 16px;
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
-  box-shadow: 0 4px 14px color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
+  box-shadow: 0 4px 14px
+    color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
   flex-wrap: wrap;
 }
 
@@ -197,14 +208,17 @@
   font-size: 13px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .reception-date-input:focus,
 .reception-select:focus,
 .reception-search-input:focus {
   border-color: var(--accent, #0284c7);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent, #0284c7) 15%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in oklch, var(--accent, #0284c7) 15%, transparent);
 }
 
 /* Appointment Table Card */
@@ -212,7 +226,8 @@
   background: var(--surface, #ffffff);
   border-radius: 18px;
   border: 1px solid var(--border, #e2e8f0);
-  box-shadow: 0 8px 30px color-mix(in oklch, var(--deep, #0f172a) 6%, transparent);
+  box-shadow: 0 8px 30px
+    color-mix(in oklch, var(--deep, #0f172a) 6%, transparent);
   overflow: hidden;
 }
 
@@ -540,8 +555,14 @@
 }
 
 @keyframes modal-fade-in {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .modal-header {
@@ -841,7 +862,8 @@
   background: var(--surface, #ffffff);
   border-radius: 18px;
   border: 1px solid var(--border, #e2e8f0);
-  box-shadow: 0 4px 18px color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
+  box-shadow: 0 4px 18px
+    color-mix(in oklch, var(--deep, #0f172a) 4%, transparent);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -949,8 +971,13 @@
 }
 
 @keyframes pulse-called {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+  }
 }
 
 .serving-box.called .box-badge {

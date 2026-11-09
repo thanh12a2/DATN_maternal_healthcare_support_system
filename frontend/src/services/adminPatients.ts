@@ -64,7 +64,10 @@ export interface UpdatePatientPayload {
 }
 
 function generateUuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return crypto.randomUUID();
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -87,7 +90,9 @@ export async function searchPatients(
   if (params.phoneNumber?.trim()) body.phoneNumber = params.phoneNumber.trim();
   if (params.nationalId?.trim()) body.nationalId = params.nationalId.trim();
 
-  const res = await request<{ data: PatientSearchResult } | PatientSearchResult>('/api/patients/search', {
+  const res = await request<
+    { data: PatientSearchResult } | PatientSearchResult
+  >('/api/patients/search', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -105,7 +110,9 @@ export async function getPatient(
   request: Requester,
   patientId: string,
 ): Promise<PatientItem> {
-  const res = await request<{ data: PatientItem } | PatientItem>(`/api/patients/${encodeURIComponent(patientId)}`);
+  const res = await request<{ data: PatientItem } | PatientItem>(
+    `/api/patients/${encodeURIComponent(patientId)}`,
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -113,16 +120,19 @@ export async function createPatient(
   request: Requester,
   payload: CreatePatientPayload,
 ): Promise<PatientItem> {
-  const res = await request<{ data: PatientItem } | PatientItem>('/api/patients', {
-    method: 'POST',
-    headers: {
-      'idempotency-key': generateUuid(),
+  const res = await request<{ data: PatientItem } | PatientItem>(
+    '/api/patients',
+    {
+      method: 'POST',
+      headers: {
+        'idempotency-key': generateUuid(),
+      },
+      body: JSON.stringify({
+        ...payload,
+        reason: payload.reason || 'Admin tạo hồ sơ bệnh nhân',
+      }),
     },
-    body: JSON.stringify({
-      ...payload,
-      reason: payload.reason || 'Admin tạo hồ sơ bệnh nhân',
-    }),
-  });
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -131,13 +141,16 @@ export async function updatePatient(
   patientId: string,
   payload: UpdatePatientPayload,
 ): Promise<PatientItem> {
-  const res = await request<{ data: PatientItem } | PatientItem>(`/api/patients/${encodeURIComponent(patientId)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      ...payload,
-      reason: payload.reason || 'Admin cập nhật hồ sơ bệnh nhân',
-    }),
-  });
+  const res = await request<{ data: PatientItem } | PatientItem>(
+    `/api/patients/${encodeURIComponent(patientId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...payload,
+        reason: payload.reason || 'Admin cập nhật hồ sơ bệnh nhân',
+      }),
+    },
+  );
   return 'data' in res ? res.data : res;
 }
 
@@ -169,13 +182,12 @@ export async function createEmergencyContact(
   patientId: string,
   payload: CreateEmergencyContactPayload,
 ): Promise<PatientEmergencyContact> {
-  const res = await request<{ data: PatientEmergencyContact } | PatientEmergencyContact>(
-    `/api/patients/${encodeURIComponent(patientId)}/emergency-contacts`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  );
+  const res = await request<
+    { data: PatientEmergencyContact } | PatientEmergencyContact
+  >(`/api/patients/${encodeURIComponent(patientId)}/emergency-contacts`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
   return 'data' in res ? res.data : res;
 }
 
@@ -185,7 +197,9 @@ export async function updateEmergencyContact(
   contactId: string,
   payload: UpdateEmergencyContactPayload,
 ): Promise<PatientEmergencyContact> {
-  const res = await request<{ data: PatientEmergencyContact } | PatientEmergencyContact>(
+  const res = await request<
+    { data: PatientEmergencyContact } | PatientEmergencyContact
+  >(
     `/api/patients/${encodeURIComponent(patientId)}/emergency-contacts/${encodeURIComponent(contactId)}`,
     {
       method: 'PATCH',
@@ -213,12 +227,11 @@ export async function reorderEmergencyContacts(
   patientId: string,
   contactIds: string[],
 ): Promise<PatientEmergencyContact[]> {
-  const res = await request<{ data: PatientEmergencyContact[] } | PatientEmergencyContact[]>(
-    `/api/patients/${encodeURIComponent(patientId)}/emergency-contacts/order`,
-    {
-      method: 'PUT',
-      body: JSON.stringify({ contactIds }),
-    },
-  );
+  const res = await request<
+    { data: PatientEmergencyContact[] } | PatientEmergencyContact[]
+  >(`/api/patients/${encodeURIComponent(patientId)}/emergency-contacts/order`, {
+    method: 'PUT',
+    body: JSON.stringify({ contactIds }),
+  });
   return 'data' in res ? res.data : res;
 }
