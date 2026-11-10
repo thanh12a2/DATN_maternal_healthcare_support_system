@@ -54,6 +54,7 @@ export function getClinicalStatusMeta(
         stepIndex: 2,
         icon: <UserCheck size={13} />,
       };
+    case 'IN_PROGRESS':
     case 'IN_CLINICAL_CARE':
       return {
         label: 'Đang khám',
@@ -276,8 +277,8 @@ export function ClinicalJourneyTracker({
         appointment.checkedInAt || appointment.checkInAt
           ? formatTime(appointment.checkedInAt || appointment.checkInAt)
           : currentStep >= 2
-            ? 'Đã tiếp đón'
-            : 'Chờ tại tầng 1',
+          ? 'Đã tiếp đón'
+          : 'Chờ tại tầng 1',
       icon: <UserCheck size={14} />,
     },
     {
@@ -286,10 +287,10 @@ export function ClinicalJourneyTracker({
       sub: appointment.clinicalStartedAt
         ? formatTime(appointment.clinicalStartedAt)
         : currentStep === 3
-          ? 'Đang khám'
-          : currentStep > 3
-            ? 'Đã khám'
-            : 'Đợi gọi số',
+        ? 'Đang khám'
+        : currentStep > 3
+        ? 'Đã khám'
+        : 'Đợi gọi số',
       icon: <Stethoscope size={14} />,
     },
     {
@@ -298,8 +299,8 @@ export function ClinicalJourneyTracker({
       sub: appointment.completedAt
         ? formatTime(appointment.completedAt)
         : currentStep === 4
-          ? 'Hoàn thành'
-          : 'Kết thúc ca',
+        ? 'Hoàn thành'
+        : 'Kết thúc ca',
       icon: <CheckCircle2 size={14} />,
     },
   ];

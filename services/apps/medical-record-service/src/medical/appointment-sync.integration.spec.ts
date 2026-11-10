@@ -28,7 +28,11 @@ integration(
       const appointments = new AppointmentPrismaService();
       const medical = new MedicalPrismaService();
       const doctors = new DoctorPrismaService();
-      const service = new AppointmentDomainService(appointments, {} as any);
+      const service = new AppointmentDomainService(
+        appointments,
+        {} as any,
+        { publish: jest.fn() } as any,
+      );
       const controller = new AppointmentGrpcController(service);
       const definition = loadSync(
         protoPath('appointment/v1/appointment_internal.proto'),

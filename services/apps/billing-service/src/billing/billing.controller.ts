@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
+  ForbiddenException,
   Get,
   Headers,
   Ip,
   NotFoundException,
+  Optional,
   Param,
   Post,
   Query,
@@ -18,6 +21,7 @@ import {
   type PublicAuthContext,
 } from '@platform';
 import { BillingPrismaService } from '../database/prisma.service';
+import { BillingAccessService } from './billing-access.service';
 import { BillingDomainService } from './billing.service';
 import { VnpayIpnService } from './vnpay-ipn.service';
 import {
@@ -39,6 +43,7 @@ export class BillingController {
     private readonly vnpayIpn: VnpayIpnService,
     private readonly db: BillingPrismaService,
     private readonly work: ReceptionWorkAccess,
+    @Optional() private readonly access?: BillingAccessService,
   ) {}
 
   private async invoiceAction<T>(
@@ -48,9 +53,20 @@ export class BillingController {
   ) {
     const invoice = await this.db.invoice.findUnique({
       where: { id },
-      select: { appointmentId: true },
+      select: {
+        appointmentId: true,
+        encounterId: true,
+        patientId: true,
+        type: true,
+      },
     });
     if (!invoice) throw new NotFoundException('INVOICE_NOT_FOUND');
+    if (auth.role === 'DOCTOR') {
+      if (invoice.type !== 'SUPPLEMENTARY' || !this.access)
+        throw new ForbiddenException('FORBIDDEN');
+      await this.access.assertDoctorInvoice(auth, invoice);
+      return action();
+    }
     return invoice.appointmentId
       ? this.work.run(invoice.appointmentId, auth.userId, action)
       : action();
@@ -73,9 +89,6 @@ export class BillingController {
   @PublicHttp() @Get('return') vnpayReturn(
     @Query() q: Record<string, unknown>,
   ) {
-    // VNPay may send a signed browser return for a canceled payment without
-    // sending an IPN. Process the same signed result so the pending attempt is
-    // closed and another attempt can be created for this invoice.
     return this.vnpayIpn.handle(q);
   }
   @Get('invoices') list(
@@ -89,6 +102,18 @@ export class BillingController {
     @CurrentAuth() a: PublicAuthContext,
   ) {
     return this.s.get(id, a);
+  }
+  @Post('invoices/service-order') addServiceOrder(
+    @Body() b: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
+    return this.s.addServiceOrderCharge(b, a);
+  }
+  @Delete('invoices/service-order/:orderId') removeServiceOrder(
+    @Param('orderId') orderId: string,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
+    return this.s.removeServiceOrderCharge(orderId, a);
   }
   @Post('invoices/:id/payments') pay(
     @Param('id') id: string,

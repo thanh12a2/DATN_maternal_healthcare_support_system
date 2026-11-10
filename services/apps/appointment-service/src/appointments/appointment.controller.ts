@@ -73,6 +73,44 @@ export class AppointmentController {
     });
   }
 
+  @Post('desk/broadcast')
+  broadcastDesk(
+    @Body() body: any,
+    @CurrentAuth() a: PublicAuthContext,
+  ): { ok: boolean } {
+    if (
+      a.role !== 'RECEPTIONIST' &&
+      a.role !== 'ADMIN' &&
+      a.role !== 'CLINIC_MANAGER' &&
+      a.role !== 'DOCTOR'
+    ) {
+      throw new ForbiddenException('Staff only');
+    }
+    const event: any = {
+      eventType: body.eventType,
+      appointmentId: body.appointmentId,
+      patientId: body.patientId,
+      status: body.status || undefined,
+      appointmentCode: body.appointmentCode,
+      startAt: body.startAt,
+      endAt: body.endAt,
+      appointmentDate: body.appointmentDate,
+      assignedDoctorId: body.assignedDoctorId,
+      serviceId: body.serviceId,
+      serviceName: body.serviceName,
+      roomCode: body.roomCode,
+      roomName: body.roomName,
+      ticketCode: body.ticketCode,
+      paymentStatus: body.paymentStatus,
+      checkedInAt: body.checkedInAt,
+      clinicalStartedAt: body.clinicalStartedAt,
+      completedAt: body.completedAt,
+      updatedAt: body.updatedAt || new Date().toISOString(),
+    };
+    this.realtime.publish(event);
+    return { ok: true };
+  }
+
   @Get('me/stream')
   async streamMe(
     @CurrentAuth() a: PublicAuthContext,

@@ -16,12 +16,64 @@ export class TreatmentService {
   constructor(private readonly db: TreatmentPlanPrismaService) {}
 
   async listForEmail(encounterId: string, patientId: string, cutoff: Date) {
-    const rows = await this.db.treatmentPlan.findMany({ where: { sourceEncounterId: encounterId, patientId, status: { in: [TreatmentPlanStatus.ACTIVE, TreatmentPlanStatus.COMPLETED] }, activatedAt: { lte: cutoff } }, include: { versions: { where: { createdAt: { lte: cutoff } }, orderBy: [{ createdAt: 'desc' }, { version: 'desc' }], take: 1 } }, orderBy: { createdAt: 'asc' } });
-    return { plans: rows.map(plan => {
-      const snapshot = plan.versions[0]?.snapshot as { title?: unknown; summary?: unknown; items?: unknown } | undefined;
-      if (!snapshot || typeof snapshot.title !== 'string' || typeof snapshot.summary !== 'string' || !Array.isArray(snapshot.items)) throw new ConflictException('TREATMENT_SNAPSHOT_UNAVAILABLE');
-      return { planId: plan.id, patientId, sourceEncounterId: encounterId, doctorId: plan.authorDoctorId, status: plan.status, version: plan.version, title: snapshot.title, summary: snapshot.summary, items: snapshot.items.map((item: any) => ({ type: String(item.type ?? ''), title: String(item.title ?? ''), description: String(item.description ?? '') })) };
-    }) };
+    const rows = await this.db.treatmentPlan.findMany({
+      where: {
+        sourceEncounterId: encounterId,
+        patientId,
+        status: {
+          in: [TreatmentPlanStatus.ACTIVE, TreatmentPlanStatus.COMPLETED],
+        },
+        activatedAt: { lte: cutoff },
+      },
+      include: {
+        versions: {
+          where: { createdAt: { lte: cutoff } },
+          orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return {
+      plans: rows.map((plan) => {
+        const snapshot = plan.versions[0]?.snapshot as
+          { title?: unknown; summary?: unknown; items?: unknown } | undefined;
+        if (
+          !snapshot ||
+          typeof snapshot.title !== 'string' ||
+          typeof snapshot.summary !== 'string' ||
+          !Array.isArray(snapshot.items)
+        )
+          throw new ConflictException('TREATMENT_SNAPSHOT_UNAVAILABLE');
+        return {
+          planId: plan.id,
+          patientId,
+          sourceEncounterId: encounterId,
+          doctorId: plan.authorDoctorId,
+          status: plan.status,
+          version: plan.version,
+          title: snapshot.title,
+          summary: snapshot.summary,
+          items: snapshot.items.map((item: any) => ({
+            type: String(item.type ?? ''),
+            title: String(item.title ?? ''),
+            description: String(item.description ?? ''),
+          })),
+        };
+      }),
+    };
+  }
+
+  async listTemplates(category?: string) {
+    const where: any = { isActive: true };
+    if (category && category !== 'ALL') {
+      where.category = category;
+    }
+    const templates = await (this.db as any).treatmentPlanTemplate.findMany({
+      where,
+      orderBy: { sortOrder: 'asc' },
+    });
+    return { data: templates };
   }
 
   // ─── REST Handlers ────────────────────────────────────────────────────────
@@ -107,40 +159,45 @@ export class TreatmentService {
 
   async updateRest(id: string, b: any, auth?: PublicAuthContext) {
     return this.db.$transaction(async (tx) => {
-    const p = await tx.treatmentPlan.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-    if (!p) throw new NotFoundException('PLAN_NOT_FOUND');
-    if (b.version && p.version !== Number(b.version)) {
-      throw new ConflictException('VERSION_CONFLICT');
-    }
+      const p = await tx.treatmentPlan.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+      if (!p) throw new NotFoundException('PLAN_NOT_FOUND');
+      if (b.version && p.version !== Number(b.version)) {
+        throw new ConflictException('VERSION_CONFLICT');
+      }
       if (
         p.status !== TreatmentPlanStatus.DRAFT &&
         p.status !== TreatmentPlanStatus.ACTIVE
       )
         throw new ConflictException('PLAN_NOT_EDITABLE');
-      if (
-        p.status === TreatmentPlanStatus.ACTIVE &&
-        !String(b.reason ?? '').trim()
-      )
+      const changeReason = String(b.reason ?? '').trim();
+      if (p.status === TreatmentPlanStatus.ACTIVE && !changeReason)
         throw new ConflictException('CHANGE_REASON_REQUIRED');
 
-    const nextVer = p.version + 1;
-    const authorId = auth?.userId || randomUUID();
+      const nextVer = p.version + 1;
+      const authorId = auth?.userId || randomUUID();
 
+      const effectiveTo =
+        b.effectiveTo !== undefined
+          ? b.effectiveTo
+            ? new Date(b.effectiveTo)
+            : null
+          : undefined;
       const changed = await tx.treatmentPlan.updateMany({
         where: { id, version: p.version, status: p.status },
         data: {
           title: b.title ?? undefined,
           summary: b.summary ?? undefined,
+          effectiveTo,
           version: { increment: 1 },
         },
       });
-    if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
-    if (b.items && Array.isArray(b.items)) {
-      if (p.status === TreatmentPlanStatus.ACTIVE) {
-        const existingIds = new Set(p.items.map((x) => x.id));
+      if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+      if (b.items && Array.isArray(b.items)) {
+        if (p.status === TreatmentPlanStatus.ACTIVE) {
+          const existingIds = new Set(p.items.map((x) => x.id));
           const suppliedIds = b.items
             .filter((x: any) => x.id)
             .map((x: any) => String(x.id));
@@ -150,7 +207,7 @@ export class TreatmentService {
             p.items.some((x) => !suppliedIds.includes(x.id))
           )
             throw new ConflictException('ACTIVE_ITEMS_MUST_BE_PRESERVED');
-        for (const [i, x] of b.items.entries()) {
+          for (const [i, x] of b.items.entries()) {
             const data = {
               type: x.type || 'CARE_INSTRUCTION',
               title: x.title,
@@ -168,9 +225,9 @@ export class TreatmentService {
                   status: TreatmentPlanItemStatus.PENDING,
                 },
               });
-        }
-      } else {
-        await tx.treatmentPlanItem.deleteMany({ where: { planId: id } });
+          }
+        } else {
+          await tx.treatmentPlanItem.deleteMany({ where: { planId: id } });
           await tx.treatmentPlanItem.createMany({
             data: b.items.map((x: any, i: number) => ({
               planId: id,
@@ -182,30 +239,38 @@ export class TreatmentService {
               status: TreatmentPlanItemStatus.PENDING,
             })),
           });
+        }
       }
-    }
 
-    await tx.treatmentPlanVersion.create({
-      data: {
-        planId: id,
-        version: nextVer,
-        snapshot: {
-          title: b.title ?? p.title,
-          summary: b.summary ?? p.summary,
-          items: b.items ?? p.items,
+      await tx.treatmentPlanVersion.create({
+        data: {
+          planId: id,
+          version: nextVer,
+          snapshot: {
+            title: b.title ?? p.title,
+            summary: b.summary ?? p.summary,
+            effectiveTo:
+              effectiveTo !== undefined
+                ? effectiveTo
+                  ? effectiveTo.toISOString().slice(0, 10)
+                  : null
+                : p.effectiveTo
+                  ? p.effectiveTo.toISOString().slice(0, 10)
+                  : null,
+            items: b.items ?? p.items,
+          },
+          changedBy: authorId,
+          changeReason: changeReason || 'UPDATED',
         },
-        changedBy: authorId,
-        changeReason: b.reason || 'UPDATED',
-      },
-    });
+      });
 
-    const updated = await tx.treatmentPlan.findUniqueOrThrow({
-      where: { id },
-      include: { items: true },
-    });
+      const updated = await tx.treatmentPlan.findUniqueOrThrow({
+        where: { id },
+        include: { items: true },
+      });
 
-    const res = this.view(updated);
-    return { data: res };
+      const res = this.view(updated);
+      return { data: res };
     });
   }
 
@@ -252,21 +317,21 @@ export class TreatmentService {
 
   async completeItemRest(planId: string | undefined, itemId: string, b?: any) {
     return this.db.$transaction(async (tx) => {
-    const item = await tx.treatmentPlanItem.findUnique({
-      where: { id: itemId },
-    });
-    if (!item) throw new NotFoundException('ITEM_NOT_FOUND');
+      const item = await tx.treatmentPlanItem.findUnique({
+        where: { id: itemId },
+      });
+      if (!item) throw new NotFoundException('ITEM_NOT_FOUND');
 
-    const targetPlanId = planId || item.planId;
+      const targetPlanId = planId || item.planId;
       if (targetPlanId !== item.planId)
         throw new ConflictException('ITEM_PLAN_MISMATCH');
-    const p = await tx.treatmentPlan.findUnique({
-      where: { id: targetPlanId },
-    });
-    if (!p) throw new NotFoundException('PLAN_NOT_FOUND');
-    if (b?.version && p.version !== Number(b.version)) {
-      throw new ConflictException('VERSION_CONFLICT');
-    }
+      const p = await tx.treatmentPlan.findUnique({
+        where: { id: targetPlanId },
+      });
+      if (!p) throw new NotFoundException('PLAN_NOT_FOUND');
+      if (b?.version && p.version !== Number(b.version)) {
+        throw new ConflictException('VERSION_CONFLICT');
+      }
       if (
         p.status !== TreatmentPlanStatus.ACTIVE ||
         (item.status !== TreatmentPlanItemStatus.PENDING &&
@@ -281,21 +346,21 @@ export class TreatmentService {
         },
         data: { version: { increment: 1 } },
       });
-    if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
+      if (changed.count !== 1) throw new ConflictException('VERSION_CONFLICT');
 
-    await tx.treatmentPlanItem.update({
-      where: { id: itemId },
-      data: {
-        status: TreatmentPlanItemStatus.DONE,
-        completedAt: new Date(),
-      },
-    });
+      await tx.treatmentPlanItem.update({
+        where: { id: itemId },
+        data: {
+          status: TreatmentPlanItemStatus.DONE,
+          completedAt: new Date(),
+        },
+      });
 
       const updated = await tx.treatmentPlan.findUniqueOrThrow({
         where: { id: targetPlanId },
         include: { items: true },
       });
-    return { data: this.view(updated) };
+      return { data: this.view(updated) };
     });
   }
 

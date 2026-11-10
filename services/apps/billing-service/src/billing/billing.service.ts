@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { BillingAccessService } from './billing-access.service';
 import {
   CreditApprovalStatus,
   InvoiceStatus,
@@ -25,12 +26,13 @@ import type {
   RevokeCreditDto,
   VerifyPaymentDto,
 } from './dto';
-const STAFF = ['RECEPTIONIST', 'ADMIN'];
+const STAFF = ['RECEPTIONIST', 'ADMIN', 'DOCTOR', 'CLINIC_MANAGER'];
 @Injectable()
 export class BillingDomainService {
   constructor(
     private readonly db: BillingPrismaService,
     private readonly vnpay: VnpayGatewayService,
+    @Optional() private readonly access?: BillingAccessService,
   ) {}
   async get(id: string, auth?: PublicAuthContext) {
     const x = await this.db.invoice.findUnique({
@@ -38,15 +40,28 @@ export class BillingDomainService {
       include: { lines: true, payment: true, credits: true },
     });
     if (!x) this.fail(404, 'INVOICE_NOT_FOUND', 'Invoice not found');
-    if (auth && !STAFF.includes(auth.role))
+    if (auth && !STAFF.includes(auth.role) && auth.role !== 'PATIENT')
       this.fail(403, 'FORBIDDEN', 'Staff only');
+    if (
+      auth?.role === 'PATIENT' &&
+      x.patientId !== (await this.patientId(auth))
+    )
+      this.fail(403, 'FORBIDDEN', 'Invoice belongs to another patient');
+    if (auth?.role === 'DOCTOR') await this.assertDoctorInvoice(auth, x);
     return presentInvoice(x);
   }
   async list(q: InvoiceListDto, auth: PublicAuthContext) {
-    if (!STAFF.includes(auth.role)) this.fail(403, 'FORBIDDEN', 'Staff only');
+    if (!STAFF.includes(auth.role) && auth.role !== 'PATIENT')
+      this.fail(403, 'FORBIDDEN', 'Staff only');
+    const patientId =
+      auth.role === 'PATIENT' ? await this.patientId(auth) : q.patientId;
+    if (auth.role === 'PATIENT' && q.patientId && q.patientId !== patientId)
+      this.fail(403, 'FORBIDDEN', 'Invoice belongs to another patient');
+    if (auth.role === 'DOCTOR' && !q.appointmentId && !q.encounterId)
+      this.fail(403, 'FORBIDDEN', 'Appointment or encounter required');
     const rows = await this.db.invoice.findMany({
       where: {
-        ...(q.patientId ? { patientId: q.patientId } : {}),
+        ...(patientId ? { patientId } : {}),
         ...(q.appointmentId ? { appointmentId: q.appointmentId } : {}),
         ...(q.encounterId ? { encounterId: q.encounterId } : {}),
         ...(q.type ? { type: q.type } : {}),
@@ -58,6 +73,10 @@ export class BillingDomainService {
       ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
     });
     const items = rows.slice(0, q.limit ?? 20);
+    if (auth.role === 'DOCTOR') {
+      for (const invoice of items)
+        await this.assertDoctorInvoice(auth, invoice);
+    }
     return {
       items: items.map(presentInvoice),
       nextPageToken: rows.length > (q.limit ?? 20) ? items.at(-1)?.id : null,
@@ -650,6 +669,149 @@ export class BillingDomainService {
       idempotentReplay: false,
     };
   }
+  async addServiceOrderCharge(input: any, auth: PublicAuthContext) {
+    if (auth.role === 'DOCTOR') await this.assertDoctorInvoice(auth, input);
+    if (!['DOCTOR', 'RECEPTIONIST', 'ADMIN'].includes(auth.role))
+      this.fail(403, 'FORBIDDEN', 'Doctor or staff only');
+    const appointmentId = input.appointmentId,
+      patientId = input.patientId,
+      encounterId = input.encounterId,
+      serviceId = input.serviceId,
+      serviceName = input.serviceName || 'Dịch vụ cận lâm sàng',
+      amountMinor = BigInt(input.amountMinor || 0),
+      orderId = input.orderId || randomUUID();
+    if (!appointmentId || !patientId || !serviceId)
+      this.fail(
+        400,
+        'BAD_REQUEST',
+        'appointmentId, patientId and serviceId are required',
+      );
+    return this.db.$transaction(async (tx) => {
+      let invoice = await tx.invoice.findUnique({
+        where: {
+          appointmentId_type: {
+            appointmentId,
+            type: InvoiceType.SUPPLEMENTARY,
+          },
+        },
+        include: { lines: true, payment: true, credits: true },
+      });
+      if (!invoice) {
+        invoice = await tx.invoice.create({
+          data: {
+            invoiceNumber: this.number(),
+            patientId,
+            appointmentId,
+            encounterId: encounterId || null,
+            type: InvoiceType.SUPPLEMENTARY,
+            status: InvoiceStatus.OPEN,
+            currency: 'VND',
+            subtotalMinor: 0n,
+            totalMinor: 0n,
+            paidMinor: 0n,
+            balanceMinor: 0n,
+            sourceVersion: 1n,
+          },
+          include: { lines: true, payment: true, credits: true },
+        });
+      }
+      const exists = await tx.invoiceLine.findUnique({
+        where: {
+          source_sourceReferenceId: {
+            source: LineSource.PERFORMED_SERVICE,
+            sourceReferenceId: orderId,
+          },
+        },
+      });
+      if (exists)
+        return {
+          invoice: presentInvoice(invoice),
+          line: exists,
+          created: false,
+        };
+      const lineCount = await tx.invoiceLine.count({
+        where: { invoiceId: invoice.id },
+      });
+      const line = await tx.invoiceLine.create({
+        data: {
+          invoiceId: invoice.id,
+          lineNo: lineCount + 1,
+          source: LineSource.PERFORMED_SERVICE,
+          sourceReferenceId: orderId,
+          serviceId,
+          descriptionSnapshot: serviceName,
+          quantity: 1,
+          unitAmountMinor: amountMinor,
+          lineAmountMinor: amountMinor,
+          performedAt: new Date(),
+        },
+      });
+      const updated = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotalMinor: { increment: amountMinor },
+          totalMinor: { increment: amountMinor },
+          balanceMinor: { increment: amountMinor },
+          version: { increment: 1 },
+        },
+        include: { lines: true, payment: true, credits: true },
+      });
+      await this.auditOutbox(
+        tx,
+        updated,
+        'billing.supplementary_order_added.v1',
+        auth.userId,
+      );
+      return { invoice: presentInvoice(updated), line, created: true };
+    });
+  }
+  async removeServiceOrderCharge(orderId: string, auth: PublicAuthContext) {
+    if (!['DOCTOR', 'RECEPTIONIST', 'ADMIN'].includes(auth.role))
+      this.fail(403, 'FORBIDDEN', 'Doctor or staff only');
+    return this.db.$transaction(async (tx) => {
+      const line = await tx.invoiceLine.findUnique({
+        where: {
+          source_sourceReferenceId: {
+            source: LineSource.PERFORMED_SERVICE,
+            sourceReferenceId: orderId,
+          },
+        },
+      });
+      if (!line) return { success: true, removed: false };
+      const invoice = await tx.invoice.findUnique({
+        where: { id: line.invoiceId },
+        include: { lines: true, payment: true, credits: true },
+      });
+      if (!invoice) return { success: true, removed: false };
+      if (auth.role === 'DOCTOR') await this.assertDoctorInvoice(auth, invoice);
+      if (invoice.status === InvoiceStatus.PAID || invoice.paidMinor > 0n) {
+        this.fail(
+          409,
+          'INVOICE_ALREADY_PAID',
+          'Cannot remove line from paid invoice',
+        );
+      }
+      await tx.invoiceLine.delete({ where: { id: line.id } });
+      const amount = line.lineAmountMinor;
+      const newTotal =
+        invoice.totalMinor > amount ? invoice.totalMinor - amount : 0n;
+      const newSubtotal =
+        invoice.subtotalMinor > amount ? invoice.subtotalMinor - amount : 0n;
+      const newBalance =
+        invoice.balanceMinor > amount ? invoice.balanceMinor - amount : 0n;
+      const updated = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotalMinor: newSubtotal,
+          totalMinor: newTotal,
+          balanceMinor: newBalance,
+          version: { increment: 1 },
+        },
+        include: { lines: true, payment: true, credits: true },
+      });
+      return { success: true, removed: true, invoice: presentInvoice(updated) };
+    });
+  }
   async finalizeSupplementary(input: any) {
     const x = await this.db.invoice.findUnique({
       where: {
@@ -738,6 +900,24 @@ export class BillingDomainService {
       if (error instanceof BillingDomainException) throw error;
       this.fail(422, 'INVALID_RETURN_PATH', 'Return path is invalid');
     }
+  }
+  private async patientId(auth: PublicAuthContext) {
+    if (!this.access)
+      this.fail(
+        503,
+        'BILLING_ACCESS_UNAVAILABLE',
+        'Cannot verify invoice access',
+      );
+    return this.access!.patientId(auth);
+  }
+  private async assertDoctorInvoice(auth: PublicAuthContext, invoice: any) {
+    if (!this.access)
+      this.fail(
+        503,
+        'BILLING_ACCESS_UNAVAILABLE',
+        'Cannot verify invoice access',
+      );
+    return this.access!.assertDoctorInvoice(auth, invoice);
   }
   private staff(a: PublicAuthContext) {
     if (!STAFF.includes(a.role)) this.fail(403, 'FORBIDDEN', 'Staff only');

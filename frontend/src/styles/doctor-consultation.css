@@ -1,88 +1,178 @@
 /* ==========================================================================
-   DOCTOR CONSULTATION WORKSPACE (EMR) STYLES - AN TÂM MEDICAL
+   DOCTOR CONSULTATION WORKSPACE (EMR) STYLES - TÂM AN HOSPITAL
    ========================================================================== */
 
-/* ─── Main Container: Perfectly matches .doctor-desk-wrapper navbar width ─── */
+/* ─── Main Container: Perfectly matches navbar width ─── */
 .doctor-consultation-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #0f172a;
 }
 
-/* ─── Top Consultation Control Bar ─── */
-.consultation-top-bar {
-  display: flex;
+/* ─── Nút Quay lại sắc nét, nổi bật ─── */
+.consultation-btn-back {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 7px;
+  font-weight: 700;
+  color: #0B5CAD;
+  border: 1.5px solid #0B5CAD;
   background: #ffffff;
-  padding: 12px 20px;
+  border-radius: 8px;
+  height: 38px;
+  padding: 0 15px;
+  font-size: 13.5px;
+  box-shadow: 0 1px 4px rgba(11, 92, 173, 0.12);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.consultation-btn-back:hover {
+  background: #0B5CAD;
+  color: #ffffff;
+  border-color: #0B5CAD;
+  box-shadow: 0 2px 8px rgba(11, 92, 173, 0.25);
+}
+
+.back-btn-divider {
+  width: 1px;
+  height: 60px;
+  background: #cbd5e1;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ─── Single Unified Patient Master Card ─── */
+.consultation-patient-card {
+  background: #ffffff;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  flex-wrap: wrap;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.consultation-top-left {
+.patient-card-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-.consultation-btn-back {
+.patient-primary-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 320px;
+}
+
+/* Ảnh cá nhân của bệnh nhân to bằng chiều dọc của 3 dòng bên cạnh */
+.patient-avatar-box {
+  width: 78px;
+  height: 78px;
+  min-width: 78px;
+  min-height: 78px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0B5CAD 0%, #1d4ed8 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(11, 92, 173, 0.22);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.patient-avatar-icon {
+  font-size: 38px;
+  color: #ffffff;
+}
+
+.patient-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.patient-title-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 78px;
+}
+
+.patient-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patient-fullname {
+  margin: 0;
+  font-size: 19.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.patient-sub-demographic {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.patient-service-row {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.patient-service-row .service-text strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.patient-payment-row {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.patient-payment-row .payment-text {
+  color: #059669;
+  font-weight: 650;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  color: #0b5cad;
-  border-color: #bfdbfe;
-  background: #f0f7ff;
-  border-radius: 8px;
-  height: 38px;
-  padding: 0 14px;
-  transition: all 0.2s ease;
 }
 
-.consultation-btn-back:hover {
-  background: #e0f0fe;
-  border-color: #0b5cad;
-  color: #0b5cad;
-}
-
-.consultation-title-group h2 {
-  margin: 0;
-  font-size: 16.5px;
-  font-weight: 700;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-.consultation-title-group p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.consultation-top-right {
+.patient-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-/* ─── STT Queue Chip (Matching Patient Web) ─── */
+/* ─── STT Queue Chip ─── */
 .consultation-queue-chip {
   display: inline-flex;
   align-items: center;
@@ -126,7 +216,7 @@
   color: #1e40af;
 }
 
-/* ─── Status Pill (Matching Patient Web) ─── */
+/* ─── Status Pill ─── */
 .consultation-status-pill {
   display: inline-flex;
   align-items: center;
@@ -162,227 +252,870 @@
   border: 1px solid #bbf7d0;
 }
 
-/* ─── Patient Master Banner Card ─── */
-.consultation-patient-card {
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  padding: 18px 22px;
+.patient-card-divider {
+  height: 1px;
+  background: #f1f5f9;
+  width: 100%;
+}
+
+/* ─── 2-Row Administrative Metadata Box ─── */
+.patient-admin-box {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.patient-card-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.patient-identity-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.patient-avatar-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #0b5cad 0%, #1d4ed8 100%);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(11, 92, 173, 0.22);
-  flex-shrink: 0;
-}
-
-.patient-name-box h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-/* ─── Patient Chips Collection (Matching Patient Web Style) ─── */
-.patient-chips-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.portal-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 650;
-  border: 1px solid transparent;
-}
-
-.portal-chip.chip-blue {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.portal-chip.chip-slate {
+  gap: 12px;
   background: #f8fafc;
-  color: #334155;
-  border-color: #e2e8f0;
-}
-
-.portal-chip.chip-purple {
-  background: #faf5ff;
-  color: #7e22ce;
-  border-color: #e9d5ff;
-}
-
-.portal-chip.chip-green {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-
-.portal-chip.chip-danger {
-  background: #fef2f2;
-  color: #b91c1c;
-  border-color: #fecaca;
-  font-weight: 750;
-}
-
-.portal-chip.chip-amber {
-  background: #fffbeb;
-  color: #b45309;
-  border-color: #fde68a;
-}
-
-.portal-chip.chip-cyan {
-  background: #ecfeff;
-  color: #0e7490;
-  border-color: #a5f3fc;
-}
-
-/* Administrative metadata 4-column row */
-.patient-admin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px 18px;
-  font-size: 13px;
-  background: #f8fafc;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
+}
+
+/* Dòng 1: 4 Cột ngắn */
+.patient-admin-row-1 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.admin-divider-line {
+  height: 1px;
+  background: #e2e8f0;
+  width: 100%;
+}
+
+/* Dòng 2: Địa chỉ và Người thân xuống dòng mới hiển thị trọn vẹn */
+.patient-admin-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .patient-admin-row-1 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .patient-admin-row-2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .patient-admin-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .patient-admin-item span.meta-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: #64748b;
 }
 
 .patient-admin-item strong.meta-val {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #1e293b;
 }
 
-/* ─── Full-Width Consultation Tabs Card ─── */
+.patient-admin-item strong.meta-val.text-blue {
+  color: #0B5CAD;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.patient-admin-item span.meta-val-full {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* ─── Full-Width Consultation Main Card ─── */
 .consultation-full-card {
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  padding: 20px 22px;
+  padding: 18px 22px;
   width: 100%;
   box-sizing: border-box;
-  min-height: 580px;
+  min-height: 600px;
 }
 
-/* ─── Vitals Metrics Cards ─── */
-.consultation-vitals-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+/* Ant Design Main Tab Customization */
+.consultation-main-tabs .ant-tabs-nav {
+  margin-bottom: 20px !important;
 }
 
-.consultation-vital-card {
+.consultation-main-tabs .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  border-radius: 8px 8px 0 0;
+  font-size: 13.5px;
+  padding: 8px 18px;
   transition: all 0.2s;
 }
 
-.consultation-vital-card.is-alert {
-  background: #fef2f2;
-  border-color: #fecaca;
+.consultation-main-tabs .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background: #ffffff !important;
+  border-bottom-color: #ffffff !important;
+  color: #0B5CAD !important;
+  font-weight: 750 !important;
+  border-top: 2px solid #0B5CAD;
 }
 
-.consultation-vital-card span.v-label {
-  font-size: 12px;
-  font-weight: 600;
+/* ─── Journey Layout ─── */
+.consultation-journey-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+
+/* ─── SOP Step Navigator (Quick Jump Bar) ─── */
+.consultation-stepper-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  border: 1px solid transparent;
+}
+
+.stepper-item:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.stepper-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.num-blue {
+  background: #0B5CAD;
+}
+
+.num-indigo {
+  background: #4f46e5;
+}
+
+.num-violet {
+  background: #7c3aed;
+}
+
+.num-emerald {
+  background: #059669;
+}
+
+.stepper-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.stepper-title {
+  font-size: 13px;
+  font-weight: 750;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepper-subtitle {
+  font-size: 11px;
   color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.consultation-vital-card strong.v-value {
+.stepper-arrow {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 700;
+  user-select: none;
+}
+
+/* ─── SOP Step Section Container ─── */
+.consultation-step-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  scroll-margin-top: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.consultation-step-section:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+/* ─── Step Header ─── */
+.consultation-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.step-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-section-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 17px;
+  flex-shrink: 0;
+}
+
+.step-section-icon.icon-blue {
+  background: #eff6ff;
+  color: #0B5CAD;
+  border: 1px solid #bfdbfe;
+}
+
+.step-section-icon.icon-indigo {
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+}
+
+.step-section-icon.icon-purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.step-section-icon.icon-emerald {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.step-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.step-badge-1 {
+  background: linear-gradient(135deg, #0B5CAD 0%, #2563eb 100%);
+}
+
+.step-badge-2 {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+.step-badge-3 {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+}
+
+.step-badge-4 {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+}
+
+.step-header-text h3 {
+  margin: 0;
+  font-size: 15.5px;
   font-weight: 800;
   color: #0f172a;
 }
 
-.consultation-vital-card span.v-unit {
-  font-size: 11px;
-  color: #94a3b8;
+.step-header-text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
 }
 
-/* ─── Section Boxes ─── */
-.consultation-section-box {
-  background: #ffffff;
+/* ─── Step Inner Box ─── */
+.step-inner-box {
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 14px;
 }
 
-.consultation-section-title {
-  font-size: 14.5px;
+.step-inner-title {
+  font-size: 13.5px;
   font-weight: 700;
-  color: #0f172a;
+  color: #1e293b;
   margin-bottom: 12px;
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+/* ─── Vitals Unified Grid (Hợp nhất trực tiếp & Tự động lưu) ─── */
+.vitals-unified-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1280px) {
+  .vitals-unified-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .vitals-unified-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.vital-unified-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  min-height: 94px;
+}
+
+.vital-unified-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.vital-unified-card.has-alert {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+
+.vital-unified-card.has-validation-error {
+  border-color: #ef4444;
+  background: #fff5f5;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12);
+}
+
+.vital-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  height: 28px;
+  margin-bottom: 6px;
+}
+
+.vital-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.vital-card-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.vital-card-icon.icon-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.vital-card-icon.icon-orange {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.vital-card-icon.icon-cyan {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.vital-card-icon.icon-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.vital-card-icon.icon-purple {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.vital-card-icon.icon-green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.vital-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.vital-card-unit {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vital-card-inputs {
+  margin: 2px 0 0;
+}
+
+.bp-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bp-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.bp-divider {
+  font-size: 16px;
+  font-weight: 700;
+  color: #94a3b8;
+  user-select: none;
+}
+
+.vital-input.ant-input-number,
+.vital-input.ant-input {
+  border-radius: 8px;
+  border-color: #cbd5e1;
+  height: 32px;
+}
+
+.vital-input.ant-input-number:hover,
+.vital-input.ant-input:hover {
+  border-color: #0B5CAD;
+}
+
+.vital-input.ant-input-number-focused,
+.vital-input.ant-input:focus {
+  border-color: #0B5CAD;
+  box-shadow: 0 0 0 2px rgba(11, 92, 173, 0.15);
+}
+
+.vital-input.input-error,
+.vital-input.ant-input.input-error {
+  border-color: #ef4444 !important;
+}
+
+.vital-input.input-error .ant-input-number-input,
+.vital-input.ant-input.input-error {
+  color: #dc2626 !important;
+  font-weight: 800;
+}
+
+.vital-input .ant-input-number-input,
+.vital-input.ant-input {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: center;
+}
+
+.vital-input.full-width {
+  width: 100%;
+}
+
+.vital-bmi-display {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.bmi-number {
+  font-size: 16px;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.vital-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.vital-eval-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.eval-muted {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.eval-success {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.eval-warn {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.eval-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.eval-info {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+/* Autosave badge */
+.vitals-auto-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 14px;
+}
+
+.vitals-auto-status.is-saved {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.vitals-auto-status.is-typing {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.vitals-auto-status.is-saving {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.vitals-auto-status.is-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Start Ca Khám Callout Banner */
+.vitals-start-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 12px;
+}
+
+.callout-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1e3a8a;
+}
+
+/* History chips */
+.consultation-vitals-history {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.history-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-chip {
+  font-size: 11.5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #334155;
+}
+
+.chip-time {
+  color: #64748b;
+  font-size: 11px;
+  margin-left: 5px;
+}
+
+/* ─── Chief Complaint Box ─── */
+.chief-complaint-box {
+  background: #ffffff;
+  border: 1.5px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.05);
+  transition: all 0.2s ease;
+}
+
+.chief-complaint-box:hover {
+  border-color: #c7d2fe;
+}
+
+.cc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-/* ─── ICD-10 Chips ─── */
+.cc-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3730a3;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+}
+
+.cc-hint {
+  font-size: 12px;
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.cc-textarea {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 550 !important;
+  color: #0f172a !important;
+  line-height: 1.5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.cc-textarea:focus,
+.cc-textarea:hover {
+  background: #ffffff !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12) !important;
+}
+
+.cc-textarea:disabled {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cc-text {
+  font-size: 14px;
+  font-weight: 650;
+  color: #0f172a;
+  margin-top: 3px;
+}
+
+/* ─── 2-Column Side-by-Side: Chẩn đoán 1 bên, File kết quả 1 bên ─── */
+.consultation-duo-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+  .consultation-duo-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.duo-col-diagnosis,
+.duo-col-files {
+  display: flex;
+  flex-direction: column;
+}
+
+.diagnosis-panel-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.diagnosis-panel-card:hover {
+  border-color: #cbd5e1;
+}
+
+.diagnosis-panel-card:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.08);
+}
+
+.diagnosis-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel-title-text {
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-autosave-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.diagnosis-panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagnosis-duo-textarea.ant-input {
+  flex: 1;
+  min-height: 220px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #0f172a;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+  resize: vertical;
+}
+
+.diagnosis-duo-textarea.ant-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.diagnosis-panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ─── ICD-10 Quick Chips ─── */
 .icd-quick-chips {
   display: flex;
   align-items: center;
@@ -397,8 +1130,8 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   color: #334155;
   transition: all 0.15s ease;
 }
@@ -410,27 +1143,70 @@
 }
 
 .icd-chip.is-active {
-  background: #0b5cad;
-  border-color: #0b5cad;
+  background: #4f46e5;
+  border-color: #4f46e5;
   color: #ffffff;
+}
+
+/* Diagnosis Grid */
+.diagnosis-form-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ─── Step 3: Orders Switcher & Content ─── */
+.orders-switcher-bar {
+  margin-bottom: 14px;
+}
+
+.orders-content-wrapper {
+  background: #ffffff;
+}
+
+/* ─── Step 4: Finalize Wrap-up Action Footer ─── */
+.consultation-step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.footer-left-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ─── Records List ─── */
 .consultation-records-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-top: 14px;
 }
 
 .consultation-record-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 8px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: background 0.15s ease;
 }
 
 .consultation-record-card:hover {
@@ -497,4 +1273,15 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   overflow: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .consultation-stepper-bar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .stepper-arrow {
+    display: none;
+  }
 }

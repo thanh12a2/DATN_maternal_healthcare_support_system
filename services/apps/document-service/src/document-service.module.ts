@@ -7,6 +7,8 @@ import { DocumentDatabaseModule } from './database/database.module';
 import { ClinicalResultsController } from './clinical-results.controller';
 import { ClinicalResultsGrpcController } from './clinical-results-grpc.controller';
 import { ClinicalResultsService } from './clinical-results.service';
+import { MedicalReportPdfService } from './medical-report-pdf.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -19,6 +21,6 @@ import { ClinicalResultsService } from './clinical-results.service';
     ClinicalResultsGrpcController,
     DocumentController,
   ],
-  providers: [DocumentService, ClinicalResultsService],
+  providers: [DocumentService, ClinicalResultsService, MedicalReportPdfService],
 })
 export class DocumentServiceModule {}

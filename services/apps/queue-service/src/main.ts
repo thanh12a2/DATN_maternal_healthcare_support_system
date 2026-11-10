@@ -9,6 +9,6 @@ async function bootstrap() {
     url: '0.0.0.0:' + (process.env.GRPC_PORT ?? '6012'),
   });
   await app.startAllMicroservices();
-  await app.listen(process.env.PORT ?? 5012);
+  await app.listen(process.env.PORT ?? 5012, '0.0.0.0');
 }
 void bootstrap();

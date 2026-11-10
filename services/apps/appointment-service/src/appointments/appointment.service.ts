@@ -1362,6 +1362,15 @@ export class AppointmentDomainService {
         roomName: apt.roomName || apt.roomNameSnapshot || undefined,
         ticketCode: ticketCode || undefined,
         paymentStatus: paymentStatus || (isPaid ? 'PAID' : 'UNPAID'),
+        checkedInAt: apt.checkedInAt
+          ? new Date(apt.checkedInAt).toISOString()
+          : undefined,
+        clinicalStartedAt: apt.clinicalStartedAt
+          ? new Date(apt.clinicalStartedAt).toISOString()
+          : undefined,
+        completedAt: apt.completedAt
+          ? new Date(apt.completedAt).toISOString()
+          : undefined,
         updatedAt: new Date().toISOString(),
       });
     } catch {}

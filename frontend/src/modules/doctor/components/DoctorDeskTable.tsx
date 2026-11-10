@@ -70,7 +70,10 @@ export function DoctorDeskTable({
       width: 170,
       render: (code, record) => (
         <a
-          onClick={() => onOpenClinical(record)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenClinical(record);
+          }}
           style={{ fontWeight: 700, color: '#0B5CAD', cursor: 'pointer' }}
         >
           {code}
@@ -192,7 +195,10 @@ export function DoctorDeskTable({
                   }
                 : { color: '#0B5CAD', borderColor: '#bfdbfe', fontWeight: 600 }
             }
-            onClick={() => onOpenClinical(record)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenClinical(record);
+            }}
           >
             {isInCare ? 'Tiếp tục khám' : 'Vào khám'}
           </Button>
@@ -207,6 +213,10 @@ export function DoctorDeskTable({
       columns={columns}
       dataSource={rows}
       loading={loading}
+      onRow={(record) => ({
+        onClick: () => onOpenClinical(record),
+        style: { cursor: 'pointer' },
+      })}
       pagination={{ pageSize: 10, showSizeChanger: false }}
       locale={{
         emptyText: (

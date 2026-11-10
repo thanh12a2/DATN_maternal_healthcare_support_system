@@ -27,45 +27,22 @@ import { TreatmentService } from './treatment.service';
 
 @Controller()
 export class TreatmentController {
-  constructor(
-    private readonly s: TreatmentService,
-    private readonly access: ClinicalDoctorAccess,
-  ) {}
+  constructor(private readonly s: TreatmentService, private readonly access: ClinicalDoctorAccess) {}
 
-  private async authorizeWrite(
-    a: PublicAuthContext,
-    encounterId: string,
-    patientId: string,
-    allowFinalized = false,
-  ) {
+  private async authorizeWrite(a: PublicAuthContext, encounterId: string, patientId: string, allowFinalized = false) {
     if (a.role !== 'DOCTOR') return;
     if (!patientId) throw new BadRequestException('PATIENT_REQUIRED');
-    const encounter = await this.access.assertEncounter(
-      a,
-      encounterId,
-      patientId,
-    );
-    const states = [
-      'IN_PROGRESS',
-      'ENCOUNTER_STATE_IN_PROGRESS',
-      ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : []),
-    ];
-    if (!states.includes(encounter.state))
-      throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
+    const encounter = await this.access.assertEncounter(a, encounterId, patientId);
+    const states = ['IN_PROGRESS', 'ENCOUNTER_STATE_IN_PROGRESS', ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : [])];
+    if (!states.includes(encounter.state)) throw new ConflictException('ENCOUNTER_NOT_IN_PROGRESS');
     return encounter.resolvedDoctorId as string;
   }
 
   private async authorizeExisting(a: PublicAuthContext, id: string, b: any) {
     if (a.role !== 'DOCTOR') return;
-    if (!Number.isInteger(b?.version) || b.version < 1)
-      throw new BadRequestException('VERSION_REQUIRED');
+    if (!Number.isInteger(b?.version) || b.version < 1) throw new BadRequestException('VERSION_REQUIRED');
     const { data } = await this.s.getRest(id);
-    await this.authorizeWrite(
-      a,
-      data.sourceEncounterId,
-      data.patientId,
-      data.status === 'ACTIVE',
-    );
+    await this.authorizeWrite(a, data.sourceEncounterId, data.patientId, data.status === 'ACTIVE');
   }
 
   @PublicHttp()
@@ -82,46 +59,33 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (
-      a.role === 'DOCTOR' &&
-      (!String(b.title ?? '').trim() ||
-        !Array.isArray(b.items) ||
-        !b.items.length ||
-        b.items.some((x: any) => !String(x.title ?? '').trim()))
-    )
+    const hasItems = Array.isArray(b.items) && b.items.length > 0;
+    const hasValidItems = hasItems && b.items.every((x: any) => String(x.title ?? '').trim());
+    if (a.role === 'DOCTOR' && (!String(b.title ?? '').trim() || (!b.effectiveTo && !hasValidItems))) {
       throw new BadRequestException('PLAN_CONTENT_REQUIRED');
-    const doctorId = await this.authorizeWrite(
-      a,
-      b.sourceEncounterId || b.encounterId,
-      b.patientId,
-    );
+    }
+    const doctorId = await this.authorizeWrite(a, b.sourceEncounterId || b.encounterId, b.patientId);
     return this.s.createRest(b, a, doctorId);
   }
 
   @UseGuards(PublicJwtGuard)
   @Get(['', 'treatment-plans'])
-  async listTreatmentPlans(
-    @Query() q: any,
-    @CurrentAuth() a: PublicAuthContext,
-  ) {
-    if (a.role === 'DOCTOR')
-      await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
+  async listTreatmentPlans(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
   }
 
   @UseGuards(PublicJwtGuard)
+  @Get(['templates', 'treatment-plans/templates'])
+  async listTemplates(@Query('category') category: string) {
+    return this.s.listTemplates(category);
+  }
+
+  @UseGuards(PublicJwtGuard)
   @Get([':id', 'treatment-plans/:id'])
-  async getTreatmentPlan(
-    @Param('id') id: string,
-    @CurrentAuth() a: PublicAuthContext,
-  ) {
+  async getTreatmentPlan(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
     const result = await this.s.getRest(id);
-    if (a.role === 'DOCTOR')
-      await this.access.assertEncounter(
-        a,
-        result.data.sourceEncounterId,
-        result.data.patientId,
-      );
+    if (a.role === 'DOCTOR') await this.access.assertEncounter(a, result.data.sourceEncounterId, result.data.patientId);
     return result;
   }
 
@@ -132,15 +96,7 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (
-      a.role === 'DOCTOR' &&
-      ((b.title !== undefined && !String(b.title).trim()) ||
-        (b.items !== undefined &&
-          (!Array.isArray(b.items) ||
-            !b.items.length ||
-            b.items.some((x: any) => !String(x.title ?? '').trim()))))
-    )
-      throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    if (a.role === 'DOCTOR' && ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || b.items.some((x: any) => !String(x.title ?? '').trim()))))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
     await this.authorizeExisting(a, id, b);
     return this.s.updateRest(id, b, a);
   }
@@ -196,8 +152,7 @@ export class TreatmentController {
     const actualPlanId = itemId ? planId : undefined;
     if (a.role === 'DOCTOR') {
       const parentId = await this.s.itemPlanId(actualItemId);
-      if (actualPlanId && actualPlanId !== parentId)
-        throw new BadRequestException('ITEM_PLAN_MISMATCH');
+      if (actualPlanId && actualPlanId !== parentId) throw new BadRequestException('ITEM_PLAN_MISMATCH');
       await this.authorizeExisting(a, parentId, b);
     }
     return this.s.completeItemRest(actualPlanId, actualItemId, b);

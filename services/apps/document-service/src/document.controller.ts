@@ -54,6 +54,27 @@ export class DocumentController {
   }
 
   @UseGuards(PublicJwtGuard)
+  @Post(['encounter-reports', 'documents/encounter-reports'])
+  generateEncounterReport(
+    @Body() b: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    return this.s.generateEncounterReportRest(b, auth);
+  }
+
+  @PublicHttp()
+  @Get([
+    'encounter-reports/:encounterId',
+    'documents/encounter-reports/:encounterId',
+    'api/documents/encounter-reports/:encounterId',
+  ])
+  getEncounterReport(
+    @Param('encounterId') encounterId: string,
+  ) {
+    return this.s.getEncounterReportRest(encounterId);
+  }
+
+  @UseGuards(PublicJwtGuard)
   @Get([':id/download', 'documents/:id/download'])
   getDownloadUrl(
     @Param('id') documentId: string,

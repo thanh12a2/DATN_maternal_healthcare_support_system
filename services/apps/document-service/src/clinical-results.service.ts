@@ -79,6 +79,12 @@ export class ClinicalResultsService {
     if (!UUID.test(encounterId))
       throw new BadRequestException('INVALID_ENCOUNTER_ID');
     try {
+      const context = {
+        requestId: randomUUID(),
+        correlationId: randomUUID(),
+        actorAccountId: auth.userId,
+        actorRole: auth.role,
+      };
       const doctor = this.grpc.client({
         key: 'clinical-file-doctor',
         target:
@@ -91,8 +97,8 @@ export class ClinicalResultsService {
       const resolved = await this.grpc.unary<any, any>(
         doctor,
         'resolveDoctorByAccount',
-        { accountId: auth.userId },
-        this.grpc.metadata('doctor-service', ['doctor:internal:read']),
+        { context, accountId: auth.userId },
+        this.grpc.metadata('doctor-service', ['doctor:internal:read'], context),
       );
       if (!resolved.found || !resolved.doctorId)
         throw new ForbiddenException('DOCTOR_PROFILE_NOT_FOUND');
@@ -109,21 +115,31 @@ export class ClinicalResultsService {
         medical,
         'validateEncounterAccess',
         {
+          context,
           encounterId,
           doctorId: resolved.doctorId,
           requestedAction: write ? 'WRITE' : 'READ',
           purpose: PURPOSE,
         },
-        this.grpc.metadata('medical-record-service', [
-          'medical:access:validate',
-        ]),
+        this.grpc.metadata(
+          'medical-record-service',
+          ['medical:access:validate'],
+          context,
+        ),
       );
-      if (!access.allowed || !access.encounter?.patientId)
-        throw new ForbiddenException('NOT_ASSIGNED');
-      if (write && access.encounter.state !== 'ENCOUNTER_STATE_IN_PROGRESS')
-        throw new ForbiddenException('ENCOUNTER_NOT_IN_PROGRESS');
-      return access.encounter;
+      if (!access.allowed) throw new ForbiddenException('NOT_ASSIGNED');
+      if (write && access.encounter?.state) {
+        const s = String(access.encounter.state).replace(
+          /^ENCOUNTER_STATE_/,
+          '',
+        );
+        if (s === 'FINALIZED') {
+          throw new ForbiddenException('ENCOUNTER_FINALIZED');
+        }
+      }
+      return access.encounter || { patientId: encounterId };
     } catch (error) {
+      console.error('[clinical-results authorize error]:', error);
       if (error instanceof ForbiddenException) throw error;
       throw new ServiceUnavailableException('CLINICAL_ACCESS_UNAVAILABLE');
     }
@@ -160,28 +176,13 @@ export class ClinicalResultsService {
 
   async upload(encounterId: string, body: any, auth: PublicAuthContext) {
     const encounter = await this.authorize(encounterId, auth, true);
-    if (
-      typeof body?.contentBase64 !== 'string' ||
-      body.contentBase64.length > Math.ceil(MAX_BYTES / 3) * 4 ||
-      body.contentBase64.length % 4 !== 0 ||
-      !/^[A-Za-z0-9+/]*={0,2}$/.test(body.contentBase64)
-    )
+    const rawB64 =
+      typeof body?.contentBase64 === 'string' ? body.contentBase64.trim() : '';
+    if (!rawB64 || rawB64.length > Math.ceil(MAX_BYTES / 3) * 4 + 100)
       throw new BadRequestException('INVALID_FILE');
-    const bytes = Buffer.from(body.contentBase64, 'base64');
+    const bytes = Buffer.from(rawB64, 'base64');
     if (!bytes.length || bytes.length > MAX_BYTES)
       throw new BadRequestException('INVALID_FILE_SIZE');
-    if (bytes.toString('base64') !== body.contentBase64)
-      throw new BadRequestException('INVALID_FILE');
-    const type =
-      bytes.subarray(0, 5).toString() === '%PDF-'
-        ? 'application/pdf'
-        : bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
-          ? 'image/png'
-          : bytes.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'))
-            ? 'image/jpeg'
-            : null;
-    if (!type || body.mediaType !== type)
-      throw new BadRequestException('UNSUPPORTED_FILE_TYPE');
     const fileName =
       typeof body.fileName === 'string'
         ? body.fileName
@@ -190,6 +191,51 @@ export class ClinicalResultsService {
             .slice(0, 200)
         : '';
     if (!fileName) throw new BadRequestException('FILE_NAME_REQUIRED');
+    const lowerName = fileName.toLowerCase();
+    const isDocx =
+      bytes.subarray(0, 4).equals(Buffer.from('504b0304', 'hex')) &&
+      lowerName.endsWith('.docx');
+    const isDoc =
+      bytes.subarray(0, 8).equals(Buffer.from('d0cf11e0a1b11ae1', 'hex')) &&
+      lowerName.endsWith('.doc');
+
+    const detectedType =
+      bytes.subarray(0, 5).toString() === '%PDF-'
+        ? 'application/pdf'
+        : bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+          ? 'image/png'
+          : bytes.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'))
+            ? 'image/jpeg'
+            : isDocx
+              ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+              : isDoc
+                ? 'application/msword'
+                : null;
+
+    let normType =
+      body?.mediaType === 'image/jpg' ? 'image/jpeg' : body?.mediaType;
+    if (
+      isDocx &&
+      normType &&
+      (normType.includes('word') ||
+        normType.includes('officedocument') ||
+        normType.includes('zip') ||
+        normType === 'application/octet-stream')
+    ) {
+      normType =
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
+    if (
+      isDoc &&
+      normType &&
+      (normType.includes('msword') || normType === 'application/octet-stream')
+    ) {
+      normType = 'application/msword';
+    }
+
+    if (!detectedType || (normType && normType !== detectedType))
+      throw new BadRequestException('UNSUPPORTED_FILE_TYPE');
+    const type = detectedType;
     const id = randomUUID();
     const medical = this.grpc.client({
       key: 'clinical-file-medical',
@@ -248,6 +294,20 @@ export class ClinicalResultsService {
         .catch(() => undefined);
     }
     return { data: { id, fileName, mediaType: type, sizeBytes: bytes.length } };
+  }
+
+  async delete(encounterId: string, id: string, auth: PublicAuthContext) {
+    await this.authorize(encounterId, auth, true);
+    if (!UUID.test(id)) throw new NotFoundException('FILE_NOT_FOUND');
+    await this.db.document.deleteMany({
+      where: {
+        id,
+        ownerType: 'ENCOUNTER',
+        ownerId: encounterId,
+        purpose: PURPOSE,
+      },
+    });
+    return { data: { id, deleted: true } };
   }
 
   async content(encounterId: string, id: string, auth: PublicAuthContext) {
