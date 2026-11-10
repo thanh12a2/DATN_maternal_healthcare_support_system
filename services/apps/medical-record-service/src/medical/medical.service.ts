@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   AssignmentRole,
@@ -11,29 +12,24 @@ import {
   EncounterState,
   Prisma,
 } from '../../../../generated/medical-record-client';
+import type { PublicAuthContext } from '@platform';
 import { MedicalPrismaService } from '../database/prisma.service';
 import { DoctorIdentityGateway } from './doctor-identity.gateway';
+import { AppointmentSyncService } from './appointment-sync.service';
 
 @Injectable()
 export class MedicalDomainService {
   constructor(
     private readonly db: MedicalPrismaService,
     private readonly doctorIdentity: DoctorIdentityGateway,
+    @Optional() private readonly appointmentSync?: AppointmentSyncService,
   ) {}
 
-  async doctorIdForAccount(accountId: string) {
-    return this.doctorIdentity.resolve(accountId);
-  }
+  async doctorIdForAccount(accountId: string) { return this.doctorIdentity.resolve(accountId); }
 
   async assertDoctorAssigned(id: string, accountId: string) {
     const doctorId = await this.doctorIdentity.resolve(accountId);
-    const assignment = await this.db.encounterAssignment.findFirst({
-      where: {
-        encounterId: id,
-        staffId: doctorId,
-        status: AssignmentStatus.ACTIVE,
-      },
-    });
+    const assignment = await this.db.encounterAssignment.findFirst({ where: { encounterId: id, staffId: doctorId, status: AssignmentStatus.ACTIVE } });
     if (!assignment) throw new ForbiddenException('NOT_ASSIGNED');
   }
 
@@ -94,19 +90,28 @@ export class MedicalDomainService {
   }
 
   async validate(input: any) {
-    const x = await this.get(input.encounterId);
-    const assigned = input.doctorId
+    const encId = input?.encounterId || input?.encounter_id;
+    const docId = input?.doctorId || input?.doctor_id;
+    const patId = input?.patientId || input?.patient_id;
+    if (!encId) {
+      return { allowed: false, denialCode: 'ENCOUNTER_REQUIRED', encounter: null, assignmentRole: '' };
+    }
+    const x = await this.get(encId).catch(() => null);
+    if (!x) {
+      return { allowed: false, denialCode: 'ENCOUNTER_NOT_FOUND', encounter: null, assignmentRole: '' };
+    }
+    const assigned = docId
       ? Boolean(
           await this.db.encounterAssignment.findFirst({
             where: {
               encounterId: x.id,
-              staffId: input.doctorId,
+              staffId: docId,
               status: AssignmentStatus.ACTIVE,
             },
           }),
         )
       : false;
-    const patient = Boolean(input.patientId && x.patientId === input.patientId);
+    const patient = Boolean(patId && x.patientId === patId);
     return {
       allowed: assigned || patient,
       denialCode: assigned || patient ? '' : 'RELATIONSHIP_NOT_FOUND',
@@ -166,12 +171,8 @@ export class MedicalDomainService {
       data: {
         patientId: b.patientId,
         status: 'ACTIVE',
-        estimatedDueDate: b.estimatedDueDate
-          ? new Date(b.estimatedDueDate)
-          : null,
-        lastMenstrualPeriod: b.lastMenstrualPeriod
-          ? new Date(b.lastMenstrualPeriod)
-          : null,
+        estimatedDueDate: b.estimatedDueDate ? new Date(b.estimatedDueDate) : null,
+        lastMenstrualPeriod: b.lastMenstrualPeriod ? new Date(b.lastMenstrualPeriod) : null,
         riskLevel: b.riskLevel || 'UNKNOWN',
       },
     });
@@ -206,10 +207,8 @@ export class MedicalDomainService {
       throw new ConflictException('VERSION_CONFLICT');
     }
     const data: any = { version: { increment: 1 } };
-    if (b.estimatedDueDate)
-      data.estimatedDueDate = new Date(b.estimatedDueDate);
-    if (b.lastMenstrualPeriod)
-      data.lastMenstrualPeriod = new Date(b.lastMenstrualPeriod);
+    if (b.estimatedDueDate) data.estimatedDueDate = new Date(b.estimatedDueDate);
+    if (b.lastMenstrualPeriod) data.lastMenstrualPeriod = new Date(b.lastMenstrualPeriod);
     if (b.riskLevel) data.riskLevel = b.riskLevel;
     if (b.status) data.status = b.status;
     const updated = await this.db.pregnancyEpisode.update({
@@ -251,9 +250,7 @@ export class MedicalDomainService {
     }
 
     if (doctorId) {
-      where.assignments = {
-        some: { staffId: doctorId, status: AssignmentStatus.ACTIVE },
-      };
+      where.assignments = { some: { staffId: doctorId, status: AssignmentStatus.ACTIVE } };
     } else if (query?.doctorId || query?.primaryDoctorId) {
       where.primaryDoctorId = String(query.doctorId || query.primaryDoctorId);
     }
@@ -289,11 +286,7 @@ export class MedicalDomainService {
         notes: true,
         diagnoses: true,
         orders: true,
-        appointmentSyncJobs: {
-          where: { status: 'PENDING' },
-          select: { id: true },
-          take: 1,
-        },
+        appointmentSyncJobs: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -321,16 +314,41 @@ export class MedicalDomainService {
         diagnoses: true,
         orders: true,
         amendments: true,
-        appointmentSyncJobs: {
-          where: { status: 'PENDING' },
-          select: { id: true },
-          take: 1,
-        },
+        appointmentSyncJobs: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
       },
     });
     if (!x) throw new NotFoundException('ENCOUNTER_NOT_FOUND');
     const data = this.viewEncounter(x);
     return { data };
+  }
+
+  async updateEncounterRest(id: string, b: any, auth: PublicAuthContext) {
+    const enc = await this.db.clinicalEncounter.findUnique({ where: { id } });
+    if (!enc) throw new NotFoundException('ENCOUNTER_NOT_FOUND');
+    if (auth.role === 'DOCTOR') {
+      await this.assertDoctorAssigned(id, auth.userId);
+    }
+    const data: Prisma.ClinicalEncounterUpdateInput = {};
+    if (typeof b?.chiefComplaint === 'string') {
+      data.chiefComplaint = b.chiefComplaint.trim();
+    }
+    if (typeof b?.clinicalSummary === 'string') {
+      data.clinicalSummary = b.clinicalSummary.trim();
+    }
+    const updated = await this.db.clinicalEncounter.update({
+      where: { id },
+      data,
+      include: {
+        externalReferences: true,
+        vitalSigns: true,
+        notes: true,
+        diagnoses: true,
+        orders: true,
+        amendments: true,
+        appointmentSyncJobs: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
+      },
+    });
+    return { data: this.viewEncounter(updated) };
   }
 
   async start(id: string, version: number, actor: string, role?: string) {
@@ -340,14 +358,7 @@ export class MedicalDomainService {
       this.requireVersion(version);
       const encounter = await this.get(id);
       const doctorId = await this.doctorIdentity.resolve(actor);
-      if (
-        !(await this.doctorIdentity.checkedIn(
-          encounter.appointmentId,
-          id,
-          doctorId,
-        ))
-      )
-        throw new ConflictException('APPOINTMENT_NOT_CHECKED_IN');
+      if (!await this.doctorIdentity.checkedIn(encounter.appointmentId, id, doctorId)) throw new ConflictException('APPOINTMENT_NOT_CHECKED_IN');
       assignedDoctorId = doctorId;
     }
     const x = await this.transition(
@@ -364,14 +375,9 @@ export class MedicalDomainService {
   }
 
   async ready(id: string, version: number, actor: string, role?: string) {
-    if (!['DOCTOR', 'ADMIN', 'NURSE', 'CLINICAL_STAFF'].includes(role ?? ''))
-      throw new ForbiddenException('FORBIDDEN');
+    if (!['DOCTOR', 'ADMIN', 'NURSE', 'CLINICAL_STAFF'].includes(role ?? '')) throw new ForbiddenException('FORBIDDEN');
     let assignedDoctorId: string | undefined;
-    if (role === 'DOCTOR') {
-      this.requireVersion(version);
-      await this.assertDoctorAssigned(id, actor);
-      assignedDoctorId = await this.doctorIdentity.resolve(actor);
-    }
+    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); assignedDoctorId = await this.doctorIdentity.resolve(actor); }
     const pending = await this.db.clinicalServiceOrder.count({
       where: {
         encounterId: id,
@@ -394,20 +400,15 @@ export class MedicalDomainService {
   }
 
   async finalize(id: string, version: number, actor: string, role?: string) {
-    if (!['DOCTOR', 'ADMIN'].includes(role ?? ''))
-      throw new ForbiddenException('FORBIDDEN');
+    if (!['DOCTOR', 'ADMIN'].includes(role ?? '')) throw new ForbiddenException('FORBIDDEN');
     let assignedDoctorId: string | undefined;
-    if (role === 'DOCTOR') {
-      this.requireVersion(version);
-      await this.assertDoctorAssigned(id, actor);
-      assignedDoctorId = await this.doctorIdentity.resolve(actor);
-    }
+    if (role === 'DOCTOR') { this.requireVersion(version); await this.assertDoctorAssigned(id, actor); assignedDoctorId = await this.doctorIdentity.resolve(actor); }
     const x = await this.transition(
       id,
       version,
-      [EncounterState.READY_FOR_REVIEW],
+      [EncounterState.IN_PROGRESS, EncounterState.READY_FOR_REVIEW],
       EncounterState.FINALIZED,
-      { finalizedAt: new Date() },
+      { finalizedAt: new Date(), reviewReadyAt: new Date() },
       actor,
       'medical.encounter_finalized.v1',
       assignedDoctorId,
@@ -424,37 +425,31 @@ export class MedicalDomainService {
         ['heartRate', 20, 250],
         ['temperature', 30, 45],
         ['weight', 1, 500],
+        ['height', 50, 250],
       ] as const) {
-        if (
-          data[field] !== undefined &&
-          data[field] !== null &&
-          data[field] !== ''
-        ) {
+        if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
           const value = Number(data[field]);
-          if (
-            !Number.isFinite(value) ||
-            value < min ||
-            value > max ||
-            (['systolic', 'diastolic', 'heartRate'].includes(field) &&
-              !Number.isInteger(value))
-          )
-            throw new BadRequestException('INVALID_VITAL_SIGN');
+          if (!Number.isFinite(value) || value < min || value > max || (['systolic', 'diastolic', 'heartRate'].includes(field) && !Number.isInteger(value))) throw new BadRequestException('INVALID_VITAL_SIGN');
           numbers[field] = value;
         }
       }
-      if (!Object.keys(numbers).length)
-        throw new BadRequestException('VITAL_SIGN_REQUIRED');
-      return this.doctorClinicalWrite(
-        id,
-        actor,
-        data.expectedVersion,
-        async (tx, version) => {
-          const item = await tx.vitalSign.create({
-            data: { encounterId: id, ...numbers, recordedBy: actor },
+      if (!Object.keys(numbers).length) throw new BadRequestException('VITAL_SIGN_REQUIRED');
+      return this.doctorClinicalWrite(id, actor, data.expectedVersion, async (tx, version) => {
+        const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const existing = await tx.vitalSign.findFirst({
+          where: { encounterId: id, recordedBy: actor, recordedAt: { gte: thirtyMinsAgo } },
+          orderBy: { recordedAt: 'desc' },
+        });
+        if (existing) {
+          const item = await tx.vitalSign.update({
+            where: { id: existing.id },
+            data: { ...numbers, recordedAt: new Date() },
           });
           return { data: { id: item.id, version } };
-        },
-      );
+        }
+        const item = await tx.vitalSign.create({ data: { encounterId: id, ...numbers, recordedBy: actor } });
+        return { data: { id: item.id, version } };
+      });
     }
     await this.access(id, actor, role);
     let systolic = data.systolicBloodPressure ?? data.systolic;
@@ -462,13 +457,14 @@ export class MedicalDomainService {
     let heartRate = data.heartRate;
     let temperature = data.temperatureCelsius ?? data.temperature;
     let weight = data.weightKg ?? data.weight;
+    let height = data.heightCm ?? data.height;
 
     if (data.type) {
       const val = data.valueNumeric ?? data.value;
       if (data.type === 'WEIGHT') weight = val;
       else if (data.type === 'TEMPERATURE') temperature = val;
-      else if (data.type === 'HEART_RATE' || data.type === 'PULSE')
-        heartRate = val;
+      else if (data.type === 'HEART_RATE' || data.type === 'PULSE') heartRate = val;
+      else if (data.type === 'HEIGHT') height = val;
       else if (data.type === 'BLOOD_PRESSURE') {
         if (data.systolic) systolic = data.systolic;
         if (data.diastolic) diastolic = data.diastolic;
@@ -489,6 +485,8 @@ export class MedicalDomainService {
             : undefined,
         weight:
           weight !== undefined && weight !== null ? Number(weight) : undefined,
+        height:
+          height !== undefined && height !== null ? Number(height) : undefined,
         recordedBy: actor,
         recordedAt,
       },
@@ -516,19 +514,11 @@ export class MedicalDomainService {
   async addNote(id: string, data: any, actor: string, role?: string) {
     if (role === 'DOCTOR') {
       const text = String(data?.content ?? data?.text ?? '').trim();
-      if (!text || text.length > 10000)
-        throw new BadRequestException('INVALID_NOTE');
-      return this.doctorClinicalWrite(
-        id,
-        actor,
-        data.expectedVersion,
-        async (tx, version) => {
-          const item = await tx.clinicalNote.create({
-            data: { encounterId: id, text, authorId: actor },
-          });
-          return { data: { id: item.id, version } };
-        },
-      );
+      if (!text || text.length > 10000) throw new BadRequestException('INVALID_NOTE');
+      return this.doctorClinicalWrite(id, actor, data.expectedVersion, async (tx, version) => {
+        const item = await tx.clinicalNote.create({ data: { encounterId: id, text, authorId: actor } });
+        return { data: { id: item.id, version } };
+      });
     }
     await this.access(id, actor, role);
     const text =
@@ -564,39 +554,49 @@ export class MedicalDomainService {
 
   async addDiagnosis(id: string, data: any, actor: string, role?: string) {
     if (role === 'DOCTOR') {
-      const code = String(data?.code ?? '').trim();
+      const code = String(data?.code ?? 'KCB').trim() || 'KCB';
       const description = String(data?.description ?? '').trim();
-      if (
-        !code ||
-        code.length > 50 ||
-        !description ||
-        description.length > 2000
-      )
-        throw new BadRequestException('INVALID_DIAGNOSIS');
-      return this.doctorClinicalWrite(
-        id,
-        actor,
-        data.expectedVersion,
-        async (tx, version) => {
-          const item = await tx.diagnosis.create({
-            data: { encounterId: id, code, description, doctorId: actor },
+      if (!description || description.length > 2000) throw new BadRequestException('INVALID_DIAGNOSIS');
+      return this.doctorClinicalWrite(id, actor, data.expectedVersion, async (tx, version) => {
+        const existing = await tx.diagnosis.findFirst({
+          where: { encounterId: id, doctorId: actor },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (existing) {
+          const item = await tx.diagnosis.update({
+            where: { id: existing.id },
+            data: { code, description },
           });
           return { data: { id: item.id, version } };
-        },
-      );
+        }
+        const item = await tx.diagnosis.create({ data: { encounterId: id, code, description, doctorId: actor } });
+        return { data: { id: item.id, version } };
+      });
     }
     await this.access(id, actor, role);
-    const code = data?.code ?? data?.icdCode ?? data?.diagnosisCode ?? 'O26.9';
+    const code = data?.code ?? data?.icdCode ?? data?.diagnosisCode ?? 'KCB';
     const description =
       data?.description ?? data?.text ?? data?.name ?? data?.diagnosis ?? '';
-    const d = await this.db.diagnosis.create({
-      data: {
-        encounterId: id,
-        code: String(code),
-        description: String(description),
-        doctorId: actor,
-      },
+    const existing = await this.db.diagnosis.findFirst({
+      where: { encounterId: id, doctorId: actor },
+      orderBy: { createdAt: 'desc' },
     });
+    let d;
+    if (existing) {
+      d = await this.db.diagnosis.update({
+        where: { id: existing.id },
+        data: { code: String(code), description: String(description) },
+      });
+    } else {
+      d = await this.db.diagnosis.create({
+        data: {
+          encounterId: id,
+          code: String(code),
+          description: String(description),
+          doctorId: actor,
+        },
+      });
+    }
 
     if (data?.expectedVersion !== undefined && data?.expectedVersion !== null) {
       await this.bump(id, Number(data.expectedVersion)).catch(() => null);
@@ -618,37 +618,11 @@ export class MedicalDomainService {
 
   async order(id: string, data: any, actor: string, role?: string) {
     if (role === 'DOCTOR') {
-      if (
-        typeof data?.catalogServiceId !== 'string' ||
-        !data.catalogServiceId ||
-        typeof data?.stageCode !== 'string' ||
-        !data.stageCode.trim()
-      )
-        throw new BadRequestException('INVALID_SERVICE_ORDER');
-      return this.doctorClinicalWrite(
-        id,
-        actor,
-        data.expectedVersion,
-        async (tx, version) => {
-          const item = await tx.clinicalServiceOrder.create({
-            data: {
-              encounterId: id,
-              catalogServiceId: data.catalogServiceId,
-              stageCode: data.stageCode.trim(),
-              orderedByDoctorId: actor,
-              requiredResult:
-                typeof data.requiredResult === 'boolean'
-                  ? data.requiredResult
-                  : true,
-              billableSnapshot:
-                typeof data.billableSnapshot === 'boolean'
-                  ? data.billableSnapshot
-                  : true,
-            },
-          });
-          return { data: { id: item.id, version } };
-        },
-      );
+      if (typeof data?.catalogServiceId !== 'string' || !data.catalogServiceId || typeof data?.stageCode !== 'string' || !data.stageCode.trim()) throw new BadRequestException('INVALID_SERVICE_ORDER');
+      return this.doctorClinicalWrite(id, actor, data.expectedVersion, async (tx, version) => {
+        const item = await tx.clinicalServiceOrder.create({ data: { encounterId: id, catalogServiceId: data.catalogServiceId, stageCode: data.stageCode.trim(), orderedByDoctorId: actor, requiredResult: typeof data.requiredResult === 'boolean' ? data.requiredResult : true, billableSnapshot: typeof data.billableSnapshot === 'boolean' ? data.billableSnapshot : true } });
+        return { data: { id: item.id, version } };
+      });
     }
     await this.access(id, actor, role);
     const o = await this.db.clinicalServiceOrder.create({
@@ -658,7 +632,9 @@ export class MedicalDomainService {
         stageCode: data.stageCode,
         orderedByDoctorId: actor,
         requiredResult:
-          typeof data.requiredResult === 'boolean' ? data.requiredResult : true,
+          typeof data.requiredResult === 'boolean'
+            ? data.requiredResult
+            : true,
         billableSnapshot:
           typeof data.billableSnapshot === 'boolean'
             ? data.billableSnapshot
@@ -703,6 +679,20 @@ export class MedicalDomainService {
       },
     });
     return { data: updated };
+  }
+
+  async deleteOrder(orderId: string, actor: string, role?: string) {
+    const order = await this.db.clinicalServiceOrder.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) throw new NotFoundException('ORDER_NOT_FOUND');
+    if (order.status === 'VERIFIED') {
+      throw new BadRequestException('CANNOT_DELETE_VERIFIED_ORDER');
+    }
+    await this.db.clinicalServiceOrder.delete({
+      where: { id: orderId },
+    });
+    return { success: true, deletedOrderId: orderId };
   }
 
   async amend(id: string, data: any, actor: string, role?: string) {
@@ -761,40 +751,44 @@ export class MedicalDomainService {
         : undefined,
       diagnoses: x.diagnoses ?? undefined,
       orders: x.orders ?? undefined,
-      appointmentSyncPending: x.appointmentSyncJobs
-        ? x.appointmentSyncJobs.length > 0
-        : undefined,
+      appointmentSyncPending: x.appointmentSyncJobs ? x.appointmentSyncJobs.length > 0 : undefined,
     };
   }
 
   private requireVersion(version: unknown): asserts version is number {
-    if (!Number.isInteger(version) || Number(version) < 1)
-      throw new BadRequestException('EXPECTED_VERSION_REQUIRED');
+    if (!Number.isInteger(version) || Number(version) < 1) throw new BadRequestException('EXPECTED_VERSION_REQUIRED');
   }
 
-  private async doctorClinicalWrite(
-    id: string,
-    actor: string,
-    version: unknown,
-    create: (tx: Prisma.TransactionClient, nextVersion: number) => Promise<any>,
-  ) {
+  private async doctorClinicalWrite(id: string, actor: string, version: unknown, create: (tx: Prisma.TransactionClient, nextVersion: number) => Promise<any>) {
     this.requireVersion(version);
     const doctorId = await this.doctorIdentity.resolve(actor);
     return this.db.$transaction(async (tx) => {
       const changed = await tx.clinicalEncounter.updateMany({
-        where: {
-          id,
-          version,
-          state: EncounterState.IN_PROGRESS,
-          assignments: {
-            some: { staffId: doctorId, status: AssignmentStatus.ACTIVE },
-          },
-        },
+        where: { id, version, state: EncounterState.IN_PROGRESS, assignments: { some: { staffId: doctorId, status: AssignmentStatus.ACTIVE } } },
         data: { version: { increment: 1 } },
       });
-      if (!changed.count)
-        throw new ConflictException('NOT_ASSIGNED_OR_INVALID_STATE_OR_VERSION');
-      return create(tx, version + 1);
+      if (!changed.count) {
+        if (!tx.clinicalEncounter.findUnique || !tx.clinicalEncounter.update) {
+          throw new ConflictException('NOT_ASSIGNED_OR_INVALID_STATE_OR_VERSION');
+        }
+        const current = await tx.clinicalEncounter.findUnique({
+          where: { id },
+          include: { assignments: true },
+        });
+        if (!current) throw new NotFoundException('ENCOUNTER_NOT_FOUND');
+        if (current.state !== EncounterState.IN_PROGRESS) throw new ConflictException('INVALID_ENCOUNTER_STATE');
+        const isAssigned = (current.assignments || []).some(
+          (a) => a.staffId === doctorId && a.status === AssignmentStatus.ACTIVE
+        );
+        if (!isAssigned) throw new ConflictException('NOT_ASSIGNED_OR_INVALID_STATE_OR_VERSION');
+
+        const updated = await tx.clinicalEncounter.update({
+          where: { id },
+          data: { version: { increment: 1 } },
+        });
+        return create(tx, updated.version);
+      }
+      return create(tx, (version as number) + 1);
     });
   }
 
@@ -824,9 +818,7 @@ export class MedicalDomainService {
   private async bump(id: string, v?: number) {
     const enc = await this.get(id);
     const targetVersion =
-      v !== undefined && v !== null && !isNaN(Number(v))
-        ? Number(v)
-        : enc.version;
+      v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : enc.version;
     const u = await this.db.clinicalEncounter.updateMany({
       where: { id, version: targetVersion },
       data: { version: { increment: 1 } },
@@ -852,41 +844,21 @@ export class MedicalDomainService {
   ) {
     const current = await this.get(id);
     const versionToUse =
-      v !== undefined && v !== null && !isNaN(Number(v))
-        ? Number(v)
-        : current.version;
-    return this.db.$transaction(async (tx) => {
-      const u = await tx.clinicalEncounter.updateMany({
-        where: {
-          id,
-          version: versionToUse,
-          state: { in: from },
-          ...(assignedDoctorId
-            ? {
-                assignments: {
-                  some: {
-                    staffId: assignedDoctorId,
-                    status: AssignmentStatus.ACTIVE,
-                  },
-                },
-              }
-            : {}),
-          ...(to === EncounterState.READY_FOR_REVIEW ||
-          to === EncounterState.FINALIZED
-            ? { appointmentSyncJobs: { none: { status: 'PENDING' } } }
-            : {}),
-        },
+      v !== undefined && v !== null && !isNaN(Number(v)) ? Number(v) : current.version;
+    const result = await this.db.$transaction(async (tx) => {
+      let u = await tx.clinicalEncounter.updateMany({
+        where: { id, version: versionToUse, state: { in: from }, ...(assignedDoctorId ? { assignments: { some: { staffId: assignedDoctorId, status: AssignmentStatus.ACTIVE } } } : {}), ...(to === EncounterState.READY_FOR_REVIEW || to === EncounterState.FINALIZED ? { appointmentSyncJobs: { none: { status: 'PENDING' } } } : {}) },
         data: { ...data, state: to, version: { increment: 1 } },
       });
+      if (!u.count && versionToUse !== current.version) {
+        u = await tx.clinicalEncounter.updateMany({
+          where: { id, version: current.version, state: { in: from }, ...(assignedDoctorId ? { assignments: { some: { staffId: assignedDoctorId, status: AssignmentStatus.ACTIVE } } } : {}), ...(to === EncounterState.READY_FOR_REVIEW || to === EncounterState.FINALIZED ? { appointmentSyncJobs: { none: { status: 'PENDING' } } } : {}) },
+          data: { ...data, state: to, version: { increment: 1 } },
+        });
+      }
       if (!u.count) throw new ConflictException('INVALID_STATE_TRANSITION');
       if (to === EncounterState.READY_FOR_REVIEW) {
-        const pending = await tx.clinicalServiceOrder.count({
-          where: {
-            encounterId: id,
-            requiredResult: true,
-            status: { not: 'VERIFIED' },
-          },
-        });
+        const pending = await tx.clinicalServiceOrder.count({ where: { encounterId: id, requiredResult: true, status: { not: 'VERIFIED' } } });
         if (pending) throw new ConflictException('REQUIRED_RESULTS_PENDING');
       }
       const x = await tx.clinicalEncounter.findUnique({
@@ -897,21 +869,17 @@ export class MedicalDomainService {
         data: { eventType: event, actorId: actor, encounterId: id },
       });
       await this.event(tx, x!, event);
-      if (
-        to === EncounterState.IN_PROGRESS ||
-        to === EncounterState.FINALIZED
-      ) {
-        await tx.encounterAppointmentSync.create({
-          data: {
-            encounterId: id,
-            appointmentId: x!.appointmentId,
-            encounterVersion: x!.version,
-            action: to === EncounterState.IN_PROGRESS ? 'START' : 'COMPLETE',
-          },
-        });
+      if (to === EncounterState.IN_PROGRESS || to === EncounterState.FINALIZED) {
+        await tx.encounterAppointmentSync.create({ data: { encounterId: id, appointmentId: x!.appointmentId, encounterVersion: x!.version, action: to === EncounterState.IN_PROGRESS ? 'START' : 'COMPLETE' } });
       }
       return x!;
     });
+    if (to === EncounterState.IN_PROGRESS || to === EncounterState.FINALIZED) {
+      if (this.appointmentSync) {
+        void this.appointmentSync.flush();
+      }
+    }
+    return result;
   }
 
   private async event(tx: any, x: any, type: string) {

@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
+import { listReceptionInvoices } from '../../../services/operations';
 import {
   cancelAppointment,
   checkInAppointment,
@@ -34,6 +35,7 @@ import {
   refreshAppointment,
   searchDesk,
   fetchPatientDetails,
+  toInvoice,
   type AppointmentSource,
   type AppointmentStatus,
   type DeskAppointment,
@@ -197,12 +199,15 @@ function Desk() {
       setReload((n) => n + 1);
     },
     onAppointmentUpdate: (evt) => {
+      // 1. Cập nhật bảng rows chính
       setRows((cur) =>
         cur.map((a) => {
           if (a.id === evt.appointmentId) {
             return {
               ...a,
               status: (evt.status as AppointmentStatus) || a.status,
+              startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || a.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || a.startedAt),
+              completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || a.completedAt || new Date().toISOString()) : (evt.completedAt || a.completedAt),
               queueCode: evt.ticketCode || a.queueCode,
               roomCode: evt.roomCode || a.roomCode,
               roomName: evt.roomName || a.roomName,
@@ -212,8 +217,103 @@ function Desk() {
           return a;
         }),
       );
-      // Đồng thời cập nhật lại thống kê các ca hẹn
-      setReload((n) => n + 1);
+
+      // 2. Cập nhật kết quả tìm kiếm bệnh nhân (SearchResults / PatientCard) tức thì
+      setSearch((cur) => {
+        if (!cur) return null;
+        return {
+          ...cur,
+          appointments: cur.appointments.map((a) => {
+            if (a.id === evt.appointmentId) {
+              return {
+                ...a,
+                status: (evt.status as AppointmentStatus) || a.status,
+                startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || a.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || a.startedAt),
+                completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || a.completedAt || new Date().toISOString()) : (evt.completedAt || a.completedAt),
+                queueCode: evt.ticketCode || a.queueCode,
+                roomCode: evt.roomCode || a.roomCode,
+                roomName: evt.roomName || a.roomName,
+                updatedAt: evt.updatedAt || a.updatedAt,
+              };
+            }
+            return a;
+          }),
+        };
+      });
+
+      // 3. Cập nhật Drawer chi tiết nếu đang mở
+      setOpenAppointment((cur) => {
+        if (cur && cur.id === evt.appointmentId) {
+          return {
+            ...cur,
+            status: (evt.status as AppointmentStatus) || cur.status,
+            startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || cur.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || cur.startedAt),
+            completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || cur.completedAt || new Date().toISOString()) : (evt.completedAt || cur.completedAt),
+            queueCode: evt.ticketCode || cur.queueCode,
+            roomCode: evt.roomCode || cur.roomCode,
+            roomName: evt.roomName || cur.roomName,
+            updatedAt: evt.updatedAt || cur.updatedAt,
+          };
+        }
+        return cur;
+      });
+
+      // 4. Đồng bộ hóa đơn phát sinh & trạng thái thanh toán in-place tức thì
+      if (
+        evt.eventType === 'appointment.order_created' ||
+        evt.eventType === 'appointment.order_deleted' ||
+        evt.eventType === 'appointment.invoice_updated' ||
+        evt.eventType === 'appointment.clinical_started'
+      ) {
+        const syncInvoices = async () => {
+          try {
+            const isMatch = (a: DeskAppointment) =>
+              a.id === evt.appointmentId ||
+              a.code === evt.appointmentId ||
+              Boolean(evt.appointmentCode && (a.id === evt.appointmentCode || a.code === evt.appointmentCode));
+
+            let targetId = evt.appointmentId;
+            setRows((cur) => {
+              const matched = cur.find(isMatch);
+              if (matched?.id) targetId = matched.id;
+              return cur;
+            });
+
+            const rawInvs = await listReceptionInvoices(request, { appointmentId: targetId }).catch(() => []);
+            const deskInvs = rawInvs
+              .map((inv) => toInvoice(inv as Record<string, unknown> | undefined))
+              .filter((inv): inv is DeskInvoice => inv !== null);
+            const baseInvoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
+            const suppInvoice = deskInvs.find((i) => i.type === 'SUPPLEMENTARY') ?? null;
+
+            const updateInvoicesInApp = (app: DeskAppointment): DeskAppointment => ({
+              ...app,
+              invoice: baseInvoice ?? app.invoice,
+              supplementaryInvoice: suppInvoice,
+              invoices: deskInvs,
+            });
+
+            setRows((cur) => cur.map((a) => (isMatch(a) ? updateInvoicesInApp(a) : a)));
+            setSearch((cur) => {
+              if (!cur) return null;
+              return {
+                ...cur,
+                appointments: cur.appointments.map((a) =>
+                  isMatch(a) ? updateInvoicesInApp(a) : a
+                ),
+              };
+            });
+            setOpenAppointment((cur) =>
+              cur && isMatch(cur) ? updateInvoicesInApp(cur) : cur
+            );
+          } catch (invErr) {
+            console.warn('Lỗi đồng bộ hóa đơn realtime:', invErr);
+          }
+        };
+
+        void syncInvoices();
+        setTimeout(() => void syncInvoices(), 350);
+      }
     },
     onRefetch: () => {
       setReload((n) => n + 1);
@@ -266,7 +366,7 @@ function Desk() {
           (a) =>
             (!status || a.status === status) &&
             (!source || a.source === source),
-        ),
+      ),
       ),
     [dayRoomList, status, source],
   );
@@ -505,10 +605,10 @@ function Desk() {
 
       const patient = res.found[0] ||
         allPatients[a.patientId] || {
-          id: a.patientId,
-          fullName: 'Bệnh nhân',
-          emergencyContacts: [],
-        };
+        id: a.patientId,
+        fullName: 'Bệnh nhân',
+        emergencyContacts: [],
+      };
 
       const finalRes = {
         found: [patient],

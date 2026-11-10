@@ -14,22 +14,11 @@ import {
   type ReceptionAppointment,
 } from './operations';
 
-export type AppointmentStatus =
-  | 'BOOKED'
-  | 'CHECKED_IN'
-  | 'IN_CLINICAL_CARE'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'NO_SHOW'
-  | 'REASSIGNMENT_REQUIRED';
+export type AppointmentStatus = 'BOOKED' | 'CHECKED_IN' | 'IN_CLINICAL_CARE' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'REASSIGNMENT_REQUIRED';
 export type AppointmentSource = 'BOOKED' | 'WALK_IN';
 export type PaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
 
-export interface DeskRoom {
-  code: string;
-  name: string;
-  doctorName: string;
-}
+export interface DeskRoom { code: string; name: string; doctorName: string }
 export interface DeskPatient {
   id: string;
   version?: number;
@@ -39,13 +28,7 @@ export interface DeskPatient {
   nationalId?: string;
   nationalIdMasked?: string;
   address?: string;
-  emergencyContacts: Array<{
-    id?: string;
-    fullName: string;
-    relationship?: string;
-    phone?: string;
-    isPrimary?: boolean;
-  }>;
+  emergencyContacts: Array<{ id?: string; fullName: string; relationship?: string; phone?: string; isPrimary?: boolean }>;
   isFullProfile?: boolean;
 }
 export interface DeskInvoice {
@@ -53,16 +36,13 @@ export interface DeskInvoice {
   number: string;
   type?: 'BASE' | 'SUPPLEMENTARY';
   version: number;
-  lines: Array<{
-    name: string;
-    qty: number;
-    unitPrice: number;
-    amount: number;
-  }>;
+  lines: Array<{ name: string; qty: number; unitPrice: number; amount: number }>;
   total: number;
   paid: number;
   balance: number;
   payments: Array<{ at?: string; method: string; amount: number }>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 export interface DeskAppointment {
   id: string;
@@ -91,7 +71,9 @@ export interface DeskAppointment {
   updatedAt?: string;
   estimatedTotal: number;
   invoice?: DeskInvoice | null;
+  supplementaryInvoice?: DeskInvoice | null;
   invoices?: DeskInvoice[];
+  encounterId?: string | null;
 }
 export interface DeskDoctorInfo {
   id: string;
@@ -110,7 +92,7 @@ export type PatientMap = Record<string, DeskPatient>;
 export interface DeskCatalog {
   rooms: DeskRoom[];
   doctors: DeskDoctorInfo[];
-  services: Array<{ id: string; name: string }>;
+  services: Array<{ id: string; name: string; price?: number }>;
   doctorById: Map<string, string>;
   specialtyById: Map<string, string>;
   doctorInfoById: Map<string, DeskDoctorInfo>;
@@ -205,11 +187,7 @@ export const KNOWN_DOCTOR_SHIFTS: Record<
   },
 };
 
-export function generateSlotsForShift(
-  startTime: string,
-  endTime: string,
-  stepMinutes = 30,
-): string[] {
+export function generateSlotsForShift(startTime: string, endTime: string, stepMinutes = 30): string[] {
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   let cur = startH * 60 + startM;
@@ -230,9 +208,7 @@ export function generateSlotsForShift(
 
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 const num = (v: unknown) => Number(v ?? 0) || 0;
-const key = () =>
-  globalThis.crypto?.randomUUID?.() ??
-  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const key = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 const patientCache = new Map<string, DeskPatient>();
 
 export async function fetchCatalog(request: Requester): Promise<DeskCatalog> {
@@ -261,9 +237,7 @@ export async function fetchCatalog(request: Requester): Promise<DeskCatalog> {
       startTime: '07:30',
       endTime: '12:00',
       roomCode: d.roomCode ? String(d.roomCode) : 'P.201',
-      roomName: d.roomName
-        ? String(d.roomName)
-        : `Phòng khám ${d.roomCode || '201'}`,
+      roomName: d.roomName ? String(d.roomName) : `Phòng khám ${d.roomCode || '201'}`,
       specialtyName: 'Sản Phụ khoa',
     };
 
@@ -286,8 +260,7 @@ export async function fetchCatalog(request: Requester): Promise<DeskCatalog> {
   }
 
   const specialtyById = new Map<string, string>();
-  for (const s of specialties)
-    if (s.id) specialtyById.set(String(s.id), String(s.name ?? ''));
+  for (const s of specialties) if (s.id) specialtyById.set(String(s.id), String(s.name ?? ''));
 
   const list: DeskRoom[] = rooms
     .filter((r) => r.status === 'ACTIVE')
@@ -298,46 +271,26 @@ export async function fetchCatalog(request: Requester): Promise<DeskCatalog> {
     })
     .sort((a, b) => a.code.localeCompare(b.code));
 
-  const svcData = Array.isArray(rawServices)
-    ? rawServices
-    : rawServices?.data || rawServices?.items || [];
-  const servicesList: Array<{ id: string; name: string }> = svcData.map(
-    (s: any) => ({
-      id: String(s.id),
-      name: String(s.name),
-    }),
-  );
+  const svcData = Array.isArray(rawServices) ? rawServices : rawServices?.data || rawServices?.items || [];
+  const servicesList: Array<{ id: string; name: string; price?: number }> = svcData.map((s: any) => ({
+    id: String(s.id),
+    name: String(s.name),
+    price: s.prices?.[0]?.amountMinor ? Number(s.prices[0].amountMinor) : 0,
+  }));
 
-  return {
-    rooms: list,
-    doctors: doctorsList,
-    services: servicesList,
-    doctorById,
-    specialtyById,
-    doctorInfoById,
-  };
+  return { rooms: list, doctors: doctorsList, services: servicesList, doctorById, specialtyById, doctorInfoById };
 }
 
-export async function fetchPatientDetails(
-  request: Requester,
-  id: string,
-  force = false,
-): Promise<DeskPatient | null> {
+export async function fetchPatientDetails(request: Requester, id: string, force = false): Promise<DeskPatient | null> {
   return fetchPatient(request, id, force);
 }
 
-async function fetchPatient(
-  request: Requester,
-  id: string,
-  force = false,
-): Promise<DeskPatient | null> {
+async function fetchPatient(request: Requester, id: string, force = false): Promise<DeskPatient | null> {
   if (!force) {
     const hit = patientCache.get(id);
     if (hit && hit.isFullProfile) return hit;
   }
-  const raw = (await getReceptionPatient(request, id).catch(
-    () => null,
-  )) as Record<string, unknown> | null;
+  const raw = await getReceptionPatient(request, id).catch(() => null) as Record<string, unknown> | null;
   if (!raw) return patientCache.get(id) ?? null;
   const p = cachePatient(raw);
   p.isFullProfile = true;
@@ -345,15 +298,9 @@ async function fetchPatient(
 }
 
 function cachePatient(raw: Record<string, unknown>): DeskPatient {
-  const contacts = Array.isArray(raw.emergencyContacts)
-    ? (raw.emergencyContacts as Array<Record<string, unknown>>)
-    : [];
+  const contacts = Array.isArray(raw.emergencyContacts) ? raw.emergencyContacts as Array<Record<string, unknown>> : [];
   const rawPhone = str(raw.phoneNumber) ?? str(raw.phoneNumberMasked);
-  const formattedPhone = rawPhone
-    ? rawPhone.startsWith('+84')
-      ? '0' + rawPhone.slice(3)
-      : rawPhone
-    : undefined;
+  const formattedPhone = rawPhone ? (rawPhone.startsWith('+84') ? '0' + rawPhone.slice(3) : rawPhone) : undefined;
   const p: DeskPatient = {
     id: String(raw.id),
     version: num(raw.version) || 1,
@@ -369,44 +316,29 @@ function cachePatient(raw: Record<string, unknown>): DeskPatient {
         id: str(c.id),
         fullName: str(c.fullName) ?? '',
         relationship: str(c.relationship),
-        phone: cPhone
-          ? cPhone.startsWith('+84')
-            ? '0' + cPhone.slice(3)
-            : cPhone
-          : undefined,
+        phone: cPhone ? (cPhone.startsWith('+84') ? '0' + cPhone.slice(3) : cPhone) : undefined,
         isPrimary: Boolean(c.isPrimary),
       };
     }),
-    isFullProfile: Boolean(
-      raw.address !== undefined || raw.emergencyContacts !== undefined,
-    ),
+    isFullProfile: Boolean(raw.address !== undefined || raw.emergencyContacts !== undefined),
   };
   patientCache.set(p.id, p);
   return p;
 }
 
-function toInvoice(
-  raw: Record<string, unknown> | undefined,
-): DeskInvoice | null {
+export function toInvoice(raw: Record<string, unknown> | undefined): DeskInvoice | null {
   if (!raw) return null;
-  const lines = Array.isArray(raw.lines)
-    ? (raw.lines as Array<Record<string, unknown>>)
-    : [];
-  const payRaw = Array.isArray(raw.payments)
-    ? (raw.payments as Array<Record<string, unknown>>)
-    : raw.payment
-      ? [raw.payment as Record<string, unknown>]
-      : [];
+  const lines = Array.isArray(raw.lines) ? raw.lines as Array<Record<string, unknown>> : [];
+  const payRaw = Array.isArray(raw.payments) ? raw.payments as Array<Record<string, unknown>> : raw.payment ? [raw.payment as Record<string, unknown>] : [];
   return {
     id: String(raw.id ?? raw.invoiceId),
     number: str(raw.invoiceNumber) ?? '',
     type: raw.type === 'SUPPLEMENTARY' ? 'SUPPLEMENTARY' : 'BASE',
     version: num(raw.version) || 1,
+    createdAt: str(raw.createdAt) ?? undefined,
+    updatedAt: str(raw.updatedAt) ?? undefined,
     lines: lines.map((l) => ({
-      name: (str(l.descriptionSnapshot) ?? '').replace(
-        ': undefined',
-        ': Khám theo yêu cầu',
-      ),
+      name: (str(l.descriptionSnapshot) ?? '').replace(': undefined', ': Khám theo yêu cầu'),
       qty: num(l.quantity),
       unitPrice: num(l.unitAmountMinor),
       amount: num(l.lineAmountMinor),
@@ -414,13 +346,7 @@ function toInvoice(
     total: num(raw.totalMinor),
     paid: num(raw.paidMinor),
     balance: num(raw.balanceMinor),
-    payments: payRaw
-      .filter((p) => p.status !== 'REJECTED')
-      .map((p) => ({
-        at: str(p.receivedAt),
-        method: String(p.method ?? ''),
-        amount: num(p.amountMinor),
-      })),
+    payments: payRaw.filter((p) => p.status !== 'REJECTED').map((p) => ({ at: str(p.receivedAt), method: String(p.method ?? ''), amount: num(p.amountMinor) })),
   };
 }
 
@@ -429,116 +355,113 @@ export const paymentStatusOf = (a: DeskAppointment): PaymentStatus => {
   if (!inv || inv.paid <= 0) return 'UNPAID';
   return inv.balance > 0 ? 'PARTIAL' : 'PAID';
 };
-export const amountTotalOf = (a: DeskAppointment) =>
-  a.invoice?.total ?? a.estimatedTotal;
+export const amountTotalOf = (a: DeskAppointment) => a.invoice?.total ?? a.estimatedTotal;
 
-async function ticketMap(
-  request: Requester,
-): Promise<Map<string, { code: string; state: string }>> {
+async function ticketMap(request: Requester): Promise<Map<string, { code: string; state: string }>> {
   const map = new Map<string, { code: string; state: string }>();
   const stages = await listReceptionQueueStages(request).catch(() => []);
-  const lists = await Promise.all(
-    stages.map((s) =>
-      s.id
-        ? listReceptionStageTickets(request, s.id).catch(() => [])
-        : Promise.resolve([]),
-    ),
-  );
+  const lists = await Promise.all(stages.map((s) => (s.id ? listReceptionStageTickets(request, s.id).catch(() => []) : Promise.resolve([]))));
   for (const t of lists.flat()) {
     const apptId = str((t as Record<string, unknown>).appointmentId);
-    if (apptId && t.ticketCode)
-      map.set(apptId, { code: t.ticketCode, state: String(t.state ?? '') });
+    if (apptId && t.ticketCode) map.set(apptId, { code: t.ticketCode, state: String(t.state ?? '') });
   }
   return map;
 }
 
-async function enrich(
-  request: Requester,
-  cat: DeskCatalog,
-  raws: ReceptionAppointment[],
-): Promise<DeskAppointment[]> {
+async function enrich(request: Requester, cat: DeskCatalog, raws: ReceptionAppointment[]): Promise<DeskAppointment[]> {
   const tickets = await ticketMap(request);
-  return Promise.all(
-    raws.map(async (r) => {
-      const x = r as Record<string, unknown>;
-      const id = String(r.id);
-      const invoices = await listReceptionInvoices(request, {
-        appointmentId: id,
-      }).catch(() => []);
-      const pricing = (x.pricing ?? {}) as Record<string, unknown>;
-      const channel = String(x.channel ?? '');
-      const t = tickets.get(id);
-      const deskInvoices = invoices
-        .map((invoice) => toInvoice(invoice as Record<string, unknown>))
-        .filter((invoice): invoice is DeskInvoice => invoice !== null);
-      const doctorId = str(x.assignedDoctorId);
-      const serviceId = str(r.serviceId) ?? str(x.serviceId);
-      return {
-        id,
-        code: String(r.appointmentCode ?? ''),
-        version: num(x.version) || 1,
-        date: r.startAt
-          ? new Date(r.startAt).toLocaleDateString('sv-SE', {
-              timeZone: 'Asia/Ho_Chi_Minh',
-            })
-          : '',
-        startAt: String(r.startAt ?? ''),
-        endAt: String(r.endAt ?? ''),
-        source: /RECEPTION|COUNTER|WALK/i.test(channel) ? 'WALK_IN' : 'BOOKED',
-        channel,
-        patientId: String(r.patientId ?? ''),
-        serviceId,
-        service: str(pricing.serviceName) ?? '—',
-        doctorId,
-        roomCode: str(x.roomCode) ?? '',
-        roomName: str(x.roomName) ?? '',
-        doctorName: (doctorId && cat.doctorById.get(doctorId)) || '—',
-        specialty: cat.specialtyById.get(String(x.specialtyId ?? '')) ?? '—',
-        status: String(r.status) as AppointmentStatus,
-        queueCode: t?.code,
-        queueState: t?.state,
-        checkedInAt: str(x.checkedInAt),
-        startedAt: str(x.clinicalStartedAt),
-        completedAt: str(x.completedAt),
-        createdAt: str(x.createdAt),
-        updatedAt: str(x.updatedAt),
-        estimatedTotal: num(pricing.estimatedTotalMinor),
-        invoice:
-          deskInvoices.find((invoice) => invoice.type === 'BASE') ??
-          deskInvoices[0] ??
-          null,
-        invoices: deskInvoices,
-      };
-    }),
-  );
+  return Promise.all(raws.map(async (r) => {
+    const x = r as Record<string, unknown>;
+    const id = String(r.id);
+    const invoices = await listReceptionInvoices(request, { appointmentId: id }).catch(() => []);
+    const pricing = (x.pricing ?? {}) as Record<string, unknown>;
+    const channel = String(x.channel ?? '');
+    const t = tickets.get(id);
+    let deskInvoices = invoices
+      .map((invoice) => toInvoice(invoice as Record<string, unknown>))
+      .filter((invoice): invoice is DeskInvoice => invoice !== null);
+
+    const encId = str(x.encounterId) ?? str(r.encounterId);
+    // Nếu ca khám đang diễn ra hoặc đã có encounter nhưng chưa tạo hóa đơn phát sinh CLS, tự động đồng bộ
+    if (encId && !deskInvoices.some((inv) => inv.type === 'SUPPLEMENTARY')) {
+      try {
+        const encRaw: any = await request(`/api/medical-records/encounters/${encodeURIComponent(encId)}`).catch(() => null);
+        const encData = encRaw?.data || encRaw;
+        const orders = Array.isArray(encData?.orders) ? encData.orders : [];
+        if (orders.length > 0) {
+          for (const ord of orders) {
+            const svc = cat.services.find((s) => s.id === ord.catalogServiceId);
+            const price = svc?.price || 0;
+            await request('/api/billing/invoices/service-order', {
+              method: 'POST',
+              body: JSON.stringify({
+                appointmentId: id,
+                patientId: String(r.patientId ?? ''),
+                encounterId: encId,
+                orderId: ord.id,
+                serviceId: ord.catalogServiceId,
+                serviceName: svc?.name || 'Dịch vụ cận lâm sàng',
+                amountMinor: price,
+              }),
+            }).catch(() => null);
+          }
+          const freshInvoices = await listReceptionInvoices(request, { appointmentId: id }).catch(() => []);
+          deskInvoices = freshInvoices
+            .map((invoice) => toInvoice(invoice as Record<string, unknown>))
+            .filter((invoice): invoice is DeskInvoice => invoice !== null);
+        }
+      } catch (syncErr) {
+        console.warn('Lỗi kiểm tra y lệnh CLS cho quầy tiếp đón:', syncErr);
+      }
+    }
+
+    const baseInvoice = deskInvoices.find((invoice) => invoice.type === 'BASE') ?? deskInvoices[0] ?? null;
+    const suppInvoice = deskInvoices.find((invoice) => invoice.type === 'SUPPLEMENTARY') ?? null;
+    const doctorId = str(x.assignedDoctorId);
+    const serviceId = str(r.serviceId) ?? str(x.serviceId);
+    return {
+      id,
+      code: String(r.appointmentCode ?? ''),
+      version: num(x.version) || 1,
+      date: r.startAt ? new Date(r.startAt).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }) : '',
+      startAt: String(r.startAt ?? ''),
+      endAt: String(r.endAt ?? ''),
+      source: /RECEPTION|COUNTER|WALK/i.test(channel) ? 'WALK_IN' : 'BOOKED',
+      channel,
+      patientId: String(r.patientId ?? ''),
+      serviceId,
+      service: str(pricing.serviceName) ?? '—',
+      doctorId,
+      roomCode: str(x.roomCode) ?? '',
+      roomName: str(x.roomName) ?? '',
+      doctorName: (doctorId && cat.doctorById.get(doctorId)) || '—',
+      specialty: cat.specialtyById.get(String(x.specialtyId ?? '')) ?? '—',
+      status: String(r.status) as AppointmentStatus,
+      queueCode: t?.code,
+      queueState: t?.state,
+      checkedInAt: str(x.checkedInAt),
+      startedAt: str(x.clinicalStartedAt),
+      completedAt: str(x.completedAt),
+      createdAt: str(x.createdAt),
+      updatedAt: str(x.updatedAt),
+      estimatedTotal: num(pricing.estimatedTotalMinor),
+      invoice: baseInvoice,
+      supplementaryInvoice: suppInvoice,
+      invoices: deskInvoices,
+      encounterId: encId,
+    };
+  }));
 }
 
-export async function fetchDayAppointments(
-  request: Requester,
-  cat: DeskCatalog,
-  date: string,
-) {
-  const raws = await listReceptionAppointments(request, undefined, {
-    from: `${date}T00:00:00+07:00`,
-    to: `${date}T23:59:59+07:00`,
-    limit: 100,
-  });
+export async function fetchDayAppointments(request: Requester, cat: DeskCatalog, date: string) {
+  const raws = await listReceptionAppointments(request, undefined, { from: `${date}T00:00:00+07:00`, to: `${date}T23:59:59+07:00`, limit: 100 });
   const rows = await enrich(request, cat, raws);
   const patients: PatientMap = {};
-  await Promise.all(
-    [...new Set(rows.map((r) => r.patientId))].map(async (id) => {
-      const p = await fetchPatient(request, id);
-      if (p) patients[id] = p;
-    }),
-  );
+  await Promise.all([...new Set(rows.map((r) => r.patientId))].map(async (id) => { const p = await fetchPatient(request, id); if (p) patients[id] = p; }));
   return { rows, patients };
 }
 
-export async function searchDesk(
-  request: Requester,
-  cat: DeskCatalog,
-  query: string,
-) {
+export async function searchDesk(request: Requester, cat: DeskCatalog, query: string) {
   const q = query.trim();
   const compact = q.replace(/[\s.-]/g, '');
   const foundMap = new Map<string, DeskPatient>();
@@ -547,11 +470,7 @@ export async function searchDesk(
   try {
     if (compact.length >= 4) {
       try {
-        const directByCode = await listReceptionAppointments(
-          request,
-          undefined,
-          { appointmentCode: compact, limit: 10 },
-        );
+        const directByCode = await listReceptionAppointments(request, undefined, { appointmentCode: compact, limit: 10 });
         for (const a of directByCode) {
           if (a.patientId && !foundMap.has(a.patientId)) {
             const p = await fetchPatient(request, a.patientId);
@@ -560,17 +479,13 @@ export async function searchDesk(
         }
       } catch {}
     }
-    const appRaws = await listReceptionAppointments(request, undefined, {
-      limit: 100,
-    });
+    const appRaws = await listReceptionAppointments(request, undefined, { limit: 100 });
     const matchedApps = appRaws.filter((a) => {
       const code = String(a.appointmentCode ?? '').toLowerCase();
       const codeDigits = code.replace(/\D/g, '');
       return (
         code.includes(q.toLowerCase()) ||
-        (compact.length >= 2 &&
-          (code.includes(compact.toLowerCase()) ||
-            codeDigits.includes(compact)))
+        (compact.length >= 2 && (code.includes(compact.toLowerCase()) || codeDigits.includes(compact)))
       );
     });
     for (const a of matchedApps) {
@@ -590,12 +505,8 @@ export async function searchDesk(
       try {
         const phoneParam = compact.startsWith('0')
           ? '+84' + compact.slice(1)
-          : compact.startsWith('+')
-            ? compact
-            : '+84' + compact;
-        const rows = await searchReceptionPatients(request, {
-          phoneNumber: phoneParam,
-        });
+          : (compact.startsWith('+') ? compact : '+84' + compact);
+        const rows = await searchReceptionPatients(request, { phoneNumber: phoneParam });
         for (const r of rows) {
           if (r.id && !foundMap.has(r.id)) {
             const p = await fetchPatient(request, r.id);
@@ -608,9 +519,7 @@ export async function searchDesk(
     // Nếu có 9 hoặc 12 số -> tìm theo CCCD/CMND
     if (compact.length === 9 || compact.length === 12) {
       try {
-        const rows = await searchReceptionPatients(request, {
-          nationalId: compact,
-        });
+        const rows = await searchReceptionPatients(request, { nationalId: compact });
         for (const r of rows) {
           if (r.id && !foundMap.has(r.id)) {
             const p = await fetchPatient(request, r.id);
@@ -638,16 +547,8 @@ export async function searchDesk(
   // Hỗ trợ trường hợp gõ đuôi SĐT (ví dụ: '4011') hoặc đuôi CCCD (ví dụ: '0106')
   if (foundMap.size === 0 && compact.length >= 3) {
     try {
-      const appRaws = await listReceptionAppointments(request, undefined, {
-        limit: 100,
-      });
-      const patientIds = [
-        ...new Set(
-          appRaws
-            .map((a) => a.patientId)
-            .filter((id): id is string => Boolean(id)),
-        ),
-      ];
+      const appRaws = await listReceptionAppointments(request, undefined, { limit: 100 });
+      const patientIds = [...new Set(appRaws.map((a) => a.patientId).filter((id): id is string => Boolean(id)))];
       for (const pid of patientIds) {
         if (!foundMap.has(pid)) {
           const p = await fetchPatient(request, pid);
@@ -671,14 +572,8 @@ export async function searchDesk(
   const patients: PatientMap = Object.fromEntries(found.map((p) => [p.id, p]));
   const lists = await Promise.all(
     found.map(async (p) =>
-      enrich(
-        request,
-        cat,
-        await listReceptionAppointments(request, p.id, { limit: 50 }).catch(
-          () => [],
-        ),
-      ),
-    ),
+      enrich(request, cat, await listReceptionAppointments(request, p.id, { limit: 50 }).catch(() => []))
+    )
   );
   return { found, patients, appointments: lists.flat() };
 }
@@ -686,17 +581,11 @@ export async function searchDesk(
 export async function loadPatientWorkspace(
   request: Requester,
   cat: DeskCatalog,
-  patientId: string,
-): Promise<{
-  found: DeskPatient[];
-  patients: PatientMap;
-  appointments: DeskAppointment[];
-}> {
+  patientId: string
+): Promise<{ found: DeskPatient[]; patients: PatientMap; appointments: DeskAppointment[] }> {
   const patient = await fetchPatient(request, patientId, true);
   if (!patient) return { found: [], patients: {}, appointments: [] };
-  const rawAppts = await listReceptionAppointments(request, patient.id, {
-    limit: 50,
-  }).catch(() => []);
+  const rawAppts = await listReceptionAppointments(request, patient.id, { limit: 50 }).catch(() => []);
   const appointments = await enrich(request, cat, rawAppts);
   return {
     found: [patient],
@@ -705,59 +594,25 @@ export async function loadPatientWorkspace(
   };
 }
 
-export interface CheckInResult {
-  awaitingPayment: boolean;
-  ticketCode?: string;
-}
-export async function checkInAppointment(
-  request: Requester,
-  a: DeskAppointment,
-): Promise<CheckInResult> {
-  const c = (await openReceptionCase(request, {
-    appointmentId: a.id,
-    patientId: a.patientId,
-    arrivalAt: new Date().toISOString(),
-  })) as { id?: string; data?: { id?: string } };
+export interface CheckInResult { awaitingPayment: boolean; ticketCode?: string }
+export async function checkInAppointment(request: Requester, a: DeskAppointment): Promise<CheckInResult> {
+  const c = await openReceptionCase(request, { appointmentId: a.id, patientId: a.patientId, arrivalAt: new Date().toISOString() }) as { id?: string; data?: { id?: string } };
   const caseId = c?.id ?? c?.data?.id;
   if (!caseId) throw new Error('Không thể mở hồ sơ tiếp nhận.');
-  await verifyReceptionIdentity(request, caseId, {
-    method: 'NATIONAL_ID_DOCUMENT',
-    result: 'VERIFIED',
-    verifiedFields: ['fullName', 'phoneNumber', 'nationalId'],
-  });
-  const res = (await admitReceptionCase(request, caseId)) as Record<
-    string,
-    any
-  >;
+  await verifyReceptionIdentity(request, caseId, { method: 'NATIONAL_ID_DOCUMENT', result: 'VERIFIED', verifiedFields: ['fullName', 'phoneNumber', 'nationalId'] });
+  const res = await admitReceptionCase(request, caseId) as Record<string, any>;
   const adm = res?.admission ?? res?.data?.admission ?? res;
-  return {
-    awaitingPayment: adm?.status === 'AWAITING_PAYMENT',
-    ticketCode: adm?.queueTicketId,
-  };
+  return { awaitingPayment: adm?.status === 'AWAITING_PAYMENT', ticketCode: adm?.queueTicketId };
 }
 
-export function cancelAppointment(
-  request: Requester,
-  a: DeskAppointment,
-  reason: string,
-) {
-  return request(
-    `/api/appointment/appointments/${encodeURIComponent(a.id)}/cancel`,
-    {
-      method: 'POST',
-      headers: { 'Idempotency-Key': key() },
-      body: JSON.stringify({ reason, expectedVersion: a.version }),
-    },
-  );
+export function cancelAppointment(request: Requester, a: DeskAppointment, reason: string) {
+  return request(`/api/appointment/appointments/${encodeURIComponent(a.id)}/cancel`, {
+    method: 'POST', headers: { 'Idempotency-Key': key() }, body: JSON.stringify({ reason, expectedVersion: a.version }),
+  });
 }
 
 export function collectCash(request: Requester, inv: DeskInvoice) {
-  return recordReceptionCashPayment(request, {
-    id: inv.id,
-    balanceMinor: inv.balance,
-    totalMinor: inv.total,
-    version: inv.version,
-  });
+  return recordReceptionCashPayment(request, { id: inv.id, balanceMinor: inv.balance, totalMinor: inv.total, version: inv.version });
 }
 
 export interface ReceptionVnpayAttempt {
@@ -772,25 +627,14 @@ export async function createReceptionVnpayAttempt(
   invoice: DeskInvoice,
   returnPath: string,
 ): Promise<ReceptionVnpayAttempt> {
-  const raw = await request<unknown>(
-    `/api/billing/invoices/${encodeURIComponent(invoice.id)}/vnpay-attempts`,
-    {
-      method: 'POST',
-      headers: { 'Idempotency-Key': key() },
-      body: JSON.stringify({
-        expectedInvoiceVersion: invoice.version,
-        returnPath,
-      }),
-    },
-  );
+  const raw = await request<unknown>(`/api/billing/invoices/${encodeURIComponent(invoice.id)}/vnpay-attempts`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key() },
+    body: JSON.stringify({ expectedInvoiceVersion: invoice.version, returnPath }),
+  });
   const envelope = raw as { data?: unknown };
-  const value = (
-    envelope?.data && typeof envelope.data === 'object' ? envelope.data : raw
-  ) as Partial<ReceptionVnpayAttempt>;
-  if (!value.paymentUrl || !value.txnRef)
-    throw new Error(
-      'Billing API không trả về đường dẫn thanh toán VNPay hợp lệ.',
-    );
+  const value = (envelope?.data && typeof envelope.data === 'object' ? envelope.data : raw) as Partial<ReceptionVnpayAttempt>;
+  if (!value.paymentUrl || !value.txnRef) throw new Error('Billing API không trả về đường dẫn thanh toán VNPay hợp lệ.');
   return value as ReceptionVnpayAttempt;
 }
 
@@ -799,40 +643,22 @@ export async function createAppointmentVnpayAttempt(
   appointment: DeskAppointment,
   returnPath: string,
 ): Promise<{ invoice: DeskInvoice; attempt: ReceptionVnpayAttempt }> {
-  let invoice =
-    appointment.invoices?.find((item) => item.type === 'BASE') ??
-    appointment.invoice ??
-    undefined;
+  let invoice = appointment.invoices?.find((item) => item.type === 'BASE') ?? appointment.invoice ?? undefined;
   if (!invoice) {
     // Opening/admitting the reception case is what creates a missing base invoice.
     await checkInAppointment(request, appointment).catch(() => undefined);
-    const invoices = await listReceptionInvoices(request, {
-      appointmentId: appointment.id,
-    });
-    invoice =
-      invoices
-        .map((raw) => toInvoice(raw as Record<string, unknown>))
-        .find((item): item is DeskInvoice => item?.type === 'BASE') ??
-      undefined;
+    const invoices = await listReceptionInvoices(request, { appointmentId: appointment.id });
+    invoice = invoices
+      .map((raw) => toInvoice(raw as Record<string, unknown>))
+      .find((item): item is DeskInvoice => item?.type === 'BASE') ?? undefined;
   }
-  if (!invoice)
-    throw new Error('Chưa tạo được hóa đơn ban đầu cho lịch hẹn này.');
-  const attempt = await createReceptionVnpayAttempt(
-    request,
-    invoice,
-    returnPath,
-  );
+  if (!invoice) throw new Error('Chưa tạo được hóa đơn ban đầu cho lịch hẹn này.');
+  const attempt = await createReceptionVnpayAttempt(request, invoice, returnPath);
   return { invoice, attempt };
 }
 
-export async function refreshAppointment(
-  request: Requester,
-  cat: DeskCatalog,
-  a: DeskAppointment,
-): Promise<DeskAppointment> {
-  const raws = await listReceptionAppointments(request, a.patientId, {
-    limit: 50,
-  });
+export async function refreshAppointment(request: Requester, cat: DeskCatalog, a: DeskAppointment): Promise<DeskAppointment> {
+  const raws = await listReceptionAppointments(request, a.patientId, { limit: 50 });
   const raw = raws.find((r) => r.id === a.id);
   return raw ? (await enrich(request, cat, [raw]))[0] : a;
 }
@@ -851,10 +677,7 @@ export interface WalkInInput {
   endTime?: string;
 }
 
-export async function createWalkInAppointment(
-  request: Requester,
-  input: WalkInInput,
-): Promise<any> {
+export async function createWalkInAppointment(request: Requester, input: WalkInInput): Promise<any> {
   let patientId = input.patientId;
   if (!patientId) {
     let phone = (input.phoneNumber || '').trim();
@@ -878,9 +701,7 @@ export async function createWalkInAppointment(
   let endAt: string;
 
   if (input.date && input.startTime && input.endTime) {
-    startAt = new Date(
-      `${input.date}T${input.startTime}:00+07:00`,
-    ).toISOString();
+    startAt = new Date(`${input.date}T${input.startTime}:00+07:00`).toISOString();
     endAt = new Date(`${input.date}T${input.endTime}:00+07:00`).toISOString();
   } else {
     const now = new Date();
@@ -943,17 +764,21 @@ export async function createWalkInAppointment(
 export async function payAndCheckInAppointment(
   request: Requester,
   a: DeskAppointment,
-  reference?: string,
+  reference?: string
 ): Promise<{ success: boolean; ticketCode?: string }> {
-  let invoice = a.invoice;
+  let invoice = a.invoices?.find((i) => i.type === 'BASE') ?? a.invoice ?? null;
 
-  // 1. Nếu chưa có invoice (lịch hẹn tạo trước đó), kích hoạt tạo Base Invoice
+  // 1. Nếu chưa có invoice (lịch hẹn tạo trước đó), tìm từ API hoặc kích hoạt tạo Base Invoice
+  if (!invoice) {
+    const invs = await listReceptionInvoices(request, { appointmentId: a.id }).catch(() => []);
+    const deskInvs = invs.map((inv) => toInvoice(inv as Record<string, unknown> | undefined)).filter(Boolean) as DeskInvoice[];
+    invoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
+  }
   if (!invoice) {
     await checkInAppointment(request, a).catch(() => {});
-    const invs = await listReceptionInvoices(request, {
-      appointmentId: a.id,
-    }).catch(() => []);
-    invoice = toInvoice(invs[0] as Record<string, unknown> | undefined);
+    const invs = await listReceptionInvoices(request, { appointmentId: a.id }).catch(() => []);
+    const deskInvs = invs.map((inv) => toInvoice(inv as Record<string, unknown> | undefined)).filter(Boolean) as DeskInvoice[];
+    invoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
   }
 
   // 2. Ghi nhận thanh toán tiền mặt tại quầy để chuyển sang PAID
@@ -992,7 +817,7 @@ export interface UpdatePatientInput {
 
 export async function updatePatientProfile(
   request: Requester,
-  input: UpdatePatientInput,
+  input: UpdatePatientInput
 ): Promise<DeskPatient> {
   let phone = input.phoneNumber.trim();
   if (phone.startsWith('0')) {
@@ -1031,17 +856,15 @@ export async function updatePatientProfile(
         {
           method: 'PATCH',
           body: JSON.stringify(cData),
-        },
-      ).catch((err) =>
-        console.warn('Lỗi cập nhật người liên hệ khẩn cấp:', err),
-      );
+        }
+      ).catch((err) => console.warn('Lỗi cập nhật người liên hệ khẩn cấp:', err));
     } else {
       await request<any>(
         `/api/patients/${encodeURIComponent(input.patientId)}/emergency-contacts`,
         {
           method: 'POST',
           body: JSON.stringify({ ...cData, isPrimary: true }),
-        },
+        }
       ).catch((err) => console.warn('Lỗi thêm người liên hệ khẩn cấp:', err));
     }
   }
@@ -1064,13 +887,13 @@ export async function fetchDoctorBookableSlots(
   request: Requester,
   serviceId: string,
   doctorId: string,
-  dateStr: string,
+  dateStr: string
 ): Promise<BookableSlot[]> {
   try {
     const from = `${dateStr}T00:00:00+07:00`;
     const to = `${dateStr}T23:59:59+07:00`;
     const res = await request<any>(
-      `/api/appointment/bookable-slots?serviceId=${encodeURIComponent(serviceId)}&selectionMode=DOCTOR&doctorId=${encodeURIComponent(doctorId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=50`,
+      `/api/appointment/bookable-slots?serviceId=${encodeURIComponent(serviceId)}&selectionMode=DOCTOR&doctorId=${encodeURIComponent(doctorId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=50`
     );
     const items = res?.items || res?.data?.items || [];
     return items.map((it: any) => {
@@ -1097,16 +920,12 @@ export async function fetchDoctorOccupiedSlots(
   request: Requester,
   doctorId: string,
   dateStr: string,
-  excludeAppointmentId?: string,
+  excludeAppointmentId?: string
 ): Promise<Set<string>> {
   try {
     const from = `${dateStr}T00:00:00+07:00`;
     const to = `${dateStr}T23:59:59+07:00`;
-    const raws = await listReceptionAppointments(request, undefined, {
-      from,
-      to,
-      limit: 100,
-    }).catch(() => []);
+    const raws = await listReceptionAppointments(request, undefined, { from, to, limit: 100 }).catch(() => []);
     const occupied = new Set<string>();
 
     for (const r of raws) {
@@ -1150,11 +969,10 @@ export interface RescheduleAppointmentInput {
 export async function rescheduleAppointment(
   request: Requester,
   cat: DeskCatalog,
-  input: RescheduleAppointmentInput,
+  input: RescheduleAppointmentInput
 ): Promise<DeskAppointment> {
   const { appointment, date, startTime, endTime, doctorId } = input;
-  const reason =
-    input.reason?.trim() || 'Dời lịch khám theo yêu cầu của bệnh nhân tại quầy';
+  const reason = input.reason?.trim() || 'Dời lịch khám theo yêu cầu của bệnh nhân tại quầy';
 
   const startAt = `${date}T${startTime}:00+07:00`;
   const endAt = `${date}T${endTime}:00+07:00`;
@@ -1170,25 +988,20 @@ export async function rescheduleAppointment(
 
   if (isSameTime && !isSameDoctor) {
     // Chỉ điều phối đổi bác sĩ cùng khung giờ
-    await request<any>(
-      `/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reassign`,
-      {
-        method: 'POST',
-        headers: { 'Idempotency-Key': key() },
-        body: JSON.stringify({
-          doctorId,
-          expectedVersion: appointment.version,
-          confirmationEvidence:
-            'Điều phối lại bác sĩ tiếp nhận tại quầy lễ tân',
-          reason,
-        }),
-      },
-    );
+    await request<any>(`/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reassign`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': key() },
+      body: JSON.stringify({
+        doctorId,
+        expectedVersion: appointment.version,
+        confirmationEvidence: 'Điều phối lại bác sĩ tiếp nhận tại quầy lễ tân',
+        reason,
+      }),
+    });
   } else {
     // Đổi ngày/giờ khám (và có thể đổi bác sĩ): tạo Slot Hold mới trước rồi reschedule
     const serviceId = appointment.serviceId || cat.services[0]?.id;
-    if (!serviceId)
-      throw new Error('Không xác định được dịch vụ y tế của lịch hẹn.');
+    if (!serviceId) throw new Error('Không xác định được dịch vụ y tế của lịch hẹn.');
 
     const holdRes = await request<any>('/api/appointment/slot-holds', {
       method: 'POST',
@@ -1206,19 +1019,17 @@ export async function rescheduleAppointment(
     const holdId = holdRes?.data?.id || holdRes?.id || holdRes?.holdId;
     if (!holdId) throw new Error('Không thể giữ chỗ khung giờ khám mới.');
 
-    await request<any>(
-      `/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reschedule`,
-      {
-        method: 'POST',
-        headers: { 'Idempotency-Key': key() },
-        body: JSON.stringify({
-          newHoldId: holdId,
-          expectedVersion: appointment.version,
-          reason,
-        }),
-      },
-    );
+    await request<any>(`/api/appointment/appointments/${encodeURIComponent(appointment.id)}/reschedule`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': key() },
+      body: JSON.stringify({
+        newHoldId: holdId,
+        expectedVersion: appointment.version,
+        reason,
+      }),
+    });
   }
 
   return refreshAppointment(request, cat, appointment);
 }
+

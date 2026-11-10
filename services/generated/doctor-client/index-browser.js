@@ -120,6 +120,17 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
+exports.Prisma.ConsultationRankScalarFieldEnum = {
+  code: 'code',
+  name: 'name',
+  shortName: 'shortName',
+  experienceYearsMin: 'experienceYearsMin',
+  sortOrder: 'sortOrder',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.ClinicRoomScalarFieldEnum = {
   id: 'id',
   code: 'code',
@@ -143,7 +154,6 @@ exports.Prisma.DoctorScalarFieldEnum = {
 exports.Prisma.DoctorProfileScalarFieldEnum = {
   doctorId: 'doctorId',
   fullName: 'fullName',
-  professionalTitle: 'professionalTitle',
   biography: 'biography',
   practiceStartYear: 'practiceStartYear',
   languages: 'languages',
@@ -270,11 +280,6 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
-exports.RoomStatus = exports.$Enums.RoomStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE'
-};
-
 exports.DoctorConsultationRank = exports.$Enums.DoctorConsultationRank = {
   BASIC: 'BASIC',
   SPECIALIST_I: 'SPECIALIST_I',
@@ -284,6 +289,11 @@ exports.DoctorConsultationRank = exports.$Enums.DoctorConsultationRank = {
   PROFESSOR: 'PROFESSOR',
   EXPERT: 'EXPERT',
   HEAD_DOCTOR: 'HEAD_DOCTOR'
+};
+
+exports.RoomStatus = exports.$Enums.RoomStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE'
 };
 
 exports.DoctorStatus = exports.$Enums.DoctorStatus = {
@@ -322,6 +332,7 @@ exports.AvailabilityStatus = exports.$Enums.AvailabilityStatus = {
 };
 
 exports.Prisma.ModelName = {
+  ConsultationRank: 'ConsultationRank',
   ClinicRoom: 'ClinicRoom',
   Doctor: 'Doctor',
   DoctorProfile: 'DoctorProfile',

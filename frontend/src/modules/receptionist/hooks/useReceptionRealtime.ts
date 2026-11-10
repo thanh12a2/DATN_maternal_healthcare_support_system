@@ -93,19 +93,8 @@ export function useReceptionRealtime({
       },
     });
 
-    // Lắng nghe khi tab active trở lại (visibilitychange & focus) -> Refetch 1 lần
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        onRefetchRef.current?.();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleVisibility);
-
     return () => {
       unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleVisibility);
     };
   }, [enabled]);
 

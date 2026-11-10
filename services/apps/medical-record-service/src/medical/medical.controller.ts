@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Headers,
@@ -49,6 +50,15 @@ export class MedicalController {
     if (auth.role === 'DOCTOR')
       await this.s.assertDoctorAssigned(id, auth.userId);
     return this.s.getEncounter(id);
+  }
+
+  @Patch('encounters/:id')
+  async updateEncounter(
+    @Param('id') id: string,
+    @Body() b: any,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    return this.s.updateEncounterRest(id, b, auth);
   }
 
   @Post('encounters')
@@ -125,6 +135,14 @@ export class MedicalController {
   @Post('orders/:id/verify')
   verify(@Param('id') id: string) {
     return this.s.orderState(id, 'VERIFIED');
+  }
+
+  @Delete('orders/:id')
+  deleteOrder(
+    @Param('id') id: string,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
+    return this.s.deleteOrder(id, a.userId, a.role);
   }
 
   @Post('encounters/:id/ready-for-review')
