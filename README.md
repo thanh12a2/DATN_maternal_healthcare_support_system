@@ -297,3 +297,72 @@ Trên Windows có thể chạy trực tiếp các lệnh PowerShell/Docker ở t
 - [Tài liệu tích hợp](docs/integration/)
 
 Các file `docs/first-run.md` và `docs/setup-all-environment.md` không còn chứa command setup riêng; hãy quay lại README này để tránh chạy theo hướng dẫn đã lỗi thời.
+
+## 11. Kết nối app Flutter
+
+Contract dành cho frontend agent: [Flutter mobile API contract](docs/integration/flutter-mobile-api-contract.md). Tài liệu chứa endpoint qua Kong, JSON mẫu, quyền PATIENT, kiểu ngày/tiền/trạng thái, refresh/logout, các dạng lỗi và phần backend còn thiếu.
+
+Base URL mặc định:
+
+- Android Emulator: `http://10.0.2.2:8080`.
+- Điện thoại thật cùng LAN: `http://<IPv4-LAN-của-máy-chạy-Docker>:8080`.
+- Production: domain HTTPS, ví dụ `https://api.example.com`.
+
+Base URL không thêm `/api`: Auth dùng `/auth/*`, còn lịch khám dùng `/api/appointment/appointments`. `localhost` trên Android không trỏ về máy chạy Docker. Flutter native thường không cần CORS; cấu hình riêng cho Flutter Web và cách xem OpenAPI nằm trong contract.
+
+Nếu đã có `.env`, keys và database, chạy tại repo root:
+
+```powershell
+docker compose config --quiet
+docker compose up -d --build
+docker compose ps
+curl.exe -i http://localhost:8080/health
+```
+
+Máy mới chưa có config: dùng setup không seed để tránh xóa dữ liệu hiện hữu:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -Mode Docker -NoSeed
+```
+
+Seed hệ thống hiện có thao tác TRUNCATE; chỉ seed trên database demo có thể thay thế. Không chạy lại seed chỉ để sửa lỗi đăng nhập trên database đang dùng. Tài khoản demo trong mục 7 phụ thuộc loại seed đã chạy và password seed tùy chỉnh; nếu nhận 401, dùng tài khoản PATIENT được cấp hoặc đăng ký qua API.
+
+Kiểm tra login/đọc dữ liệu bằng PowerShell với tài khoản PATIENT hợp lệ (điền credential local, không commit token):
+
+```powershell
+$apiBase = 'http://localhost:8080'
+$credential = Get-Credential -Message 'Tài khoản PATIENT: email và password'
+$loginBody = @{
+  email = $credential.UserName
+  password = $credential.GetNetworkCredential().Password
+} | ConvertTo-Json
+$session = Invoke-RestMethod -Method Post -Uri "$apiBase/auth/login" `
+  -ContentType 'application/json' -Body $loginBody
+$loginBody = $null
+$credential = $null
+$authHeaders = @{ Authorization = "Bearer $($session.accessToken)" }
+Invoke-RestMethod -Uri "$apiBase/auth/me" -Headers $authHeaders
+Invoke-RestMethod -Uri "$apiBase/api/patients/me" -Headers $authHeaders
+Invoke-RestMethod -Uri "$apiBase/api/appointment/appointments?limit=20" -Headers $authHeaders
+Invoke-RestMethod -Uri "$apiBase/api/queue/me/journeys/active" -Headers $authHeaders
+
+# Khi hoàn tất kiểm tra, revoke refresh session vừa tạo.
+$logoutBody = @{ refreshToken = $session.refreshToken } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "$apiBase/auth/logout" `
+  -ContentType 'application/json' -Body $logoutBody
+$logoutBody = $null
+$authHeaders = $null
+$session = $null
+```
+
+Profile chưa có sẽ trả 404 và cần `PUT /api/patients/me`; Queue chưa tiếp nhận có thể trả 404 `ACTIVE_JOURNEY_NOT_FOUND`. Hóa đơn và hủy/đổi lịch hiện chỉ dành cho nhân viên, Notification chưa có REST inbox cho PATIENT. Xem contract trước khi bật các màn hình này. Repo có OpenAPI YAML tĩnh tại `docs/api-specs/`, chưa mount Swagger UI ở `/docs`.
+
+Sau khi chỉnh CORS trong `docs/api-specs/kong.yml`, rebuild và chạy lại bước import cấu hình Kong (không xóa volume):
+
+```powershell
+docker compose build gateway kong-init
+docker compose up -d --force-recreate kong-init
+docker compose up -d --force-recreate gateway
+```
+
+Kong dùng database nên sửa file YAML hoặc chỉ restart gateway không tự import lại cấu hình. Admin API/Manager mặc định chỉ mở trên loopback ở port 8001/8002.
