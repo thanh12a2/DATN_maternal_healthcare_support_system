@@ -111,6 +111,19 @@ export interface DeskDoctorInfo {
   slots: string[];
 }
 
+/** Same hospital-day boundary as appointment-service admission validation. */
+export function appointmentAdmissionWarning(
+  appointment: Pick<DeskAppointment, 'startAt' | 'date'>,
+  now = new Date(),
+): string | null {
+  const start = new Date(appointment.startAt);
+  const date = Number.isNaN(start.getTime()) ? appointment.date : start.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const today = now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date <= today) return null;
+  const [year, month, day] = date.split('-');
+  return `Chưa đến ngày hẹn (${day}/${month}/${year}). Chỉ thu tiền kèm check-in và cấp số từ ngày hẹn. Nếu người bệnh cần khám sớm, vui lòng đổi lịch trước khi tiếp nhận.`;
+}
+
 export type PatientMap = Record<string, DeskPatient>;
 export interface DeskCatalog {
   rooms: DeskRoom[];
@@ -911,6 +924,8 @@ export async function checkInAppointment(
   request: Requester,
   a: DeskAppointment,
 ): Promise<CheckInResult> {
+  const warning = appointmentAdmissionWarning(a);
+  if (warning) throw new Error(warning);
   const c = (await openReceptionCase(request, {
     appointmentId: a.id,
     patientId: a.patientId,

@@ -1,6 +1,6 @@
 # Các bước triển khai và kiểm chứng Agent đặt khám
 
-Phạm vi: Agent hỏi đáp, hỗ trợ chọn dịch vụ/bác sĩ, tra lịch và chuyển sang trang `/dat-lich` hiện có. Không đổi AppointmentStatus, BookingChannel, cách hold/booking, quyền hủy/đổi hay thêm bước chờ duyệt. Tài liệu là kế hoạch kiểm thử; các ca dưới đây chưa được chạy.
+Phạm vi: Agent hỏi đáp, hỗ trợ chọn dịch vụ/bác sĩ, tra lịch và chuyển sang trang `/dat-lich` hiện có. Không đổi AppointmentStatus, BookingChannel, cách hold/booking, quyền hủy/đổi hay thêm bước chờ duyệt. Trạng thái và bằng chứng thực hiện được ghi riêng tại từng bước.
 
 Tài liệu kiến trúc: [ai-booking-agent-plan.md](./ai-booking-agent-plan.md).
 
@@ -29,6 +29,8 @@ Test:
 
 ## Bước 1 — Chuẩn hóa API chat và phiên hội thoại
 
+Trạng thái 14/11/2026: đã triển khai và kiểm thử local. Xem [contract và cách chạy](./ai-chat-step1-contract.md), [bằng chứng nghiệm thu](../testing/agent-step1-2026-11-14/README.md). Bước 2–7 được cập nhật riêng ở dưới; bước 8 chưa triển khai.
+
 Mục đích: hội thoại hiểu các lượt liên tiếp, output đủ cho UI và không trộn dữ liệu người dùng.
 
 Việc làm:
@@ -47,6 +49,10 @@ Test:
 
 ## Bước 2 — Safety gate và giới hạn quyền
 
+Trạng thái 14/11/2026: đã triển khai bản mô phỏng và kiểm thử kỹ thuật local. Xem [contract Safety Gate](./ai-safety-step2-contract.md), [bằng chứng kiểm thử](../testing/agent-step2-2026-11-14/README.md). Bộ rule chưa được chuyên gia y tế phê duyệt lâm sàng.
+
+Rà soát 16/11/2026: đã sửa lỗi phạm vi câu “nếu/không”, tách khóa để cấp cứu không chờ model và thêm nút dừng chờ trên widget. Rule hiện là `maternal-safety-1.0.1`; kết quả 128 test Python, 17 test frontend và 32 kiểm tra Playwright đều qua. [Bằng chứng mới](../testing/agent-step2-2026-11-16/README.md). Đây vẫn là nghiệm thu kỹ thuật cho đồ án mô phỏng, không phải phê duyệt lâm sàng.
+
 Mục đích: chặn nhánh hành động không phù hợp trước khi nối các khả năng Agent.
 
 Việc làm:
@@ -64,6 +70,8 @@ Test:
 Đạt khi: toàn bộ invariant của bộ fixture safety đã duyệt đều qua; lưu ca thất bại và sửa trước khi nối hành động. Qua fixture không có nghĩa bảo đảm phát hiện mọi cấp cứu thực tế.
 
 ## Bước 3 — Tận dụng catalog hiện có cho retrieval
+
+Trạng thái 16/11/2026: đã triển khai retrieval danh mục với kiểm tra API live và thẻ nguồn trên web. Python 180/180, chatbot/router 19/19, Playwright 17/17 PASS; TypeScript/build PASS. Full frontend còn 5 test trang hồ sơ lỗi, ghi riêng trong [báo cáo](../testing/agent-step3-2026-11-16/README.md). Xem [contract và ánh xạ DB](./ai-catalog-step3-contract.md). Công cụ bác sĩ/giá/slot được bổ sung riêng tại bước 4 bên dưới.
 
 Mục đích: Agent gợi ý khoa/dịch vụ có thật và giải thích được nguồn.
 
@@ -84,6 +92,8 @@ Test:
 
 ## Bước 4 — Nối tool đọc API thật
 
+Trạng thái 16/11/2026: đã triển khai 4 adapter đọc có Safety Gate/ownership, GET estimate dùng chung resolver giá backend và panel tra cứu trong thẻ dịch vụ. Python 211/211, frontend phạm vi chatbot/router/panel 21/21, Playwright 21/21 PASS; TypeScript và build PASS. Appointment/hold không tăng. [Contract](./ai-booking-reads-step4-contract.md), [bằng chứng và cách thử trên web](../testing/agent-step4-2026-11-16/README.md). Chưa cho LLM điều phối nhiều lượt, chưa ghi lịch; phần đó thuộc các bước tiếp theo.
+
 Mục đích: model dùng dữ liệu hiện hành cho bác sĩ, giá và giờ trống.
 
 Việc làm:
@@ -101,6 +111,8 @@ Test:
 Đạt khi: dữ liệu phản ánh API, lỗi có nhánh xử lý; số appointment/hold không tăng chỉ do tra cứu.
 
 ## Bước 5 — Graph điều phối hội thoại
+
+Trạng thái 16/11/2026: đã triển khai state machine `booking-graph-1.0.0`, context server có mã hóa, sử dụng adapter bước 4, kết quả ngay trong chat. Python 244/244, frontend phạm vi chatbot/router/panel/result 24/24, Playwright 31/31 (luồng chính 28 + dừng chờ 3) PASS; TypeScript/build PASS. Không tăng appointment/hold. [Contract](./ai-conversation-step5-contract.md), [bằng chứng và cách thử](../testing/agent-step5-2026-11-16/README.md). Chưa dùng LangGraph/LLM để tự chọn tool; chưa có bàn giao deep link hoặc ghi lịch.
 
 Mục đích: Agent biết đang ở đâu và chọn đúng RAG/tool/bước hỏi tiếp theo.
 
@@ -120,6 +132,8 @@ Test:
 
 ## Bước 6 — Giao diện và chuyển sang trang đặt lịch
 
+Trạng thái 16/11/2026: đã có nút tiếp tục, endpoint handoff kiểm tra state/ownership/live catalog, prefill được xác minh tại trang đích và xử lý chọn lại giờ khi conflict. Python 254/254, frontend phạm vi liên quan 31/31, kiểm tra trình duyệt 39 đạt sau kiểm lại cleanup HTTP 200 (giữ nguyên bằng chứng lỗi kỳ vọng 204 ban đầu). Đã tạo thật 3 lịch demo ONLINE/BOOKED bằng RANK, DOCTOR và thủ công sau conflict. [Contract](./ai-booking-handoff-step6-contract.md), [báo cáo và dữ liệu tạo thêm](../testing/agent-step6-2026-11-16/README.md). Không đổi schema/status/channel hoặc thời điểm tạo hold của luồng hiện hành.
+
 Mục đích: bệnh nhân dùng được Agent mà booking tiếp tục như hiện tại.
 
 Việc làm:
@@ -138,6 +152,8 @@ Test:
 Đạt khi: hoàn thành được từ chat đến phiếu hẹn và không thay đổi lifecycle/quyền nghiệp vụ. Lưu Network trace hoặc video demo có dữ liệu đã che.
 
 ## Bước 7 — Cá nhân hóa tối thiểu
+
+Trạng thái 16/11/2026: đã triển khai preference opt-in mã hóa/TTL 30 ngày, hai self-context projection tối thiểu, đề xuất lại dịch vụ từ COMPLETED và phân biệt official/user-declared/summary. Python 277/277, Nest 4/4, frontend phạm vi liên quan 33/33, Playwright 23/23 PASS; TypeScript/build PASS. Profile version và số appointment/hold không đổi. [Contract](./ai-personalization-step7-contract.md), [báo cáo và cách thử](../testing/agent-step7-2026-11-16/README.md). Chưa đọc toàn bệnh án hoặc tự cá nhân hóa y khoa theo tuổi thai.
 
 Mục đích: giảm hỏi lại mà vẫn giữ hồ sơ chính thức ở service hiện tại.
 

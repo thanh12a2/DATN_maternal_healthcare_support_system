@@ -50,6 +50,7 @@ import { useAuthSession } from '../../../app/AuthSessionProvider';
 import type { Requester } from '../../../services/catalog';
 import {
   amountTotalOf,
+  appointmentAdmissionWarning,
   createAppointmentVnpayAttempt,
   createReceptionVnpayAttempt,
   collectCash,
@@ -278,6 +279,8 @@ export function PatientCard({
 
   const handleConfirmPayAndCheckIn = async () => {
     if (!paymentModalApp) return;
+    const warning = appointmentAdmissionWarning(paymentModalApp);
+    if (warning) { message.warning(warning); return; }
     setPayingAndCheckingIn(true);
     try {
       if (paymentMethod === 'VNPAY') {
@@ -358,7 +361,9 @@ export function PatientCard({
         });
       else
         message.error(
-          err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.',
+          String(err?.message ?? '').includes('APPOINTMENT_NOT_DUE')
+            ? 'Chưa đến ngày hẹn. Vui lòng đổi lịch trước nếu người bệnh cần khám sớm.'
+            : err?.message || 'Có lỗi xảy ra khi thu tiền và check-in.',
         );
     } finally {
       setPayingAndCheckingIn(false);
@@ -682,6 +687,7 @@ export function PatientCard({
           {sortedAppointments.map((a, index) => {
             const isToday = a.date === todayStr;
             const isUpcoming = dayjs(a.date).isAfter(dayjs());
+            const admissionWarning = appointmentAdmissionWarning(a);
             const appStep =
               a.completedAt || a.status === 'COMPLETED'
                 ? 3
@@ -1057,6 +1063,8 @@ export function PatientCard({
                               icon={<CheckCircleOutlined />}
                               loading={busy || payingAndCheckingIn}
                               onClick={() => onCheckIn(a)}
+                              disabled={Boolean(admissionWarning)}
+                              title={admissionWarning ?? undefined}
                               style={{
                                 backgroundColor: '#0B5CAD',
                                 fontWeight: 600,
@@ -1876,14 +1884,16 @@ export function PatientCard({
                                     type="primary"
                                     icon={<CreditCardOutlined />}
                                     loading={busy || payingAndCheckingIn}
+                                    disabled={Boolean(admissionWarning)}
+                                    title={admissionWarning ?? undefined}
                                     onClick={() => {
                                       setPaymentModalApp(a);
                                       setPaymentMethod('CASH');
                                       setPaymentRef('');
                                     }}
                                     style={{
-                                      backgroundColor: '#16a34a',
-                                      borderColor: '#16a34a',
+                                      backgroundColor: admissionWarning ? '#e5e7eb' : '#16a34a',
+                                      borderColor: admissionWarning ? '#d1d5db' : '#16a34a',
                                       fontWeight: 700,
                                       fontSize: 13,
                                       borderRadius: 6,
@@ -1896,6 +1906,7 @@ export function PatientCard({
                                     {money(baseBalance)})
                                   </Button>
                                 )}
+                                {a.status === 'BOOKED' && baseBalance > 0 && admissionWarning && <div role="note" style={{ color: '#925400', background: '#fffbe6', border: '1px solid #ffe58f', padding: '10px 12px', borderRadius: 8, maxWidth: 560 }}>{admissionWarning}</div>}
 
                                 {/* Nút 2: Thu tiền chỉ định phát sinh (Cận lâm sàng) - không cần check-in và cấp số */}
                                 {suppInvoice && suppInvoice.balance > 0 && (
@@ -2098,6 +2109,7 @@ export function PatientCard({
             <Button
               key="submit"
               type="primary"
+              disabled={Boolean(appointmentAdmissionWarning(paymentModalApp))}
               loading={payingAndCheckingIn}
               icon={
                 paymentMethod === 'VNPAY' ? (

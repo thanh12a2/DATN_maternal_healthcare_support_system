@@ -149,6 +149,12 @@ export class AppointmentController {
     return this.service.listBookableSlots(q, a);
   }
 
+  @Get('me/assistant-context')
+  async assistantContext(@CurrentAuth() a: PublicAuthContext, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
+    return this.service.getMyAssistantContext(a);
+  }
+
   @Post('slot-holds')
   hold(
     @Body() d: CreateHoldDto,
