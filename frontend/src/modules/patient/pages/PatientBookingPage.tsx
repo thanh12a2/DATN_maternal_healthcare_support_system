@@ -32,6 +32,7 @@ import { PublicPortalFooter } from '../../../shared/components/portal/PublicPort
 import { AppointmentTicketModal } from '../../../shared/components/portal/AppointmentTicketModal';
 import {
   listCatalogServices,
+  getCatalogService,
   type CatalogService,
 } from '../../../services/catalog';
 import {
@@ -56,6 +57,8 @@ import {
   type PatientProfile,
 } from '../../../services/patient';
 import '../../../styles/patient-booking.css';
+import { resolveBookingPrefill, validBookingId } from '../../../services/bookingHandoff';
+import { ApiError } from '../../../services/api';
 
 function getServicePrice(svc?: CatalogService | null): number {
   if (!svc) return 0;
@@ -169,6 +172,8 @@ export function PatientBookingPage() {
   // 2. State chính cho luồng 3 bước (Bước 4 là màn hình thành công)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const prefillApplied = useRef(false);
+  const [prefillNotice, setPrefillNotice] = useState('');
 
   // Danh mục chuyên khoa, dịch vụ, bác sĩ
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
@@ -177,11 +182,11 @@ export function PatientBookingPage() {
 
   // Lựa chọn ở Bước 1
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>(
-    querySpecialtyId || 'all',
+    'all',
   );
   const [serviceSearch, setServiceSearch] = useState('');
   const [selectedServiceId, setSelectedServiceId] =
-    useState<string>(queryServiceId);
+    useState<string>('');
   const [servicePage, setServicePage] = useState<number>(1);
   const SERVICES_PER_PAGE = 6;
   const [isSpecialtyDropdownOpen, setIsSpecialtyDropdownOpen] = useState(false);
@@ -205,10 +210,10 @@ export function PatientBookingPage() {
 
   // Lựa chọn ở Bước 2
   const [doctorMode, setDoctorMode] = useState<SelectionMode>(
-    queryDoctorId ? 'DOCTOR' : 'RANK',
+    'RANK',
   );
   const [selectedDoctorId, setSelectedDoctorId] =
-    useState<string>(queryDoctorId);
+    useState<string>('');
   const [holdSecondsRemaining, setHoldSecondsRemaining] = useState<
     number | null
   >(null);
@@ -390,31 +395,41 @@ export function PatientBookingPage() {
       listCatalogServices(auth.request).catch(() => []),
       listSpecialties(auth.request).catch(() => []),
       listDoctors(auth.request).catch(() => []),
-    ]).then(([svcList, specList, docList]) => {
+      validBookingId(queryServiceId) ? getCatalogService(auth.request, queryServiceId).catch(() => null) : Promise.resolve(null),
+    ]).then(([svcList, specList, docList, exactService]) => {
       if (!active) return;
       // Chỉ lấy dịch vụ ACTIVE và bookingEnabled
-      const activeSvcs = (svcList || []).filter(
+      // A linked service can be outside the list's first page. Its exact detail
+      // read is authoritative; never fall back to a cached/list copy on failure.
+      const sourceServices = queryServiceId
+        ? [...svcList.filter(s => s.id !== queryServiceId), ...(exactService ? [exactService] : [])]
+        : svcList;
+      const activeSvcs = (sourceServices || []).filter(
         (s: any) =>
-          s.bookingEnabled !== false &&
-          s.status !== 'INACTIVE' &&
-          s.status !== 'ARCHIVED' &&
-          s.status !== 'DRAFT',
+          s.bookingEnabled === true && s.status === 'ACTIVE'
+          && specList.some(spec => spec.id === s.specialtyId && spec.status === 'ACTIVE')
+          && !['COMING_SOON', 'TEMP_SUSPENDED', 'DISCONTINUED'].includes(s.content?.notice?.type),
       );
       setServices(activeSvcs);
       setSpecialties(specList || []);
       setDoctors((docList || []).filter((d: any) => d.status === 'ACTIVE'));
       setLoadingInitial(false);
 
-      // Nếu có queryServiceId hợp lệ, tự động chọn
-      if (queryServiceId && activeSvcs.some((s) => s.id === queryServiceId)) {
-        setSelectedServiceId(queryServiceId);
+      if (!prefillApplied.current) {
+        const prefill = resolveBookingPrefill(urlParams, activeSvcs, specList, docList);
+        setSelectedServiceId(prefill.serviceId);
+        setSelectedSpecialtyId(prefill.specialtyId);
+        setSelectedDoctorId(prefill.doctorId);
+        setDoctorMode(prefill.selectionMode);
+        setPrefillNotice(prefill.notice);
+        prefillApplied.current = true;
       }
     });
 
     return () => {
       active = false;
     };
-  }, [auth.request, queryServiceId]);
+  }, [auth.request, queryServiceId, urlParams]);
 
   // 4. Kiểm tra hồ sơ bệnh nhân khi đã đăng nhập
   const fetchPatientProfile = async () => {
@@ -465,12 +480,19 @@ export function PatientBookingPage() {
   const selectedDoctor = useMemo(() => {
     if (doctorMode === 'RANK' || !selectedDoctorId) return null;
     return (
-      doctors.find(
+      eligibleDoctorsForService.find(
         (d: any) =>
           d.id === selectedDoctorId || d.doctorId === selectedDoctorId,
       ) || null
     );
-  }, [doctors, selectedDoctorId, doctorMode]);
+  }, [eligibleDoctorsForService, selectedDoctorId, doctorMode]);
+
+  useEffect(() => {
+    if (!loadingInitial && selectedService && doctorMode === 'DOCTOR' && selectedDoctorId && !selectedDoctor) {
+      setSelectedDoctorId(''); setSelectedSlot(null);
+      setPrefillNotice('Bác sĩ không còn phù hợp với dịch vụ đang chọn. Vui lòng chọn lại bác sĩ.');
+    }
+  }, [loadingInitial, selectedService, doctorMode, selectedDoctorId, selectedDoctor]);
 
   // Phụ phí bác sĩ theo yêu cầu (nếu chọn chỉ định bác sĩ)
   const selectedDoctorSurcharge = useMemo(() => {
@@ -520,9 +542,9 @@ export function PatientBookingPage() {
   // 5. Tải danh sách Slots khi chọn Dịch vụ, Bác sĩ/Chế độ và Ngày
   useEffect(() => {
     if (
-      !selectedServiceId ||
+      loadingInitial || !selectedService ||
       !selectedDate ||
-      (doctorMode === 'DOCTOR' && !selectedDoctorId)
+      (doctorMode === 'DOCTOR' && !selectedDoctor)
     ) {
       setAvailableSlots([]);
       setSelectedSlot(null);
@@ -565,6 +587,9 @@ export function PatientBookingPage() {
     };
   }, [
     auth.request,
+    loadingInitial,
+    selectedService,
+    selectedDoctor,
     selectedServiceId,
     doctorMode,
     selectedDoctorId,
@@ -723,7 +748,7 @@ export function PatientBookingPage() {
 
   // Chuyển từ Bước 1 -> Bước 2
   const handleNextToStep2 = () => {
-    if (!selectedServiceId) {
+    if (!selectedService) {
       setSubmitError('Vui lòng chọn một dịch vụ y tế để tiếp tục.');
       return;
     }
@@ -857,6 +882,14 @@ export function PatientBookingPage() {
       setIsSubmitting(false);
     } catch (err: any) {
       setIsSubmitting(false);
+      if (err instanceof ApiError && ['SLOT_NOT_AVAILABLE', 'HOLD_EXPIRED'].includes(err.code || '')) {
+        setSelectedSlot(null); setHoldSecondsRemaining(null); setHoldExpired(false);
+        setSlotsRetry(value => value + 1);
+        setCurrentStep(2);
+        setSubmitError('Khung giờ vừa chọn không còn khả dụng hoặc đã hết hạn. Vui lòng chọn lại giờ trống trước khi xác nhận.');
+        scrollToTop();
+        return;
+      }
       setSubmitError(
         err.message ||
           'Không thể tạo lịch hẹn. Vui lòng thử lại hoặc chọn khung giờ khác.',
@@ -975,6 +1008,7 @@ export function PatientBookingPage() {
           )}
 
           {/* THÔNG BÁO LỖI NẾU CÓ */}
+          {prefillNotice && <div className="pb-prefill-notice" role="status">{prefillNotice}</div>}
           {submitError && (
             <div
               style={{
@@ -1858,7 +1892,7 @@ export function PatientBookingPage() {
                           type="button"
                           className="pb-btn-primary"
                           onClick={handleNextToStep2}
-                          disabled={!selectedServiceId}
+                          disabled={!selectedService}
                         >
                           Tiếp tục sang bước 2 <ArrowRight size={18} />
                         </button>

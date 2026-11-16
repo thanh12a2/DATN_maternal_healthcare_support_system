@@ -1341,6 +1341,17 @@ export class AppointmentDomainService {
   async resolvePatientIdForAuth(auth: PublicAuthContext): Promise<string> {
     return this.resolvePatientId(undefined, auth);
   }
+
+  async getMyAssistantContext(auth: PublicAuthContext) {
+    if (auth.role !== 'PATIENT') this.fail(403, 'FORBIDDEN', 'Patient only');
+    const patientId = await this.resolvePatientId(undefined, auth);
+    const lastCompleted = await this.db.appointment.findFirst({
+      where: { patientId, status: AppointmentStatus.COMPLETED, endAt: { lte: new Date() } },
+      orderBy: [{ endAt: 'desc' }, { id: 'desc' }],
+      select: { id: true, serviceId: true, assignedDoctorId: true, endAt: true, status: true },
+    });
+    return { data: { lastCompleted } };
+  }
   private toDateString(d: Date | string): string {
     try {
       return new Date(d).toLocaleDateString('sv-SE', {

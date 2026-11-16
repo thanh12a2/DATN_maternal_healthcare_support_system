@@ -130,6 +130,17 @@ export class PatientsService {
     return presentPatient(patient, this.crypto);
   }
 
+  async getMyAssistantContext(auth: PatientAuthContext) {
+    this.patientOnly(auth);
+    // Do not select/decrypt identifiers, demographics or emergency contacts.
+    const row = await this.db.patient.findUnique({
+      where: { authAccountId: auth.userId },
+      select: { version: true, updatedAt: true },
+    });
+    // The existing presenter derives COMPLETE for an existing required profile.
+    return { profileStatus: row ? 'COMPLETE' : 'MISSING', version: row?.version ?? null, updatedAt: row?.updatedAt ?? null };
+  }
+
   async getPatientByAuthAccountId(authAccountId: string) {
     return this.db.patient.findUnique({
       where: { authAccountId },

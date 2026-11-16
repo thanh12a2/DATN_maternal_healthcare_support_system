@@ -56,6 +56,12 @@ export class PatientsController {
     return { data: await this.patients.getMe(request.patientAuth!) };
   }
 
+  @Get('me/assistant-context')
+  @Header('Cache-Control', 'no-store')
+  async assistantContext(@Req() request: PatientRequest) {
+    return { data: await this.patients.getMyAssistantContext(request.patientAuth!) };
+  }
+
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(@Body() dto: SearchPatientsDto, @Req() request: PatientRequest) {

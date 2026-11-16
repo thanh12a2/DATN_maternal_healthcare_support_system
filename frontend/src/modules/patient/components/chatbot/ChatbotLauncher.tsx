@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ChatbotWidget } from './ChatbotWidget';
+import { useAuthSession } from '../../../../app/AuthSessionProvider';
 import '../../../../styles/portal-landing.css';
 
 function ChatBubbleIcon() {
@@ -20,9 +21,13 @@ function ChatBubbleIcon() {
 }
 
 export function ChatbotLauncher() {
+  const { user } = useAuthSession();
   const [open, setOpen] = useState(false);
   const toggle = useCallback(() => setOpen((prev) => !prev), []);
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => {
+    setOpen(false);
+    requestAnimationFrame(() => document.getElementById('patient-chatbot-launcher-btn')?.focus());
+  }, []);
 
   return (
     <>
@@ -43,7 +48,7 @@ export function ChatbotLauncher() {
           </span>
         </button>
       )}
-      <ChatbotWidget open={open} onClose={close} />
+      <ChatbotWidget key={user?.userId ?? 'anonymous'} open={open} onClose={close} />
     </>
   );
 }

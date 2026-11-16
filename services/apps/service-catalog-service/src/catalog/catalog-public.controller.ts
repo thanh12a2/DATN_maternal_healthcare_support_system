@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { CatalogService } from './catalog.service';
-import { ListServicesQueryDto } from './dto';
+import { EligibilityQueryDto, ListServicesQueryDto } from './dto';
 
 @Public()
 @Controller()
@@ -16,6 +16,16 @@ export class CatalogPublicController {
   @Get('services/:idOrSlug')
   getService(@Param('idOrSlug') idOrSlug: string) {
     return this.service.getPublicService(idOrSlug);
+  }
+
+  // Read-only estimate through the same effective-price resolver used by booking.
+  // Catalog prices are already public; no internal credentials cross the browser.
+  @Get('services/:serviceId/estimate')
+  estimate(
+    @Param('serviceId', ParseUUIDPipe) serviceId: string,
+    @Query() query: EligibilityQueryDto,
+  ) {
+    return this.service.resolveEligibility(serviceId, query);
   }
 
   @Get('categories')
