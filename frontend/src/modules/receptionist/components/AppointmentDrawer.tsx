@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import {
   Button,
   Descriptions,
   Divider,
   Drawer,
   Grid,
+  Input,
+  Modal,
   Popconfirm,
   Space,
   Steps,
@@ -37,6 +40,7 @@ interface Props {
   onClose: () => void;
   onCheckIn: (a: DeskAppointment) => void;
   onCancel: (a: DeskAppointment) => void;
+  onRequestReassignment: (a: DeskAppointment, reason: string) => Promise<void>;
   onCollect: (a: DeskAppointment, invoice: DeskInvoice) => void;
   onPayVnpay: (a: DeskAppointment, invoice: DeskInvoice) => void;
   onPrint: (what: string) => void;
@@ -49,10 +53,13 @@ export function AppointmentDrawer({
   onClose,
   onCheckIn,
   onCancel,
+  onRequestReassignment,
   onCollect,
   onPayVnpay,
   onPrint,
 }: Props) {
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const [reason, setReason] = useState('');
   const screens = Grid.useBreakpoint();
   const step = a
     ? a.completedAt
@@ -96,13 +103,13 @@ export function AppointmentDrawer({
           <Space wrap>
             {a.status === 'BOOKED' && (
               <Popconfirm
-                title="Xác nhận check-in?"
-                okText="Check-in"
+                title="Ghi nhận bệnh nhân đã đến?"
+                okText="Ghi nhận"
                 cancelText="Hủy"
                 onConfirm={() => onCheckIn(a)}
               >
                 <Button type="primary" loading={busy}>
-                  Check-in
+                  Ghi nhận đến
                 </Button>
               </Popconfirm>
             )}
@@ -112,6 +119,16 @@ export function AppointmentDrawer({
                 onClick={() => onPrint('phiếu số thứ tự')}
               >
                 In phiếu số thứ tự
+              </Button>
+            )}
+            {a.status === 'BOOKED' && (
+              <Button
+                onClick={() => {
+                  setReason('');
+                  setReasonOpen(true);
+                }}
+              >
+                Yêu cầu đổi bác sĩ
               </Button>
             )}
             <Popconfirm
@@ -129,6 +146,27 @@ export function AppointmentDrawer({
         )
       }
     >
+      <Modal
+        title="Yêu cầu phân công lại bác sĩ"
+        open={reasonOpen}
+        okText="Tạo công việc"
+        okButtonProps={{ disabled: reason.trim().length < 3, loading: busy }}
+        onCancel={() => setReasonOpen(false)}
+        onOk={() => {
+          if (a)
+            void onRequestReassignment(a, reason.trim())
+              .then(() => setReasonOpen(false))
+              .catch(() => undefined);
+        }}
+      >
+        <Input.TextArea
+          aria-label="Lý do cần đổi bác sĩ"
+          maxLength={500}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Nhập lý do cần phân công lại"
+        />
+      </Modal>
       {a && (
         <Tabs
           items={[

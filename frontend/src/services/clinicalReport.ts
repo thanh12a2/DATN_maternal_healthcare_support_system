@@ -110,4 +110,3 @@ export async function getEncounterReport(
     return null;
   }
 }
-

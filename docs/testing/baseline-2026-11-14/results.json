@@ -1,0 +1,251 @@
+{
+  "date": "2026-11-14",
+  "scope": "Local seed baseline; unique final assertions, not whole-app coverage",
+  "counts": {
+    "PASS": 36,
+    "FAIL": 3,
+    "REVIEW": 1
+  },
+  "checks": [
+    {
+      "id": "P01",
+      "status": "PASS",
+      "detail": "??ng nh?p Thanh H?ng, ??c 20 d?ch v?",
+      "evidence": "Phi?n Playwright ??u ti?n + screenshots booking + DB audit"
+    },
+    {
+      "id": "P02",
+      "status": "PASS",
+      "detail": "Ch? nh?t kh?ng sinh slot gi?",
+      "evidence": "Phi?n Playwright ??u ti?n + screenshots booking + DB audit"
+    },
+    {
+      "id": "P03",
+      "status": "PASS",
+      "detail": "Ch?n gi? ch?a c? POST hold/booking",
+      "evidence": "Phi?n Playwright ??u ti?n + screenshots booking + DB audit"
+    },
+    {
+      "id": "P04",
+      "status": "PASS",
+      "detail": "??t RANK/BASIC th?nh c?ng ONLINE/BOOKED, 300000 VND",
+      "evidence": "Phi?n Playwright ??u ti?n + screenshots booking + DB audit"
+    },
+    {
+      "id": "P05",
+      "status": "PASS",
+      "detail": "??t L? Thu H? th?nh c?ng, ph? ph? 250000, t?ng 550000 VND",
+      "evidence": "Phi?n Playwright ??u ti?n + screenshots booking + DB audit"
+    },
+    {
+      "id": "R01",
+      "status": "PASS",
+      "detail": "Lịch bác sĩ Lê Thu Hà, P.201, ngày 16/11",
+      "evidence": "reception-find.json"
+    },
+    {
+      "id": "R02",
+      "status": "PASS",
+      "detail": "Mở bệnh nhân thấy cả hai lịch và hóa đơn tương ứng",
+      "evidence": "reception-find.json"
+    },
+    {
+      "id": "R03",
+      "status": "PASS",
+      "detail": "Mở modal thu tiền/check-in từ lịch hẹn đã đặt",
+      "evidence": "reception-pay.json"
+    },
+    {
+      "id": "D01",
+      "status": "PASS",
+      "detail": "Đăng nhập bác sĩ Lê Thu Hà",
+      "evidence": "doctor-find.json"
+    },
+    {
+      "id": "D02",
+      "status": "PASS",
+      "detail": "Bác sĩ thấy lịch đã check-in theo ngày đã chọn",
+      "evidence": "doctor-find.json"
+    },
+    {
+      "id": "D03",
+      "status": "PASS",
+      "detail": "Bắt đầu khám qua UI, đồng bộ encounter và appointment",
+      "evidence": "doctor-start.json"
+    },
+    {
+      "id": "D04",
+      "status": "PASS",
+      "detail": "Sinh hiệu đã lưu và giữ nguyên sau reload",
+      "evidence": "doctor-verify.json"
+    },
+    {
+      "id": "D05",
+      "status": "PASS",
+      "detail": "Xác nhận hoàn tất hồ sơ qua UI: HTTP 201",
+      "evidence": "doctor-complete.json"
+    },
+    {
+      "id": "D06",
+      "status": "PASS",
+      "detail": "Nội dung thử nghiệm lưu đúng sau reload",
+      "evidence": "doctor-verify.json"
+    },
+    {
+      "id": "D07",
+      "status": "PASS",
+      "detail": "Ca hoàn tất hiển thị lại sau reload",
+      "evidence": "doctor-verify.json"
+    },
+    {
+      "id": "D08",
+      "status": "PASS",
+      "detail": "Hồ sơ đã hoàn tất không cho sửa sinh hiệu",
+      "evidence": "doctor-verify.json"
+    },
+    {
+      "id": "BUG01",
+      "status": "FAIL",
+      "detail": "Định danh bác sĩ phải khớp hồ sơ Thanh Hằng, không dùng dữ liệu fallback của người khác",
+      "evidence": "doctor-verify.json"
+    },
+    {
+      "id": "P06",
+      "status": "PASS",
+      "detail": "Lịch cá nhân hiển thị lịch đã đặt",
+      "evidence": "patient-security.json"
+    },
+    {
+      "id": "A01",
+      "status": "PASS",
+      "detail": "Không JWT đọc danh sách: 401",
+      "evidence": "patient-security.json"
+    },
+    {
+      "id": "A02",
+      "status": "PASS",
+      "detail": "PATIENT tự hủy lịch: 403",
+      "evidence": "patient-security.json"
+    },
+    {
+      "id": "A03",
+      "status": "PASS",
+      "detail": "PATIENT tự đổi lịch: 403",
+      "evidence": "patient-security.json"
+    },
+    {
+      "id": "A04",
+      "status": "PASS",
+      "detail": "PATIENT gọi endpoint lễ tân: 403",
+      "evidence": "patient-security.json"
+    },
+    {
+      "id": "A05",
+      "status": "PASS",
+      "detail": "Bệnh nhân Ngọc Mai không đọc được lịch Thanh Hằng: 404",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "A06",
+      "status": "FAIL",
+      "detail": "Không đọc được bệnh án người khác: 200; actual patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C01",
+      "status": "PASS",
+      "detail": "Hai bệnh nhân tranh cùng slot: 201/409",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C02",
+      "status": "PASS",
+      "detail": "Retry cùng idempotency key trả đúng hold cũ",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C03",
+      "status": "PASS",
+      "detail": "Cùng key khác payload bị chặn: 409",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "A07",
+      "status": "PASS",
+      "detail": "Không giải phóng được hold của người khác: 404",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C04",
+      "status": "PASS",
+      "detail": "Chủ hold giải phóng được chỗ",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C05",
+      "status": "PASS",
+      "detail": "Hold đã release không tạo được lịch: 409",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "R04",
+      "status": "PASS",
+      "detail": "Đổi lịch qua UI: HTTP 201 {\"id\":\"f3d3e8db-b571-4207-8a2d-1ee9ce500ab6\",\"appointmentCode\":\"APTMWFTGJ2SAD764C\",\"patientId\":\"7916a729-2282-4604-b45d-02c3983eed71\",\"serviceId\":\"421179bf-19d1-436d-948f-65a61f7c35d7\",\"channel\":\"ONLINE\",\"selectionMode\":\"DOCTOR\",\"requestedDoctorId\":null,\"requestedRankCode\":\"BASIC\",\"assignedDoctorId\":\"d35bd583-ecf1-4213-a201-45d9ccb2de63\",\"assignedRankCode\":\"BASIC\",\"specialtyId\":\"cb62b6a3-f1eb-407b-95f1-29f3f0b14de8\",\"roomId\":\"cb7fd674-0ad1-4b93-ba1a-3379101d2421\",\"roomCode\":\"P.202\",\"roomName\":\"Phòng khám Sản Phụ khoa 202\",\"room\":{\"id\":\"cb7fd674-0ad1-4b93-ba1a-3379101d2421\",\"code\":\"P.202\",\"name\":\"Phòng khám Sản Phụ khoa 202\"},\"availabilityVersion\":1,\"startAt\":\"2026-11-16T03:00:00.000Z\",\"endAt\":\"2026-11-16T03:30:00.000Z\",\"status\":\"BOOKED\",\"pricing\":{\"serviceName\":\"Khám thai định kỳ chuẩn y khoa\",\"serviceVersion\":1,\"basePriceId\":\"878ff23c-e2d2-4803-87a7-c49c9762a797\",\"baseAmountMinor\":300000,\"rankSurchargePriceId\":\"e52e30b0-01d0-42fd-87fe-6a3baa7fd42c\",\"rankSurchargeAmountMinor\":0,\"estimatedTotalMinor\":300000,\"currency\":\"VND\"},\"queueEstimateMinutes\":0,\"receptionCaseId\":null,\"encounterId\":null,\"checkedInAt\":null,\"clinicalStartedAt\":null,\"completedAt\":null,\"cancellationReason\":null,\"rescheduleCount\":1,\"version\":2,\"createdAt\":\"2026-11-14T02:58:37.589Z\",\"updatedAt\":\"2026-11-14T03:08:31.144Z\"}",
+      "evidence": "reception-reschedule.json"
+    },
+    {
+      "id": "R05",
+      "status": "PASS",
+      "detail": "Lễ tân hủy lịch qua UI: HTTP 201",
+      "evidence": "reception-cancel.json"
+    },
+    {
+      "id": "P07",
+      "status": "PASS",
+      "detail": "Lịch hoàn tất chuyển sang lịch sử khám",
+      "evidence": "patient-results.json"
+    },
+    {
+      "id": "P08",
+      "status": "PASS",
+      "detail": "Bệnh nhân xem kết quả đã lưu từ bác sĩ",
+      "evidence": "patient-results.json"
+    },
+    {
+      "id": "P09",
+      "status": "PASS",
+      "detail": "Lễ tân hủy, bệnh nhân thấy lịch trong tab đã hủy",
+      "evidence": "final-verification.json"
+    },
+    {
+      "id": "E01",
+      "status": "PASS",
+      "detail": "BOOKED → CHECKED_IN → IN_CLINICAL_CARE → COMPLETED",
+      "evidence": "final-verification.json"
+    },
+    {
+      "id": "E02",
+      "status": "PASS",
+      "detail": "Lịch còn lại đổi 08:00→10:00 rồi hủy, lưu đúng dữ liệu",
+      "evidence": "final-verification.json"
+    },
+    {
+      "id": "BUG02",
+      "status": "REVIEW",
+      "detail": "Check-in 14/11 cho l?ch 16/11 ???c ch?p nh?n; c?n ch?t policy tr??c khi k?t lu?n bug.",
+      "evidence": "final-verification.json"
+    },
+    {
+      "id": "A08",
+      "status": "PASS",
+      "detail": "Bác sĩ không được phân công không đọc được encounter: 403",
+      "evidence": "final-verification.json"
+    },
+    {
+      "id": "BUG03",
+      "status": "FAIL",
+      "detail": "Appointment COMPLETED/encounter FINALIZED nh?ng queue journey ACTIVE, ticket WAITING.",
+      "evidence": "final-api-state.json + database-verification.txt"
+    }
+  ]
+}

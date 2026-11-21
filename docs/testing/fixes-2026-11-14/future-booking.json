@@ -1,0 +1,243 @@
+{
+  "role": "other",
+  "url": "http://localhost:3000/dat-lich",
+  "assertions": [
+    {
+      "id": "F05-copy",
+      "status": "PASS",
+      "detail": "Countdown describes a choice awaiting confirmation, not a server reservation"
+    },
+    {
+      "id": "F05-api",
+      "status": "PASS",
+      "detail": "No server hold before confirmation, existing booking flow preserved"
+    },
+    {
+      "id": "F06-ui-payload",
+      "status": "PASS",
+      "detail": "Patient-entered reason persists through real UI booking"
+    },
+    {
+      "id": "REG-booking",
+      "status": "PASS",
+      "detail": "Future appointment remains directly BOOKED after patient confirmation"
+    },
+    {
+      "id": "F04-future",
+      "status": "PASS",
+      "detail": "Future reception blocked before collection"
+    },
+    {
+      "id": "F04-no-invoice",
+      "status": "PASS",
+      "detail": "Rejected future reception creates no invoice"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/catalog/services",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/bookable-slots?serviceId=421179bf-19d1-436d-948f-65a61f7c35d7&selectionMode=RANK&from=2026-11-15T00%3A00%3A00%2B07%3A00&to=2026-11-15T23%3A59%3A59%2B07%3A00&limit=50&requestedRankCode=BASIC",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/bookable-slots?serviceId=421179bf-19d1-436d-948f-65a61f7c35d7&selectionMode=RANK&from=2026-11-17T00%3A00%3A00%2B07%3A00&to=2026-11-17T23%3A59%3A59%2B07%3A00&limit=50&requestedRankCode=BASIC",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/appointment/slot-holds",
+      "status": 201,
+      "body": {
+        "id": "d6d2db04-b0f5-47c1-b6cc-4b5a19de17b5",
+        "patientId": "80898b2c-0dad-4815-9125-1b4848947aac",
+        "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+        "doctorId": "d35bd583-ecf1-4213-a201-45d9ccb2de63",
+        "rankCode": "BASIC",
+        "selectionMode": "RANK",
+        "roomId": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+        "roomCode": "P.202",
+        "roomName": "Phòng khám Sản Phụ khoa 202",
+        "room": {
+          "id": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+          "code": "P.202",
+          "name": "Phòng khám Sản Phụ khoa 202"
+        },
+        "startAt": "2026-11-17T00:30:00.000Z",
+        "endAt": "2026-11-17T01:00:00.000Z",
+        "status": "ACTIVE",
+        "expiresAt": "2026-11-14T03:39:19.364Z",
+        "createdAt": "2026-11-14T03:34:19.365Z"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/appointment/appointments",
+      "status": 201,
+      "body": {
+        "id": "66ead8ab-bb96-4915-b8c2-2c910725f27b",
+        "appointmentCode": "APTMWFUQFS1E581C3",
+        "patientId": "80898b2c-0dad-4815-9125-1b4848947aac",
+        "reasonForVisit": "QA FUTURE UI NOTE - not a clinical diagnosis",
+        "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+        "channel": "ONLINE",
+        "selectionMode": "RANK",
+        "requestedDoctorId": null,
+        "requestedRankCode": "BASIC",
+        "assignedDoctorId": "d35bd583-ecf1-4213-a201-45d9ccb2de63",
+        "assignedRankCode": "BASIC",
+        "specialtyId": "cb62b6a3-f1eb-407b-95f1-29f3f0b14de8",
+        "roomId": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+        "roomCode": "P.202",
+        "roomName": "Phòng khám Sản Phụ khoa 202",
+        "room": {
+          "id": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+          "code": "P.202",
+          "name": "Phòng khám Sản Phụ khoa 202"
+        },
+        "availabilityVersion": 1,
+        "startAt": "2026-11-17T00:30:00.000Z",
+        "endAt": "2026-11-17T01:00:00.000Z",
+        "status": "BOOKED",
+        "pricing": {
+          "serviceName": "Khám thai định kỳ chuẩn y khoa",
+          "serviceVersion": 1,
+          "basePriceId": "878ff23c-e2d2-4803-87a7-c49c9762a797",
+          "baseAmountMinor": 300000,
+          "rankSurchargePriceId": "e52e30b0-01d0-42fd-87fe-6a3baa7fd42c",
+          "rankSurchargeAmountMinor": 0,
+          "estimatedTotalMinor": 300000,
+          "currency": "VND"
+        },
+        "queueEstimateMinutes": 0,
+        "receptionCaseId": null,
+        "encounterId": null,
+        "checkedInAt": null,
+        "clinicalStartedAt": null,
+        "completedAt": null,
+        "cancellationReason": null,
+        "rescheduleCount": 0,
+        "version": 1,
+        "createdAt": "2026-11-14T03:34:19.490Z",
+        "updatedAt": "2026-11-14T03:34:19.490Z"
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    }
+  ],
+  "text": "TÂM AN\nHOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\nĐặt lịch khám\n1\nThông báo mới\nĐặt lịch thành công\nLM\nLê Ngọc Mai\nBệnh nhân\nTrang chủ\nChuyên khoa\nĐội ngũ Bác sĩ\nCẩm nang thai kỳ\nBảng giá dịch vụ\nLịch hẹn của tôi\nTrang chủ\n/\nĐăng ký đặt lịch khám\nBệnh viện Phụ sản Tâm An • Hà Nội\nĐăng Ký Đặt Lịch Khám Trực Tuyến\n\nChủ động lựa chọn dịch vụ, bác sĩ chuyên khoa và khung giờ khám thuận tiện nhất. Hệ thống tiếp đón ưu tiên không cần bốc số xếp hàng tại bệnh viện.\n\nKhám đúng giờ hẹn\nBác sĩ chuyên môn cao\nBảo mật thông tin y tế\nDịch vụ khám\nChọn gói / chuyên khoa\nBác sĩ & Thời gian\nChọn ngày và khung giờ\n3\nThông tin & Xác nhận\nHồ sơ người khám & Phiếu hẹn\nBước 3: Thông Tin Người Khám Bệnh\n\nThông tin được dùng để làm hồ sơ tiếp đón y tế và lưu trữ kết quả khám trực tuyến.\n\nHồ sơ bệnh nhân hợp lệ\nMã bệnh nhân: 80898B2C\nChỉnh sửa hồ sơ\nHỌ VÀ TÊN\nLê Ngọc Mai\nNGÀY SINH\n10/03/1998\nSỐ ĐIỆN THOẠI\n0901234005\nSỐ CCCD / ĐỊNH DANH\n001198000103\nĐỊA CHỈ CƯ TRÚ\n88 Cầu Giấy, Quan Hoa, Cầu Giấy, Hà Nội\nLý do khám / Triệu chứng ban đầu (nếu có)\nChi Tiết Lịch Hẹn & Chi Phí Khám\n\nVui lòng rà soát lại thông tin trước khi hoàn tất đăng ký đặt lịch khám.\n\nCơ sở khám\nBệnh viện Phụ sản Tâm An (Hà Nội)\nChuyên khoa\nSản khoa\nDịch vụ đăng ký\nKhám thai định kỳ chuẩn y khoa\nBác sĩ phụ trách\nBác sĩ chuyên khoa tiêu chuẩn (Bệnh viện tự động sắp xếp)\nThời gian khám\n17/11/2026 lúc 07:30\nPhòng khám tiếp nhận\nQuầy tiếp đón Tầng 1 (Bệnh viện sẽ phân bổ phòng theo ca trực)\nGiá dịch vụ niêm yết:\n300.000 ₫\nPhụ phí bác sĩ theo yêu cầu:\n0 ₫ (Miễn phí)\nTổng chi phí tạm tính:\n300.000 ₫\n* Quý khách thanh toán tại Quầy tiếp đón khi đến khám. Miễn phí 100% đổi / hủy lịch hẹn trước 24 giờ.\nKhung giờ 07:30 ngày 17/11/2026 đã được chọn. Vui lòng xác nhận trong 04:55.\nLưu ý: Quý khách vui lòng có mặt trước giờ hẹn 10 - 15 phút và xuất trình CCCD tại Quầy tiếp đón Tầng 1 để được tiếp đón ưu tiên.\nXác Nhận Đặt Lịch Khám\nQuay lại bước 2\nHỗ trợ đặt lịch khẩn cấp:\n1900 6868\nBỆNH VIỆN PHỤ SẢN TÂM AN\n\nPhiếu hẹn khám bệnh trực tuyến điện tử\n\nMÃ PHIẾU HẸN TIẾP ĐÓN\nAPTMWFUQFS1E581C3\nSao chép mã\nSTT KHÁM\nChưa cấp\n(Sẽ cấp khi check-in tại quầy)\nChưa thanh toán\nTIẾN TRÌNH ĐI KHÁM\n(Bước 1/4)\nChờ tiếp nhận\n1\nĐã đặt lịch\nHẹn 07:30\n2\nCheck-in quầy\nChờ tại tầng 1\n3\nVào khám\nĐợi gọi số\n4\nHoàn tất\nKết thúc ca\n1. THÔNG TIN LỊCH HẸN Y TẾ\nDịch vụ đăng ký:\nKhám thai định kỳ chuẩn y khoa\nBác sĩ phụ trách:\nBác sĩ chuyên khoa Tâm An\nChuyên khoa:\nSản khoa\nKhung giờ hẹn:\n07:30 - 08:00\nNgày hẹn khám:\nThứ Ba, 17/11/2026\nTổng chi phí tạm tính:\n300.000 ₫\n* Quý khách thanh toán trực tiếp tại Quầy tiếp đón khi đến khám.\n2. THÔNG TIN NGƯỜI KHÁM BỆNH\nHọ và tên bệnh nhân:\nLê Ngọc Mai\nNgày sinh:\n10/03/1998\nSố điện thoại:\n0901234005\nSố CCCD / Định danh:\n001198000103\nHướng dẫn tiếp đón khi đến khám\nQuý khách vui lòng có mặt trước giờ hẹn từ 10 - 15 phút.\nXuất trình CCCD hoặc mã phiếu hẹn tại Quầy tiếp đón Tầng 1.\nNếu cần đổi lịch, vui lòng liên hệ tổng đài 1900 6868 trước 24 giờ.\nIn phiếu hẹn\nXem lịch hẹn của tôi\nĐóng\nTÂM AN HOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\n\nHệ thống Bệnh viện Phụ sản & Y học Bào thai Tâm An – Trọn vẹn yêu thương, vẹn toàn yên tâm. Tiên phong ứng dụng mô hình chăm sóc thai sản toàn diện theo tiêu chuẩn y khoa tiên tiến, đồng hành cùng mẹ và bé trong từng khoảnh khắc thiêng liêng.\n\nGiấy phép hoạt động y tế giả định\nChăm sóc Sản khoa Toàn diện\nDịch vụ & Gói thai sản\nGói sinh thường trọn gói Hạnh Phúc\nGói sinh mổ chủ động Bình An\nSiêu âm hình thái học thai nhi 5D\nSàng lọc dị tật trước sinh (NIPT, Double Test)\nKhám & Điều trị Phụ khoa kỹ thuật số\nChăm sóc mẹ và bé sau sinh toàn diện\nTiện ích Bệnh nhân\nĐặt lịch khám trực tuyến\nTra cứu lịch hẹn khám bệnh\nCổng hồ sơ sức khỏe thai kỳ\nBảng giá dịch vụ niêm yết\nDanh bạ Chuyên gia & Bác sĩ\nCẩm nang kiến thức cho mẹ bầu\nHỗ trợ & Khẩn cấp\nCấp cứu Sản khoa (24/7):\n1900 6868\nTổng đài tư vấn & Đặt hẹn:\n(024) 3999 8888\nĐịa chỉ cơ sở chính:\n\nTòa nhà Bệnh viện Phụ sản Tâm An, 45 Phố Yersin, Hai Bà Trưng, Hà Nội\n\nEmail hỗ trợ:\n\nchamsockhachhang@taman.local\n\n© 2026 Bệnh viện Phụ sản Tâm An. Trọn vẹn yêu thương, vẹn toàn yên tâm.\n\nWebsite minh họa phục vụ đồ án tốt nghiệp. Bệnh viện, bác sĩ và số liệu là giả định.\n\nChính sách bảo mật y tế\n•\nQuy định khám chữa bệnh\n•\nHướng dẫn đón tiếp bệnh nhân"
+}

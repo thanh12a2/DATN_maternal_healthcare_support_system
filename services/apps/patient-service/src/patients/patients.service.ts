@@ -130,10 +130,26 @@ export class PatientsService {
     return presentPatient(patient, this.crypto);
   }
 
+  async getMyAssistantContext(auth: PatientAuthContext) {
+    this.patientOnly(auth);
+    // Do not select/decrypt identifiers, demographics or emergency contacts.
+    const row = await this.db.patient.findUnique({
+      where: { authAccountId: auth.userId },
+      select: { version: true, updatedAt: true },
+    });
+    // The existing presenter derives COMPLETE for an existing required profile.
+    return { profileStatus: row ? 'COMPLETE' : 'MISSING', version: row?.version ?? null, updatedAt: row?.updatedAt ?? null };
+  }
+
   async getPatientByAuthAccountId(authAccountId: string) {
     return this.db.patient.findUnique({
       where: { authAccountId },
     });
+  }
+
+  async notificationAccount(patientId: string) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(patientId)) return null;
+    return this.db.patient.findUnique({ where: { id: patientId }, select: { authAccountId: true, fullName: true, dateOfBirth: true, address: true } });
   }
 
   async getById(
@@ -455,7 +471,7 @@ export class PatientsService {
     };
   }
 
-  async getInternalIdentity(patientId: string, _purpose: string) {
+  async getInternalIdentity(patientId: string, purpose: string) {
     this.uuid(patientId, 'INVALID_PATIENT_ID');
     const patient = await this.db.patient.findUnique({
       where: { id: patientId },
@@ -466,6 +482,8 @@ export class PatientsService {
         phoneNumber: true,
         nationalIdCiphertext: true,
         version: true,
+          address: true,
+          emergencyContacts: { orderBy: [{ isPrimary: 'desc' }, { priority: 'asc' }] },
       },
     });
     if (!patient) this.notFound();
@@ -483,6 +501,12 @@ export class PatientsService {
       nationalIdLast4: maskedId?.slice(-4) ?? '',
       active: true,
       profileVersion: patient.version,
+        ...(purpose === 'CLINICAL' ? {
+          phoneNumber: patient.phoneNumber,
+          nationalId: patient.nationalIdCiphertext ? this.crypto.decrypt(patient.nationalIdCiphertext) : '',
+          address: patient.address ?? '',
+          emergencyContact: patient.emergencyContacts?.[0] ? `${patient.emergencyContacts[0].fullName} (${patient.emergencyContacts[0].relationship} - ${patient.emergencyContacts[0].phoneNumber})` : '',
+        } : {}),
     };
   }
 

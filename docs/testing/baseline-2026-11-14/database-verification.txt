@@ -1,0 +1,47 @@
+﻿ appointment_code  |  status   | channel | selection_mode |        start_at        |       checked_in_at        |    clinical_started_at     |        completed_at        | reschedule_count | version 
+-------------------+-----------+---------+----------------+------------------------+----------------------------+----------------------------+----------------------------+------------------+---------
+ APTMWFTH9XT234394 | COMPLETED | ONLINE  | DOCTOR         | 2026-11-16 02:00:00+00 | 2026-11-14 03:03:30.386+00 | 2026-11-14 03:04:38.737+00 | 2026-11-14 03:05:34.575+00 |                0 |       4
+ APTMWFTGJ2SAD764C | CANCELLED | ONLINE  | DOCTOR         | 2026-11-16 03:00:00+00 |                            |                            |                            |                1 |       3
+(2 rows)
+
+           event_type            | count 
+---------------------------------+-------
+ appointment.booked.v1           |     2
+ appointment.clinical_started.v1 |     1
+ appointment.cancelled.v1        |     1
+ appointment.checked_in.v1       |     1
+ appointment.rescheduled.v1      |     1
+ appointment.completed.v1        |     1
+(6 rows)
+
+  status  | count 
+----------+-------
+ RELEASED |     2
+ CONSUMED |     3
+(2 rows)
+
+            appointment_id            | journey_state | ticket_code | ticket_state | business_date 
+--------------------------------------+---------------+-------------+--------------+---------------
+ 35295482-d57b-4e48-8c04-4b19faa71f0b | ACTIVE        | 201-01      | WAITING      | 2026-11-14
+(1 row)
+
+ status | total_minor | paid_minor | balance_minor 
+--------+-------------+------------+---------------
+ PAID   |      550000 |     550000 |             0
+(1 row)
+
+   state   |              patient_id              
+-----------+--------------------------------------
+ FINALIZED | 7916a729-2282-4604-b45d-02c3983eed71
+(1 row)
+
+ systolic | diastolic | heart_rate | temperature | weight | height 
+----------+-----------+------------+-------------+--------+--------
+      120 |        80 |         75 |        36.8 |  58.50 |  160.0
+(1 row)
+
+ pregnancy_episode_count 
+-------------------------
+                       0
+(1 row)
+

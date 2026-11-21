@@ -8,6 +8,7 @@ import { JwksModule } from './jwks/jwks.module';
 import { PasswordManagementModule } from './password-management/password-management.module';
 import { SecurityModule } from './security/security.module';
 import { AuthGrpcModule } from './grpc/auth-grpc.module';
+import { EmailVerificationModule } from './email-verification/email-verification.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthGrpcModule } from './grpc/auth-grpc.module';
     PasswordManagementModule,
     SecurityModule,
     AuthGrpcModule,
+    EmailVerificationModule,
   ],
   controllers: [AuthServiceController],
   providers: [AuthServiceService],

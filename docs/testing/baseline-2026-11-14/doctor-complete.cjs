@@ -1,0 +1,22 @@
+module.exports = async ({page,check,events}) => {
+  await page.goto('http://localhost:3000/workspace/doctor/overview');
+  await page.getByPlaceholder('Chọn thời điểm').fill('16/11/2026');
+  await page.getByPlaceholder('Chọn thời điểm').press('Enter');
+  await page.getByText('APTMWFTH9XT234394',{exact:true}).first().click();
+  await page.getByPlaceholder('120/80',{exact:true}).fill('120/80');
+  await page.getByPlaceholder('75',{exact:true}).fill('75');
+  await page.getByPlaceholder('36.8',{exact:true}).fill('36.8');
+  await page.getByPlaceholder('58.5',{exact:true}).fill('58.5');
+  await page.getByPlaceholder('160',{exact:true}).fill('160');
+  await page.getByPlaceholder(/Nhập lý do đến khám/).fill('KIỂM THỬ ĐỒ ÁN: khám định kỳ, dữ liệu mô phỏng, không dùng điều trị.');
+  await page.getByPlaceholder(/Nhập chẩn đoán lâm sàng/).fill('KIỂM THỬ CHỨC NĂNG LƯU BỆNH ÁN — dữ liệu mô phỏng, không phải chẩn đoán thực tế.');
+  await page.waitForTimeout(2200);
+  check('D04',events.some(e=>e.url.includes('/vital-signs')&&e.status<300),'Lưu sinh hiệu qua UI');
+  await page.getByRole('button',{name:/Hoàn tất ca khám/}).first().click();
+  await page.waitForTimeout(700);
+  const done=page.waitForResponse(r=>r.url().endsWith('/finalize')&&r.request().method()==='POST');
+  await page.getByRole('button',{name:'Hoàn tất',exact:true}).click();
+  const response=await done;
+  check('D05',response.status()<300,'Xác nhận hoàn tất hồ sơ qua UI: HTTP '+response.status());
+  await page.waitForTimeout(1800);
+};

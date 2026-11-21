@@ -1,0 +1,32 @@
+{
+  "status": 200,
+  "requestActor": "patient.ngocmai@gmail.com",
+  "targetOwner": "7916a729-2282-4604-b45d-02c3983eed71",
+  "returnedPatientId": "7916a729-2282-4604-b45d-02c3983eed71",
+  "returnedEncounterId": "19f9fc03-186e-43e0-9a36-11742d33c527",
+  "returnedState": "FINALIZED",
+  "returnedKeys": [
+    "id",
+    "appointmentId",
+    "patientId",
+    "pregnancyEpisodeId",
+    "primaryDoctorId",
+    "state",
+    "version",
+    "chiefComplaint",
+    "clinicalSummary",
+    "startedAt",
+    "reviewReadyAt",
+    "finalizedAt",
+    "createdAt",
+    "updatedAt",
+    "documentIds",
+    "prescriptionIds",
+    "treatmentPlanIds",
+    "vitalSigns",
+    "notes",
+    "diagnoses",
+    "orders",
+    "appointmentSyncPending"
+  ]
+}

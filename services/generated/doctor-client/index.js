@@ -328,7 +328,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\DATN_maternal_healthcare_support_system\\services\\generated\\doctor-client",
+      "value": "D:\\Learning\\Tài liệu học\\Đồ Án\\DATN_maternal_healthcare_support_system\\services\\generated\\doctor-client",
       "fromEnvVar": null
     },
     "config": {
@@ -342,7 +342,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\DATN_maternal_healthcare_support_system\\services\\prisma\\doctor\\schema.prisma",
+    "sourceFilePath": "D:\\Learning\\Tài liệu học\\Đồ Án\\DATN_maternal_healthcare_support_system\\services\\prisma\\doctor\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

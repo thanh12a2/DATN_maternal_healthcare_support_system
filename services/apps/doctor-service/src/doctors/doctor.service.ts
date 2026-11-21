@@ -299,6 +299,12 @@ export class DoctorDomainService {
     return doctor?.id ?? null;
   }
 
+  async findNotificationAccount(doctorId: string) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(doctorId)) return null;
+    const doctor = await this.prisma.doctor.findUnique({ where: { id: doctorId }, select: { accountId: true } });
+    return doctor?.accountId ?? null;
+  }
+
   async getMyDoctor(actor: Identity) {
     const id = await this.findDoctorIdByAccount(actor.userId);
     if (!id) this.notFound();
@@ -348,7 +354,7 @@ export class DoctorDomainService {
     const allowed = admin
       ? [
           'fullName',
-
+    
           'biography',
           'practiceStartYear',
           'languages',
@@ -358,7 +364,7 @@ export class DoctorDomainService {
       : manager
         ? [
             'fullName',
-
+      
             'biography',
             'practiceStartYear',
             'languages',
@@ -1195,9 +1201,9 @@ export class DoctorDomainService {
         const isSingleSlot =
           intervalEnd.getTime() - intervalStart.getTime() <= 4 * 3600 * 1000;
         const covers = availability.intervals.some((item: any) => {
-          const s = new Date(item.startAt);
-          const e = new Date(item.endAt);
-          return isSingleSlot
+            const s = new Date(item.startAt);
+            const e = new Date(item.endAt);
+            return isSingleSlot
             ? s <= intervalStart && e >= intervalEnd
             : s < intervalEnd && e > intervalStart;
         });

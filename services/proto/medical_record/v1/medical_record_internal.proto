@@ -9,7 +9,13 @@ service MedicalRecordInternalService {
   rpc ValidateEncounterAccess(ValidateEncounterAccessRequest) returns (ValidateEncounterAccessResponse);
   rpc LinkExternalClinicalResource(LinkExternalClinicalResourceRequest) returns (EncounterSummary);
   rpc GetPregnancyEpisodeContext(GetPregnancyEpisodeContextRequest) returns (PregnancyEpisodeContext);
+  rpc BeginClinicalFileUpload(BeginClinicalFileUploadRequest) returns (BeginClinicalFileUploadResponse);
+  rpc EndClinicalFileUpload(EndClinicalFileUploadRequest) returns (EndClinicalFileUploadResponse);
 }
+message BeginClinicalFileUploadRequest { string encounter_id = 1; string patient_id = 2; }
+message BeginClinicalFileUploadResponse { string token = 1; }
+message EndClinicalFileUploadRequest { string token = 1; }
+message EndClinicalFileUploadResponse { bool released = 1; }
 
 enum EncounterState {
   ENCOUNTER_STATE_UNSPECIFIED = 0;
@@ -20,7 +26,7 @@ enum EncounterState {
   ENCOUNTER_STATE_FINALIZED = 5;
 }
 message AdmissionSnapshot { string reception_case_id = 1; string invoice_id = 2; string payment_condition = 3; google.protobuf.Timestamp checked_in_at = 4; }
-message OpenOrGetEncounterRequest { maternal.common.v1.RequestContext context = 1; string appointment_id = 2; string patient_id = 3; string primary_doctor_id = 4; AdmissionSnapshot admission = 5; }
+message OpenOrGetEncounterRequest { maternal.common.v1.RequestContext context = 1; string appointment_id = 2; string patient_id = 3; string primary_doctor_id = 4; AdmissionSnapshot admission = 5; string chief_complaint = 6; }
 message OpenOrGetEncounterResponse { EncounterSummary encounter = 1; bool created = 2; bool idempotent_replay = 3; }
 message GetEncounterSummaryRequest { maternal.common.v1.RequestContext context = 1; string encounter_id = 2; string appointment_id = 3; }
 message EncounterSummary { string encounter_id = 1; string appointment_id = 2; string patient_id = 3; string pregnancy_episode_id = 4; string primary_doctor_id = 5; EncounterState state = 6; int64 version = 7; google.protobuf.Timestamp started_at = 8; google.protobuf.Timestamp finalized_at = 9; }

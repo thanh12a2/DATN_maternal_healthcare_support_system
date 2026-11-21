@@ -27,6 +27,19 @@ export class RabbitMqPublisher implements OnModuleDestroy {
     return Boolean(this.config.get<string>('RABBITMQ_URL'));
   }
 
+  async ensureBindings(queue: string, routingKeys: string[]): Promise<void> {
+    const url = this.config.get<string>('RABBITMQ_URL');
+    if (!url) throw new Error('RabbitMQ publisher is disabled');
+    const channel = await this.getChannel(url);
+    const exchange =
+      this.config.get<string>('RABBITMQ_DOMAIN_EXCHANGE') ??
+      'maternal.domain.v1';
+    await channel.assertExchange(exchange, 'topic', { durable: true });
+    await channel.assertQueue(queue, { durable: true });
+    for (const key of routingKeys)
+      await channel.bindQueue(queue, exchange, key);
+  }
+
   async publish(routingKey: string, event: DomainEventEnvelope): Promise<void> {
     const url = this.config.get<string>('RABBITMQ_URL');
     if (!url)
@@ -65,7 +78,14 @@ export class RabbitMqPublisher implements OnModuleDestroy {
     this.connection.on('error', (error) =>
       this.logger.error('RabbitMQ connection error', error),
     );
+    this.connection.on('close', () => {
+      this.connection = undefined;
+      this.channel = undefined;
+    });
     this.channel = await this.connection.createConfirmChannel();
+    this.channel.on('close', () => {
+      this.channel = undefined;
+    });
     return this.channel;
   }
 }

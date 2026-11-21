@@ -2,6 +2,18 @@ generator client {
   provider = "prisma-client-js"
   output = "../../generated/queue-client"
 }
+
+// Kept for existing signal records; new queue work signals are no longer produced.
+model ReceptionWorkSignalOutbox {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category    String   @db.VarChar(20)
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(6)
+
+  @@index([availableAt, id], map: "reception_work_signal_due_idx")
+  @@map("reception_work_signal_outbox")
+}
+
 datasource db {
   provider = "postgresql"
   url = env("QUEUE_DATABASE_URL")
@@ -65,6 +77,9 @@ model StageTicket {
   callCount Int @default(0) @map("call_count")
   calledAt DateTime? @map("called_at") @db.Timestamptz(6)
   callExpiresAt DateTime? @map("call_expires_at") @db.Timestamptz(6)
+  assistanceClaimedBy String? @map("assistance_claimed_by") @db.Uuid
+  assistanceClaimExpiresAt DateTime? @map("assistance_claim_expires_at") @db.Timestamptz(6)
+  assistanceHandledAt DateTime? @map("assistance_handled_at") @db.Timestamptz(6)
   serviceStartedAt DateTime? @map("service_started_at") @db.Timestamptz(6)
   completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
   version Int @default(1)
@@ -76,6 +91,7 @@ model StageTicket {
   @@unique([stageId,businessDate,ordinal])
   @@unique([stageId,businessDate,ticketCode])
   @@index([stageId,state,basePriority,lateDemotion,enqueueSequence])
+  @@index([state,callExpiresAt], map:"stage_tickets_overdue_lookup_idx")
   @@map("stage_tickets")
 }
 model CallAttempt {

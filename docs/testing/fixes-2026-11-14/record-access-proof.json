@@ -1,0 +1,10 @@
+{
+  "status": 403,
+  "requestActor": "patient.ngocmai@gmail.com",
+  "targetOwner": "7916a729-2282-4604-b45d-02c3983eed71",
+  "returnedKeys": [
+    "message",
+    "error",
+    "statusCode"
+  ]
+}

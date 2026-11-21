@@ -32,6 +32,7 @@ import { PublicPortalFooter } from '../../../shared/components/portal/PublicPort
 import { AppointmentTicketModal } from '../../../shared/components/portal/AppointmentTicketModal';
 import {
   listCatalogServices,
+  getCatalogService,
   type CatalogService,
 } from '../../../services/catalog';
 import {
@@ -56,6 +57,8 @@ import {
   type PatientProfile,
 } from '../../../services/patient';
 import '../../../styles/patient-booking.css';
+import { resolveBookingPrefill, validBookingId } from '../../../services/bookingHandoff';
+import { ApiError } from '../../../services/api';
 
 function getServicePrice(svc?: CatalogService | null): number {
   if (!svc) return 0;
@@ -169,6 +172,8 @@ export function PatientBookingPage() {
   // 2. State chính cho luồng 3 bước (Bước 4 là màn hình thành công)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const prefillApplied = useRef(false);
+  const [prefillNotice, setPrefillNotice] = useState('');
 
   // Danh mục chuyên khoa, dịch vụ, bác sĩ
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
@@ -177,11 +182,11 @@ export function PatientBookingPage() {
 
   // Lựa chọn ở Bước 1
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>(
-    querySpecialtyId || 'all',
+    'all',
   );
   const [serviceSearch, setServiceSearch] = useState('');
   const [selectedServiceId, setSelectedServiceId] =
-    useState<string>(queryServiceId);
+    useState<string>('');
   const [servicePage, setServicePage] = useState<number>(1);
   const SERVICES_PER_PAGE = 6;
   const [isSpecialtyDropdownOpen, setIsSpecialtyDropdownOpen] = useState(false);
@@ -205,10 +210,10 @@ export function PatientBookingPage() {
 
   // Lựa chọn ở Bước 2
   const [doctorMode, setDoctorMode] = useState<SelectionMode>(
-    queryDoctorId ? 'DOCTOR' : 'RANK',
+    'RANK',
   );
   const [selectedDoctorId, setSelectedDoctorId] =
-    useState<string>(queryDoctorId);
+    useState<string>('');
   const [holdSecondsRemaining, setHoldSecondsRemaining] = useState<
     number | null
   >(null);
@@ -218,6 +223,8 @@ export function PatientBookingPage() {
   const [selectedSlot, setSelectedSlot] = useState<BookableSlot | null>(null);
   const [availableSlots, setAvailableSlots] = useState<BookableSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  const [slotsRetry, setSlotsRetry] = useState(0);
 
   // Lựa chọn ở Bước 3: Hồ sơ bệnh nhân
   const [patientProfile, setPatientProfile] = useState<PatientProfile | null>(
@@ -388,31 +395,41 @@ export function PatientBookingPage() {
       listCatalogServices(auth.request).catch(() => []),
       listSpecialties(auth.request).catch(() => []),
       listDoctors(auth.request).catch(() => []),
-    ]).then(([svcList, specList, docList]) => {
+      validBookingId(queryServiceId) ? getCatalogService(auth.request, queryServiceId).catch(() => null) : Promise.resolve(null),
+    ]).then(([svcList, specList, docList, exactService]) => {
       if (!active) return;
       // Chỉ lấy dịch vụ ACTIVE và bookingEnabled
-      const activeSvcs = (svcList || []).filter(
+      // A linked service can be outside the list's first page. Its exact detail
+      // read is authoritative; never fall back to a cached/list copy on failure.
+      const sourceServices = queryServiceId
+        ? [...svcList.filter(s => s.id !== queryServiceId), ...(exactService ? [exactService] : [])]
+        : svcList;
+      const activeSvcs = (sourceServices || []).filter(
         (s: any) =>
-          s.bookingEnabled !== false &&
-          s.status !== 'INACTIVE' &&
-          s.status !== 'ARCHIVED' &&
-          s.status !== 'DRAFT',
+          s.bookingEnabled === true && s.status === 'ACTIVE'
+          && specList.some(spec => spec.id === s.specialtyId && spec.status === 'ACTIVE')
+          && !['COMING_SOON', 'TEMP_SUSPENDED', 'DISCONTINUED'].includes(s.content?.notice?.type),
       );
       setServices(activeSvcs);
       setSpecialties(specList || []);
       setDoctors((docList || []).filter((d: any) => d.status === 'ACTIVE'));
       setLoadingInitial(false);
 
-      // Nếu có queryServiceId hợp lệ, tự động chọn
-      if (queryServiceId && activeSvcs.some((s) => s.id === queryServiceId)) {
-        setSelectedServiceId(queryServiceId);
+      if (!prefillApplied.current) {
+        const prefill = resolveBookingPrefill(urlParams, activeSvcs, specList, docList);
+        setSelectedServiceId(prefill.serviceId);
+        setSelectedSpecialtyId(prefill.specialtyId);
+        setSelectedDoctorId(prefill.doctorId);
+        setDoctorMode(prefill.selectionMode);
+        setPrefillNotice(prefill.notice);
+        prefillApplied.current = true;
       }
     });
 
     return () => {
       active = false;
     };
-  }, [auth.request, queryServiceId]);
+  }, [auth.request, queryServiceId, urlParams]);
 
   // 4. Kiểm tra hồ sơ bệnh nhân khi đã đăng nhập
   const fetchPatientProfile = async () => {
@@ -463,12 +480,19 @@ export function PatientBookingPage() {
   const selectedDoctor = useMemo(() => {
     if (doctorMode === 'RANK' || !selectedDoctorId) return null;
     return (
-      doctors.find(
+      eligibleDoctorsForService.find(
         (d: any) =>
           d.id === selectedDoctorId || d.doctorId === selectedDoctorId,
       ) || null
     );
-  }, [doctors, selectedDoctorId, doctorMode]);
+  }, [eligibleDoctorsForService, selectedDoctorId, doctorMode]);
+
+  useEffect(() => {
+    if (!loadingInitial && selectedService && doctorMode === 'DOCTOR' && selectedDoctorId && !selectedDoctor) {
+      setSelectedDoctorId(''); setSelectedSlot(null);
+      setPrefillNotice('Bác sĩ không còn phù hợp với dịch vụ đang chọn. Vui lòng chọn lại bác sĩ.');
+    }
+  }, [loadingInitial, selectedService, doctorMode, selectedDoctorId, selectedDoctor]);
 
   // Phụ phí bác sĩ theo yêu cầu (nếu chọn chỉ định bác sĩ)
   const selectedDoctorSurcharge = useMemo(() => {
@@ -517,13 +541,21 @@ export function PatientBookingPage() {
 
   // 5. Tải danh sách Slots khi chọn Dịch vụ, Bác sĩ/Chế độ và Ngày
   useEffect(() => {
-    if (!selectedServiceId || !selectedDate) {
+    if (
+      loadingInitial || !selectedService ||
+      !selectedDate ||
+      (doctorMode === 'DOCTOR' && !selectedDoctor)
+    ) {
       setAvailableSlots([]);
+      setSelectedSlot(null);
+      setLoadingSlots(false);
+      setSlotsError(false);
       return;
     }
 
     let active = true;
     setLoadingSlots(true);
+    setSlotsError(false);
     setSelectedSlot(null);
 
     const from = `${selectedDate}T00:00:00+07:00`;
@@ -546,6 +578,7 @@ export function PatientBookingPage() {
       .catch(() => {
         if (!active) return;
         setAvailableSlots([]);
+        setSlotsError(true);
         setLoadingSlots(false);
       });
 
@@ -554,10 +587,14 @@ export function PatientBookingPage() {
     };
   }, [
     auth.request,
+    loadingInitial,
+    selectedService,
+    selectedDoctor,
     selectedServiceId,
     doctorMode,
     selectedDoctorId,
     selectedDate,
+    slotsRetry,
   ]);
 
   // Đếm ngược 5 phút (300 giây) khi chọn slot
@@ -711,7 +748,7 @@ export function PatientBookingPage() {
 
   // Chuyển từ Bước 1 -> Bước 2
   const handleNextToStep2 = () => {
-    if (!selectedServiceId) {
+    if (!selectedService) {
       setSubmitError('Vui lòng chọn một dịch vụ y tế để tiếp tục.');
       return;
     }
@@ -728,7 +765,7 @@ export function PatientBookingPage() {
     }
     if (holdExpired) {
       setSubmitError(
-        'Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng chọn lại khung giờ khám.',
+        'Thời gian xác nhận lựa chọn đã hết hạn. Vui lòng chọn lại khung giờ khám.',
       );
       return;
     }
@@ -804,7 +841,7 @@ export function PatientBookingPage() {
 
     if (holdExpired) {
       setSubmitError(
-        'Thời gian giữ chỗ 5 phút đã hết hạn. Vui lòng quay lại bước 2 chọn lại khung giờ.',
+        'Thời gian xác nhận lựa chọn đã hết hạn. Vui lòng quay lại bước 2 chọn lại khung giờ.',
       );
       setIsSubmitting(false);
       return;
@@ -838,13 +875,21 @@ export function PatientBookingPage() {
       }
 
       // Bước B: Chuyển Hold thành Lịch hẹn chính thức (BookingChannel: ONLINE)
-      const appointment = await createAppointment(auth.request, hold.id);
+      const appointment = await createAppointment(auth.request, hold.id, clinicalNotes);
 
       setCreatedAppointment(appointment);
       setShowSuccessTicketModal(true); // Hiển thị popup modal phiếu hẹn ngay lập tức
       setIsSubmitting(false);
     } catch (err: any) {
       setIsSubmitting(false);
+      if (err instanceof ApiError && ['SLOT_NOT_AVAILABLE', 'HOLD_EXPIRED'].includes(err.code || '')) {
+        setSelectedSlot(null); setHoldSecondsRemaining(null); setHoldExpired(false);
+        setSlotsRetry(value => value + 1);
+        setCurrentStep(2);
+        setSubmitError('Khung giờ vừa chọn không còn khả dụng hoặc đã hết hạn. Vui lòng chọn lại giờ trống trước khi xác nhận.');
+        scrollToTop();
+        return;
+      }
       setSubmitError(
         err.message ||
           'Không thể tạo lịch hẹn. Vui lòng thử lại hoặc chọn khung giờ khác.',
@@ -963,6 +1008,7 @@ export function PatientBookingPage() {
           )}
 
           {/* THÔNG BÁO LỖI NẾU CÓ */}
+          {prefillNotice && <div className="pb-prefill-notice" role="status">{prefillNotice}</div>}
           {submitError && (
             <div
               style={{
@@ -1403,6 +1449,13 @@ export function PatientBookingPage() {
                         </h4>
 
                         <div className="pb-doctor-grid">
+                          {!loadingInitial &&
+                            eligibleDoctorsForService.length === 0 && (
+                              <p>
+                                Chưa tải được bác sĩ phù hợp. Vui lòng thử lại
+                                hoặc chọn chế độ bệnh viện tự sắp xếp.
+                              </p>
+                            )}
                           {eligibleDoctorsForService.map((doc: any) => {
                             const isSelected =
                               selectedDoctorId === (doc.id || doc.doctorId);
@@ -1569,7 +1622,11 @@ export function PatientBookingPage() {
                         )}
                       </div>
 
-                      {loadingSlots ? (
+                      {doctorMode === 'DOCTOR' && !selectedDoctorId ? (
+                        <div className="pb-slots-empty">
+                          Vui lòng chọn bác sĩ trước để xem lịch khám.
+                        </div>
+                      ) : loadingSlots ? (
                         <div
                           style={{
                             padding: '30px 0',
@@ -1579,12 +1636,21 @@ export function PatientBookingPage() {
                         >
                           Đang kiểm tra lịch trống của bác sĩ...
                         </div>
+                      ) : slotsError ? (
+                        <div className="pb-slots-empty" role="alert">
+                          Không thể tải lịch khám lúc này.{' '}
+                          <button
+                            type="button"
+                            onClick={() => setSlotsRetry((value) => value + 1)}
+                          >
+                            Thử lại
+                          </button>
+                        </div>
                       ) : availableSlots.length === 0 ? (
                         <div className="pb-slots-empty">
-                          Ngày {formatDateDisplay(selectedDate)} hiện đã kín
-                          lịch khám tự động. Quý khách vui lòng chọn ngày khác
-                          hoặc chuyển sang chế độ "Chỉ định bác sĩ theo yêu cầu"
-                          nếu muốn khám cùng Bác sĩ Chuyên gia / Trưởng khoa.
+                          Chưa có khung giờ phù hợp trong ngày{' '}
+                          {formatDateDisplay(selectedDate)}. Vui lòng chọn ngày
+                          khác hoặc thay đổi lựa chọn bác sĩ.
                         </div>
                       ) : (
                         <div style={{ marginTop: '14px' }}>
@@ -1804,7 +1870,7 @@ export function PatientBookingPage() {
                             </strong>{' '}
                             ngày{' '}
                             <strong>{formatDateDisplay(selectedDate)}</strong>{' '}
-                            đã được giữ chỗ trong{' '}
+                            cần được xác nhận trong{' '}
                             <strong className="pb-hold-countdown">
                               {formattedHoldTimer}
                             </strong>
@@ -1815,7 +1881,7 @@ export function PatientBookingPage() {
 
                     {currentStep === 2 && selectedSlot && holdExpired && (
                       <div className="pb-hold-sidebar-expired">
-                        ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5
+                        ⚠️ <strong>Hết thời gian xác nhận:</strong> Thời gian xác nhận 5
                         phút đã kết thúc. Vui lòng bấm chọn lại khung giờ khám.
                       </div>
                     )}
@@ -1826,7 +1892,7 @@ export function PatientBookingPage() {
                           type="button"
                           className="pb-btn-primary"
                           onClick={handleNextToStep2}
-                          disabled={!selectedServiceId}
+                          disabled={!selectedService}
                         >
                           Tiếp tục sang bước 2 <ArrowRight size={18} />
                         </button>
@@ -2524,7 +2590,7 @@ export function PatientBookingPage() {
                         )}
                       </strong>{' '}
                       ngày <strong>{formatDateDisplay(selectedDate)}</strong> đã
-                      được giữ chỗ trong{' '}
+                      được chọn. Vui lòng xác nhận trong{' '}
                       <strong className="pb-hold-countdown">
                         {formattedHoldTimer}
                       </strong>
@@ -2535,7 +2601,7 @@ export function PatientBookingPage() {
 
                 {selectedSlot && holdExpired && (
                   <div className="pb-hold-step3-expired">
-                    ⚠️ <strong>Hết hạn giữ chỗ:</strong> Thời gian giữ chỗ 5
+                    ⚠️ <strong>Hết thời gian xác nhận:</strong> Thời gian xác nhận 5
                     phút đã kết thúc. Vui lòng quay lại bước 2 chọn lại khung
                     giờ khám.
                   </div>

@@ -1,0 +1,40 @@
+{
+  "slot": {
+    "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+    "selectionMode": "DOCTOR",
+    "doctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+    "doctorName": "BS. Lê Thu Hà",
+    "rankCode": "HEAD_DOCTOR",
+    "roomId": "915191d7-ef75-4556-b4a9-4eee6b9f0510",
+    "roomCode": "P.201",
+    "roomName": "Phòng khám Sản Phụ khoa 201",
+    "room": {
+      "id": "915191d7-ef75-4556-b4a9-4eee6b9f0510",
+      "code": "P.201",
+      "name": "Phòng khám Sản Phụ khoa 201"
+    },
+    "startAt": "2026-11-17T00:30:00.000Z",
+    "endAt": "2026-11-17T01:00:00.000Z",
+    "availableCapacity": 1,
+    "isAvailable": true
+  },
+  "holdId": "4316c025-017a-4f34-b4b5-73622afbe173",
+  "statuses": [
+    201,
+    409
+  ],
+  "mismatch": {
+    "error": {
+      "code": "IDEMPOTENCY_KEY_REUSED",
+      "message": "Key reused",
+      "requestId": "97efdfd7-313e-460e-ae97-47ca770f617d"
+    }
+  },
+  "releasedBooking": {
+    "error": {
+      "code": "HOLD_EXPIRED",
+      "message": "Hold expired",
+      "requestId": "d7449dc5-809f-4f93-b1a8-8836b1a9d58c"
+    }
+  }
+}

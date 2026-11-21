@@ -19,6 +19,7 @@ export class AppointmentGrpcController {
     'billing-service',
     'medical-record-service',
     'queue-service',
+    'notification-service',
   )
   @ServiceScopes('appointment:internal:read')
   async getAppointment(request: any) {
@@ -170,6 +171,7 @@ export class AppointmentGrpcController {
       roomId: x.roomId ?? '',
       roomCode: x.roomCode ?? '',
       roomName: x.roomName ?? '',
+      reasonForVisit: x.reasonForVisit ?? '',
     };
   }
 }

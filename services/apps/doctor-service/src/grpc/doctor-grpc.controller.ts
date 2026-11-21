@@ -15,9 +15,20 @@ import { DoctorDomainService } from '../doctors/doctor.service';
 export class DoctorGrpcController {
   constructor(private readonly doctors: DoctorDomainService) {}
 
+  @GrpcMethod('DoctorInternalService', 'ResolveNotificationAccount')
+  @ServiceCallers('notification-service')
+  @ServiceScopes('doctor:notification-account:read')
+  async resolveNotificationAccount(request: { doctorId: string }) {
+    const accountId = await this.doctors.findNotificationAccount(
+      request.doctorId,
+    );
+    return { found: Boolean(accountId), accountId: accountId ?? '' };
+  }
+
   @GrpcMethod('DoctorInternalService', 'ResolveDoctorByAccount')
   @ServiceCallers(
     'appointment-service',
+    'billing-service',
     'medical-record-service',
     'consultation-service',
     'prescription-service',
@@ -32,7 +43,11 @@ export class DoctorGrpcController {
   }
 
   @GrpcMethod('DoctorInternalService', 'GetDoctorEligibility')
-  @ServiceCallers('appointment-service', 'medical-record-service')
+  @ServiceCallers(
+    'appointment-service',
+    'medical-record-service',
+    'notification-service',
+  )
   async getDoctorEligibility(request: {
     doctorId: string;
     requiredSpecialtyId?: string;

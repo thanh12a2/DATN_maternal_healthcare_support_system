@@ -9,7 +9,10 @@ service QueueInternalService {
   rpc GetJourney(GetJourneyRequest) returns (QueueJourneyView);
   rpc EstimateWait(EstimateWaitRequest) returns (EstimateWaitResponse);
   rpc CancelWaitingTickets(CancelWaitingTicketsRequest) returns (CancelWaitingTicketsResponse);
+  rpc SyncClinicalJourney(SyncClinicalJourneyRequest) returns (SyncClinicalJourneyResponse);
 }
+message SyncClinicalJourneyRequest { maternal.common.v1.RequestContext context = 1; string appointment_id = 2; string encounter_id = 3; string action = 4; }
+message SyncClinicalJourneyResponse { bool synchronized = 1; }
 
 enum JourneyState { JOURNEY_STATE_UNSPECIFIED = 0; JOURNEY_STATE_ACTIVE = 1; JOURNEY_STATE_COMPLETED = 2; JOURNEY_STATE_CANCELLED = 3; }
 enum TicketState { TICKET_STATE_UNSPECIFIED = 0; TICKET_STATE_WAITING = 1; TICKET_STATE_CALLED = 2; TICKET_STATE_IN_SERVICE = 3; TICKET_STATE_COMPLETED = 4; TICKET_STATE_SKIPPED = 5; TICKET_STATE_CANCELLED = 6; }

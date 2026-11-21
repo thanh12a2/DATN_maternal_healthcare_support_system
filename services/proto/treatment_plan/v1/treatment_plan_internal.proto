@@ -10,7 +10,9 @@ service TreatmentPlanInternalService {
   rpc CompletePlan(PlanCommandRequest) returns (TreatmentPlanView);
   rpc CancelPlan(CancelPlanRequest) returns (TreatmentPlanView);
   rpc ValidateTreatmentPlanReference(ValidateTreatmentPlanReferenceRequest) returns (ValidateTreatmentPlanReferenceResponse);
+  rpc ListForEmail(ClinicalEmailRequest) returns (ListPlansResponse);
 }
+message ClinicalEmailRequest { string encounter_id = 1; string patient_id = 2; google.protobuf.Timestamp cutoff = 3; }
 message PlanItemInput { string type = 1; string title = 2; string description = 3; google.protobuf.Timestamp due_at = 4; }
 message CreateDraftPlanRequest { maternal.common.v1.RequestContext context = 1; string idempotency_key = 2; string patient_id = 3; string pregnancy_episode_id = 4; string source_encounter_id = 5; string doctor_id = 6; string title = 7; string summary = 8; repeated PlanItemInput items = 9; }
 message GetTreatmentPlanRequest { maternal.common.v1.RequestContext context = 1; string plan_id = 2; }

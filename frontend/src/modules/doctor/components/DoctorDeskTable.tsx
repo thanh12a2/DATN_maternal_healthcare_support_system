@@ -124,7 +124,7 @@ export function DoctorDeskTable({
               {record.patientName || 'Nguyễn Minh Anh'}
             </div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.patientPhone || '0901000001'}
+              {record.patientPhone || 'Chưa cập nhật'}
             </Text>
           </div>
         </div>

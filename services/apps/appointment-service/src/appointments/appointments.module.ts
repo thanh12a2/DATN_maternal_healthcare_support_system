@@ -5,11 +5,12 @@ import { AppointmentDomainService } from './appointment.service';
 import { AppointmentDependencyGateway } from './dependency.gateway';
 import { AppointmentRealtimeService } from './appointment-realtime.service';
 
+import { NotificationOutboxService } from './notification-outbox.service';
 @Module({
   controllers: [AppointmentController, AppointmentGrpcController],
   providers: [
     AppointmentDomainService,
-    AppointmentDependencyGateway,
+    AppointmentDependencyGateway,NotificationOutboxService,
     AppointmentRealtimeService,
   ],
   exports: [AppointmentDomainService, AppointmentRealtimeService],

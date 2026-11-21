@@ -1,0 +1,31 @@
+const {randomUUID}=require('node:crypto');
+module.exports=async({page,context,check,fs,output})=>{
+  const token=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('an-tam-auth-session')||localStorage.getItem('an-tam-auth-session')).accessToken);
+  const api=(path,options={})=>context.request.fetch('http://localhost:8080'+path,{...options,headers:{Authorization:'Bearer '+token,...options.headers}});
+  const original=await (await api('/api/appointment/appointments/35295482-d57b-4e48-8c04-4b19faa71f0b')).json();
+  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const from=new Date(Math.ceil(Date.now()/1800000)*1800000).toISOString();
+  const query=new URLSearchParams({serviceId:original.serviceId,selectionMode:'DOCTOR',requestedDoctorId:original.assignedDoctorId,from,to:date+'T23:59:59+07:00',limit:'100'});
+  const slotResponse=await api('/api/appointment/bookable-slots?'+query); const raw=await slotResponse.json();
+  if(slotResponse.status()!==200)throw Error('Slot API '+slotResponse.status()+': '+JSON.stringify(raw));
+  const slots=Array.isArray(raw)?raw:raw.items||raw.data;
+  const slot=slots.find(s=>Date.parse(s.startAt)>Date.now())||slots.at(-1); if(!slot)throw Error('No same-day doctor slot fixture');
+  const hr=await api('/api/appointment/slot-holds',{method:'POST',headers:{'Idempotency-Key':randomUUID()},data:{patientId:original.patientId,serviceId:original.serviceId,selectionMode:'DOCTOR',requestedDoctorId:original.assignedDoctorId,startAt:slot.startAt,endAt:slot.endAt}});
+  if(hr.status()!==201)throw Error('Fixture hold failed '+JSON.stringify(await hr.json()));
+  const hold=await hr.json(); const reason='QA FIX REGRESSION: booking reason must reach encounter';
+  const create=await api('/api/appointment/appointments',{method:'POST',headers:{'Idempotency-Key':randomUUID()},data:{holdId:hold.id,channel:'RECEPTION',reasonForVisit:reason}});
+  const appointment=await create.json();
+  check('F06-booking',create.status()===201&&appointment.reasonForVisit===reason,'Booking persists reason without changing statuses');
+  await fs.writeFile(output+'/clinical-fixture.json',JSON.stringify({appointment,reason},null,2));
+  const input=page.getByPlaceholder(/Tìm theo tên bệnh nhân/);
+  await input.fill(appointment.appointmentCode);await input.press('Enter');
+  await page.getByRole('button',{name:/Thu tiền & Check-in ngay/}).first().click();
+  await page.getByRole('button',{name:/Xác nhận Thu tiền & Cấp số thứ tự/}).click();
+  let updated;
+  for(let i=0;i<20;i++){updated=await (await api('/api/appointment/appointments/'+appointment.id)).json();if(updated.status==='CHECKED_IN')break;await page.waitForTimeout(500);}
+  check('F04-today',updated.status==='CHECKED_IN','Same-day reception still succeeds');
+  const enc=await (await api('/api/medical-records/encounters/'+updated.encounterId)).json();
+  check('F06-encounter',enc.data?.chiefComplaint===reason,'Reception forwards booking reason to encounter');
+  await fs.writeFile(output+'/clinical-fixture.json',JSON.stringify({appointment:updated,reason},null,2));
+  await page.waitForTimeout(1000);
+};

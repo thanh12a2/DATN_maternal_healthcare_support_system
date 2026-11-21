@@ -506,4 +506,3 @@ export class MedicalReportPdfService {
     return await pdfmake.createPdf(docDefinition).getBuffer();
   }
 }
-

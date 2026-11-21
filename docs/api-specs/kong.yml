@@ -2,6 +2,20 @@ _format_version: "3.0"
 _transform: true
 
 services:
+  - name: assistant-service
+    url: http://host.docker.internal:8000
+    read_timeout: 240000
+    write_timeout: 240000
+    routes:
+      - name: assistant-conversations-route
+        paths: [/api/assistant]
+        strip_path: false
+    plugins:
+      - name: jwt
+        config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+      - name: rate-limiting
+        config: { minute: 180, limit_by: ip, policy: local }
+
   - name: auth-service
     url: http://auth-service:5003
     routes:
@@ -124,6 +138,13 @@ services:
   - name: consultation-service
     url: http://consultation-service:5019/consultations
     routes: [{ name: consultation-service-route, paths: [/api/consultations], strip_path: true }]
+    plugins:
+      - name: jwt
+        config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
+  - name: notification-service
+    url: http://notification-service:5016/notifications
+    routes: [{ name: notification-service-route, paths: [/api/notifications], strip_path: true }]
     plugins:
       - name: jwt
         config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }

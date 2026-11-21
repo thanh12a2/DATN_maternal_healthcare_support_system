@@ -85,7 +85,14 @@ describe('doctor encounter assignment', () => {
             .fn()
             .mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }),
         },
-        $transaction: (fn: any) => fn({ clinicalEncounter: { updateMany } }),
+        $transaction: (fn: any) =>
+          fn({
+            $queryRaw: jest.fn(),
+            clinicalFileUploadLock: {
+              findUnique: jest.fn().mockResolvedValue(null),
+            },
+            clinicalEncounter: { updateMany },
+          }),
       } as any,
       { resolve } as any,
     );
@@ -117,6 +124,10 @@ describe('doctor encounter assignment', () => {
         clinicalServiceOrder: { count: jest.fn().mockResolvedValue(0) },
         $transaction: (fn: any) =>
           fn({
+            $queryRaw: jest.fn(),
+            clinicalFileUploadLock: {
+              findUnique: jest.fn().mockResolvedValue(null),
+            },
             clinicalEncounter: {
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
@@ -129,6 +140,34 @@ describe('doctor encounter assignment', () => {
       guarded.ready('encounter-id', 2, 'account-id', 'DOCTOR'),
     ).rejects.toThrow('REQUIRED_RESULTS_PENDING');
     expect(txCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not finalize while an examination file is being uploaded', async () => {
+    findFirst.mockResolvedValue({ staffId: 'doctor-id' });
+    const updateMany = jest.fn();
+    const guarded = new MedicalDomainService(
+      {
+        encounterAssignment: { findFirst },
+        clinicalEncounter: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ state: 'READY_FOR_REVIEW', version: 2 }),
+        },
+        $transaction: (fn: any) =>
+          fn({
+            $queryRaw: jest.fn(),
+            clinicalFileUploadLock: {
+              findUnique: jest.fn().mockResolvedValue({ token: 'upload' }),
+            },
+            clinicalEncounter: { updateMany },
+          }),
+      } as any,
+      { resolve } as any,
+    );
+    await expect(
+      guarded.finalize('encounter-id', 2, 'account-id', 'DOCTOR'),
+    ).rejects.toThrow('CLINICAL_FILE_UPLOAD_IN_PROGRESS');
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it('writes a note only after an atomic assignment, state and version check', async () => {

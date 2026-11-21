@@ -23,6 +23,11 @@ const ROLE_PRIORITY: Record<AuthRole, number> = {
 export class AccountsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findVerifiedPatientEmail(accountId: string): Promise<string | null> {
+    const account = await this.prisma.account.findFirst({ where: { id: accountId, status: AccountStatus.ACTIVE, roles: { some: { role: { code: AuthRoleCode.PATIENT } } } }, select: { email: true, verifiedEmail: true, emailVerifiedAt: true } });
+    return account?.emailVerifiedAt && account.verifiedEmail === account.email ? account.email : null;
+  }
+
   async createAccountWithCredential(
     input: RegisterAccountInput,
   ): Promise<RegisteredAccount> {

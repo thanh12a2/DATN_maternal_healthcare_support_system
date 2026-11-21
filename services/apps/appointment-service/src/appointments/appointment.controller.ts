@@ -12,7 +12,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { CurrentAuth, PublicJwtGuard, type PublicAuthContext } from '@platform';
+import {
+  CurrentAuth,
+  PublicJwtGuard,
+  ReceptionWorkAccess,
+  type PublicAuthContext,
+} from '@platform';
 import { AppointmentDomainService } from './appointment.service';
 import { AppointmentRealtimeService } from './appointment-realtime.service';
 import {
@@ -32,6 +37,7 @@ export class AppointmentController {
   constructor(
     private readonly service: AppointmentDomainService,
     private readonly realtime: AppointmentRealtimeService,
+    private readonly receptionWork: ReceptionWorkAccess,
   ) {}
 
   @Get('desk/stream')
@@ -143,6 +149,12 @@ export class AppointmentController {
     return this.service.listBookableSlots(q, a);
   }
 
+  @Get('me/assistant-context')
+  async assistantContext(@CurrentAuth() a: PublicAuthContext, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
+    return this.service.getMyAssistantContext(a);
+  }
+
   @Post('slot-holds')
   hold(
     @Body() d: CreateHoldDto,
@@ -194,7 +206,9 @@ export class AppointmentController {
     @CurrentAuth() a: PublicAuthContext,
     @Headers('idempotency-key') k?: string,
   ) {
-    return this.service.cancel(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () =>
+      this.service.cancel(id, d, a, k),
+    );
   }
 
   @Post('appointments/:id/reschedule')
@@ -204,7 +218,9 @@ export class AppointmentController {
     @CurrentAuth() a: PublicAuthContext,
     @Headers('idempotency-key') k?: string,
   ) {
-    return this.service.reschedule(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () =>
+      this.service.reschedule(id, d, a, k),
+    );
   }
 
   @Post('appointments/:id/reassign')
@@ -214,6 +230,19 @@ export class AppointmentController {
     @CurrentAuth() a: PublicAuthContext,
     @Headers('idempotency-key') k?: string,
   ) {
-    return this.service.reassign(id, d, a, k);
+    return this.receptionWork.run(id, a.userId, () =>
+      this.service.reassign(id, d, a, k),
+    );
+  }
+
+  @Post('appointments/:id/reassignment-required')
+  requestReassignment(
+    @Param('id') id: string,
+    @Body() d: ReasonVersionDto,
+    @CurrentAuth() a: PublicAuthContext,
+  ) {
+    return this.receptionWork.run(id, a.userId, () =>
+      this.service.requestReassignment(id, d, a),
+    );
   }
 }

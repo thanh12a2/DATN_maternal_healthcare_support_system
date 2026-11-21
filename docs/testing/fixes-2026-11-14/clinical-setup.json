@@ -1,0 +1,772 @@
+{
+  "role": "receptionist",
+  "url": "http://localhost:3000/workspace/receptionist/overview",
+  "assertions": [
+    {
+      "id": "F06-booking",
+      "status": "PASS",
+      "detail": "Booking persists reason without changing statuses"
+    },
+    {
+      "id": "F04-today",
+      "status": "PASS",
+      "detail": "Same-day reception still succeeds"
+    },
+    {
+      "id": "F06-encounter",
+      "status": "PASS",
+      "detail": "Reception forwards booking reason to encounter"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/reception/work-stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/work",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/rooms?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/desk/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/catalog/services?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100&from=2026-11-14T00%3A00%3A00%2B07%3A00&to=2026-11-14T23%3A59%3A59%2B07%3A00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/work",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100&from=2026-11-14T00%3A00%3A00%2B07%3A00&to=2026-11-14T23%3A59%3A59%2B07%3A00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=10&appointmentCode=APTMWFURHSOB81C96",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/patients/search",
+      "status": 200,
+      "body": {
+        "data": {
+          "items": [],
+          "page": 1,
+          "limit": 20,
+          "total": 0
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=50&patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=f3d3e8db-b571-4207-8a2d-1ee9ce500ab6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "5f631399-c38c-4281-abda-19b7a74d57b9",
+          "type": "SCHEDULED",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "status": "OPEN",
+          "arrivalAt": "2026-11-14T03:35:09.940Z",
+          "scheduledStartAtSnapshot": "2026-11-14T04:00:00.000Z",
+          "appointmentTypeSnapshot": "SERVICE",
+          "openedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "lastHandledByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimExpiresAt": null,
+          "workRunningToken": null,
+          "workRunningAt": null,
+          "version": 1,
+          "createdAt": "2026-11-14T03:35:10.046Z",
+          "updatedAt": "2026-11-14T03:35:10.046Z",
+          "caseCode": "TN-5NAP2L1AEX6KZMJDA5DVOR5BT",
+          "identity": {
+            "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+            "fullName": "Trần Thị Thanh Hằng",
+            "dateOfBirth": {
+              "seconds": "748656000",
+              "nanos": 0
+            },
+            "maskedPhone": "********4003",
+            "nationalIdLast4": "0102",
+            "active": true,
+            "profileVersion": "1",
+            "phoneNumber": "",
+            "nationalId": "",
+            "address": "",
+            "emergencyContact": ""
+          },
+          "replayed": false
+        },
+        "meta": {
+          "requestId": "62bf66b2-9767-469d-b550-e33fa1e18d05"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9/identity-verifications",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "ebe7bcd1-2a34-4ef3-905f-98e27a929c75",
+          "receptionCaseId": "5f631399-c38c-4281-abda-19b7a74d57b9",
+          "method": "APPOINTMENT_CODE",
+          "result": "VERIFIED",
+          "reasonCode": null,
+          "note": null,
+          "verifiedFields": [
+            "fullName",
+            "appointmentId"
+          ],
+          "performedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "performedAt": "2026-11-14T03:35:10.129Z"
+        },
+        "meta": {
+          "requestId": "3454f19c-9eb4-4288-bd4c-b43e4919a71d"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9/admit",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "5f631399-c38c-4281-abda-19b7a74d57b9",
+          "type": "SCHEDULED",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "status": "ADMISSION_IN_PROGRESS",
+          "arrivalAt": "2026-11-14T03:35:09.940Z",
+          "scheduledStartAtSnapshot": "2026-11-14T04:00:00.000Z",
+          "appointmentTypeSnapshot": "SERVICE",
+          "openedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "lastHandledByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimExpiresAt": null,
+          "workRunningToken": "17d3aa07-6462-476f-9cb1-bd8032ba83a6",
+          "workRunningAt": "2026-11-14T03:35:10.195Z",
+          "version": 2,
+          "createdAt": "2026-11-14T03:35:10.046Z",
+          "updatedAt": "2026-11-14T03:35:10.196Z",
+          "identityVerifications": [
+            {
+              "id": "ebe7bcd1-2a34-4ef3-905f-98e27a929c75",
+              "receptionCaseId": "5f631399-c38c-4281-abda-19b7a74d57b9",
+              "method": "APPOINTMENT_CODE",
+              "result": "VERIFIED",
+              "reasonCode": null,
+              "note": null,
+              "verifiedFields": [
+                "fullName",
+                "appointmentId"
+              ],
+              "performedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+              "performedAt": "2026-11-14T03:35:10.129Z"
+            }
+          ],
+          "admission": {
+            "id": "b57ff4e8-c2cc-4ac7-8034-263f0d53d99c",
+            "receptionCaseId": "5f631399-c38c-4281-abda-19b7a74d57b9",
+            "status": "AWAITING_PAYMENT",
+            "currentStep": "VERIFY_PAYMENT_OR_APPROVED_CREDIT",
+            "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+            "paymentId": null,
+            "medicalRecordId": null,
+            "encounterId": null,
+            "queueTicketId": null,
+            "queueTicketCode": null,
+            "queueRoomCode": null,
+            "notificationDismissedAt": null,
+            "queueJourneyId": null,
+            "appointmentCheckedInAt": null,
+            "lastErrorCode": "PAYMENT_NOT_CLEARED",
+            "retryCount": 0,
+            "version": 4,
+            "createdAt": "2026-11-14T03:35:10.202Z",
+            "updatedAt": "2026-11-14T03:35:10.332Z",
+            "completedAt": null,
+            "history": []
+          },
+          "caseCode": "TN-5NAP2L1AEX6KZMJDA5DVOR5BT"
+        },
+        "meta": {
+          "requestId": "80442249-fa5e-4ea9-a90f-9714a041598d"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/billing/invoices/070f34d5-c716-4f93-9fa1-d51024d3aaf3/payments",
+      "status": 201,
+      "body": {
+        "invoice": {
+          "id": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+          "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+          "invoiceNumber": "INVMWFURIYO371A2B",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "encounterId": null,
+          "type": "BASE",
+          "status": "PAID",
+          "currency": "VND",
+          "subtotalMinor": 550000,
+          "totalMinor": 550000,
+          "paidMinor": 550000,
+          "balanceMinor": 0,
+          "sourceVersion": 1,
+          "dueAt": null,
+          "paidAt": "2026-11-14T03:35:10.451Z",
+          "version": 2,
+          "lines": [
+            {
+              "id": "3a009843-d308-4706-b78f-6768bda14f1c",
+              "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+              "lineNo": 1,
+              "source": "APPOINTMENT_SNAPSHOT",
+              "sourceReferenceId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+              "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+              "descriptionSnapshot": "Khám thai định kỳ chuẩn y khoa",
+              "quantity": 1,
+              "unitAmountMinor": 300000,
+              "lineAmountMinor": 300000,
+              "priceReferenceId": "878ff23c-e2d2-4803-87a7-c49c9762a797",
+              "performedAt": null,
+              "createdAt": "2026-11-14T03:35:10.273Z"
+            },
+            {
+              "id": "faa86b46-1017-44e1-ad8c-5102a377d1dc",
+              "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+              "lineNo": 2,
+              "source": "APPOINTMENT_SNAPSHOT",
+              "sourceReferenceId": "2f4b5ba5-bd48-49c0-a5ea-81e8f75f5cad",
+              "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+              "descriptionSnapshot": "Doctor rank surcharge HEAD_DOCTOR",
+              "quantity": 1,
+              "unitAmountMinor": 250000,
+              "lineAmountMinor": 250000,
+              "priceReferenceId": "279e787a-e0d7-4724-8753-a1d97f283152",
+              "performedAt": null,
+              "createdAt": "2026-11-14T03:35:10.273Z"
+            }
+          ],
+          "payment": {
+            "id": "c7d42bdb-b3ea-453c-a61a-c96504e94fd1",
+            "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+            "method": "CASH",
+            "status": "VERIFIED",
+            "amountMinor": 550000,
+            "currency": "VND",
+            "receivedAt": "2026-11-14T03:35:10.353Z",
+            "verifiedAt": "2026-11-14T03:35:10.449Z",
+            "reference": null,
+            "recordedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+            "claimedByAccountId": null,
+            "claimExpiresAt": null,
+            "version": 1,
+            "createdAt": "2026-11-14T03:35:10.450Z"
+          },
+          "credits": [],
+          "createdAt": "2026-11-14T03:35:10.273Z",
+          "updatedAt": "2026-11-14T03:35:10.452Z"
+        },
+        "payment": {
+          "id": "c7d42bdb-b3ea-453c-a61a-c96504e94fd1",
+          "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+          "method": "CASH",
+          "status": "VERIFIED",
+          "amountMinor": 550000,
+          "currency": "VND",
+          "receivedAt": "2026-11-14T03:35:10.353Z",
+          "verifiedAt": "2026-11-14T03:35:10.449Z",
+          "reference": null,
+          "recordedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "claimedByAccountId": null,
+          "claimExpiresAt": null,
+          "version": 1,
+          "createdAt": "2026-11-14T03:35:10.450Z"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "5f631399-c38c-4281-abda-19b7a74d57b9",
+          "type": "SCHEDULED",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "status": "ADMISSION_IN_PROGRESS",
+          "arrivalAt": "2026-11-14T03:35:09.940Z",
+          "scheduledStartAtSnapshot": "2026-11-14T04:00:00.000Z",
+          "appointmentTypeSnapshot": "SERVICE",
+          "openedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "lastHandledByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimExpiresAt": null,
+          "workRunningToken": null,
+          "workRunningAt": null,
+          "version": 2,
+          "createdAt": "2026-11-14T03:35:10.046Z",
+          "updatedAt": "2026-11-14T03:35:10.468Z",
+          "caseCode": "TN-5NAP2L1AEX6KZMJDA5DVOR5BT",
+          "identity": {
+            "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+            "fullName": "Trần Thị Thanh Hằng",
+            "dateOfBirth": {
+              "seconds": "748656000",
+              "nanos": 0
+            },
+            "maskedPhone": "********4003",
+            "nationalIdLast4": "0102",
+            "active": true,
+            "profileVersion": "1",
+            "phoneNumber": "",
+            "nationalId": "",
+            "address": "",
+            "emergencyContact": ""
+          },
+          "replayed": true
+        },
+        "meta": {
+          "requestId": "72d7ffe2-1938-40fb-aa42-447b345cbaa2"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases/5f631399-c38c-4281-abda-19b7a74d57b9/admit",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "5f631399-c38c-4281-abda-19b7a74d57b9",
+          "type": "SCHEDULED",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "status": "ADMITTED",
+          "arrivalAt": "2026-11-14T03:35:09.940Z",
+          "scheduledStartAtSnapshot": "2026-11-14T04:00:00.000Z",
+          "appointmentTypeSnapshot": "SERVICE",
+          "openedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "lastHandledByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimExpiresAt": null,
+          "workRunningToken": "6190af62-c464-4bc4-bd14-83e780627ab4",
+          "workRunningAt": "2026-11-14T03:35:10.558Z",
+          "version": 2,
+          "createdAt": "2026-11-14T03:35:10.046Z",
+          "updatedAt": "2026-11-14T03:35:10.739Z",
+          "identityVerifications": [
+            {
+              "id": "ebe7bcd1-2a34-4ef3-905f-98e27a929c75",
+              "receptionCaseId": "5f631399-c38c-4281-abda-19b7a74d57b9",
+              "method": "APPOINTMENT_CODE",
+              "result": "VERIFIED",
+              "reasonCode": null,
+              "note": null,
+              "verifiedFields": [
+                "fullName",
+                "appointmentId"
+              ],
+              "performedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+              "performedAt": "2026-11-14T03:35:10.129Z"
+            }
+          ],
+          "admission": {
+            "id": "b57ff4e8-c2cc-4ac7-8034-263f0d53d99c",
+            "receptionCaseId": "5f631399-c38c-4281-abda-19b7a74d57b9",
+            "status": "COMPLETED",
+            "currentStep": "DONE",
+            "invoiceId": "070f34d5-c716-4f93-9fa1-d51024d3aaf3",
+            "paymentId": null,
+            "medicalRecordId": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+            "encounterId": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+            "queueTicketId": "88047a6d-2ed3-4011-811e-c666d9640545",
+            "queueTicketCode": "201-02",
+            "queueRoomCode": "P.201",
+            "notificationDismissedAt": null,
+            "queueJourneyId": "3936f348-56d7-4b9b-a92a-8590363b605c",
+            "appointmentCheckedInAt": "2026-11-14T03:35:10.684Z",
+            "lastErrorCode": null,
+            "retryCount": 0,
+            "version": 10,
+            "createdAt": "2026-11-14T03:35:10.202Z",
+            "updatedAt": "2026-11-14T03:35:10.740Z",
+            "completedAt": "2026-11-14T03:35:10.740Z",
+            "history": []
+          },
+          "caseCode": "TN-5NAP2L1AEX6KZMJDA5DVOR5BT"
+        },
+        "meta": {
+          "requestId": "19ebe9f4-0813-4ed3-88c4-5ba35e49f8fe"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=50&patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100&from=2026-11-14T00%3A00%3A00%2B07%3A00&to=2026-11-14T23%3A59%3A59%2B07%3A00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/work",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    }
+  ],
+  "text": "✚\nAn Tâm Medical\nBàn Tiếp đón Lễ tân\n/ hoặc Ctrl+K\nTìm kiếm\nCó thông tin tiếp nhận mới.\n2\nTrực tuyến\n+ Tiếp nhận vãng lai\nRE\nreception.hoangyen\nLễ tân\nTìm thấy 1 bệnh nhân cho “APTMWFURHSOB81C96”\nXóa tìm kiếm\nTrần Thị Thanh Hằng\n1 lịch hôm nay\nHôm nay (1)\nTất cả (3)\nChọn ngày\nTHÔNG TIN HÀNH CHÍNH BỆNH NHÂN\nChỉnh sửa thông tin\nNgày sinh\t22/09/1993 (33 tuổi)\t\nSố điện thoại\t0901234003\t\nCCCD / Định danh\t001193000102\n\nĐịa chỉ\t45 Tràng Thi, Hàng Trống, Hoàn Kiếm, Hà Nội\t\nLiên hệ khẩn cấp\tNguyễn Hoàng Long (Chồng) - 0901234004\nAPTMWFURHSOB81C96\nLịch khám hôm nay\nSTT: 201-02\nĐã check-in / Chờ khám\nVãng lai\n(Quầy)\nĐã đặt\n10:35 14/11\n2\nCheck-in\n10:35\n3\nVào khám\n—\n4\nHoàn tất\n—\nDỊCH VỤ ĐĂNG KÝ KHÁM\nKhám thai định kỳ chuẩn y khoa\nThời gian khám:\n11:00 – 11:30 (14/11/2026)\nPhòng khám tiếp nhận:\nP.201Phòng khám Sản Phụ khoa 201\nBác sĩ đảm nhiệm:\nBS. Lê Thu Hà\nChuyên khoa:\nSản khoa\nChi tiết lịch hẹn\nIn phiếu STT (201-02)\nHóa đơn & Viện phí\nTất toán ✓\n1 lượt thanh toán\nPhí khám ban đầu\n(#INVMWFURIYO371A2B)\n✓ Đã thanh toán (10:35)\nKhám thai định kỳ chuẩn y khoa\nx1\n300.000 ₫\nPhụ phí hạng bác sĩ HEAD_DOCTOR\nx1\n250.000 ₫\nTạm tính:\n550.000 ₫\nTổng toàn bộ viện phí:\n550.000 ₫\nĐã thanh toán:\n550.000 ₫\nCòn lại cần thu:\n0 ₫\nLịch sử nộp:\nCASH (550.000 ₫) 10:35 14/11\nIn phiếu khám & Biên lai (STT: 201-02)\nIn hóa đơn / Phiếu thu\n🔔 Lịch hẹn mới vừa đặt\nMã: APTMWFURHSOB81C96 · Khám thai định kỳ chuẩn y khoa (11:00)\nĐã thu viện phí và check-in tiếp đón thành công!\nPhiếu tiếp đón khám bệnh & Biên lai thu tiền\nBỆNH VIỆN PHỤ SẢN & SỨC KHỎE BÀ MẸ\nPHIẾU TIẾP ĐÓN KHÁM BỆNH & BIÊN LAI THU VIỆN PHÍ\nSỐ THỨ TỰ KHÁM (STT)\n201-02\nPhòng khám: P.201 — Phòng khám Sản Phụ khoa 201\nBệnh nhân: Trần Thị Thanh Hằng\nSố điện thoại: 0901234003\nBác sĩ phụ trách: BS. Lê Thu Hà\nDịch vụ y tế: Khám thai định kỳ chuẩn y khoa\nThời gian khám: 11:00 – 11:30 (14/11/2026)\nViện phí đã thu: 550.000 ₫ (Đã thu đủ)\nQuý khách vui lòng ngồi chờ trước cửa phòng P.201, theo dõi màn hình hiển thị để được gọi số thứ tự vào khám.\nĐóng\nIn phiếu ngay\nĐã dời lịch khám thành công!"
+}

@@ -1,0 +1,20 @@
+module.exports=async({page,context,check})=>{
+  const token=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('an-tam-auth-session')||localStorage.getItem('an-tam-auth-session')).accessToken);
+  const login=await context.request.post('http://localhost:8080/auth/login',{data:{email:'patient.ngocmai@gmail.com',password:process.env.QA_DEMO_PASSWORD||'Demo@123456'}});
+  const other=(await login.json()).accessToken;
+  const get=(t,path)=>context.request.get('http://localhost:8080'+path,{headers:{Authorization:'Bearer '+t}});
+  const base='/api/medical-records/encounters/19f9fc03-186e-43e0-9a36-11742d33c527';
+  check('F01-own',(await get(token,base)).status()===200,'Owner can still read finalized encounter');
+  check('F01-other',(await get(other,base)).status()===403,'Another patient is denied');
+  const list=await (await get(other,'/api/medical-records/encounters?limit=100')).json();
+  check('F01-list',!(list.data||[]).some(x=>x.patientId==='7916a729-2282-4604-b45d-02c3983eed71'),'Encounter listing is scoped, no ID-based bypass');
+  check('F01-forged',(await get(other,'/api/medical-records/encounters?patientId=7916a729-2282-4604-b45d-02c3983eed71')).status()===403,'Forged patient filter denied');
+  check('F01-pregnancy',(await get(other,'/api/medical-records/pregnancy-episodes?patientId=7916a729-2282-4604-b45d-02c3983eed71')).status()===403,'Pregnancy history cannot bypass patient scope');
+  const preg=await (await get(token,'/api/medical-records/pregnancy-episodes')).json();
+  check('F07-demo',preg.data?.length===1&&preg.data[0].patientId==='7916a729-2282-4604-b45d-02c3983eed71','Additive demo pregnancy exists and is scoped to owner');
+  const unauthorized=await context.request.patch('http://localhost:8080'+base,{headers:{Authorization:'Bearer '+other},data:{chiefComplaint:'MUST NOT WRITE'}});
+  check('F01-write',unauthorized.status()===403,'Patient cannot write another encounter');
+  await page.goto('http://localhost:3000/lich-hen/35295482-d57b-4e48-8c04-4b19faa71f0b/ket-qua');
+  await page.getByText('Kết quả khám của tôi',{exact:true}).waitFor({timeout:20000});
+  check('F01-ui',(await page.locator('body').innerText()).includes('KIỂM THỬ CHỨC NĂNG LƯU BỆNH ÁN'),'Owner result page still works after access fix');
+};

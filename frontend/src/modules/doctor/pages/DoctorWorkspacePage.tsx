@@ -63,135 +63,6 @@ dayjs.locale('vi');
 const { Text, Title } = Typography;
 
 // Mapping fallback thông tin hành chính bệnh nhân
-const PATIENT_FALLBACK_MAP: Record<string, PatientDemographic> = {
-  '3c9ace53-18da-409f-9e06-d4c43936845a': {
-    name: 'Bùi Phương Linh',
-    phone: '0901234015',
-    dob: '1999-01-14',
-    gender: 'Nữ',
-    nationalId: '001199000108',
-    address: '55 Xã Đàn, Nam Đồng, Đống Đa, Hà Nội',
-    emergencyContact: 'Bùi Quang Vinh (Bố đẻ - 0901234016)',
-  },
-  '1534b518-f2e9-4491-9151-4c6dee8f8280': {
-    name: 'Bùi Thị Ngọc Mai',
-    phone: '0901234025',
-    dob: '1999-12-05',
-    gender: 'Nữ',
-    nationalId: '001199000113',
-    address: '72 Bà Triệu, Hàng Bài, Hoàn Kiếm, Hà Nội',
-    emergencyContact: 'Bùi Văn Hưng (Bố ruột - 0901234026)',
-  },
-  '4dfd4cc0-a48d-4d88-bba7-7c27e340390f': {
-    name: 'Dương Yến Nhi',
-    phone: '0901234021',
-    dob: '2000-02-28',
-    gender: 'Nữ',
-    nationalId: '001200000111',
-    address: '67 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
-    emergencyContact: 'Dương Thế Anh (Bố đẻ - 0901234022)',
-  },
-  '2d186092-0f19-42d0-870a-d6c621a41915': {
-    name: 'Hoàng Thùy Dương',
-    phone: '0901234009',
-    dob: '1996-08-18',
-    gender: 'Nữ',
-    nationalId: '001196000105',
-    address: '23 Lạc Long Quân, Bưởi, Tây Hồ, Hà Nội',
-    emergencyContact: 'Hoàng Văn Nam (Bố đẻ - 0901234010)',
-  },
-  'b6636063-1c6f-4dcf-822d-a3b3d4de9c7c': {
-    name: 'Lê Ngọc Mai',
-    phone: '0901234005',
-    dob: '1998-03-10',
-    gender: 'Nữ',
-    nationalId: '001198000103',
-    address: '88 Cầu Giấy, Quan Hoa, Cầu Giấy, Hà Nội',
-    emergencyContact: 'Lê Văn Tuấn (Bố đẻ - 0901234006)',
-  },
-  '883c60df-2dd8-4010-aadc-1ccdcff5d738': {
-    name: 'Nguyễn Minh Anh',
-    phone: '0901000001',
-    dob: '1995-06-15',
-    gender: 'Nữ',
-    nationalId: '001195000101',
-    address: '12 Nguyễn Du, Phường Hàng Bài, Hoàn Kiếm, Hà Nội',
-    emergencyContact: 'Trần Văn Bình (Chồng - 0901000002)',
-  },
-  '7733fbcd-19e8-41cf-b433-e88577c2532e': {
-    name: 'Phan Thanh Trúc',
-    phone: '0901234027',
-    dob: '2001-04-20',
-    gender: 'Nữ',
-    nationalId: '001201000114',
-    address: '15 Lê Thánh Tông, Phan Chu Trinh, Hoàn Kiếm, Hà Nội',
-    emergencyContact: 'Đặng Quốc Anh (Chồng - 0901234028)',
-  },
-  '3a237e60-d9fd-4a6f-a6dc-e2a5b09b4303': {
-    name: 'Phan Thị Bích Thủy',
-    phone: '0901234019',
-    dob: '1995-10-12',
-    gender: 'Nữ',
-    nationalId: '001195000110',
-    address: '19 Lê Văn Lương, Nhân Chính, Thanh Xuân, Hà Nội',
-    emergencyContact: 'Nguyễn Đình Trọng (Chồng - 0901234020)',
-  },
-  'd2cd309f-b87c-4a82-8181-e462ec978cb8': {
-    name: 'Phạm Quỳnh Chi',
-    phone: '0901234007',
-    dob: '1992-12-05',
-    gender: 'Nữ',
-    nationalId: '001192000104',
-    address: '156 Nguyễn Trãi, Thượng Đình, Thanh Xuân, Hà Nội',
-    emergencyContact: 'Vũ Mạnh Hùng (Chồng - 0901234008)',
-  },
-  'def77a34-7609-44bf-ab28-3b537b937ba0': {
-    name: 'Trần Thị Thanh Hằng',
-    phone: '0901234003',
-    dob: '1993-09-22',
-    gender: 'Nữ',
-    nationalId: '001193000102',
-    address: '45 Tràng Thi, Hàng Trống, Hoàn Kiếm, Hà Nội',
-    emergencyContact: 'Nguyễn Hoàng Long (Chồng - 0901234004)',
-  },
-  '25e26c94-158e-4f10-a42c-9870a5700ffe': {
-    name: 'Võ Bảo Châu',
-    phone: '0901234023',
-    dob: '1996-05-19',
-    gender: 'Nữ',
-    nationalId: '001196000112',
-    address: '18 Lý Thường Kiệt, Phan Chu Trinh, Hoàn Kiếm, Hà Nội',
-    emergencyContact: 'Lê Quang Huy (Chồng - 0901234024)',
-  },
-  '8dab0c4e-cb6d-442f-8084-f2805979515e': {
-    name: 'Vũ Thị Kim Ngân',
-    phone: '0901234011',
-    dob: '1994-11-30',
-    gender: 'Nữ',
-    nationalId: '001194000106',
-    address: '74 Giải Phóng, Đồng Tâm, Hai Bà Trưng, Hà Nội',
-    emergencyContact: 'Đỗ Đức Thắng (Chồng - 0901234012)',
-  },
-  '667c36aa-da0b-4c5c-b565-371af2601a99': {
-    name: 'Đinh Thị Hồng Hạnh',
-    phone: '0901234017',
-    dob: '1991-07-08',
-    gender: 'Nữ',
-    nationalId: '001191000109',
-    address: '36 Hoàng Hoa Thám, Thụy Khuê, Tây Hồ, Hà Nội',
-    emergencyContact: 'Trương Quốc Bảo (Chồng - 0901234018)',
-  },
-  'e6854601-dce9-43e0-8d2c-0e5e7e6a81f4': {
-    name: 'Đỗ Thu Trang',
-    phone: '0901234013',
-    dob: '1997-04-25',
-    gender: 'Nữ',
-    nationalId: '001197000107',
-    address: '102 Thái Hà, Trung Liệt, Đống Đa, Hà Nội',
-    emergencyContact: 'Phạm Hải Đăng (Chồng - 0901234014)',
-  },
-};
-
 function DoctorDesk() {
   const auth = useAuthSession();
   const { request } = auth;
@@ -276,7 +147,7 @@ function DoctorDesk() {
     doctorId: doctor?.id,
     roomCode: doctor?.roomCode || undefined,
     selectedDateStr,
-    patientMap: PATIENT_FALLBACK_MAP,
+    patientMap: Object.fromEntries(appointments.filter(a => a.patientId && a.patientDemographics).map(a => [a.patientId!, a.patientDemographics!])),
     streamFn: auth.stream,
     onPatientCheckedIn: (evt) => {
       // Cập nhật trạng thái ngay lập tức trên RAM nếu appointment đã có trong danh sách
@@ -339,17 +210,13 @@ function DoctorDesk() {
     return appointments.map((a): DoctorDeskRow => {
       const aptId = String(a.id || '');
       const t = aptId ? ticketByApptId.get(aptId) : undefined;
-      const pid = String(a.patientId || '');
-      const fallback = (pid && PATIENT_FALLBACK_MAP[pid]) || {
-        name: 'Nguyễn Minh Anh',
-        phone: '0901000001',
-      };
+      const patient = a.patientDemographics;
 
       return {
         ...a,
         ticketCode: t?.ticketCode || undefined,
-        patientName: a.patientName || fallback.name,
-        patientPhone: fallback.phone,
+        patientName: a.patientName || patient?.name || 'Chưa có tên bệnh nhân',
+        patientPhone: patient?.phone || '',
       };
     });
   }, [appointments, ticketByApptId]);
@@ -679,7 +546,7 @@ function DoctorDesk() {
             <DoctorConsultationDetail
               appointment={selectedRow}
               encounter={currentEncounter}
-              patientInfo={PATIENT_FALLBACK_MAP[selectedRow.patientId || '']}
+              patientInfo={appointments.find(a => a.id === selectedRow.id)?.patientDemographics}
               allAppointments={appointments}
               allEncounters={encounters}
               doctor={doctor}

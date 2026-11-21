@@ -7,7 +7,7 @@ export interface ReceptionCase {
   patientId?: string;
   status?: string;
   version?: number;
-  admission?: { status?: string } | null;
+  admission?: { status?: string; invoiceId?: string | null } | null;
   [key: string]: unknown;
 }
 export interface Report {
@@ -34,7 +34,7 @@ export interface ConsultationMessage {
   sentAt?: string | null;
   [key: string]: unknown;
 }
-const list = <T>(raw: unknown): T[] =>
+const list = <T,>(raw: unknown): T[] =>
   Array.isArray(raw)
     ? (raw as T[])
     : Array.isArray((raw as { items?: unknown })?.items)
@@ -42,7 +42,7 @@ const list = <T>(raw: unknown): T[] =>
       : Array.isArray((raw as { data?: unknown })?.data)
         ? (raw as { data: T[] }).data
         : [];
-const post = <T>(request: Requester, path: string, body?: unknown) =>
+const post = <T,>(request: Requester, path: string, body?: unknown) =>
   request<T>(path, {
     method: 'POST',
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -57,7 +57,7 @@ export function updateMyReceptionist(request: Requester, body: unknown) {
     body: JSON.stringify(body),
   });
 }
-const unwrapData = <T>(value: T | { data: T }): T =>
+const unwrapData = <T,>(value: T | { data: T }): T =>
   value && typeof value === 'object' && 'data' in value
     ? (value as { data: T }).data
     : (value as T);
@@ -333,7 +333,7 @@ const key = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const withKey = <T>(request: Requester, path: string, body?: unknown) =>
+const withKey = <T,>(request: Requester, path: string, body?: unknown) =>
   request<T>(path, {
     method: 'POST',
     headers: { 'Idempotency-Key': key() },
@@ -379,11 +379,16 @@ export function updateReceptionTicket(
 }
 export async function listReceptionInvoices(
   request: Requester,
-  query: { patientId?: string; appointmentId?: string },
+  query: {
+    patientId?: string;
+    appointmentId?: string;
+    encounterId?: string;
+  },
 ): Promise<ReceptionInvoice[]> {
   const params = new URLSearchParams({ limit: '50' });
   if (query.patientId) params.set('patientId', query.patientId);
   if (query.appointmentId) params.set('appointmentId', query.appointmentId);
+  if (query.encounterId) params.set('encounterId', query.encounterId);
   const raw = await request<unknown>(`/api/billing/invoices?${params}`);
   const value = raw as {
     items?: ReceptionInvoice[];

@@ -6,6 +6,12 @@ import { MedicalDomainService } from './medical.service';
 @UseGuards(ServiceJwtGuard)
 export class MedicalGrpcController {
   constructor(private readonly s: MedicalDomainService) {}
+  @GrpcMethod('MedicalRecordInternalService', 'BeginClinicalFileUpload')
+  @ServiceCallers('document-service') @ServiceScopes('medical:clinical-file:write')
+  beginFile(r: { encounterId: string; patientId: string }) { return this.s.beginClinicalFileUpload(r.encounterId, r.patientId); }
+  @GrpcMethod('MedicalRecordInternalService', 'EndClinicalFileUpload')
+  @ServiceCallers('document-service') @ServiceScopes('medical:clinical-file:write')
+  endFile(r: { token: string }) { return this.s.endClinicalFileUpload(r.token); }
   @GrpcMethod('MedicalRecordInternalService', 'OpenOrGetEncounter')
   @ServiceCallers('receptionist-service')
   @ServiceScopes('medical:encounter:open')
@@ -29,6 +35,7 @@ export class MedicalGrpcController {
   }
   @GrpcMethod('MedicalRecordInternalService', 'ValidateEncounterAccess')
   @ServiceCallers(
+    'billing-service',
     'document-service',
     'prescription-service',
     'treatment-plan-service',

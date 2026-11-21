@@ -235,7 +235,7 @@ export function DoctorClinicalDrawer({
               {patientName || appointment.patientName || 'Bệnh nhân'}
             </Title>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              SĐT: <strong>{patientPhone || '0901000001'}</strong> · Dịch vụ:{' '}
+              SĐT: <strong>{patientPhone || 'Chưa cập nhật'}</strong> · Dịch vụ:{' '}
               <strong>
                 {appointment.pricing?.serviceName || 'Khám thai định kỳ'}
               </strong>

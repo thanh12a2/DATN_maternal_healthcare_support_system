@@ -1,0 +1,179 @@
+{
+  "role": "patient",
+  "url": "http://localhost:3000/lich-hen",
+  "assertions": [
+    {
+      "id": "P06",
+      "status": "PASS",
+      "detail": "Lịch cá nhân hiển thị lịch đã đặt"
+    },
+    {
+      "id": "A01",
+      "status": "PASS",
+      "detail": "Không JWT đọc danh sách: 401"
+    },
+    {
+      "id": "A02",
+      "status": "PASS",
+      "detail": "PATIENT tự hủy lịch: 403"
+    },
+    {
+      "id": "A03",
+      "status": "PASS",
+      "detail": "PATIENT tự đổi lịch: 403"
+    },
+    {
+      "id": "A04",
+      "status": "PASS",
+      "detail": "PATIENT gọi endpoint lễ tân: 403"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/me/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/me/journeys/active",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?appointmentId=f3d3e8db-b571-4207-8a2d-1ee9ce500ab6&limit=10",
+      "status": 503,
+      "body": {
+        "error": {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "message": "BILLING_ACCESS_UNAVAILABLE",
+          "requestId": "4c977b2f-9138-4841-92b2-d03b13e805a5"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?appointmentId=35295482-d57b-4e48-8c04-4b19faa71f0b&limit=10",
+      "status": 503,
+      "body": {
+        "error": {
+          "code": "DEPENDENCY_UNAVAILABLE",
+          "message": "BILLING_ACCESS_UNAVAILABLE",
+          "requestId": "d5acb090-05fe-432a-9071-b5af71312928"
+        }
+      }
+    }
+  ],
+  "text": "TÂM AN\nHOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\nĐặt lịch khám\n5\nTH\nTrần Thị Thanh Hằng\nBệnh nhân\nTrang chủ\nChuyên khoa\nĐội ngũ Bác sĩ\nCẩm nang thai kỳ\nBảng giá dịch vụ\nLịch hẹn của tôi\nTrang chủ\n/\nLịch hẹn của tôi\nLịch Hẹn Khám Của Tôi\n\nTra cứu, theo dõi tiến trình và quản lý phiếu hẹn khám y tế trực tuyến tại Bệnh viện Phụ sản Tâm An.\n\n+ Đặt Lịch Khám Mới\n1\nLịch hẹn sắp tới\n1\nLịch sử đã khám\n0\nLịch đã hủy\n2\nTổng cộng các đợt khám\nLịch hẹn sắp tới\n1\nLịch sử khám\n1\nĐã hủy\n0\nTất cả\n2\nTHÁNG 11\n16\nThứ Hai\n08:00 - 08:30\nKhám thai định kỳ chuẩn y khoa\nBS. Hoàng Minh Tuấn\nTự động\nSản khoa\nSTT KHÁM\nChưa cấp\n(Sẽ cấp khi check-in tại quầy)\nMã phiếu hẹn: APTMWFTGJ2SAD764C\n1\nĐã đặt lịch\n2\nCheck-in quầy\n3\nVào khám\n4\nHoàn tất\nChờ tiếp nhận\nChưa thanh toán\n300.000 ₫\nPhí khám tiêu chuẩn\nPhiếu hẹn\nTHÁNG 11\n16\nThứ Hai\n09:00 - 09:30\nKhám thai định kỳ chuẩn y khoa\nBS. Lê Thu Hà\nSản khoa\nSTT KHÁM\n201-01\nPhòng khám Sản Phụ khoa 201\nMã phiếu hẹn: APTMWFTH9XT234394\nĐã đặt lịch\nCheck-in quầy\nVào khám\n4\nHoàn tất\nĐã hoàn tất\nĐã thanh toán\n550.000 ₫\nPhí khám tiêu chuẩn\nXem kết quả\nPhiếu hẹn\nĐặt lại\nTÂM AN HOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\n\nHệ thống Bệnh viện Phụ sản & Y học Bào thai Tâm An – Trọn vẹn yêu thương, vẹn toàn yên tâm. Tiên phong ứng dụng mô hình chăm sóc thai sản toàn diện theo tiêu chuẩn y khoa tiên tiến, đồng hành cùng mẹ và bé trong từng khoảnh khắc thiêng liêng.\n\nGiấy phép hoạt động y tế giả định\nChăm sóc Sản khoa Toàn diện\nDịch vụ & Gói thai sản\nGói sinh thường trọn gói Hạnh Phúc\nGói sinh mổ chủ động Bình An\nSiêu âm hình thái học thai nhi 5D\nSàng lọc dị tật trước sinh (NIPT, Double Test)\nKhám & Điều trị Phụ khoa kỹ thuật số\nChăm sóc mẹ và bé sau sinh toàn diện\nTiện ích Bệnh nhân\nĐặt lịch khám trực tuyến\nTra cứu lịch hẹn khám bệnh\nCổng hồ sơ sức khỏe thai kỳ\nBảng giá dịch vụ niêm yết\nDanh bạ Chuyên gia & Bác sĩ\nCẩm nang kiến thức cho mẹ bầu\nHỗ trợ & Khẩn cấp\nCấp cứu Sản khoa (24/7):\n1900 6868\nTổng đài tư vấn & Đặt hẹn:\n(024) 3999 8888\nĐịa chỉ cơ sở chính:\n\nTòa nhà Bệnh viện Phụ sản Tâm An, 45 Phố Yersin, Hai Bà Trưng, Hà Nội\n\nEmail hỗ trợ:\n\nchamsockhachhang@taman.local\n\n© 2026 Bệnh viện Phụ sản Tâm An. Trọn vẹn yêu thương, vẹn toàn yên tâm.\n\nWebsite minh họa phục vụ đồ án tốt nghiệp. Bệnh viện, bác sĩ và số liệu là giả định.\n\nChính sách bảo mật y tế\n•\nQuy định khám chữa bệnh\n•\nHướng dẫn đón tiếp bệnh nhân"
+}

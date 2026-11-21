@@ -1,0 +1,56 @@
+{
+  "appointment": {
+    "id": "66ead8ab-bb96-4915-b8c2-2c910725f27b",
+    "appointmentCode": "APTMWFUQFS1E581C3",
+    "patientId": "80898b2c-0dad-4815-9125-1b4848947aac",
+    "reasonForVisit": "QA FUTURE UI NOTE - not a clinical diagnosis",
+    "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+    "channel": "ONLINE",
+    "selectionMode": "RANK",
+    "requestedDoctorId": null,
+    "requestedRankCode": "BASIC",
+    "assignedDoctorId": "d35bd583-ecf1-4213-a201-45d9ccb2de63",
+    "assignedRankCode": "BASIC",
+    "specialtyId": "cb62b6a3-f1eb-407b-95f1-29f3f0b14de8",
+    "roomId": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+    "roomCode": "P.202",
+    "roomName": "Phòng khám Sản Phụ khoa 202",
+    "room": {
+      "id": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+      "code": "P.202",
+      "name": "Phòng khám Sản Phụ khoa 202"
+    },
+    "availabilityVersion": 1,
+    "startAt": "2026-11-17T00:30:00.000Z",
+    "endAt": "2026-11-17T01:00:00.000Z",
+    "status": "BOOKED",
+    "pricing": {
+      "serviceName": "Khám thai định kỳ chuẩn y khoa",
+      "serviceVersion": 1,
+      "basePriceId": "878ff23c-e2d2-4803-87a7-c49c9762a797",
+      "baseAmountMinor": 300000,
+      "rankSurchargePriceId": "e52e30b0-01d0-42fd-87fe-6a3baa7fd42c",
+      "rankSurchargeAmountMinor": 0,
+      "estimatedTotalMinor": 300000,
+      "currency": "VND"
+    },
+    "queueEstimateMinutes": 0,
+    "receptionCaseId": null,
+    "encounterId": null,
+    "checkedInAt": null,
+    "clinicalStartedAt": null,
+    "completedAt": null,
+    "cancellationReason": null,
+    "rescheduleCount": 0,
+    "version": 1,
+    "createdAt": "2026-11-14T03:34:19.490Z",
+    "updatedAt": "2026-11-14T03:34:19.490Z"
+  },
+  "error": {
+    "error": {
+      "code": "CONFLICT",
+      "message": "APPOINTMENT_NOT_DUE",
+      "requestId": "4acffd98-c93a-4212-a5ac-2fd0392517b9"
+    }
+  }
+}

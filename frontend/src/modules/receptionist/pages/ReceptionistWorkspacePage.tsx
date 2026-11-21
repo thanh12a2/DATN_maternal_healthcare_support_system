@@ -22,7 +22,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { navigate } from '../../../app/navigation';
 import { ApiError } from '../../../services/api';
-import { listReceptionInvoices } from '../../../services/operations';
+import {
+  openReceptionCase,
+  listReceptionInvoices,
+} from '../../../services/operations';
 import {
   cancelAppointment,
   checkInAppointment,
@@ -58,6 +61,7 @@ import { SearchResults } from '../components/SearchResults';
 import { StatsStrip } from '../components/StatsStrip';
 import { WalkInModal } from '../components/WalkInModal';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
+import { ReceptionWorkBell } from '../components/ReceptionWorkBell';
 import { useReceptionRealtime } from '../hooks/useReceptionRealtime';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
@@ -74,7 +78,7 @@ const errText = (e: unknown) =>
     : 'Có lỗi xảy ra, vui lòng thử lại.';
 
 function Desk() {
-  const { message } = AntApp.useApp();
+  const { message, modal } = AntApp.useApp();
   const auth = useAuthSession();
   const { request } = auth;
 
@@ -206,8 +210,16 @@ function Desk() {
             return {
               ...a,
               status: (evt.status as AppointmentStatus) || a.status,
-              startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || a.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || a.startedAt),
-              completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || a.completedAt || new Date().toISOString()) : (evt.completedAt || a.completedAt),
+              startedAt:
+                evt.status === 'IN_CLINICAL_CARE'
+                  ? evt.clinicalStartedAt ||
+                    a.startedAt ||
+                    new Date().toISOString()
+                  : evt.clinicalStartedAt || a.startedAt,
+              completedAt:
+                evt.status === 'COMPLETED'
+                  ? evt.completedAt || a.completedAt || new Date().toISOString()
+                  : evt.completedAt || a.completedAt,
               queueCode: evt.ticketCode || a.queueCode,
               roomCode: evt.roomCode || a.roomCode,
               roomName: evt.roomName || a.roomName,
@@ -228,8 +240,18 @@ function Desk() {
               return {
                 ...a,
                 status: (evt.status as AppointmentStatus) || a.status,
-                startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || a.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || a.startedAt),
-                completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || a.completedAt || new Date().toISOString()) : (evt.completedAt || a.completedAt),
+                startedAt:
+                  evt.status === 'IN_CLINICAL_CARE'
+                    ? evt.clinicalStartedAt ||
+                      a.startedAt ||
+                      new Date().toISOString()
+                    : evt.clinicalStartedAt || a.startedAt,
+                completedAt:
+                  evt.status === 'COMPLETED'
+                    ? evt.completedAt ||
+                      a.completedAt ||
+                      new Date().toISOString()
+                    : evt.completedAt || a.completedAt,
                 queueCode: evt.ticketCode || a.queueCode,
                 roomCode: evt.roomCode || a.roomCode,
                 roomName: evt.roomName || a.roomName,
@@ -247,8 +269,16 @@ function Desk() {
           return {
             ...cur,
             status: (evt.status as AppointmentStatus) || cur.status,
-            startedAt: evt.status === 'IN_CLINICAL_CARE' ? (evt.clinicalStartedAt || cur.startedAt || new Date().toISOString()) : (evt.clinicalStartedAt || cur.startedAt),
-            completedAt: evt.status === 'COMPLETED' ? (evt.completedAt || cur.completedAt || new Date().toISOString()) : (evt.completedAt || cur.completedAt),
+            startedAt:
+              evt.status === 'IN_CLINICAL_CARE'
+                ? evt.clinicalStartedAt ||
+                  cur.startedAt ||
+                  new Date().toISOString()
+                : evt.clinicalStartedAt || cur.startedAt,
+            completedAt:
+              evt.status === 'COMPLETED'
+                ? evt.completedAt || cur.completedAt || new Date().toISOString()
+                : evt.completedAt || cur.completedAt,
             queueCode: evt.ticketCode || cur.queueCode,
             roomCode: evt.roomCode || cur.roomCode,
             roomName: evt.roomName || cur.roomName,
@@ -270,7 +300,11 @@ function Desk() {
             const isMatch = (a: DeskAppointment) =>
               a.id === evt.appointmentId ||
               a.code === evt.appointmentId ||
-              Boolean(evt.appointmentCode && (a.id === evt.appointmentCode || a.code === evt.appointmentCode));
+              Boolean(
+                evt.appointmentCode &&
+                (a.id === evt.appointmentCode ||
+                  a.code === evt.appointmentCode),
+              );
 
             let targetId = evt.appointmentId;
             setRows((cur) => {
@@ -279,33 +313,61 @@ function Desk() {
               return cur;
             });
 
-            const rawInvs = await listReceptionInvoices(request, { appointmentId: targetId }).catch(() => []);
+            const rawInvs = await listReceptionInvoices(request, {
+              appointmentId: targetId,
+            }).catch(() => []);
             const deskInvs = rawInvs
-              .map((inv) => toInvoice(inv as Record<string, unknown> | undefined))
+              .map((inv) =>
+                toInvoice(inv as Record<string, unknown> | undefined),
+              )
               .filter((inv): inv is DeskInvoice => inv !== null);
-            const baseInvoice = deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
-            const suppInvoice = deskInvs.find((i) => i.type === 'SUPPLEMENTARY') ?? null;
+            const baseInvoice =
+              deskInvs.find((i) => i.type === 'BASE') ?? deskInvs[0] ?? null;
+            const suppInvoice =
+              deskInvs.find((i) => i.type === 'SUPPLEMENTARY') ?? null;
 
-            const updateInvoicesInApp = (app: DeskAppointment): DeskAppointment => ({
+            const updateInvoicesInApp = (
+              app: DeskAppointment,
+            ): DeskAppointment => ({
               ...app,
               invoice: baseInvoice ?? app.invoice,
               supplementaryInvoice: suppInvoice,
               invoices: deskInvs,
             });
 
-            setRows((cur) => cur.map((a) => (isMatch(a) ? updateInvoicesInApp(a) : a)));
+            setRows((cur) =>
+              cur.map((a) => (isMatch(a) ? updateInvoicesInApp(a) : a)),
+            );
             setSearch((cur) => {
               if (!cur) return null;
               return {
                 ...cur,
                 appointments: cur.appointments.map((a) =>
-                  isMatch(a) ? updateInvoicesInApp(a) : a
+                  isMatch(a) ? updateInvoicesInApp(a) : a,
                 ),
               };
             });
             setOpenAppointment((cur) =>
-              cur && isMatch(cur) ? updateInvoicesInApp(cur) : cur
+              cur && isMatch(cur) ? updateInvoicesInApp(cur) : cur,
             );
+
+            // Search results are a separate snapshot from the day list. When
+            // the receptionist is looking up a patient, refresh that snapshot
+            // as well so a newly-created supplementary invoice appears in the
+            // open PatientCard without requiring a browser reload.
+            if (trimmed.length >= 2 && catalog) {
+              const refreshedSearch = await searchDesk(
+                request,
+                catalog,
+                trimmed,
+              );
+              setSearch(refreshedSearch);
+            }
+
+            // Also refresh the day list. Its enrich() pass repairs any
+            // supplementary invoice that was created before all order rows
+            // were visible to the receptionist.
+            setReload((current) => current + 1);
           } catch (invErr) {
             console.warn('Lỗi đồng bộ hóa đơn realtime:', invErr);
           }
@@ -366,7 +428,7 @@ function Desk() {
           (a) =>
             (!status || a.status === status) &&
             (!source || a.source === source),
-      ),
+        ),
       ),
     [dayRoomList, status, source],
   );
@@ -510,7 +572,15 @@ function Desk() {
       await fn();
       if (catalog) replace(await refreshAppointment(request, catalog, a));
     } catch (e) {
-      message.error(errText(e));
+      const detail = errText(e);
+      if (
+        detail.includes('Case đã có người nhận hoặc đang xử lý') ||
+        detail.includes(
+          'Case đã có người xử lý hoặc đang thực hiện thao tác khác',
+        )
+      )
+        modal.warning({ title: 'Không thể thao tác', content: detail });
+      else message.error(detail);
     } finally {
       setBusy(false);
     }
@@ -518,15 +588,14 @@ function Desk() {
 
   const checkIn = (a: DeskAppointment) =>
     run(a, async () => {
-      const r = await checkInAppointment(request, a);
-      if (r.awaitingPayment) {
-        message.warning(
-          'Cần thanh toán hóa đơn trước khi check-in. Mở chi tiết → Hóa đơn để thu tiền.',
-        );
-        setOpenId(a.id);
-      } else {
-        message.success('Check-in thành công, bệnh nhân đã vào hàng đợi.');
-      }
+      await openReceptionCase(request, {
+        appointmentId: a.id,
+        patientId: a.patientId,
+        arrivalAt: new Date().toISOString(),
+      });
+      message.success(
+        'Đã ghi nhận bệnh nhân đến. Mở case ở chuông công việc để tiếp tục.',
+      );
     });
 
   const cancel = (a: DeskAppointment) =>
@@ -538,6 +607,33 @@ function Desk() {
       );
       message.success('Đã hủy lịch hẹn');
     });
+
+  const requestReassignment = async (a: DeskAppointment, reason: string) => {
+    setBusy(true);
+    try {
+      await request(
+        `/api/appointment/appointments/${encodeURIComponent(a.id)}/reassignment-required`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ reason, expectedVersion: a.version }),
+        },
+      );
+      if (catalog) replace(await refreshAppointment(request, catalog, a));
+      message.success('Đã đưa lịch vào danh sách cần phân công lại.');
+    } catch (e) {
+      const detail = errText(e);
+      if (
+        detail.includes(
+          'Case đã có người xử lý hoặc đang thực hiện thao tác khác',
+        )
+      )
+        modal.warning({ title: 'Không thể thay đổi lịch', content: detail });
+      else message.error(detail);
+      throw e;
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const collect = (
     a: DeskAppointment,
@@ -572,7 +668,14 @@ function Desk() {
       );
       window.location.assign(attempt.paymentUrl);
     } catch (error) {
-      message.error(errText(error));
+      const detail = errText(error);
+      if (
+        detail.includes(
+          'Case đã có người xử lý hoặc đang thực hiện thao tác khác',
+        )
+      )
+        modal.warning({ title: 'Không thể xử lý thanh toán', content: detail });
+      else message.error(detail);
       setBusy(false);
     }
   };
@@ -580,9 +683,14 @@ function Desk() {
   const handleCreateWalkIn = async (data: WalkInInput) => {
     try {
       const res = await createWalkInAppointment(request, data);
-      message.success(
-        `Đã tiếp nhận bệnh nhân vãng lai thành công! (Mã hẹn: ${res.appointmentCode || res.code || ''})`,
-      );
+      if (res.receptionWarning)
+        message.warning(
+          `${res.receptionWarning} Mã lịch: ${res.appointmentCode || res.code || ''}`,
+        );
+      else
+        message.success(
+          `Đã ghi nhận bệnh nhân vãng lai. Mở case ở chuông công việc để tiếp tục. Mã lịch: ${res.appointmentCode || res.code || ''}`,
+        );
       setWalkInOpen(false);
       setReload((n) => n + 1);
     } catch (err: any) {
@@ -605,10 +713,10 @@ function Desk() {
 
       const patient = res.found[0] ||
         allPatients[a.patientId] || {
-        id: a.patientId,
-        fullName: 'Bệnh nhân',
-        emergencyContacts: [],
-      };
+          id: a.patientId,
+          fullName: 'Bệnh nhân',
+          emergencyContacts: [],
+        };
 
       const finalRes = {
         found: [patient],
@@ -751,6 +859,7 @@ function Desk() {
               flexShrink: 0,
             }}
           >
+            <ReceptionWorkBell onFindAppointment={setQuery} />
             <span
               style={{
                 display: 'inline-flex',
@@ -998,6 +1107,7 @@ function Desk() {
         }}
         onCheckIn={checkIn}
         onCancel={cancel}
+        onRequestReassignment={requestReassignment}
         onCollect={collect}
         onPayVnpay={payVnpay}
         onPrint={(w) => message.info(`Đang gửi lệnh in ${w}...`)}

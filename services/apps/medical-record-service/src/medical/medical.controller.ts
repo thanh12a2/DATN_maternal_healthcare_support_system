@@ -39,7 +39,7 @@ export class MedicalController {
       auth.role === 'DOCTOR'
         ? await this.s.doctorIdForAccount(auth.userId)
         : undefined;
-    return this.s.listEncounters(query, doctorId);
+    return this.s.listEncounters(await this.s.scopeReadQuery(query, auth), doctorId);
   }
 
   @Get('encounters/:id')
@@ -47,8 +47,7 @@ export class MedicalController {
     @Param('id') id: string,
     @CurrentAuth() auth: PublicAuthContext,
   ) {
-    if (auth.role === 'DOCTOR')
-      await this.s.assertDoctorAssigned(id, auth.userId);
+    await this.s.assertReadAccess(id, auth);
     return this.s.getEncounter(id);
   }
 
@@ -58,6 +57,7 @@ export class MedicalController {
     @Body() b: any,
     @CurrentAuth() auth: PublicAuthContext,
   ) {
+    if (!['DOCTOR', 'ADMIN', 'NURSE'].includes(auth.role)) throw new ForbiddenException('CLINICAL_WRITE_REQUIRED');
     return this.s.updateEncounterRest(id, b, auth);
   }
 
@@ -68,6 +68,7 @@ export class MedicalController {
   ) {
     if (auth.role === 'DOCTOR')
       throw new ForbiddenException('ADMISSION_REQUIRED');
+    if (!['ADMIN', 'NURSE', 'RECEPTIONIST'].includes(auth.role)) throw new ForbiddenException('CLINICAL_WRITE_REQUIRED');
     const res = await this.s.open(b);
     return { data: res.encounter };
   }
@@ -174,12 +175,13 @@ export class MedicalController {
 
   @Post('pregnancy-episodes')
   createPregnancy(@Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+    if (!['DOCTOR', 'ADMIN', 'NURSE'].includes(a.role)) throw new ForbiddenException('CLINICAL_WRITE_REQUIRED');
     return this.s.createPregnancyEpisode(b, a.userId);
   }
 
   @Get('pregnancy-episodes')
-  listPregnancy(@Query() query: any) {
-    return this.s.listPregnancyEpisodes(query);
+  async listPregnancy(@Query() query: any, @CurrentAuth() auth: PublicAuthContext) {
+    return this.s.listPregnancyEpisodes(await this.s.scopeReadQuery(query, auth));
   }
 
   @Patch('pregnancy-episodes/:id')
@@ -188,6 +190,7 @@ export class MedicalController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (!['DOCTOR', 'ADMIN', 'NURSE'].includes(a.role)) throw new ForbiddenException('CLINICAL_WRITE_REQUIRED');
     return this.s.updatePregnancyEpisode(id, b, a.userId);
   }
 }

@@ -1,0 +1,21 @@
+module.exports=async({page,context,check,fs,output})=>{
+  await page.goto('http://localhost:3000/lich-hen');
+  await page.getByRole('button',{name:/Đã hủy/}).click();
+  await page.getByText(/APTMWFTGJ2SAD764C/).first().waitFor();
+  check('P09',(await page.locator('body').innerText()).includes('Đã hủy'),'Lễ tân hủy, bệnh nhân thấy lịch trong tab đã hủy');
+  const token=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('an-tam-auth-session')||localStorage.getItem('an-tam-auth-session')).accessToken);
+  const api=(t,url,opt={})=>context.request.fetch('http://localhost:8080'+url,{...opt,headers:{Authorization:'Bearer '+t,...opt.headers}});
+  const all=await (await api(token,'/api/appointment/appointments?limit=100')).json();
+  const booked=all.items.find(x=>x.appointmentCode==='APTMWFTH9XT234394');
+  const canceled=all.items.find(x=>x.appointmentCode==='APTMWFTGJ2SAD764C');
+  check('E01',booked.status==='COMPLETED'&&booked.version===4,'BOOKED → CHECKED_IN → IN_CLINICAL_CARE → COMPLETED');
+  check('E02',canceled.status==='CANCELLED'&&canceled.rescheduleCount===1&&canceled.startAt==='2026-11-16T03:00:00.000Z','Lịch còn lại đổi 08:00→10:00 rồi hủy, lưu đúng dữ liệu');
+  check('BUG02',new Date(booked.checkedInAt).toISOString().slice(0,10)===booked.startAt.slice(0,10),'Ngày check-in phải cùng ngày hẹn; hệ thống đã cho check-in 14/11 cho lịch 16/11 (cần chốt policy)');
+  const login=await context.request.post('http://localhost:8080/auth/login',{data:{email:'dr.hoangminhtuan@antam.local',password:process.env.QA_DEMO_PASSWORD||'Demo@123456'}});
+  const doctor=(await login.json()).accessToken;
+  const denied=await api(doctor,'/api/medical-records/encounters/'+booked.encounterId);
+  check('A08',[403,404].includes(denied.status()),'Bác sĩ không được phân công không đọc được encounter: '+denied.status());
+  const journeys=await (await api(token,'/api/queue/me/journeys/active')).json();
+  await fs.writeFile(output+'/final-api-state.json',JSON.stringify({appointments:all.items,queue:journeys},null,2));
+  console.log('ACTIVE_QUEUE',JSON.stringify(journeys));
+};

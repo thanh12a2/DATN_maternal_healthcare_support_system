@@ -8,6 +8,7 @@ export interface Appointment {
   appointmentCode?: string;
   patientId?: string;
   patientName?: string;
+  patientDemographics?: { name: string; phone: string; dob?: string; nationalId?: string; address?: string; emergencyContact?: string };
   serviceId?: string;
   specialtyId?: string;
   assignedDoctorId?: string;
@@ -46,7 +47,7 @@ export function idempotencyKey(): string { try { if (typeof crypto !== 'undefine
 export async function listBookableSlots(request: Requester, params: {serviceId: string; selectionMode: SelectionMode; from: string; to: string; requestedDoctorId?: string; requestedRankCode?: string}): Promise<BookableSlot[]> { const query = new URLSearchParams({serviceId: params.serviceId, selectionMode: params.selectionMode, from: params.from, to: params.to, limit: '50'}); if (params.requestedDoctorId) query.set('requestedDoctorId', params.requestedDoctorId); if (params.requestedRankCode) query.set('requestedRankCode', params.requestedRankCode); return list<BookableSlot>(await request('/api/appointment/bookable-slots?' + query)); }
 export function createSlotHold(request: Requester, body: {serviceId: string; selectionMode: SelectionMode; requestedDoctorId?: string; requestedRankCode?: string; startAt: string; endAt: string}) { return request<SlotHold>('/api/appointment/slot-holds', {method:'POST', headers:{'Idempotency-Key': idempotencyKey()}, body:JSON.stringify(body)}); }
 export function releaseSlotHold(request: Requester, id: string) { return request<void>('/api/appointment/slot-holds/' + encodeURIComponent(id), {method:'DELETE'}); }
-export function createAppointment(request: Requester, holdId: string) { return request<Appointment>('/api/appointment/appointments', {method:'POST', headers:{'Idempotency-Key': idempotencyKey()}, body:JSON.stringify({holdId, channel:'ONLINE'})}); }
+export function createAppointment(request: Requester, holdId: string, reasonForVisit?: string) { return request<Appointment>('/api/appointment/appointments', {method:'POST', headers:{'Idempotency-Key': idempotencyKey()}, body:JSON.stringify({holdId, channel:'ONLINE', ...(reasonForVisit?.trim() ? {reasonForVisit: reasonForVisit.trim()} : {})})}); }
 export interface AppointmentListFilters {
   status?: string;
   from?: string;

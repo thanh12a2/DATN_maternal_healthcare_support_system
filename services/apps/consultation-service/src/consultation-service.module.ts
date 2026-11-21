@@ -1,3 +1,4 @@
+import { NotificationOutboxService } from './notification-outbox.service';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PlatformModule, RabbitMqModule } from '@platform';
@@ -13,6 +14,10 @@ import { ConsultationAccessGateway } from './consultation-access.gateway';
     DatabaseModule,
   ],
   controllers: [ConsultationController],
-  providers: [ConsultationService, ConsultationAccessGateway],
+  providers: [
+    ConsultationService,
+    ConsultationAccessGateway,
+    NotificationOutboxService,
+  ],
 })
 export class ConsultationServiceModule {}

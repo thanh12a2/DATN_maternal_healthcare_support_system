@@ -4,6 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { AppRouter } from '../../../app/AppRouter';
 import { emptyPatientProfile } from '../../../schemas/patientProfile';
 
+// This suite verifies profile writes. Header notifications/profile reads have
+// their own tests and must not consume the ordered response fixtures below.
+vi.mock('../../../shared/components/portal/PublicPortalHeader', () => ({ PublicPortalHeader: () => null }));
+vi.mock('../components/EmailVerification', () => ({ EmailVerificationPanel: () => null, EmailVerificationPage: () => null }));
+
 const session = {
   accessToken: 'access',
   refreshToken: 'refresh',

@@ -198,6 +198,10 @@ export function RescheduleModal({
       onClose();
     } catch (err: any) {
       console.error('Lỗi khi dời lịch hẹn:', err);
+      if (String(err?.message ?? '').includes('Case đã có người xử lý hoặc đang thực hiện thao tác khác')) {
+        Modal.warning({ title: 'Không thể thay đổi lịch', content: err.message });
+        return;
+      }
       throw err;
     } finally {
       setSubmitting(false);
@@ -529,8 +533,8 @@ export function RescheduleModal({
                           d.shiftType === 'MORNING'
                             ? 'cyan'
                             : d.shiftType === 'AFTERNOON'
-                              ? 'orange'
-                              : 'purple'
+                            ? 'orange'
+                            : 'purple'
                         }
                         style={{
                           margin: 0,

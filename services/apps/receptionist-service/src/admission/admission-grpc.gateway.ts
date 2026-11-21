@@ -180,6 +180,7 @@ export class AdmissionGrpcGateway {
         appointmentId: v.appointmentId,
         patientId: v.patientId,
         primaryDoctorId: v.assignedDoctorId,
+        chiefComplaint: v.reasonForVisit || '',
         admission: {
           receptionCaseId: caseId,
           invoiceId,

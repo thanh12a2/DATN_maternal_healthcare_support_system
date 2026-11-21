@@ -18,6 +18,11 @@ export class PrescriptionService {
     @Optional() private readonly catalog?: MedicationCatalogService,
   ) {}
 
+  async listIssuedForEmail(encounterId: string, patientId: string, cutoff: Date) {
+    const rows = await this.db.prescription.findMany({ where: { encounterId, patientId, status: PrescriptionStatus.ISSUED, issuedAt: { lte: cutoff } }, include: { items: { orderBy: { sortOrder: 'asc' } } }, orderBy: { issuedAt: 'asc' } });
+    return { prescriptions: rows.map(p => ({ prescriptionId: p.id, encounterId: p.encounterId, patientId: p.patientId, doctorId: p.prescribingDoctorId, status: p.status, version: p.version, items: p.items })) };
+  }
+
   private async resolveItems(items: any[]) {
     if (!items.some((x) => x.medicationCode)) return items;
     if (!this.catalog)
@@ -122,7 +127,7 @@ export class PrescriptionService {
             frequency: x.frequency || '1 lần mỗi ngày',
             durationDays: x.durationDays ? Number(x.durationDays) : null,
             instruction: x.instruction || '',
-            sortOrder: x.sortOrder !== undefined ? Number(x.sortOrder) : i + 1,
+          sortOrder: x.sortOrder !== undefined ? Number(x.sortOrder) : i + 1,
           })),
         });
       }

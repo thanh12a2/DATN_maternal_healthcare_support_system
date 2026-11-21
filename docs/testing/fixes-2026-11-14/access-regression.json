@@ -1,0 +1,185 @@
+{
+  "role": "patient",
+  "url": "http://localhost:3000/lich-hen/35295482-d57b-4e48-8c04-4b19faa71f0b/ket-qua",
+  "assertions": [
+    {
+      "id": "F01-own",
+      "status": "PASS",
+      "detail": "Owner can still read finalized encounter"
+    },
+    {
+      "id": "F01-other",
+      "status": "PASS",
+      "detail": "Another patient is denied"
+    },
+    {
+      "id": "F01-list",
+      "status": "PASS",
+      "detail": "Encounter listing is scoped, no ID-based bypass"
+    },
+    {
+      "id": "F01-forged",
+      "status": "PASS",
+      "detail": "Forged patient filter denied"
+    },
+    {
+      "id": "F01-pregnancy",
+      "status": "PASS",
+      "detail": "Pregnancy history cannot bypass patient scope"
+    },
+    {
+      "id": "F07-demo",
+      "status": "PASS",
+      "detail": "Additive demo pregnancy exists and is scoped to owner"
+    },
+    {
+      "id": "F01-write",
+      "status": "PASS",
+      "detail": "Patient cannot write another encounter"
+    },
+    {
+      "id": "F01-ui",
+      "status": "PASS",
+      "detail": "Owner result page still works after access fix"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/pregnancy-episodes?patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app?page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/in-app/unread-count",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments/35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/prescriptions?encounterId=19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/treatment-plans?encounterId=19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/documents/encounter-reports/19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/documents/clinical-results/19f9fc03-186e-43e0-9a36-11742d33c527",
+      "status": 403,
+      "body": {
+        "message": "DOCTOR_REQUIRED",
+        "error": "Forbidden",
+        "statusCode": 403
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/documents/a8bc5368-d22b-4619-b0fd-feda69ecb6dd/content?format=pdf",
+      "status": 200
+    }
+  ],
+  "text": "TÂM AN\nHOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\nĐặt lịch khám\n7\nTH\nTrần Thị Thanh Hằng\nBệnh nhân\nTrang chủ\nChuyên khoa\nĐội ngũ Bác sĩ\nCẩm nang thai kỳ\nBảng giá dịch vụ\nLịch hẹn của tôi\nLịch hẹn của tôi\n/\nKết quả khám\nHỒ SƠ KẾT QUẢ KHÁM\nKết quả khám của tôi\n\nTrần Thị Thanh Hằng • Mã lịch: APTMWFTH9XT234394\n\nIn trang kết quả\nĐã hoàn tất\nDỊCH VỤ KHÁM\nKhám thai định kỳ chuẩn y khoa\nSản khoa\nNGÀY KHÁM\n16/11/2026\nTHỜI GIAN\n09:00\nBÁC SĨ\nLê Thu Hà\nPHÒNG KHÁM\nPhòng khám Sản Phụ khoa 201\nThông tin hành chính bệnh nhân\n\nThông tin được đối chiếu theo hồ sơ bệnh nhân tại thời điểm khám.\n\nHọ và tên\nTrần Thị Thanh Hằng\nSố điện thoại\n+84901234003\nNgày sinh\n22/9/1993\nMã lịch hẹn\nAPTMWFTH9XT234394\nĐịa chỉ\n45 Tràng Thi, Hàng Trống, Hoàn Kiếm, Hà Nội\nTóm tắt lần khám\n\nThông tin được bác sĩ ghi nhận trong hồ sơ khám.\n\nLý do khám / triệu chứng ban đầu\nKIỂM THỬ ĐỒ ÁN: khám định kỳ, dữ liệu mô phỏng, không dùng điều trị.\nBác sĩ phụ trách\nLê Thu Hà\nTrạng thái hồ sơ\nĐã hoàn tất hồ sơ\nKhám lâm sàng / ghi chú bác sĩ\nChưa cập nhật\nDấu hiệu sinh tồn\n\nSố liệu được ghi nhận trong lần khám.\n\nHuyết áp\n120/80 mmHg\nNhịp tim\n75 bpm\nNhiệt độ\n36.8 °C\nCân nặng\n58.5 kg\nChiều cao\n160 cm\nBMI\n—\nChẩn đoán và kết luận\n\nKết luận chuyên môn được lưu trong hồ sơ khám.\n\nKCB\nKIỂM THỬ CHỨC NĂNG LƯU BỆNH ÁN — dữ liệu mô phỏng, không phải chẩn đoán thực tế.\n10:05:04 14/11/2026\nKết quả chỉ định cận lâm sàng\n\nHiển thị đầy đủ trạng thái, ghi chú và file kết quả của từng chỉ định.\n\n0 chỉ định\nLần khám này chưa có chỉ định cận lâm sàng.\nPhiếu kết quả khám bệnh\n\nBản PDF đầy đủ được lưu trong hồ sơ khám.\n\nPDF chính thức\nTải file\nTÂM AN HOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\n\nHệ thống Bệnh viện Phụ sản & Y học Bào thai Tâm An – Trọn vẹn yêu thương, vẹn toàn yên tâm. Tiên phong ứng dụng mô hình chăm sóc thai sản toàn diện theo tiêu chuẩn y khoa tiên tiến, đồng hành cùng mẹ và bé trong từng khoảnh khắc thiêng liêng.\n\nGiấy phép hoạt động y tế giả định\nChăm sóc Sản khoa Toàn diện\nDịch vụ & Gói thai sản\nGói sinh thường trọn gói Hạnh Phúc\nGói sinh mổ chủ động Bình An\nSiêu âm hình thái học thai nhi 5D\nSàng lọc dị tật trước sinh (NIPT, Double Test)\nKhám & Điều trị Phụ khoa kỹ thuật số\nChăm sóc mẹ và bé sau sinh toàn diện\nTiện ích Bệnh nhân\nĐặt lịch khám trực tuyến\nTra cứu lịch hẹn khám bệnh\nCổng hồ sơ sức khỏe thai kỳ\nBảng giá dịch vụ niêm yết\nDanh bạ Chuyên gia & Bác sĩ\nCẩm nang kiến thức cho mẹ bầu\nHỗ trợ & Khẩn cấp\nCấp cứu Sản khoa (24/7):\n1900 6868\nTổng đài tư vấn & Đặt hẹn:\n(024) 3999 8888\nĐịa chỉ cơ sở chính:\n\nTòa nhà Bệnh viện Phụ sản Tâm An, 45 Phố Yersin, Hai Bà Trưng, Hà Nội\n\nEmail hỗ trợ:\n\nchamsockhachhang@taman.local\n\n© 2026 Bệnh viện Phụ sản Tâm An. Trọn vẹn yêu thương, vẹn toàn yên tâm.\n\nWebsite minh họa phục vụ đồ án tốt nghiệp. Bệnh viện, bác sĩ và số liệu là giả định.\n\nChính sách bảo mật y tế\n•\nQuy định khám chữa bệnh\n•\nHướng dẫn đón tiếp bệnh nhân"
+}

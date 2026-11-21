@@ -22,6 +22,14 @@ interface BatchRequest {
 export class AuthGrpcController {
   constructor(private readonly accounts: AccountsRepository) {}
 
+  @GrpcMethod('AuthInternalService', 'GetVerifiedPatientEmail')
+  @ServiceCallers('notification-service')
+  @ServiceScopes('auth:verified-patient-email:read')
+  async getVerifiedPatientEmail(request: GetRequest) {
+    const email = await this.accounts.findVerifiedPatientEmail(request.accountId);
+    return { found: Boolean(email), email: email ?? '' };
+  }
+
   @GrpcMethod('AuthInternalService', 'GetAccountAuthorization')
   async getAccountAuthorization(request: GetRequest) {
     const account = await this.accounts.findInternalAccountById(
@@ -51,8 +59,8 @@ export class AuthGrpcController {
   }) {
     const status =
       account.status === 'PENDING_VERIFICATION'
-        ? 'ACCOUNT_STATUS_PENDING'
-        : 'ACCOUNT_STATUS_' + account.status;
+      ? 'ACCOUNT_STATUS_PENDING'
+      : 'ACCOUNT_STATUS_' + account.status;
     return {
       accountId: account.accountId,
       status,

@@ -1,0 +1,10 @@
+.reception-reviews { width: min(420px, 85vw); max-height: 65vh; overflow: auto; }
+.reception-reviews-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.reception-reviews-header div div, .reception-reviews small { color: #6b7d90; font-size: 12px; }
+.reception-reviews article { padding: 12px 0; border-top: 1px solid #e6eef6; }
+.reception-reviews article p { margin: 6px 0; color: #53677d; }
+.reception-reviews small { display: block; margin-bottom: 7px; }
+.reception-review-arrival { animation: reception-review-ring .55s ease-in-out 2; }
+.reception-reviews-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@keyframes reception-review-ring { 25% { transform: rotate(12deg); } 75% { transform: rotate(-12deg); } }
+@media (prefers-reduced-motion: reduce) { .reception-review-arrival { animation: none; } }

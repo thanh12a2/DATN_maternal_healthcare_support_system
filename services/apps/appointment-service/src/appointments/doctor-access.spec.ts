@@ -8,6 +8,7 @@ describe('appointment doctor scope', () => {
   const service = new AppointmentDomainService(
     { appointment: { findMany }, slotHold: { findMany: findHolds } } as any,
     { doctorByAccount, patientIdentity } as any,
+    { publish: jest.fn() } as any,
   );
   const doctor = { role: 'DOCTOR', userId: 'account-id' } as any;
   beforeEach(() => {

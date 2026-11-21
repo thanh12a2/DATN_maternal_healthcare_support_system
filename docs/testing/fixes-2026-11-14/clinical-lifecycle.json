@@ -1,0 +1,525 @@
+{
+  "role": "doctor",
+  "url": "http://localhost:3000/workspace/doctor/overview",
+  "assertions": [
+    {
+      "id": "F06-ui",
+      "status": "PASS",
+      "detail": "Doctor sees original booking reason before editing"
+    },
+    {
+      "id": "F03-start",
+      "status": "PASS",
+      "detail": "Direct open from waiting moves consultation ticket to IN_SERVICE"
+    },
+    {
+      "id": "F03-complete",
+      "status": "PASS",
+      "detail": "Completion closes queue ticket"
+    },
+    {
+      "id": "F03-appointment",
+      "status": "PASS",
+      "detail": "Appointment lifecycle preserved"
+    },
+    {
+      "id": "F03-journey",
+      "status": "PASS",
+      "detail": "Journey completed, no residual waiting ticket"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/desk/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/desk/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/catalog/services",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/prescriptions/medications?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/prescriptions?encounterId=4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/start",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "pregnancyEpisodeId": null,
+          "primaryDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+          "state": "IN_PROGRESS",
+          "version": 2,
+          "chiefComplaint": "QA FIX REGRESSION: booking reason must reach encounter",
+          "clinicalSummary": null,
+          "startedAt": "2026-11-14T03:35:25.314Z",
+          "reviewReadyAt": null,
+          "finalizedAt": null,
+          "createdAt": "2026-11-14T03:35:10.626Z",
+          "updatedAt": "2026-11-14T03:35:25.317Z",
+          "documentIds": [],
+          "prescriptionIds": [],
+          "treatmentPlanIds": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/appointment/desk/broadcast",
+      "status": 201,
+      "body": {
+        "ok": true
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/vital-signs",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+          "version": 3
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/vital-signs",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+          "version": 4
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/vital-signs",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+          "version": 5
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/vital-signs",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+          "version": 6
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/vital-signs",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+          "version": 7
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/diagnoses",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "a89b94a0-581a-4491-a292-243757fa42ea",
+          "version": 8
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200,
+      "body": {
+        "data": {
+          "id": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "pregnancyEpisodeId": null,
+          "primaryDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+          "state": "IN_PROGRESS",
+          "version": 9,
+          "chiefComplaint": "QA FIX REGRESSION: booking reason must reach encounter",
+          "clinicalSummary": null,
+          "startedAt": "2026-11-14T03:35:25.314Z",
+          "reviewReadyAt": null,
+          "finalizedAt": null,
+          "createdAt": "2026-11-14T03:35:10.626Z",
+          "updatedAt": "2026-11-14T03:35:27.766Z",
+          "documentIds": [],
+          "prescriptionIds": [],
+          "treatmentPlanIds": [],
+          "vitalSigns": [
+            {
+              "id": "09c8c67c-a73b-4ca1-9b3c-4907f68007e3",
+              "encounterId": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+              "systolic": 118,
+              "diastolic": 78,
+              "heartRate": 76,
+              "temperature": "36.7",
+              "weight": "60",
+              "height": "160",
+              "recordedBy": "264a3418-9566-41a5-a747-6814a1d40de3",
+              "recordedAt": "2026-11-14T03:35:26.059Z"
+            }
+          ],
+          "notes": [],
+          "diagnoses": [
+            {
+              "id": "a89b94a0-581a-4491-a292-243757fa42ea",
+              "encounterId": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+              "code": "KCB",
+              "description": "QA REGRESSION ONLY - simulated clinical entry",
+              "doctorId": "264a3418-9566-41a5-a747-6814a1d40de3",
+              "createdAt": "2026-11-14T03:35:26.744Z"
+            }
+          ],
+          "orders": [],
+          "appointmentSyncPending": false
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/prescriptions?encounterId=4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/ready-for-review",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "pregnancyEpisodeId": null,
+          "primaryDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+          "state": "READY_FOR_REVIEW",
+          "version": 10,
+          "chiefComplaint": "QA FIX REGRESSION: booking reason must reach encounter",
+          "clinicalSummary": null,
+          "startedAt": "2026-11-14T03:35:25.314Z",
+          "reviewReadyAt": "2026-11-14T03:35:27.902Z",
+          "finalizedAt": null,
+          "createdAt": "2026-11-14T03:35:10.626Z",
+          "updatedAt": "2026-11-14T03:35:27.910Z",
+          "documentIds": [],
+          "prescriptionIds": [],
+          "treatmentPlanIds": []
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032/finalize",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+          "appointmentId": "5eadff6c-5692-4ee7-b686-fe9727a5659c",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "pregnancyEpisodeId": null,
+          "primaryDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+          "state": "FINALIZED",
+          "version": 11,
+          "chiefComplaint": "QA FIX REGRESSION: booking reason must reach encounter",
+          "clinicalSummary": null,
+          "startedAt": "2026-11-14T03:35:25.314Z",
+          "reviewReadyAt": "2026-11-14T03:35:27.902Z",
+          "finalizedAt": "2026-11-14T03:35:27.977Z",
+          "createdAt": "2026-11-14T03:35:10.626Z",
+          "updatedAt": "2026-11-14T03:35:27.980Z",
+          "documentIds": [],
+          "prescriptionIds": [],
+          "treatmentPlanIds": []
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters/4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=5eadff6c-5692-4ee7-b686-fe9727a5659c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/prescriptions?encounterId=4faad6a2-f7d7-4b2c-a6de-f54a7a086032",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/medical-records/encounters?limit=100&page=1",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    }
+  ],
+  "text": "TÂM AN\nHOSPITAL\nTrọn vẹn yêu thương, vẹn toàn yên tâm\nPhòng\nP.201\nTrực tuyến\nGọi số tiếp theo\nBS. Lê Thu Hà\nBác sĩ\nQuay lại\nTrần Thị Thanh Hằng\nChưa cập nhật giới tính · 33 tuổi (22/9/1993)\nDịch vụ y tế: Khám thai định kỳ chuẩn y khoa\nĐã thanh toán viện phí tiếp đón\nSTT KHÁM\n201-02\nPhòng P.201\n✓ Đã hoàn tất ca khám\n✓ Đã hoàn tất ca khám\nXem Kết Quả Cận Lâm Sàng\nXem Phiếu Khám & Kết Quả (PDF)\nMÃ LỊCH HẸN\nAPTMWFURHSOB81C96\nKHUNG GIỜ KHÁM\n11:00 - 11:30 (14/11/2026)\nCCCD / ĐỊNH DANH\n001193000102\nSỐ ĐIỆN THOẠI\n+84901234003\nĐỊA CHỈ THƯỜNG TRÚ\n45 Tràng Thi, Hàng Trống, Hoàn Kiếm, Hà Nội\nNGƯỜI THÂN LIÊN HỆ\nNguyễn Hoàng Long (Chồng - +84901234004)\n 1. Khám Bệnh & Kê Toa\n 2. Tiền Sử & Lịch Sử Khám Cũ (1)\nDấu hiệu sinh tồn & Thể trạng\n\nGhi nhận chỉ số thể trạng thai phụ. Hệ thống tự động tính BMI và lưu dữ liệu trực tiếp vào hồ sơ.\n\nĐã tự động lưu\nHuyết áp\nmmHg\nNhịp tim\nbpm\nThân nhiệt\n°C\nCân nặng\nkg\nChiều cao\ncm\nChỉ số BMI\nkg/m²\n23.4\n1. Khám lâm sàng & Chỉ định cận lâm sàng\n\nGhi nhận lý do khám, triệu chứng lâm sàng và ra y lệnh chỉ định siêu âm, xét nghiệm trước khi ra chẩn đoán\n\nLÝ DO KHÁM & TÌNH TRẠNG TIẾP NHẬN BAN ĐẦU:\nChỉ định Cận lâm sàng (Siêu âm, Xét nghiệm, Tầm soát thai kỳ)\n0 chỉ định\nBác sĩ chọn dịch vụ thêm nhanh bên dưới. Sau khi thanh toán, có thể upload trực tiếp file kết quả siêu âm/xét nghiệm vào từng dòng.\nChưa có chỉ định cận lâm sàng nào cho ca khám này\nNếu cần siêu âm hình thái thai nhi hoặc làm xét nghiệm máu/nước tiểu, chọn dịch vụ từ thanh tìm kiếm bên trên.\n2. Chẩn đoán xác định, Kê đơn thuốc & Kế hoạch điều trị\n\nGhi nhận chẩn đoán kết luận bệnh, kê đơn thuốc an toàn thai kỳ FDA và lập kế hoạch dặn dò tái khám\n\nĐã tự động lưu chẩn đoán\nChẩn đoán lâm sàng & Kết luận của bác sĩ:\n(Hệ thống tự động lưu vào bệnh án khi gõ)\nĐơn thuốc điều trị thai kỳ\n0 thuốc\nChưa có thuốc trong đơn ca khám này\n\nBác sĩ có thể nhấn nút \"Thêm thuốc\" ở góc trên để kê các loại thuốc an toàn cho thai kỳ từ danh mục dược phẩm chuẩn của bệnh viện.\n\nKế hoạch điều trị & Dặn dò chăm sóc thai kỳ\n0 dặn dò\nChưa có hướng dẫn dặn dò nào được lập\nNhấp vào các thẻ gợi ý phía trên hoặc nhấn nút \"Thêm dặn dò riêng\" để ghi chú chế độ theo dõi cho thai phụ.\nLỊCH HẸN TÁI KHÁM TIẾP THEO:\nChưa đặt lịch hẹn\nChọn nhanh khoảng thời gian bên phải hoặc chọn ngày cụ thể để hẹn thai phụ tái khám\nHoàn tất ca khám bệnh\n\nKiểm tra lại dấu hiệu sinh tồn, chẩn đoán, đơn thuốc trước khi hoàn tất đóng bệnh án.\n\nQuay lại\nXem Kết Quả Cận Lâm Sàng\nXem Phiếu Khám & Kết Quả (PDF)\nThao tác thành công.\nĐã hoàn tất ca khám."
+}

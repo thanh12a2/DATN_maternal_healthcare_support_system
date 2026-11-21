@@ -1,0 +1,27 @@
+module.exports=async({page,context,check,events,fs,output})=>{
+  await page.goto('http://localhost:3000/dat-lich');
+  await page.locator('.pb-service-card').filter({hasText:'Khám thai định kỳ chuẩn y khoa'}).click();
+  await page.getByRole('button',{name:'Tiếp tục sang bước 2'}).click();
+  await page.getByText('17/11',{exact:true}).click();
+  await page.locator('.pb-slot-btn').first().waitFor();await page.locator('.pb-slot-btn').first().click();
+  await page.getByRole('button',{name:'Tiếp tục sang bước 3'}).click();
+  const text=await page.locator('body').innerText();
+  check('F05-copy',!text.includes('đã được giữ chỗ')&&!text.includes('được giữ chỗ trong')&&text.includes('Vui lòng xác nhận'),'Countdown describes a choice awaiting confirmation, not a server reservation');
+  check('F05-api',!events.some(e=>e.method==='POST'&&e.url.endsWith('/slot-holds')),'No server hold before confirmation, existing booking flow preserved');
+  const reason='QA FUTURE UI NOTE - not a clinical diagnosis';
+  await page.locator('textarea').first().fill(reason);
+  const wait=page.waitForResponse(r=>r.url().endsWith('/api/appointment/appointments')&&r.request().method()==='POST');
+  await page.getByRole('button',{name:'Xác Nhận Đặt Lịch Khám'}).click();
+  const response=await wait;const appointment=await response.json();
+  check('F06-ui-payload',appointment.reasonForVisit===reason,'Patient-entered reason persists through real UI booking');
+  check('REG-booking',response.status()===201&&appointment.status==='BOOKED'&&appointment.channel==='ONLINE','Future appointment remains directly BOOKED after patient confirmation');
+  const login=await context.request.post('http://localhost:8080/auth/login',{data:{email:'reception.hoangyen@antam.local',password:process.env.QA_DEMO_PASSWORD||'Demo@123456'}});
+  const token=(await login.json()).accessToken;
+  const admission=await context.request.post('http://localhost:8080/api/reception/cases',{headers:{Authorization:'Bearer '+token},data:{appointmentId:appointment.id,patientId:appointment.patientId}});
+  const error=await admission.json();
+  check('F04-future',admission.status()===409&&JSON.stringify(error).includes('APPOINTMENT_NOT_DUE'),'Future reception blocked before collection');
+  const billing=await context.request.get('http://localhost:8080/api/billing/invoices?appointmentId='+appointment.id,{headers:{Authorization:'Bearer '+token}});
+  const raw=await billing.json();const invoices=Array.isArray(raw)?raw:raw.data||raw.items;
+  check('F04-no-invoice',billing.status()===200&&invoices?.length===0,'Rejected future reception creates no invoice');
+  await fs.writeFile(output+'/future-fixture.json',JSON.stringify({appointment,error},null,2));
+};

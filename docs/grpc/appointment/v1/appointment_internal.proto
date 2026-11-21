@@ -87,6 +87,7 @@ message AppointmentView {
   string room_id = 24;
   string room_code = 25;
   string room_name = 26;
+  string reason_for_visit = 27;
 }
 
 message GetAppointmentRequest {

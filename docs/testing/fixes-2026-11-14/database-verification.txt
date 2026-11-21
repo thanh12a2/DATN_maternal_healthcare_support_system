@@ -1,0 +1,27 @@
+﻿ appointment_code  |  status   |  channel  |        start_at        |                    reason_for_visit                    
+-------------------+-----------+-----------+------------------------+--------------------------------------------------------
+ APTMWFTGJ2SAD764C | CANCELLED | ONLINE    | 2026-11-16 03:00:00+00 | 
+ APTMWFTH9XT234394 | COMPLETED | ONLINE    | 2026-11-16 02:00:00+00 | 
+ APTMWFUQFS1E581C3 | BOOKED    | ONLINE    | 2026-11-17 00:30:00+00 | QA FUTURE UI NOTE - not a clinical diagnosis
+ APTMWFURHSOB81C96 | COMPLETED | RECEPTION | 2026-11-14 04:00:00+00 | QA FIX REGRESSION: booking reason must reach encounter
+(4 rows)
+
+  journey  | ticket_code | ticket_state 
+-----------+-------------+--------------
+ COMPLETED | 201-01      | COMPLETED
+ COMPLETED | 201-02      | COMPLETED
+(2 rows)
+
+  action  | status | last_error 
+----------+--------+------------
+ START    | DONE   | 
+ COMPLETE | DONE   | 
+ START    | DONE   | 
+ COMPLETE | DONE   | 
+(4 rows)
+
+ pregnancies 
+-------------
+          11
+(1 row)
+

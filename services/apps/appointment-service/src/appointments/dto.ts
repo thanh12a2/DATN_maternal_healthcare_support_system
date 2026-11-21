@@ -37,6 +37,7 @@ export class CreateHoldDto {
 export class CreateAppointmentDto {
   @IsUUID() holdId!: string;
   @IsEnum(BookingChannel) channel!: BookingChannel;
+  @IsOptional() @IsString() @Length(0, 2000) reasonForVisit?: string;
 }
 export class ReasonVersionDto {
   @IsString() @Length(3, 500) reason!: string;

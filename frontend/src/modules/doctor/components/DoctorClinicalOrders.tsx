@@ -42,7 +42,12 @@ import {
   listMedications,
   listTreatmentPlanTemplates,
 } from '../../../services/clinical';
-import type { Medication, Prescription, TreatmentPlan, TreatmentPlanTemplate } from '../../../services/clinical';
+import type {
+  Medication,
+  Prescription,
+  TreatmentPlan,
+  TreatmentPlanTemplate,
+} from '../../../services/clinical';
 import '../../../styles/doctor-clinical-orders.css';
 
 interface DoctorClinicalOrdersProps {
@@ -56,7 +61,15 @@ function formatFollowUpDateDisplay(dateStr?: string | null) {
   if (!dateStr) return null;
   const d = dayjs(dateStr);
   if (!d.isValid()) return null;
-  const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayNames = [
+    'Chủ Nhật',
+    'Thứ Hai',
+    'Thứ Ba',
+    'Thứ Tư',
+    'Thứ Năm',
+    'Thứ Sáu',
+    'Thứ Bảy',
+  ];
   const dayName = dayNames[d.day()];
   const formatted = d.format('DD/MM/YYYY');
   const today = dayjs().startOf('day');
@@ -115,14 +128,19 @@ export function DoctorClinicalOrders({
   const [customPlanForm] = Form.useForm();
 
   // State cục bộ ngày tái khám (Optimistic UI tức thì không độ trễ)
-  const [localFollowUpDate, setLocalFollowUpDate] = useState<string | null | undefined>(undefined);
+  const [localFollowUpDate, setLocalFollowUpDate] = useState<
+    string | null | undefined
+  >(undefined);
 
   // ─── LOAD DỮ LIỆU ĐƠN THUỐC ───
   const fetchPrescriptions = async () => {
     if (!encounterId) return;
     setPrescriptionsLoading(true);
     try {
-      const data = await listPrescriptions(request, `encounterId=${encodeURIComponent(encounterId)}`);
+      const data = await listPrescriptions(
+        request,
+        `encounterId=${encodeURIComponent(encounterId)}`,
+      );
       setPrescriptions(data || []);
     } catch (err: any) {
       console.warn('Tải đơn thuốc thất bại:', err);
@@ -150,9 +168,15 @@ export function DoctorClinicalOrders({
     if (!encounterId) return;
     setPlansLoading(true);
     try {
-      const data = await listTreatmentPlans(request, `encounterId=${encodeURIComponent(encounterId)}`);
+      const data = await listTreatmentPlans(
+        request,
+        `encounterId=${encodeURIComponent(encounterId)}`,
+      );
       setPlans(data || []);
-      const primary = (data || []).find((p: any) => p.status === 'ACTIVE' || p.status === 'DRAFT') || (data || [])[0];
+      const primary =
+        (data || []).find(
+          (p: any) => p.status === 'ACTIVE' || p.status === 'DRAFT',
+        ) || (data || [])[0];
       if (primary?.effectiveTo) {
         setLocalFollowUpDate(String(primary.effectiveTo));
       }
@@ -205,7 +229,8 @@ export function DoctorClinicalOrders({
 
   // Danh sách thuốc trong đơn hiện tại
   const medicationItems = useMemo(() => {
-    if (!activePrescription || !Array.isArray(activePrescription.items)) return [];
+    if (!activePrescription || !Array.isArray(activePrescription.items))
+      return [];
     return activePrescription.items as any[];
   }, [activePrescription]);
 
@@ -231,7 +256,8 @@ export function DoctorClinicalOrders({
         route: med.route || 'Uống',
         frequency: med.defaultFrequency || '1 lần/ngày',
         durationDays: 30,
-        instruction: med.defaultInstruction || 'Uống sau ăn 30 phút với nhiều nước.',
+        instruction:
+          med.defaultInstruction || 'Uống sau ăn 30 phút với nhiều nước.',
       });
     }
   };
@@ -274,7 +300,9 @@ export function DoctorClinicalOrders({
         });
         message.success(`Đã thêm thuốc "${newItem.medicationName}" vào đơn.`);
       } else {
-        const existingItems = Array.isArray(activePrescription.items) ? activePrescription.items : [];
+        const existingItems = Array.isArray(activePrescription.items)
+          ? activePrescription.items
+          : [];
         await updatePrescription(request, String(activePrescription.id), {
           version: activePrescription.version,
           items: [...existingItems, newItem],
@@ -295,7 +323,9 @@ export function DoctorClinicalOrders({
   const handleDeleteMedication = async (index: number) => {
     if (!activePrescription) return;
     try {
-      const existingItems = Array.isArray(activePrescription.items) ? [...activePrescription.items] : [];
+      const existingItems = Array.isArray(activePrescription.items)
+        ? [...activePrescription.items]
+        : [];
       existingItems.splice(index, 1);
       await updatePrescription(request, String(activePrescription.id), {
         version: activePrescription.version,
@@ -314,7 +344,8 @@ export function DoctorClinicalOrders({
 
     // Kiểm tra xem lời dặn này đã có trong danh sách chưa
     const isExisted = planItems.some(
-      (it) => it.title === template.title || it.description === template.content
+      (it) =>
+        it.title === template.title || it.description === template.content,
     );
     if (isExisted) {
       message.info(`Lời dặn "${template.title}" đã có trong kế hoạch.`);
@@ -333,13 +364,17 @@ export function DoctorClinicalOrders({
           encounterId,
           patientId,
           title: 'Kế hoạch theo dõi & Chăm sóc thai kỳ',
-          summary: 'Dặn dò chế độ dinh dưỡng, theo dõi thai máy và lịch hẹn tái khám.',
+          summary:
+            'Dặn dò chế độ dinh dưỡng, theo dõi thai máy và lịch hẹn tái khám.',
           items: [newItem],
         });
         message.success(`Đã thêm dặn dò "${template.title}".`);
       } else {
-        const existingItems = Array.isArray(activePlan.items) ? activePlan.items : [];
+        const existingItems = Array.isArray(activePlan.items)
+          ? activePlan.items
+          : [];
         await updateTreatmentPlan(request, String(activePlan.id), {
+          reason: 'Bác sĩ cập nhật kế hoạch chăm sóc',
           version: activePlan.version,
           title: activePlan.title || 'Kế hoạch theo dõi & Chăm sóc thai kỳ',
           summary: activePlan.summary || 'Kế hoạch theo dõi thai kỳ',
@@ -376,8 +411,11 @@ export function DoctorClinicalOrders({
         });
         message.success(`Đã thêm dặn dò "${newItem.title}".`);
       } else {
-        const existingItems = Array.isArray(activePlan.items) ? activePlan.items : [];
+        const existingItems = Array.isArray(activePlan.items)
+          ? activePlan.items
+          : [];
         await updateTreatmentPlan(request, String(activePlan.id), {
+          reason: 'Bác sĩ cập nhật kế hoạch chăm sóc',
           version: activePlan.version,
           title: activePlan.title || 'Kế hoạch theo dõi & Chăm sóc thai kỳ',
           summary: activePlan.summary || 'Kế hoạch theo dõi thai kỳ',
@@ -400,9 +438,12 @@ export function DoctorClinicalOrders({
   const handleDeletePlanItem = async (index: number) => {
     if (!activePlan) return;
     try {
-      const existingItems = Array.isArray(activePlan.items) ? [...activePlan.items] : [];
+      const existingItems = Array.isArray(activePlan.items)
+        ? [...activePlan.items]
+        : [];
       existingItems.splice(index, 1);
       await updateTreatmentPlan(request, String(activePlan.id), {
+        reason: 'Bác sĩ cập nhật kế hoạch chăm sóc',
         version: activePlan.version,
         title: activePlan.title || 'Kế hoạch theo dõi thai kỳ',
         summary: activePlan.summary || '',
@@ -416,7 +457,10 @@ export function DoctorClinicalOrders({
   };
 
   // ─── CẬP NHẬT NGÀY HẸN TÁI KHÁM ───
-  const handleUpdateFollowUpDate = async (daysToAdd: number | null, customDate?: string) => {
+  const handleUpdateFollowUpDate = async (
+    daysToAdd: number | null,
+    customDate?: string,
+  ) => {
     if (!encounterId) return;
     try {
       let targetDate: string | null = null;
@@ -432,7 +476,8 @@ export function DoctorClinicalOrders({
       const defaultItem = {
         type: 'APPOINTMENT',
         title: `Tái khám thai định kỳ (${targetDate ? dayjs(targetDate).format('DD/MM/YYYY') : 'Theo lịch hẹn'})`,
-        description: 'Khám kiểm tra định kỳ, theo dõi cử động thai và đánh giá các chỉ số phát triển của thai nhi.',
+        description:
+          'Khám kiểm tra định kỳ, theo dõi cử động thai và đánh giá các chỉ số phát triển của thai nhi.',
         dueAt: targetDate ? `${targetDate}T08:00:00+07:00` : undefined,
       };
 
@@ -451,11 +496,12 @@ export function DoctorClinicalOrders({
         }
       } else {
         await updateTreatmentPlan(request, String(activePlan.id), {
+          reason: 'Bác sĩ cập nhật kế hoạch chăm sóc',
           version: activePlan.version,
           title: activePlan.title || 'Kế hoạch theo dõi thai kỳ',
           summary: activePlan.summary || '',
           effectiveTo: targetDate,
-          reason: 'Cập nhật lịch hẹn tái khám',
+
           items: activePlan.items || [],
         });
       }
@@ -475,15 +521,19 @@ export function DoctorClinicalOrders({
         }
         return prev.map((p) =>
           p.id === activePlan?.id
-            ? { ...p, effectiveTo: targetDate, version: Number(p.version || 1) + 1 }
-            : p
+            ? {
+                ...p,
+                effectiveTo: targetDate,
+                version: Number(p.version || 1) + 1,
+              }
+            : p,
         );
       });
 
       message.success(
         targetDate
           ? `Đã đặt lịch hẹn tái khám: ${dayjs(targetDate).format('DD/MM/YYYY')}`
-          : 'Đã hủy lịch hẹn tái khám.'
+          : 'Đã hủy lịch hẹn tái khám.',
       );
       await fetchPlans();
     } catch (err: any) {
@@ -498,35 +548,50 @@ export function DoctorClinicalOrders({
     const cat = category.toUpperCase().replace('CATEGORY_', '');
     if (cat === 'A') {
       return (
-        <span className="fda-badge badge-cat-a" title="An toàn tuyệt đối cho thai phụ">
+        <span
+          className="fda-badge badge-cat-a"
+          title="An toàn tuyệt đối cho thai phụ"
+        >
           FDA A · An toàn
         </span>
       );
     }
     if (cat === 'B') {
       return (
-        <span className="fda-badge badge-cat-b" title="Thận trọng, thường an toàn">
+        <span
+          className="fda-badge badge-cat-b"
+          title="Thận trọng, thường an toàn"
+        >
           FDA B · Thận trọng
         </span>
       );
     }
     if (cat === 'C') {
       return (
-        <span className="fda-badge badge-cat-c" title="Cân nhắc kỹ lợi ích và nguy cơ">
+        <span
+          className="fda-badge badge-cat-c"
+          title="Cân nhắc kỹ lợi ích và nguy cơ"
+        >
           FDA C · Cân nhắc
         </span>
       );
     }
     if (cat === 'D') {
       return (
-        <span className="fda-badge badge-cat-d" title="Có bằng chứng nguy cơ cho thai">
+        <span
+          className="fda-badge badge-cat-d"
+          title="Có bằng chứng nguy cơ cho thai"
+        >
           FDA D · Nguy cơ
         </span>
       );
     }
     if (cat === 'X') {
       return (
-        <span className="fda-badge badge-cat-x" title="Chống chỉ định tuyệt đối cho thai kỳ">
+        <span
+          className="fda-badge badge-cat-x"
+          title="Chống chỉ định tuyệt đối cho thai kỳ"
+        >
           FDA X · Chống chỉ định
         </span>
       );
@@ -542,7 +607,9 @@ export function DoctorClinicalOrders({
       width: 55,
       align: 'center',
       render: (_text, _record, index) => (
-        <span className="table-row-index">{String(index + 1).padStart(2, '0')}</span>
+        <span className="table-row-index">
+          {String(index + 1).padStart(2, '0')}
+        </span>
       ),
     },
     {
@@ -550,12 +617,16 @@ export function DoctorClinicalOrders({
       key: 'name',
       width: 280,
       render: (_text, item) => {
-        const catalogEntry = medCatalog.find((m) => m.code === item.medicationCode);
+        const catalogEntry = medCatalog.find(
+          (m) => m.code === item.medicationCode,
+        );
         return (
           <div className="table-med-name-cell">
             <strong className="table-med-title">{item.medicationName}</strong>
             <span className="table-med-subtitle">
-              {[item.strength, item.dosageForm, catalogEntry?.activeIngredient].filter(Boolean).join(' · ')}
+              {[item.strength, item.dosageForm, catalogEntry?.activeIngredient]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </div>
         );
@@ -567,7 +638,9 @@ export function DoctorClinicalOrders({
       width: 150,
       align: 'center',
       render: (_text, item) => {
-        const catalogEntry = medCatalog.find((m) => m.code === item.medicationCode);
+        const catalogEntry = medCatalog.find(
+          (m) => m.code === item.medicationCode,
+        );
         return renderPregnancyTag(catalogEntry?.pregnancyCategory);
       },
     },
@@ -588,7 +661,11 @@ export function DoctorClinicalOrders({
       render: (_text, item) => (
         <span className="table-freq-cell">
           <strong>{item.frequency || '1 lần/ngày'}</strong>
-          {item.durationDays && <span className="table-duration-badge">({item.durationDays} ngày)</span>}
+          {item.durationDays && (
+            <span className="table-duration-badge">
+              ({item.durationDays} ngày)
+            </span>
+          )}
         </span>
       ),
     },
@@ -597,7 +674,9 @@ export function DoctorClinicalOrders({
       dataIndex: 'instruction',
       key: 'instruction',
       render: (text) => (
-        <span className="table-instruction-cell">{text || 'Dùng theo chỉ dẫn của bác sĩ.'}</span>
+        <span className="table-instruction-cell">
+          {text || 'Dùng theo chỉ dẫn của bác sĩ.'}
+        </span>
       ),
     },
     {
@@ -653,11 +732,18 @@ export function DoctorClinicalOrders({
               <div className="header-title-text">
                 <h4>Đơn thuốc điều trị thai kỳ</h4>
                 <div className="header-badges">
-                  <Tag color="blue" style={{ fontWeight: 700, borderRadius: 12 }}>
+                  <Tag
+                    color="blue"
+                    style={{ fontWeight: 700, borderRadius: 12 }}
+                  >
                     {medicationItems.length} thuốc
                   </Tag>
                   {medicationItems.length > 0 && (
-                    <Tag color="success" icon={<CheckCircleOutlined />} style={{ fontWeight: 600, borderRadius: 12 }}>
+                    <Tag
+                      color="success"
+                      icon={<CheckCircleOutlined />}
+                      style={{ fontWeight: 600, borderRadius: 12 }}
+                    >
                       Đã tự động lưu
                     </Tag>
                   )}
@@ -683,13 +769,19 @@ export function DoctorClinicalOrders({
           <div className="orders-card-body">
             {prescriptionsLoading ? (
               <div className="orders-loading-state">
-                <LoadingOutlined spin style={{ fontSize: 24, color: '#0B5CAD' }} />
+                <LoadingOutlined
+                  spin
+                  style={{ fontSize: 24, color: '#0B5CAD' }}
+                />
                 <span>Đang tải đơn thuốc...</span>
               </div>
             ) : medicationItems.length > 0 ? (
               <div className="orders-table-wrapper">
                 <Table
-                  dataSource={medicationItems.map((item, idx) => ({ ...item, key: item.id || idx }))}
+                  dataSource={medicationItems.map((item, idx) => ({
+                    ...item,
+                    key: item.id || idx,
+                  }))}
                   columns={medicationColumns}
                   pagination={false}
                   size="middle"
@@ -704,7 +796,9 @@ export function DoctorClinicalOrders({
                 <div className="empty-text-wrap">
                   <strong>Chưa có thuốc trong đơn ca khám này</strong>
                   <p>
-                    Bác sĩ có thể nhấn nút <b>"Thêm thuốc"</b> ở góc trên để kê các loại thuốc an toàn cho thai kỳ từ danh mục dược phẩm chuẩn của bệnh viện.
+                    Bác sĩ có thể nhấn nút <b>"Thêm thuốc"</b> ở góc trên để kê
+                    các loại thuốc an toàn cho thai kỳ từ danh mục dược phẩm
+                    chuẩn của bệnh viện.
                   </p>
                 </div>
               </div>
@@ -715,7 +809,10 @@ export function DoctorClinicalOrders({
         {/* ========================================================================= */}
         {/* PHẦN 2: KẾ HOẠCH ĐIỀU TRỊ, DẶN DÒ THAI KỲ & LỊCH TÁI KHÁM                  */}
         {/* ========================================================================= */}
-        <div className="clinical-orders-card plans-column" style={{ marginTop: 16 }}>
+        <div
+          className="clinical-orders-card plans-column"
+          style={{ marginTop: 16 }}
+        >
           <div className="orders-card-header">
             <div className="card-header-title">
               <span className="header-icon-wrap icon-purple">
@@ -724,12 +821,22 @@ export function DoctorClinicalOrders({
               <div className="header-title-text">
                 <h4>Kế hoạch điều trị & Dặn dò chăm sóc thai kỳ</h4>
                 <div className="header-badges">
-                  <Tag color="purple" style={{ fontWeight: 700, borderRadius: 12 }}>
+                  <Tag
+                    color="purple"
+                    style={{ fontWeight: 700, borderRadius: 12 }}
+                  >
                     {planItems.length} dặn dò
                   </Tag>
                   {Boolean(activePlan?.effectiveTo) && (
-                    <Tag color="cyan" icon={<CalendarOutlined />} style={{ fontWeight: 600, borderRadius: 12 }}>
-                      Hẹn tái khám: {dayjs(String(activePlan.effectiveTo)).format('DD/MM/YYYY')}
+                    <Tag
+                      color="cyan"
+                      icon={<CalendarOutlined />}
+                      style={{ fontWeight: 600, borderRadius: 12 }}
+                    >
+                      Hẹn tái khám:{' '}
+                      {dayjs(String(activePlan.effectiveTo)).format(
+                        'DD/MM/YYYY',
+                      )}
                     </Tag>
                   )}
                 </div>
@@ -762,10 +869,19 @@ export function DoctorClinicalOrders({
                   marginBottom: 14,
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 9 }}
+                >
                   {/* Nhóm Dinh dưỡng */}
                   {categorizedTemplates.diet.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 12,
@@ -779,15 +895,27 @@ export function DoctorClinicalOrders({
                       >
                         🥗 Dinh dưỡng:
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                          flex: 1,
+                        }}
+                      >
                         {categorizedTemplates.diet.map((t) => {
                           const isAdded = planItems.some(
-                            (it) => it.title === t.title || it.description === t.content
+                            (it) =>
+                              it.title === t.title ||
+                              it.description === t.content,
                           );
                           return (
                             <Tag
                               key={t.id}
-                              onClick={() => !isAdded && void handleApplyTemplate(t)}
+                              onClick={() =>
+                                !isAdded && void handleApplyTemplate(t)
+                              }
                               style={{
                                 cursor: isAdded ? 'default' : 'pointer',
                                 borderRadius: 16,
@@ -798,13 +926,22 @@ export function DoctorClinicalOrders({
                                 background: isAdded ? '#d1fae5' : '#f0fdf4',
                                 borderColor: isAdded ? '#10b981' : '#bbf7d0',
                                 color: isAdded ? '#047857' : '#15803d',
-                                boxShadow: isAdded ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                                boxShadow: isAdded
+                                  ? 'none'
+                                  : '0 1px 2px rgba(0,0,0,0.03)',
                                 transition: 'all 0.15s ease',
                               }}
-                              title={isAdded ? 'Đã có trong kế hoạch dặn dò' : t.content}
+                              title={
+                                isAdded
+                                  ? 'Đã có trong kế hoạch dặn dò'
+                                  : t.content
+                              }
                             >
                               {isAdded ? (
-                                <span><CheckOutlined style={{ marginRight: 4 }} />{t.title}</span>
+                                <span>
+                                  <CheckOutlined style={{ marginRight: 4 }} />
+                                  {t.title}
+                                </span>
                               ) : (
                                 <span>+ {t.title}</span>
                               )}
@@ -817,7 +954,14 @@ export function DoctorClinicalOrders({
 
                   {/* Nhóm Thai máy & Thai nhi */}
                   {categorizedTemplates.fetal.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 12,
@@ -831,15 +975,27 @@ export function DoctorClinicalOrders({
                       >
                         👶 Thai máy & thai nhi:
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                          flex: 1,
+                        }}
+                      >
                         {categorizedTemplates.fetal.map((t) => {
                           const isAdded = planItems.some(
-                            (it) => it.title === t.title || it.description === t.content
+                            (it) =>
+                              it.title === t.title ||
+                              it.description === t.content,
                           );
                           return (
                             <Tag
                               key={t.id}
-                              onClick={() => !isAdded && void handleApplyTemplate(t)}
+                              onClick={() =>
+                                !isAdded && void handleApplyTemplate(t)
+                              }
                               style={{
                                 cursor: isAdded ? 'default' : 'pointer',
                                 borderRadius: 16,
@@ -850,13 +1006,22 @@ export function DoctorClinicalOrders({
                                 background: isAdded ? '#e0f2fe' : '#f0f9ff',
                                 borderColor: isAdded ? '#38bdf8' : '#bae6fd',
                                 color: isAdded ? '#0369a1' : '#0284c7',
-                                boxShadow: isAdded ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                                boxShadow: isAdded
+                                  ? 'none'
+                                  : '0 1px 2px rgba(0,0,0,0.03)',
                                 transition: 'all 0.15s ease',
                               }}
-                              title={isAdded ? 'Đã có trong kế hoạch dặn dò' : t.content}
+                              title={
+                                isAdded
+                                  ? 'Đã có trong kế hoạch dặn dò'
+                                  : t.content
+                              }
                             >
                               {isAdded ? (
-                                <span><CheckOutlined style={{ marginRight: 4 }} />{t.title}</span>
+                                <span>
+                                  <CheckOutlined style={{ marginRight: 4 }} />
+                                  {t.title}
+                                </span>
                               ) : (
                                 <span>+ {t.title}</span>
                               )}
@@ -869,7 +1034,14 @@ export function DoctorClinicalOrders({
 
                   {/* Nhóm Sức khỏe mẹ & Huyết áp */}
                   {categorizedTemplates.maternal.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 12,
@@ -883,15 +1055,27 @@ export function DoctorClinicalOrders({
                       >
                         🩺 Sức khỏe mẹ:
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                          flex: 1,
+                        }}
+                      >
                         {categorizedTemplates.maternal.map((t) => {
                           const isAdded = planItems.some(
-                            (it) => it.title === t.title || it.description === t.content
+                            (it) =>
+                              it.title === t.title ||
+                              it.description === t.content,
                           );
                           return (
                             <Tag
                               key={t.id}
-                              onClick={() => !isAdded && void handleApplyTemplate(t)}
+                              onClick={() =>
+                                !isAdded && void handleApplyTemplate(t)
+                              }
                               style={{
                                 cursor: isAdded ? 'default' : 'pointer',
                                 borderRadius: 16,
@@ -902,13 +1086,22 @@ export function DoctorClinicalOrders({
                                 background: isAdded ? '#fef3c7' : '#fffbeb',
                                 borderColor: isAdded ? '#f59e0b' : '#fde68a',
                                 color: isAdded ? '#b45309' : '#d97706',
-                                boxShadow: isAdded ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                                boxShadow: isAdded
+                                  ? 'none'
+                                  : '0 1px 2px rgba(0,0,0,0.03)',
                                 transition: 'all 0.15s ease',
                               }}
-                              title={isAdded ? 'Đã có trong kế hoạch dặn dò' : t.content}
+                              title={
+                                isAdded
+                                  ? 'Đã có trong kế hoạch dặn dò'
+                                  : t.content
+                              }
                             >
                               {isAdded ? (
-                                <span><CheckOutlined style={{ marginRight: 4 }} />{t.title}</span>
+                                <span>
+                                  <CheckOutlined style={{ marginRight: 4 }} />
+                                  {t.title}
+                                </span>
                               ) : (
                                 <span>+ {t.title}</span>
                               )}
@@ -921,7 +1114,14 @@ export function DoctorClinicalOrders({
 
                   {/* Nhóm Cấp cứu & Cảnh báo nguy hiểm */}
                   {categorizedTemplates.emergency.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 12,
@@ -935,15 +1135,27 @@ export function DoctorClinicalOrders({
                       >
                         🚨 Cảnh báo nguy hiểm:
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                          flex: 1,
+                        }}
+                      >
                         {categorizedTemplates.emergency.map((t) => {
                           const isAdded = planItems.some(
-                            (it) => it.title === t.title || it.description === t.content
+                            (it) =>
+                              it.title === t.title ||
+                              it.description === t.content,
                           );
                           return (
                             <Tag
                               key={t.id}
-                              onClick={() => !isAdded && void handleApplyTemplate(t)}
+                              onClick={() =>
+                                !isAdded && void handleApplyTemplate(t)
+                              }
                               style={{
                                 cursor: isAdded ? 'default' : 'pointer',
                                 borderRadius: 16,
@@ -954,13 +1166,22 @@ export function DoctorClinicalOrders({
                                 background: isAdded ? '#fee2e2' : '#fef2f2',
                                 borderColor: isAdded ? '#ef4444' : '#fecaca',
                                 color: isAdded ? '#b91c1c' : '#dc2626',
-                                boxShadow: isAdded ? 'none' : '0 1px 2px rgba(0,0,0,0.03)',
+                                boxShadow: isAdded
+                                  ? 'none'
+                                  : '0 1px 2px rgba(0,0,0,0.03)',
                                 transition: 'all 0.15s ease',
                               }}
-                              title={isAdded ? 'Đã có trong kế hoạch dặn dò' : t.content}
+                              title={
+                                isAdded
+                                  ? 'Đã có trong kế hoạch dặn dò'
+                                  : t.content
+                              }
                             >
                               {isAdded ? (
-                                <span><CheckOutlined style={{ marginRight: 4 }} />{t.title}</span>
+                                <span>
+                                  <CheckOutlined style={{ marginRight: 4 }} />
+                                  {t.title}
+                                </span>
                               ) : (
                                 <span>+ {t.title}</span>
                               )}
@@ -976,7 +1197,14 @@ export function DoctorClinicalOrders({
 
             {/* ─── DANH SÁCH LỜI DẶN HIỆN CÓ ─── */}
             {planItems.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  marginBottom: 16,
+                }}
+              >
                 {planItems.map((item, idx) => (
                   <div
                     key={item.id || idx}
@@ -991,13 +1219,34 @@ export function DoctorClinicalOrders({
                     }}
                   >
                     <div style={{ flex: 1, paddingRight: 16 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontWeight: 700, color: '#64748b', fontSize: 12 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: '#64748b',
+                            fontSize: 12,
+                          }}
+                        >
                           #{String(idx + 1).padStart(2, '0')}
                         </span>
-                        <strong style={{ color: '#1e293b', fontSize: 13.5 }}>{item.title}</strong>
+                        <strong style={{ color: '#1e293b', fontSize: 13.5 }}>
+                          {item.title}
+                        </strong>
                       </div>
-                      <div style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5 }}>
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          color: '#475569',
+                          lineHeight: 1.5,
+                        }}
+                      >
                         {item.description || '—'}
                       </div>
                     </div>
@@ -1023,23 +1272,41 @@ export function DoctorClinicalOrders({
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '16px 0 20px', color: '#64748b' }}>
-                <ScheduleOutlined style={{ fontSize: 32, color: '#cbd5e1', marginBottom: 6 }} />
-                <div style={{ fontSize: 13.5, fontWeight: 600 }}>Chưa có hướng dẫn dặn dò nào được lập</div>
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '16px 0 20px',
+                  color: '#64748b',
+                }}
+              >
+                <ScheduleOutlined
+                  style={{ fontSize: 32, color: '#cbd5e1', marginBottom: 6 }}
+                />
+                <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                  Chưa có hướng dẫn dặn dò nào được lập
+                </div>
                 <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                  Nhấp vào các thẻ gợi ý phía trên hoặc nhấn nút "Thêm dặn dò riêng" để ghi chú chế độ theo dõi cho thai phụ.
+                  Nhấp vào các thẻ gợi ý phía trên hoặc nhấn nút "Thêm dặn dò
+                  riêng" để ghi chú chế độ theo dõi cho thai phụ.
                 </div>
               </div>
             )}
 
             {/* ─── HẸN NGÀY TÁI KHÁM TIẾP THEO (THIẾT KẾ RÕ RÀNG, DỄ NHÌN) ─── */}
             {(() => {
-              const followUpDateStr = localFollowUpDate !== undefined ? localFollowUpDate : (activePlan?.effectiveTo ? String(activePlan.effectiveTo) : null);
+              const followUpDateStr =
+                localFollowUpDate !== undefined
+                  ? localFollowUpDate
+                  : activePlan?.effectiveTo
+                    ? String(activePlan.effectiveTo)
+                    : null;
               const dateInfo = formatFollowUpDateDisplay(followUpDateStr);
               const isScheduled = Boolean(dateInfo);
 
               const today = dayjs().startOf('day');
-              const targetDay = followUpDateStr ? dayjs(followUpDateStr).startOf('day') : null;
+              const targetDay = followUpDateStr
+                ? dayjs(followUpDateStr).startOf('day')
+                : null;
               const diffDays = targetDay ? targetDay.diff(today, 'day') : null;
 
               return (
@@ -1056,12 +1323,16 @@ export function DoctorClinicalOrders({
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: 14,
-                    boxShadow: isScheduled ? '0 1px 4px rgba(22, 163, 74, 0.08)' : 'none',
+                    boxShadow: isScheduled
+                      ? '0 1px 4px rgba(22, 163, 74, 0.08)'
+                      : 'none',
                     transition: 'all 0.2s ease',
                   }}
                 >
                   {/* Cột trái: Thông tin lịch hẹn nổi bật */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
                     <div
                       style={{
                         width: 44,
@@ -1080,8 +1351,21 @@ export function DoctorClinicalOrders({
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: '#1e293b',
+                          }}
+                        >
                           LỊCH HẸN TÁI KHÁM TIẾP THEO:
                         </span>
                         {isScheduled && dateInfo ? (
@@ -1098,7 +1382,14 @@ export function DoctorClinicalOrders({
                             ✓ {dateInfo.relativeText}
                           </Tag>
                         ) : (
-                          <Tag color="default" style={{ fontSize: 11.5, borderRadius: 4, margin: 0 }}>
+                          <Tag
+                            color="default"
+                            style={{
+                              fontSize: 11.5,
+                              borderRadius: 4,
+                              margin: 0,
+                            }}
+                          >
                             Chưa đặt lịch hẹn
                           </Tag>
                         )}
@@ -1106,8 +1397,20 @@ export function DoctorClinicalOrders({
 
                       <div style={{ marginTop: 3 }}>
                         {isScheduled && dateInfo ? (
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                            <span style={{ fontSize: 16, fontWeight: 800, color: '#15803d' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              gap: 8,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 16,
+                                fontWeight: 800,
+                                color: '#15803d',
+                              }}
+                            >
                               {dateInfo.dayName}, {dateInfo.formatted}
                             </span>
                             {canEdit && (
@@ -1116,8 +1419,15 @@ export function DoctorClinicalOrders({
                                 size="small"
                                 danger
                                 icon={<CloseCircleOutlined />}
-                                onClick={() => void handleUpdateFollowUpDate(null, '')}
-                                style={{ padding: 0, height: 'auto', fontSize: 12, marginLeft: 6 }}
+                                onClick={() =>
+                                  void handleUpdateFollowUpDate(null, '')
+                                }
+                                style={{
+                                  padding: 0,
+                                  height: 'auto',
+                                  fontSize: 12,
+                                  marginLeft: 6,
+                                }}
                               >
                                 Hủy hẹn
                               </Button>
@@ -1125,7 +1435,8 @@ export function DoctorClinicalOrders({
                           </div>
                         ) : (
                           <span style={{ fontSize: 12, color: '#64748b' }}>
-                            Chọn nhanh khoảng thời gian bên phải hoặc chọn ngày cụ thể để hẹn thai phụ tái khám
+                            Chọn nhanh khoảng thời gian bên phải hoặc chọn ngày
+                            cụ thể để hẹn thai phụ tái khám
                           </span>
                         )}
                       </div>
@@ -1134,8 +1445,22 @@ export function DoctorClinicalOrders({
 
                   {/* Cột phải: Bộ nút chọn nhanh tiện lợi cho bác sĩ */}
                   {canEdit && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginRight: 2 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#475569',
+                          marginRight: 2,
+                        }}
+                      >
                         Chọn nhanh:
                       </span>
                       <Button
@@ -1146,7 +1471,8 @@ export function DoctorClinicalOrders({
                           borderRadius: 6,
                           fontSize: 12.5,
                           fontWeight: 600,
-                          backgroundColor: diffDays === 7 ? '#16a34a' : undefined,
+                          backgroundColor:
+                            diffDays === 7 ? '#16a34a' : undefined,
                           borderColor: diffDays === 7 ? '#16a34a' : undefined,
                         }}
                       >
@@ -1160,7 +1486,8 @@ export function DoctorClinicalOrders({
                           borderRadius: 6,
                           fontSize: 12.5,
                           fontWeight: 600,
-                          backgroundColor: diffDays === 14 ? '#16a34a' : undefined,
+                          backgroundColor:
+                            diffDays === 14 ? '#16a34a' : undefined,
                           borderColor: diffDays === 14 ? '#16a34a' : undefined,
                         }}
                       >
@@ -1174,14 +1501,18 @@ export function DoctorClinicalOrders({
                           borderRadius: 6,
                           fontSize: 12.5,
                           fontWeight: 600,
-                          backgroundColor: diffDays === 28 ? '#16a34a' : undefined,
+                          backgroundColor:
+                            diffDays === 28 ? '#16a34a' : undefined,
                           borderColor: diffDays === 28 ? '#16a34a' : undefined,
                         }}
                       >
                         + 4 tuần
                       </Button>
 
-                      <Divider type="vertical" style={{ margin: '0 4px', height: 20 }} />
+                      <Divider
+                        type="vertical"
+                        style={{ margin: '0 4px', height: 20 }}
+                      />
 
                       <DatePicker
                         placeholder="Chọn ngày cụ thể"
@@ -1189,7 +1520,10 @@ export function DoctorClinicalOrders({
                         format="DD/MM/YYYY"
                         allowClear={true}
                         onChange={(date) => {
-                          void handleUpdateFollowUpDate(null, date ? date.format('YYYY-MM-DD') : '');
+                          void handleUpdateFollowUpDate(
+                            null,
+                            date ? date.format('YYYY-MM-DD') : '',
+                          );
                         }}
                         value={followUpDateStr ? dayjs(followUpDateStr) : null}
                         style={{ width: 145, borderRadius: 6 }}
@@ -1219,11 +1553,18 @@ export function DoctorClinicalOrders({
         confirmLoading={savingMed}
         width={650}
       >
-        <Form form={medForm} layout="vertical" onFinish={handleSaveMedication} style={{ marginTop: 16 }}>
+        <Form
+          form={medForm}
+          layout="vertical"
+          onFinish={handleSaveMedication}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             name="medicationName"
             label="Chọn thuốc an toàn thai kỳ từ danh mục bệnh viện"
-            rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập tên thuốc.' }]}
+            rules={[
+              { required: true, message: 'Vui lòng chọn hoặc nhập tên thuốc.' },
+            ]}
           >
             <Select
               showSearch
@@ -1236,9 +1577,16 @@ export function DoctorClinicalOrders({
             >
               {medCatalog.map((med) => (
                 <Select.Option key={med.code} value={med.code}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <span>
-                      <strong>{med.name}</strong> ({med.strength || med.dosageForm || 'Thuốc chuẩn'})
+                      <strong>{med.name}</strong> (
+                      {med.strength || med.dosageForm || 'Thuốc chuẩn'})
                     </span>
                     {renderPregnancyTag(med.pregnancyCategory)}
                   </div>
@@ -1257,8 +1605,16 @@ export function DoctorClinicalOrders({
                 marginBottom: 16,
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}
+                >
                   {currentSelectedMed.name} · {currentSelectedMed.strength}
                 </span>
                 {renderPregnancyTag(currentSelectedMed.pregnancyCategory)}
@@ -1266,7 +1622,9 @@ export function DoctorClinicalOrders({
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <Form.Item
               name="dose"
               label="Liều dùng một lần"
@@ -1280,13 +1638,17 @@ export function DoctorClinicalOrders({
                 <Select.Option value="Uống">Uống trực tiếp</Select.Option>
                 <Select.Option value="Đặt âm đạo">Đặt âm đạo</Select.Option>
                 <Select.Option value="Tiêm bắp">Tiêm bắp</Select.Option>
-                <Select.Option value="Tiêm tĩnh mạch">Tiêm tĩnh mạch</Select.Option>
+                <Select.Option value="Tiêm tĩnh mạch">
+                  Tiêm tĩnh mạch
+                </Select.Option>
                 <Select.Option value="Bôi ngoài da">Bôi ngoài da</Select.Option>
               </Select>
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <Form.Item
               name="frequency"
               label="Tần suất dùng"
@@ -1296,11 +1658,19 @@ export function DoctorClinicalOrders({
             </Form.Item>
 
             <Form.Item name="durationDays" label="Số ngày dùng thuốc">
-              <InputNumber min={1} max={90} style={{ width: '100%' }} placeholder="Số ngày (VD: 30)" />
+              <InputNumber
+                min={1}
+                max={90}
+                style={{ width: '100%' }}
+                placeholder="Số ngày (VD: 30)"
+              />
             </Form.Item>
           </div>
 
-          <Form.Item name="instruction" label="Hướng dẫn sử dụng dành riêng cho thai phụ">
+          <Form.Item
+            name="instruction"
+            label="Hướng dẫn sử dụng dành riêng cho thai phụ"
+          >
             <Input.TextArea
               rows={2}
               placeholder="VD: Uống sau ăn sáng 30 phút, uống với nhiều nước..."
@@ -1325,11 +1695,18 @@ export function DoctorClinicalOrders({
         confirmLoading={savingPlan}
         width={560}
       >
-        <Form form={customPlanForm} layout="vertical" onFinish={handleSaveCustomPlan} style={{ marginTop: 16 }}>
+        <Form
+          form={customPlanForm}
+          layout="vertical"
+          onFinish={handleSaveCustomPlan}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             name="title"
             label="Tiêu đề lời dặn"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề lời dặn' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập tiêu đề lời dặn' },
+            ]}
           >
             <Input placeholder="VD: Chế độ nghỉ ngơi dưỡng thai; Hạn chế ngồi xổm..." />
           </Form.Item>
@@ -1337,7 +1714,9 @@ export function DoctorClinicalOrders({
           <Form.Item
             name="description"
             label="Nội dung chi tiết lời dặn của bác sĩ"
-            rules={[{ required: true, message: 'Vui lòng nhập nội dung chi tiết' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập nội dung chi tiết' },
+            ]}
           >
             <Input.TextArea
               rows={4}

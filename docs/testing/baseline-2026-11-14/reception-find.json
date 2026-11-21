@@ -1,0 +1,343 @@
+{
+  "role": "receptionist",
+  "url": "http://localhost:3000/workspace/receptionist/overview",
+  "assertions": [
+    {
+      "id": "R01",
+      "status": "PASS",
+      "detail": "Lịch bác sĩ Lê Thu Hà, P.201, ngày 16/11"
+    },
+    {
+      "id": "R02",
+      "status": "PASS",
+      "detail": "Mở bệnh nhân thấy cả hai lịch và hóa đơn tương ứng"
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/notifications/reception/work-stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/rooms?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/work",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors/specialties",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/desk/stream",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/catalog/services?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/doctors?limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100&from=2026-11-14T00%3A00%3A00%2B07%3A00&to=2026-11-14T23%3A59%3A59%2B07%3A00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=100&from=2026-11-16T00%3A00%3A00%2B07%3A00&to=2026-11-16T23%3A59%3A59%2B07%3A00",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=f3d3e8db-b571-4207-8a2d-1ee9ce500ab6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/reception/work",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/patients/7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=50&patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=f3d3e8db-b571-4207-8a2d-1ee9ce500ab6",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:8080/api/reception/cases",
+      "status": 201,
+      "body": {
+        "data": {
+          "id": "0b85a2d7-8507-4bc3-a11c-2826dc3ce750",
+          "type": "SCHEDULED",
+          "appointmentId": "35295482-d57b-4e48-8c04-4b19faa71f0b",
+          "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+          "status": "OPEN",
+          "arrivalAt": "2026-11-14T03:02:39.225Z",
+          "scheduledStartAtSnapshot": "2026-11-16T02:00:00.000Z",
+          "appointmentTypeSnapshot": "SERVICE",
+          "openedByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "lastHandledByAccountId": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimedBy": "ebfb8626-20b1-49c9-a9ad-b8935b2a4f66",
+          "workClaimExpiresAt": null,
+          "workRunningToken": null,
+          "workRunningAt": null,
+          "version": 1,
+          "createdAt": "2026-11-14T03:02:39.446Z",
+          "updatedAt": "2026-11-14T03:02:39.446Z",
+          "caseCode": "TN-OK1IJ9J0NH8DLQ63PLIP1IZ4",
+          "identity": {
+            "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+            "fullName": "Trần Thị Thanh Hằng",
+            "dateOfBirth": {
+              "seconds": "748656000",
+              "nanos": 0
+            },
+            "maskedPhone": "********4003",
+            "nationalIdLast4": "0102",
+            "active": true,
+            "profileVersion": "1"
+          },
+          "replayed": false
+        },
+        "meta": {
+          "requestId": "2028bfc6-a40c-4718-b936-ee14beaa7320"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/appointment/appointments?limit=50&patientId=7916a729-2282-4604-b45d-02c3983eed71",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/7f8b328d-5f99-4f7d-800d-612e65879ad1/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/88250f64-db1a-4459-829e-576ec2982d20/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/0812576a-49e9-4b32-a544-eaeff7fcb3cc/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/3c3f4862-da45-4901-9756-c3cb4e817a16/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/6e872347-dab4-443c-9994-1634b15ca246/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/883a5c46-4890-4c4e-b796-30b3e3c62061/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/044f313d-3e5a-4f1c-b205-42f28d8e4ef0/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/queue/stages/f37fa664-7272-444b-955a-d92a405189ef/tickets?limit=50",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:8080/api/billing/invoices?limit=50&appointmentId=35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "status": 200
+    }
+  ],
+  "text": "✚\nAn Tâm Medical\nBàn Tiếp đón Lễ tân\n/ hoặc Ctrl+K\nTìm kiếm\nTrực tuyến\n+ Tiếp nhận vãng lai\nRE\nreception.hoangyen\nLễ tân\nTìm thấy 1 bệnh nhân cho “0901234003”\nXóa tìm kiếm\nTrần Thị Thanh Hằng\n0 lịch hôm nay\nHôm nay (0)\nTất cả (2)\nChọn ngày\nTHÔNG TIN HÀNH CHÍNH BỆNH NHÂN\nChỉnh sửa thông tin\nNgày sinh\t22/09/1993 (33 tuổi)\t\nSố điện thoại\t0901234003\t\nCCCD / Định danh\t001193000102\n\nĐịa chỉ\t45 Tràng Thi, Hàng Trống, Hoàn Kiếm, Hà Nội\t\nLiên hệ khẩn cấp\tNguyễn Hoàng Long (Chồng) - 0901234004\nAPTMWFTH9XT234394\nLịch khám đang chọn\nLịch hẹn sắp tới\nChờ tiếp nhận\nĐặt trước\n(Online)\n1\nĐã đặt\n09:59 14/11\n2\nCheck-in\n—\n3\nVào khám\n—\n4\nHoàn tất\n—\nDỊCH VỤ ĐĂNG KÝ KHÁM\nKhám thai định kỳ chuẩn y khoa\nThời gian khám:\n09:00 – 09:30 (16/11/2026)\nPhòng khám tiếp nhận:\nP.201Phòng khám Sản Phụ khoa 201\nBác sĩ đảm nhiệm:\nBS. Lê Thu Hà\nChuyên khoa:\nSản khoa\nChi tiết lịch hẹn\nGhi nhận đến\nDời lịch / Đổi bác sĩ\nHủy lịch\nHóa đơn & Viện phí\nPhí khám ban đầu\nChưa thanh toán\nKhám thai định kỳ chuẩn y khoa\nx1\n550.000 ₫\nTạm tính:\n550.000 ₫\nTổng toàn bộ viện phí:\n550.000 ₫\nĐã thanh toán:\n0 ₫\nCòn lại cần thu:\n550.000 ₫\nThu tiền & Check-in ngay (550.000 ₫)\nIn hóa đơn / Phiếu thu\nAPTMWFTGJ2SAD764C\nLịch hẹn sắp tới\nChờ tiếp nhận\nĐặt trước\n(Online)\n1\nĐã đặt\n09:58 14/11\n2\nCheck-in\n—\n3\nVào khám\n—\n4\nHoàn tất\n—\nDỊCH VỤ ĐĂNG KÝ KHÁM\nKhám thai định kỳ chuẩn y khoa\nThời gian khám:\n08:00 – 08:30 (16/11/2026)\nPhòng khám tiếp nhận:\nP.202Phòng khám Sản Phụ khoa 202\nBác sĩ đảm nhiệm:\nBS. Hoàng Minh Tuấn\nChuyên khoa:\nSản khoa\nChi tiết lịch hẹn\nGhi nhận đến\nDời lịch / Đổi bác sĩ\nHủy lịch\nHóa đơn & Viện phí\nPhí khám ban đầu\nChưa thanh toán\nKhám thai định kỳ chuẩn y khoa\nx1\n300.000 ₫\nTạm tính:\n300.000 ₫\nTổng toàn bộ viện phí:\n300.000 ₫\nĐã thanh toán:\n0 ₫\nCòn lại cần thu:\n300.000 ₫\nThu tiền & Check-in ngay (300.000 ₫)\nIn hóa đơn / Phiếu thu\nĐã ghi nhận bệnh nhân đến. Mở case ở chuông công việc để tiếp tục."
+}

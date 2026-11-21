@@ -23,7 +23,8 @@ export class ConsultationService {
       ? ConsultationStatus.ASSIGNED
       : ConsultationStatus.OPEN;
 
-    const thread = await this.db.consultationThread.create({
+    const thread = await this.db.$transaction(async tx => {
+      const created = await tx.consultationThread.create({
       data: {
         patientId: r.patientId,
         appointmentId: r.appointmentId || null,
@@ -42,6 +43,9 @@ export class ConsultationService {
           : undefined,
       },
       include: { assignments: true },
+      });
+      if (doctorId) await this.assignmentEvent(tx, created.id, doctorId);
+      return created;
     });
 
     return { data: this.view(thread) };
@@ -93,7 +97,7 @@ export class ConsultationService {
             senderAccountId: { not: auth.userId },
           },
         });
-        return { ...this.view(x), unreadCount };
+      return { ...this.view(x), unreadCount };
       }),
     );
     return { data, meta };
@@ -101,6 +105,7 @@ export class ConsultationService {
 
   async assign(id: string, doctorId: string, actor: string) {
     const updated = await this.db.$transaction(async (tx) => {
+      const previous = await tx.consultationThread.findUnique({ where: { id }, select: { assignedDoctorId: true } });
       await tx.consultationAssignment.updateMany({
         where: { threadId: id, status: 'ACTIVE' },
         data: { status: 'ENDED', endedAt: new Date() },
@@ -108,7 +113,7 @@ export class ConsultationService {
       await tx.consultationAssignment.create({
         data: { threadId: id, doctorId, assignedBy: actor },
       });
-      return tx.consultationThread.update({
+      const thread = await tx.consultationThread.update({
         where: { id },
         data: {
           assignedDoctorId: doctorId,
@@ -116,8 +121,15 @@ export class ConsultationService {
           version: { increment: 1 },
         },
       });
+      if (previous?.assignedDoctorId !== doctorId) await this.assignmentEvent(tx, id, doctorId);
+      return thread;
     });
     return { data: this.view(updated) };
+  }
+
+  private async assignmentEvent(tx: any, id: string, doctorId: string) {
+    await tx.consultationOutbox.create({ data: { eventType: 'consultation.assigned.v1', aggregateId: id,
+      payload: { eventVersion: 1, aggregateType: 'consultation', aggregateId: id, data: { doctorId } } } });
   }
 
   async message(id: string, r: any) {
@@ -285,9 +297,9 @@ export class ConsultationService {
     return this.db.consultationThread
       .findUnique({ where: { id } })
       .then((x) => {
-        if (!x) throw new NotFoundException('CONSULTATION_NOT_FOUND');
-        return x;
-      });
+      if (!x) throw new NotFoundException('CONSULTATION_NOT_FOUND');
+      return x;
+    });
   }
 
   private view(t: any) {

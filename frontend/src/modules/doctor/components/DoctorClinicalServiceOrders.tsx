@@ -37,10 +37,14 @@ import {
   deleteServiceOrder,
   removeServiceOrderCharge,
   updateServiceOrderResult,
+  verifyServiceOrderResult,
 } from '../../../services/clinical';
 import { listReceptionInvoices } from '../../../services/operations';
 import { toInvoice, type DeskInvoice } from '../../../services/receptionDesk';
-import { getStoredAccessToken, subscribeToRealtimeStream } from '../../../services/realtimeStream';
+import {
+  getStoredAccessToken,
+  subscribeToRealtimeStream,
+} from '../../../services/realtimeStream';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 
 interface DoctorClinicalServiceOrdersProps {
@@ -77,6 +81,10 @@ export function DoctorClinicalServiceOrders({
 }: DoctorClinicalServiceOrdersProps) {
   const { stream } = useAuthSession();
   const canEdit = encounterState === 'IN_PROGRESS';
+  const [linkedAppointmentId, setLinkedAppointmentId] = useState(
+    appointmentId,
+  );
+  const activeAppointmentId = linkedAppointmentId || appointmentId;
 
   const [allServices, setAllServices] = useState<CatalogService[]>([]);
   const [catalogServices, setCatalogServices] = useState<CatalogService[]>([]);
@@ -98,6 +106,7 @@ export function DoctorClinicalServiceOrders({
 
   // Upload file kết quả cho từng order
   const [uploadingOrderId, setUploadingOrderId] = useState<string | null>(null);
+  const [verifyingOrderId, setVerifyingOrderId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const targetUploadOrderRef = useRef<any | null>(null);
 
@@ -113,7 +122,9 @@ export function DoctorClinicalServiceOrders({
   // Modal thanh toán tại phòng khám cho bác sĩ (Point-of-Care)
   const [doctorPayModalOpen, setDoctorPayModalOpen] = useState(false);
   const [doctorPaying, setDoctorPaying] = useState(false);
-  const [doctorPayMethod, setDoctorPayMethod] = useState<'CASH' | 'VIETQR'>('CASH');
+  const [doctorPayMethod, setDoctorPayMethod] = useState<'CASH' | 'VIETQR'>(
+    'CASH',
+  );
 
   // Tải danh mục dịch vụ cận lâm sàng (DIAGNOSTIC & PROCEDURE)
   const fetchCatalog = async () => {
@@ -122,7 +133,7 @@ export function DoctorClinicalServiceOrders({
       const all = await listCatalogServices(request);
       setAllServices(all || []);
       const diagnosticServices = (all || []).filter(
-        (s) => s.kind === 'DIAGNOSTIC' || s.kind === 'PROCEDURE'
+        (s) => s.kind === 'DIAGNOSTIC' || s.kind === 'PROCEDURE',
       );
       setCatalogServices(diagnosticServices);
     } catch (err: any) {
@@ -134,50 +145,88 @@ export function DoctorClinicalServiceOrders({
 
   // Tải danh sách chỉ định của ca khám hiện tại
   const fetchOrders = async () => {
-    if (!encounterId) return;
+    if (!encounterId) return [];
     setOrdersLoading(true);
     try {
       const enc = await getEncounter(request, encounterId);
       const encData = (enc as any)?.data || enc;
       const orderList = Array.isArray(encData?.orders) ? encData.orders : [];
+      if (encData?.appointmentId) {
+        setLinkedAppointmentId(String(encData.appointmentId));
+      }
       setOrders(orderList);
+      return orderList;
     } catch (err: any) {
       console.warn('Tải danh sách chỉ định cận lâm sàng thất bại:', err);
+      return [];
     } finally {
       setOrdersLoading(false);
     }
   };
 
   // Tải hóa đơn phát sinh cận lâm sàng để nắm bắt trạng thái thanh toán
-  const fetchSupplementaryInvoice = async () => {
-    if (!appointmentId) return;
+  const listClinicalInvoices = async () => {
+    let rawInvoices = activeAppointmentId
+      ? await listReceptionInvoices(request, {
+          appointmentId: activeAppointmentId,
+        }).catch(() => [])
+      : [];
+    // Billing filters appointmentId and encounterId together. If the doctor
+    // view was opened with an incomplete/stale appointment snapshot, retry by
+    // encounterId so the existing supplementary invoice is still found.
+    if (rawInvoices.length === 0 && encounterId) {
+      rawInvoices = await listReceptionInvoices(request, {
+        encounterId,
+      }).catch(() => []);
+    }
+    return rawInvoices;
+  };
+
+  const fetchSupplementaryInvoice = async (ordersOverride?: any[]) => {
+    if (!activeAppointmentId && !encounterId) return;
+    const currentOrders = ordersOverride ?? orders;
     setInvoiceLoading(true);
     try {
-      const rawInvoices = await listReceptionInvoices(request, { appointmentId }).catch(() => []);
+      const rawInvoices = await listClinicalInvoices();
       const deskInvoices = rawInvoices
         .map((inv) => toInvoice(inv as Record<string, unknown> | undefined))
         .filter((inv): inv is DeskInvoice => inv !== null);
       let supp = deskInvoices.find((i) => i.type === 'SUPPLEMENTARY') || null;
 
       // Tự động đồng bộ sang billing nếu ca khám đã có y lệnh mà chưa có hóa đơn phát sinh hoặc thiếu dòng
-      if (orders.length > 0 && (!supp || supp.lines.length < orders.length)) {
-        for (const ord of orders) {
+      const billedOrderIds = new Set(
+        (supp?.lines ?? [])
+          .map((line) => line.sourceReferenceId)
+          .filter(Boolean)
+          .map(String),
+      );
+      const missingOrders = currentOrders.filter(
+        (ord) => ord?.id && !billedOrderIds.has(String(ord.id)),
+      );
+      if (missingOrders.length > 0) {
+        for (const ord of missingOrders) {
           const svc = serviceMap.get(ord.catalogServiceId);
-          const price = svc?.prices?.[0]?.amountMinor ? Number(svc.prices[0].amountMinor) : 0;
+          const price = svc?.prices?.[0]?.amountMinor
+            ? Number(svc.prices[0].amountMinor)
+            : 0;
           await request('/api/billing/invoices/service-order', {
             method: 'POST',
             body: JSON.stringify({
-              appointmentId,
+              appointmentId: activeAppointmentId,
               patientId,
               encounterId,
               orderId: ord.id,
               serviceId: ord.catalogServiceId,
-              serviceName: svc?.name || ord.catalogServiceName || ord.serviceName || 'Dịch vụ cận lâm sàng',
+              serviceName:
+                svc?.name ||
+                ord.catalogServiceName ||
+                ord.serviceName ||
+                'Dịch vụ cận lâm sàng',
               amountMinor: price,
             }),
           }).catch(() => null);
         }
-        const freshRaw = await listReceptionInvoices(request, { appointmentId }).catch(() => []);
+        const freshRaw = await listClinicalInvoices();
         const freshInvs = freshRaw
           .map((inv) => toInvoice(inv as Record<string, unknown> | undefined))
           .filter((inv): inv is DeskInvoice => inv !== null);
@@ -202,19 +251,23 @@ export function DoctorClinicalServiceOrders({
 
   useEffect(() => {
     void fetchSupplementaryInvoice();
-  }, [appointmentId, orders.length]);
+  }, [activeAppointmentId, encounterId, orders.length]);
 
   // Lắng nghe SSE Realtime: Nếu quầy lễ tân hoặc phòng khác thanh toán, tự động cập nhật ngay tức thì
   useEffect(() => {
-    if (!appointmentId && !appointmentCode) return;
+    if (!activeAppointmentId && !appointmentCode) return;
     const unsubscribe = subscribeToRealtimeStream({
       url: '/api/appointment/desk/stream',
       getToken: getStoredAccessToken,
       streamFn: stream,
       onEvent: (event) => {
         const isMatch =
-          (appointmentId && (event.appointmentId === appointmentId || event.appointmentCode === appointmentId)) ||
-          (appointmentCode && (event.appointmentId === appointmentCode || event.appointmentCode === appointmentCode));
+          (activeAppointmentId &&
+            (event.appointmentId === activeAppointmentId ||
+              event.appointmentCode === activeAppointmentId)) ||
+          (appointmentCode &&
+            (event.appointmentId === appointmentCode ||
+              event.appointmentCode === appointmentCode));
         if (isMatch) {
           void fetchOrders();
           void fetchSupplementaryInvoice();
@@ -224,7 +277,7 @@ export function DoctorClinicalServiceOrders({
     return () => {
       unsubscribe();
     };
-  }, [appointmentId, appointmentCode, encounterId, stream]);
+  }, [activeAppointmentId, appointmentCode, encounterId, stream]);
 
   // Map service ID -> CatalogService để tra cứu nhanh thông tin & giá (tra từ allServices)
   const serviceMap = useMemo(() => {
@@ -242,13 +295,24 @@ export function DoctorClinicalServiceOrders({
 
   // Giá dịch vụ đang chọn
   const selectedServicePrice = useMemo(() => {
-    if (!selectedService || !selectedService.prices || !selectedService.prices.length) return null;
-    const activePrice = selectedService.prices.find((p) => p.status === 'ACTIVE') || selectedService.prices[0];
+    if (
+      !selectedService ||
+      !selectedService.prices ||
+      !selectedService.prices.length
+    )
+      return null;
+    const activePrice =
+      selectedService.prices.find((p) => p.status === 'ACTIVE') ||
+      selectedService.prices[0];
     return activePrice?.amountMinor ? Number(activePrice.amountMinor) : null;
   }, [selectedService]);
 
   // Kiểm tra xem hóa đơn chỉ định đã thanh toán hay chưa
-  const isSuppPaid = Boolean(suppInvoice && suppInvoice.paid >= suppInvoice.total && suppInvoice.total > 0);
+  const isSuppPaid = Boolean(
+    suppInvoice &&
+    suppInvoice.paid >= suppInvoice.total &&
+    suppInvoice.total > 0,
+  );
 
   // Tổng tiền cần thu của các chỉ định (dựa vào suppInvoice hoặc ước tính từ danh sách y lệnh)
   const unpaidTotal = useMemo(() => {
@@ -256,13 +320,18 @@ export function DoctorClinicalServiceOrders({
     if (suppInvoice && isSuppPaid) return 0;
     return orders.reduce((sum, ord) => {
       const svc = serviceMap.get(ord.catalogServiceId);
-      const price = svc?.prices?.[0]?.amountMinor ? Number(svc.prices[0].amountMinor) : 0;
+      const price = svc?.prices?.[0]?.amountMinor
+        ? Number(svc.prices[0].amountMinor)
+        : 0;
       return sum + price;
     }, 0);
   }, [suppInvoice, isSuppPaid, orders, serviceMap]);
 
   const handleOpenDoctorPayModal = async () => {
-    if ((!suppInvoice || suppInvoice.lines.length < orders.length) && orders.length > 0) {
+    if (
+      (!suppInvoice || suppInvoice.lines.length < orders.length) &&
+      orders.length > 0
+    ) {
       await fetchSupplementaryInvoice();
     }
     setDoctorPayMethod('CASH');
@@ -280,15 +349,18 @@ export function DoctorClinicalServiceOrders({
     try {
       const encRes = await getEncounter(request, encounterId).catch(() => null);
       const encData = (encRes as any)?.data || encRes;
-      const latestVersion = typeof encData?.version === 'number' ? encData.version : (encounterVersion ?? 1);
+      const latestVersion =
+        typeof encData?.version === 'number'
+          ? encData.version
+          : (encounterVersion ?? 1);
 
       const svc = serviceMap.get(selectedServiceId);
       const svcCode = String(svc?.code || '');
       const stageCode = svcCode.includes('US')
         ? 'ULTRASOUND'
         : svcCode.includes('NIPT') || svcCode.includes('TEST')
-        ? 'LAB_TEST'
-        : 'DIAGNOSTIC';
+          ? 'LAB_TEST'
+          : 'DIAGNOSTIC';
 
       const orderRes = await createServiceOrder(request, encounterId, {
         catalogServiceId: selectedServiceId,
@@ -301,11 +373,11 @@ export function DoctorClinicalServiceOrders({
 
       // Tự động đồng bộ sang hóa đơn cận lâm sàng phát sinh cho Quầy thu ngân / Lễ tân
       const newOrderId = (orderRes as any)?.data?.id || (orderRes as any)?.id;
-      if (appointmentId && newOrderId) {
+      if (activeAppointmentId && newOrderId) {
         await request('/api/billing/invoices/service-order', {
           method: 'POST',
           body: JSON.stringify({
-            appointmentId,
+            appointmentId: activeAppointmentId,
             patientId,
             encounterId,
             orderId: newOrderId,
@@ -314,7 +386,10 @@ export function DoctorClinicalServiceOrders({
             amountMinor: selectedServicePrice || 0,
           }),
         }).catch((billingErr) => {
-          console.warn('Lỗi khi tự động đồng bộ hóa đơn CLS sang Billing:', billingErr);
+          console.warn(
+            'Lỗi khi tự động đồng bộ hóa đơn CLS sang Billing:',
+            billingErr,
+          );
         });
 
         // Bắn sự kiện realtime cho Lễ tân cập nhật ngay lập tức mà không cần tải lại trang
@@ -322,7 +397,7 @@ export function DoctorClinicalServiceOrders({
           method: 'POST',
           body: JSON.stringify({
             eventType: 'appointment.order_created',
-            appointmentId,
+            appointmentId: activeAppointmentId,
             appointmentCode,
             patientId,
             status: 'IN_CLINICAL_CARE',
@@ -331,12 +406,12 @@ export function DoctorClinicalServiceOrders({
       }
 
       message.success(
-        `Đã thêm chỉ định "${svc?.name || 'Cận lâm sàng'}". Hóa đơn viện phí phát sinh đã cập nhật!`
+        `Đã thêm chỉ định "${svc?.name || 'Cận lâm sàng'}". Hóa đơn viện phí phát sinh đã cập nhật!`,
       );
       setSelectedServiceId('');
       setOrderClinicalNotes('');
-      await fetchOrders();
-      await fetchSupplementaryInvoice();
+      const refreshedOrders = await fetchOrders();
+      await fetchSupplementaryInvoice(refreshedOrders);
       if (onOrderCreated) onOrderCreated();
     } catch (err: any) {
       console.error('Lỗi khi chỉ định cận lâm sàng:', err);
@@ -352,7 +427,9 @@ export function DoctorClinicalServiceOrders({
     if (!orderId) return;
 
     if (isSuppPaid) {
-      message.error('Chỉ định này đã được thanh toán viện phí, không thể xóa bỏ.');
+      message.error(
+        'Chỉ định này đã được thanh toán viện phí, không thể xóa bỏ.',
+      );
       return;
     }
 
@@ -367,12 +444,12 @@ export function DoctorClinicalServiceOrders({
       });
 
       // 3. Broadcast realtime cho quầy tiếp đón / thu ngân cập nhật lại hóa đơn
-      if (appointmentId || appointmentCode) {
+      if (activeAppointmentId || appointmentCode) {
         await request('/api/appointment/desk/broadcast', {
           method: 'POST',
           body: JSON.stringify({
             eventType: 'appointment.order_deleted',
-            appointmentId,
+            appointmentId: activeAppointmentId,
             appointmentCode,
             patientId,
             status: 'IN_CLINICAL_CARE',
@@ -382,8 +459,8 @@ export function DoctorClinicalServiceOrders({
       }
 
       message.success('Đã xóa bỏ chỉ định cận lâm sàng thành công.');
-      await fetchOrders();
-      await fetchSupplementaryInvoice();
+      const refreshedOrders = await fetchOrders();
+      await fetchSupplementaryInvoice(refreshedOrders);
       if (onOrderCreated) onOrderCreated();
     } catch (err: any) {
       console.error('Lỗi khi xóa chỉ định:', err);
@@ -413,7 +490,9 @@ export function DoctorClinicalServiceOrders({
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
     if (!allowedExts.includes(ext)) {
-      message.error('Chỉ chấp nhận file định dạng PDF, JPG, PNG hoặc Word (.doc, .docx).');
+      message.error(
+        'Chỉ chấp nhận file định dạng PDF, JPG, PNG hoặc Word (.doc, .docx).',
+      );
       return;
     }
 
@@ -431,28 +510,37 @@ export function DoctorClinicalServiceOrders({
         method: 'POST',
         body: JSON.stringify({
           fileName: file.name,
-          mediaType: file.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'),
+          mediaType:
+            file.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'),
           contentBase64: b64,
         }),
       });
 
       const docItem = docRes?.data || docRes;
-      const docId = docItem?.id || (Array.isArray(docItem) ? docItem[0]?.id : '');
+      const docId =
+        docItem?.id || (Array.isArray(docItem) ? docItem[0]?.id : '');
 
       // 2. Gắn kết quả vào order và cập nhật trạng thái sang RESULT_AVAILABLE
       const structuredResult = {
         fileId: docId,
         fileName: file.name,
-        mediaType: file.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'),
+        mediaType:
+          file.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'),
         fileUrl: `/api/documents/clinical-results/${encodeURIComponent(encounterId)}/${encodeURIComponent(docId)}/content`,
         sizeBytes: file.size,
         uploadedAt: new Date().toISOString(),
       };
 
       await updateServiceOrderResult(request, targetOrder.id, structuredResult);
+      // Bác sĩ là người upload trực tiếp kết quả tại màn hình khám, nên xác
+      // minh ngay sau khi file đã được lưu thành công. Trạng thái VERIFIED là
+      // điều kiện để chuyển bệnh án sang READY_FOR_REVIEW.
+      await verifyServiceOrderResult(request, targetOrder.id);
 
       const svc = serviceMap.get(targetOrder.catalogServiceId);
-      message.success(`Đã tải lên kết quả cho "${svc?.name || 'chỉ định'}" thành công!`);
+      message.success(
+        `Đã tải lên và xác minh kết quả cho "${svc?.name || 'chỉ định'}" thành công!`,
+      );
 
       await fetchOrders();
       if (onOrderCreated) onOrderCreated();
@@ -462,6 +550,22 @@ export function DoctorClinicalServiceOrders({
     } finally {
       setUploadingOrderId(null);
       targetUploadOrderRef.current = null;
+    }
+  };
+
+  const handleVerifyResult = async (record: any) => {
+    if (!record?.id || verifyingOrderId) return;
+    setVerifyingOrderId(record.id);
+    try {
+      await verifyServiceOrderResult(request, record.id);
+      message.success('Đã xác minh kết quả cận lâm sàng.');
+      const refreshedOrders = await fetchOrders();
+      await fetchSupplementaryInvoice(refreshedOrders);
+      if (onOrderCreated) onOrderCreated();
+    } catch (err: any) {
+      message.error(err?.message || 'Không thể xác minh kết quả cận lâm sàng.');
+    } finally {
+      setVerifyingOrderId(null);
     }
   };
 
@@ -511,42 +615,49 @@ export function DoctorClinicalServiceOrders({
     let currentSupp = suppInvoice;
     if (!currentSupp || currentSupp.lines.length < orders.length) {
       await fetchSupplementaryInvoice();
-      const rawInvoices = await listReceptionInvoices(request, { appointmentId }).catch(() => []);
+      const rawInvoices = await listClinicalInvoices();
       const deskInvoices = rawInvoices
         .map((inv) => toInvoice(inv as Record<string, unknown> | undefined))
         .filter((inv): inv is DeskInvoice => inv !== null);
-      currentSupp = deskInvoices.find((i) => i.type === 'SUPPLEMENTARY') || null;
+      currentSupp =
+        deskInvoices.find((i) => i.type === 'SUPPLEMENTARY') || null;
     }
     if (!currentSupp) {
-      message.error('Không tìm thấy thông tin hóa đơn cận lâm sàng để thanh toán.');
+      message.error(
+        'Không tìm thấy thông tin hóa đơn cận lâm sàng để thanh toán.',
+      );
       return;
     }
     setDoctorPaying(true);
     try {
-      const method = doctorPayMethod === 'CASH' ? 'CASH' : 'MANUAL_BANK_TRANSFER';
-      await request(`/api/billing/invoices/${encodeURIComponent(currentSupp.id)}/payments`, {
-        method: 'POST',
-        headers: {
-          'Idempotency-Key': crypto.randomUUID(),
+      const method =
+        doctorPayMethod === 'CASH' ? 'CASH' : 'MANUAL_BANK_TRANSFER';
+      await request(
+        `/api/billing/invoices/${encodeURIComponent(currentSupp.id)}/payments`,
+        {
+          method: 'POST',
+          headers: {
+            'Idempotency-Key': crypto.randomUUID(),
+          },
+          body: JSON.stringify({
+            method,
+            amountMinor: currentSupp.balance,
+            expectedInvoiceVersion: currentSupp.version,
+            receivedAt: new Date().toISOString(),
+            reference: doctorPayMethod === 'CASH' ? 'BS_CASH' : 'BS_VIETQR',
+          }),
         },
-        body: JSON.stringify({
-          method,
-          amountMinor: currentSupp.balance,
-          expectedInvoiceVersion: currentSupp.version,
-          receivedAt: new Date().toISOString(),
-          reference: doctorPayMethod === 'CASH' ? 'BS_CASH' : 'BS_VIETQR',
-        }),
-      });
+      );
 
       // Broadcast realtime cho quầy tiếp đón / thu ngân cập nhật ngay trạng thái ĐÃ THANH TOÁN
       await request('/api/appointment/desk/broadcast', {
         method: 'POST',
         body: JSON.stringify({
           eventType: 'appointment.invoice_updated',
-          appointmentId,
+          appointmentId: activeAppointmentId,
           appointmentCode,
           patientId,
-          paymentStatus: 'PAID',
+          paymentStatus: method === 'CASH' ? 'PAID' : 'UNPAID',
         }),
       }).catch((e) => console.warn('Lỗi broadcast invoice_updated:', e));
 
@@ -554,7 +665,7 @@ export function DoctorClinicalServiceOrders({
         method: 'POST',
         body: JSON.stringify({
           eventType: 'appointment.order_created',
-          appointmentId,
+          appointmentId: activeAppointmentId,
           appointmentCode,
           patientId,
           status: 'IN_CLINICAL_CARE',
@@ -562,7 +673,9 @@ export function DoctorClinicalServiceOrders({
       }).catch(() => null);
 
       message.success(
-        `Đã ghi nhận thanh toán ${(currentSupp.balance).toLocaleString('vi-VN')} đ viện phí cận lâm sàng thành công!`
+        method === 'CASH'
+          ? `Đã ghi nhận thanh toán ${currentSupp.balance.toLocaleString('vi-VN')} đ viện phí cận lâm sàng thành công!`
+          : 'Đã ghi nhận chuyển khoản, chờ lễ tân xác minh.',
       );
       setDoctorPayModalOpen(false);
       await fetchSupplementaryInvoice();
@@ -570,7 +683,9 @@ export function DoctorClinicalServiceOrders({
       if (onOrderCreated) onOrderCreated();
     } catch (err: any) {
       console.error('Lỗi khi bác sĩ thu tiền cận lâm sàng:', err);
-      message.error(err?.message || 'Không thể ghi nhận thu tiền tại phòng khám.');
+      message.error(
+        err?.message || 'Không thể ghi nhận thu tiền tại phòng khám.',
+      );
     } finally {
       setDoctorPaying(false);
     }
@@ -594,11 +709,13 @@ export function DoctorClinicalServiceOrders({
       key: 'serviceName',
       render: (_: any, record: any) => {
         const svc = serviceMap.get(record.catalogServiceId);
-        const name = svc?.name || record.catalogServiceName || record.serviceName || 'Dịch vụ cận lâm sàng';
+        const name =
+          svc?.name ||
+          record.catalogServiceName ||
+          record.serviceName ||
+          'Dịch vụ cận lâm sàng';
         return (
-          <strong style={{ fontSize: 14, color: '#0f172a' }}>
-            {name}
-          </strong>
+          <strong style={{ fontSize: 14, color: '#0f172a' }}>{name}</strong>
         );
       },
     },
@@ -609,12 +726,24 @@ export function DoctorClinicalServiceOrders({
       render: (_: any, record: any) => {
         const stage = record.stageCode || 'DIAGNOSTIC';
         if (stage === 'ULTRASOUND') {
-          return <Tag color="blue" style={{ fontWeight: 600 }}>Siêu âm thai</Tag>;
+          return (
+            <Tag color="blue" style={{ fontWeight: 600 }}>
+              Siêu âm thai
+            </Tag>
+          );
         }
         if (stage === 'LAB_TEST') {
-          return <Tag color="cyan" style={{ fontWeight: 600 }}>Xét nghiệm / Sàng lọc</Tag>;
+          return (
+            <Tag color="cyan" style={{ fontWeight: 600 }}>
+              Xét nghiệm / Sàng lọc
+            </Tag>
+          );
         }
-        return <Tag color="purple" style={{ fontWeight: 600 }}>Cận lâm sàng</Tag>;
+        return (
+          <Tag color="purple" style={{ fontWeight: 600 }}>
+            Cận lâm sàng
+          </Tag>
+        );
       },
     },
     {
@@ -624,10 +753,14 @@ export function DoctorClinicalServiceOrders({
       align: 'right',
       render: (_: any, record: any) => {
         const svc = serviceMap.get(record.catalogServiceId);
-        const price = svc?.prices?.[0]?.amountMinor ? Number(svc.prices[0].amountMinor) : null;
+        const price = svc?.prices?.[0]?.amountMinor
+          ? Number(svc.prices[0].amountMinor)
+          : null;
         return (
           <strong style={{ color: '#0B5CAD', fontSize: 13.5 }}>
-            {price !== null ? `${price.toLocaleString('vi-VN')} đ` : 'Theo biểu giá'}
+            {price !== null
+              ? `${price.toLocaleString('vi-VN')} đ`
+              : 'Theo biểu giá'}
           </strong>
         );
       },
@@ -637,30 +770,50 @@ export function DoctorClinicalServiceOrders({
       key: 'status',
       width: 185,
       render: (_: any, record: any) => {
-        const hasResult = Boolean(record.structuredResult?.fileName || record.status === 'RESULT_AVAILABLE' || record.status === 'VERIFIED');
+        const hasResult = Boolean(
+          record.structuredResult?.fileName ||
+          record.status === 'RESULT_AVAILABLE' ||
+          record.status === 'VERIFIED',
+        );
         if (hasResult) {
           return (
-            <Tag icon={<CheckCircleOutlined />} color="success" style={{ fontWeight: 700, padding: '3px 8px' }}>
+            <Tag
+              icon={<CheckCircleOutlined />}
+              color="success"
+              style={{ fontWeight: 700, padding: '3px 8px' }}
+            >
               ✓ Đã có kết quả
             </Tag>
           );
         }
         if (record.status === 'IN_PROGRESS') {
           return (
-            <Tag icon={<SyncOutlined spin />} color="processing" style={{ fontWeight: 600, padding: '3px 8px' }}>
+            <Tag
+              icon={<SyncOutlined spin />}
+              color="processing"
+              style={{ fontWeight: 600, padding: '3px 8px' }}
+            >
               Đang thực hiện CLS
             </Tag>
           );
         }
         if (isSuppPaid) {
           return (
-            <Tag icon={<ClockCircleOutlined />} color="blue" style={{ fontWeight: 600, padding: '3px 8px' }}>
+            <Tag
+              icon={<ClockCircleOutlined />}
+              color="blue"
+              style={{ fontWeight: 600, padding: '3px 8px' }}
+            >
               Chờ kết quả thực hiện
             </Tag>
           );
         }
         return (
-          <Tag icon={<ClockCircleOutlined />} color="orange" style={{ fontWeight: 600, padding: '3px 8px' }}>
+          <Tag
+            icon={<ClockCircleOutlined />}
+            color="orange"
+            style={{ fontWeight: 600, padding: '3px 8px' }}
+          >
             Chờ thanh toán
           </Tag>
         );
@@ -685,13 +838,28 @@ export function DoctorClinicalServiceOrders({
 
         // Đã thanh toán và ĐÃ CÓ FILE KẾT QUẢ
         if (result?.fileName) {
-          const isPdf = (result.fileName || '').endsWith('.pdf') || result.mediaType?.includes('pdf');
+          const isPdf =
+            (result.fileName || '').endsWith('.pdf') ||
+            result.mediaType?.includes('pdf');
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                flexWrap: 'wrap',
+              }}
+            >
               <Button
                 size="small"
                 type="link"
-                icon={isPdf ? <FilePdfOutlined style={{ color: '#ef4444' }} /> : <FileImageOutlined style={{ color: '#0284c7' }} />}
+                icon={
+                  isPdf ? (
+                    <FilePdfOutlined style={{ color: '#ef4444' }} />
+                  ) : (
+                    <FileImageOutlined style={{ color: '#0284c7' }} />
+                  )
+                }
                 onClick={() => handleViewResultFile(record)}
                 style={{
                   fontWeight: 600,
@@ -714,7 +882,12 @@ export function DoctorClinicalServiceOrders({
                   ghost
                   icon={<EyeOutlined />}
                   onClick={() => handleViewResultFile(record)}
-                  style={{ height: 26, padding: '0 8px', fontSize: 11.5, borderRadius: 6 }}
+                  style={{
+                    height: 26,
+                    padding: '0 8px',
+                    fontSize: 11.5,
+                    borderRadius: 6,
+                  }}
                 >
                   Xem
                 </Button>
@@ -724,10 +897,21 @@ export function DoctorClinicalServiceOrders({
                 <Tooltip title="Tải file khác để thay thế kết quả">
                   <Button
                     size="small"
-                    icon={isUploading ? <LoadingOutlined spin /> : <UploadOutlined />}
+                    icon={
+                      isUploading ? (
+                        <LoadingOutlined spin />
+                      ) : (
+                        <UploadOutlined />
+                      )
+                    }
                     disabled={isUploading}
                     onClick={() => handleTriggerUpload(record)}
-                    style={{ height: 26, padding: '0 6px', fontSize: 11.5, borderRadius: 6 }}
+                    style={{
+                      height: 26,
+                      padding: '0 6px',
+                      fontSize: 11.5,
+                      borderRadius: 6,
+                    }}
                   />
                 </Tooltip>
               )}
@@ -742,7 +926,9 @@ export function DoctorClinicalServiceOrders({
               <Button
                 size="small"
                 type="dashed"
-                icon={isUploading ? <LoadingOutlined spin /> : <UploadOutlined />}
+                icon={
+                  isUploading ? <LoadingOutlined spin /> : <UploadOutlined />
+                }
                 loading={isUploading}
                 onClick={() => handleTriggerUpload(record)}
                 style={{
@@ -756,7 +942,9 @@ export function DoctorClinicalServiceOrders({
                 Tải file kết quả lên
               </Button>
             ) : (
-              <span style={{ fontSize: 12, color: '#d97706' }}>Chờ phòng CLS tải kết quả</span>
+              <span style={{ fontSize: 12, color: '#d97706' }}>
+                Chờ phòng CLS tải kết quả
+              </span>
             )}
           </div>
         );
@@ -765,14 +953,36 @@ export function DoctorClinicalServiceOrders({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 85,
+      width: 140,
       align: 'center',
       render: (_: any, record: any) => {
-        // Sau khi đã thanh toán -> MẤT NÚT XÓA ĐI
+        const hasUploadedResult = Boolean(record.structuredResult?.fileName);
+        const needsVerification =
+          hasUploadedResult && record.status !== 'VERIFIED';
+
+        // Sau khi đã thanh toán không được xóa chỉ định. Nếu file cũ chưa
+        // được xác minh, vẫn hiển thị thao tác để không bị kẹt ở bước hoàn tất.
         if (isSuppPaid) {
+          if (needsVerification && canEdit) {
+            return (
+              <Button
+                type="link"
+                size="small"
+                loading={verifyingOrderId === record.id}
+                disabled={Boolean(verifyingOrderId)}
+                onClick={() => void handleVerifyResult(record)}
+                style={{ fontWeight: 700, padding: 0 }}
+              >
+                Xác minh
+              </Button>
+            );
+          }
           return (
-            <Tag color="success" style={{ margin: 0, fontSize: 11, fontWeight: 600 }}>
-              Đã chốt
+            <Tag
+              color="success"
+              style={{ margin: 0, fontSize: 11, fontWeight: 600 }}
+            >
+              {record.status === 'VERIFIED' ? 'Đã xác minh' : 'Đã chốt'}
             </Tag>
           );
         }
@@ -809,7 +1019,10 @@ export function DoctorClinicalServiceOrders({
   ];
 
   return (
-    <div className="doctor-clinical-service-orders-section" style={{ marginTop: 16 }}>
+    <div
+      className="doctor-clinical-service-orders-section"
+      style={{ marginTop: 16 }}
+    >
       {/* Ẩn input file picker dùng chung */}
       <input
         type="file"
@@ -853,12 +1066,17 @@ export function DoctorClinicalServiceOrders({
               <strong style={{ fontSize: 14.5, color: '#0c4a6e' }}>
                 Chỉ định Cận lâm sàng (Siêu âm, Xét nghiệm, Tầm soát thai kỳ)
               </strong>
-              <Tag color="blue" style={{ borderRadius: 12, fontWeight: 700, margin: 0 }}>
+              <Tag
+                color="blue"
+                style={{ borderRadius: 12, fontWeight: 700, margin: 0 }}
+              >
                 {orders.length} chỉ định
               </Tag>
             </div>
             <div style={{ fontSize: 12, color: '#0369a1', marginTop: 1 }}>
-              Bác sĩ chọn dịch vụ thêm nhanh bên dưới. Sau khi thanh toán, có thể upload trực tiếp file kết quả siêu âm/xét nghiệm vào từng dòng.
+              Bác sĩ chọn dịch vụ thêm nhanh bên dưới. Sau khi thanh toán, có
+              thể upload trực tiếp file kết quả siêu âm/xét nghiệm vào từng
+              dòng.
             </div>
           </div>
         </div>
@@ -889,7 +1107,8 @@ export function DoctorClinicalServiceOrders({
               filterOption={(input, option) => {
                 const svc = serviceMap.get(String(option?.value));
                 if (!svc) return false;
-                const searchStr = `${svc.name || ''} ${svc.code || ''} ${svc.summary || ''}`.toLowerCase();
+                const searchStr =
+                  `${svc.name || ''} ${svc.code || ''} ${svc.summary || ''}`.toLowerCase();
                 return searchStr.includes(input.toLowerCase());
               }}
               style={{ width: '100%' }}
@@ -897,16 +1116,34 @@ export function DoctorClinicalServiceOrders({
               allowClear
             >
               {catalogServices.map((s) => {
-                const price = s.prices?.[0]?.amountMinor ? Number(s.prices[0].amountMinor) : null;
+                const price = s.prices?.[0]?.amountMinor
+                  ? Number(s.prices[0].amountMinor)
+                  : null;
                 return (
                   <Select.Option key={s.id} value={s.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <span>
-                        <strong style={{ color: '#0f172a' }}>{String(s.name || '')}</strong>{' '}
-                        <span style={{ color: '#64748b', fontSize: 11 }}>({String(s.code || '')})</span>
+                        <strong style={{ color: '#0f172a' }}>
+                          {String(s.name || '')}
+                        </strong>{' '}
+                        <span style={{ color: '#64748b', fontSize: 11 }}>
+                          ({String(s.code || '')})
+                        </span>
                       </span>
                       {price !== null && (
-                        <span style={{ color: '#0B5CAD', fontWeight: 700, fontSize: 12 }}>
+                        <span
+                          style={{
+                            color: '#0B5CAD',
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}
+                        >
                           {price.toLocaleString('vi-VN')} đ
                         </span>
                       )}
@@ -941,7 +1178,10 @@ export function DoctorClinicalServiceOrders({
               whiteSpace: 'nowrap',
             }}
           >
-            Thêm chỉ định {selectedServicePrice !== null ? `(${selectedServicePrice.toLocaleString('vi-VN')} đ)` : ''}
+            Thêm chỉ định{' '}
+            {selectedServicePrice !== null
+              ? `(${selectedServicePrice.toLocaleString('vi-VN')} đ)`
+              : ''}
           </Button>
 
           {canEdit && orders.length > 0 && !isSuppPaid && (
@@ -959,7 +1199,10 @@ export function DoctorClinicalServiceOrders({
                 boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
               }}
             >
-              💳 Thanh toán ngay {unpaidTotal > 0 ? `(${unpaidTotal.toLocaleString('vi-VN')} đ)` : ''}
+              💳 Thanh toán ngay{' '}
+              {unpaidTotal > 0
+                ? `(${unpaidTotal.toLocaleString('vi-VN')} đ)`
+                : ''}
             </Button>
           )}
         </div>
@@ -986,12 +1229,23 @@ export function DoctorClinicalServiceOrders({
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <FileSearchOutlined style={{ fontSize: 32, color: '#94a3b8', marginBottom: 6 }} />
+            <FileSearchOutlined
+              style={{ fontSize: 32, color: '#94a3b8', marginBottom: 6 }}
+            />
             <div style={{ fontSize: 13.5, fontWeight: 600, color: '#334155' }}>
               Chưa có chỉ định cận lâm sàng nào cho ca khám này
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 3, maxWidth: 500, margin: '3px auto 0' }}>
-              Nếu cần siêu âm hình thái thai nhi hoặc làm xét nghiệm máu/nước tiểu, chọn dịch vụ từ thanh tìm kiếm bên trên.
+            <div
+              style={{
+                fontSize: 12,
+                color: '#64748b',
+                marginTop: 3,
+                maxWidth: 500,
+                margin: '3px auto 0',
+              }}
+            >
+              Nếu cần siêu âm hình thái thai nhi hoặc làm xét nghiệm máu/nước
+              tiểu, chọn dịch vụ từ thanh tìm kiếm bên trên.
             </div>
           </div>
         )}
@@ -1015,17 +1269,49 @@ export function DoctorClinicalServiceOrders({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {!isSuppPaid ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                <ClockCircleOutlined style={{ color: '#d97706', fontSize: 16 }} />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                }}
+              >
+                <ClockCircleOutlined
+                  style={{ color: '#d97706', fontSize: 16 }}
+                />
                 <span style={{ color: '#92400e', fontWeight: 600 }}>
-                  Chỉ định {orders.length} dịch vụ · Tổng viện phí CLS: <strong>{(suppInvoice?.total ?? unpaidTotal).toLocaleString('vi-VN')} đ</strong> · Cần thu: <strong style={{ color: '#dc2626' }}>{unpaidTotal.toLocaleString('vi-VN')} đ</strong>
+                  Chỉ định {orders.length} dịch vụ · Tổng viện phí CLS:{' '}
+                  <strong>
+                    {(suppInvoice?.total ?? unpaidTotal).toLocaleString(
+                      'vi-VN',
+                    )}{' '}
+                    đ
+                  </strong>{' '}
+                  · Cần thu:{' '}
+                  <strong style={{ color: '#dc2626' }}>
+                    {unpaidTotal.toLocaleString('vi-VN')} đ
+                  </strong>
                 </span>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 600 }}>
-                <CheckCircleOutlined style={{ color: '#16a34a', fontSize: 16 }} />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  color: '#166534',
+                  fontWeight: 600,
+                }}
+              >
+                <CheckCircleOutlined
+                  style={{ color: '#16a34a', fontSize: 16 }}
+                />
                 <span>
-                  Đã thanh toán đủ viện phí {orders.length} chỉ định ({(suppInvoice?.paid ?? unpaidTotal).toLocaleString('vi-VN')} đ). Bệnh nhân đã thực hiện hoặc sẵn sàng tải lên file kết quả!
+                  Đã thanh toán đủ viện phí {orders.length} chỉ định (
+                  {(suppInvoice?.paid ?? unpaidTotal).toLocaleString('vi-VN')}{' '}
+                  đ). Bệnh nhân đã thực hiện hoặc sẵn sàng tải lên file kết quả!
                 </span>
               </div>
             )}
@@ -1075,7 +1361,9 @@ export function DoctorClinicalServiceOrders({
                 Thu Viện Phí Chỉ Định Tại Phòng Khám
               </div>
               <div style={{ fontSize: 12, color: '#64748b' }}>
-                Hóa đơn #{suppInvoice?.number || suppInvoice?.id?.slice(0, 8) || 'CLS'} · Tự động đồng bộ sang Lễ tân
+                Hóa đơn #
+                {suppInvoice?.number || suppInvoice?.id?.slice(0, 8) || 'CLS'} ·
+                Tự động đồng bộ sang Lễ tân
               </div>
             </div>
           </div>
@@ -1088,7 +1376,11 @@ export function DoctorClinicalServiceOrders({
         confirmLoading={doctorPaying}
         width={560}
         okButtonProps={{
-          style: { background: '#16a34a', borderColor: '#16a34a', fontWeight: 700 },
+          style: {
+            background: '#16a34a',
+            borderColor: '#16a34a',
+            fontWeight: 700,
+          },
         }}
       >
         <div style={{ padding: '12px 0' }}>
@@ -1101,13 +1393,31 @@ export function DoctorClinicalServiceOrders({
               marginBottom: 16,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+                fontSize: 13,
+              }}
+            >
               <span style={{ color: '#64748b' }}>Tổng viện phí phát sinh:</span>
-              <strong style={{ color: '#0f172a' }}>{(suppInvoice?.total ?? unpaidTotal).toLocaleString('vi-VN')} đ</strong>
+              <strong style={{ color: '#0f172a' }}>
+                {(suppInvoice?.total ?? unpaidTotal).toLocaleString('vi-VN')} đ
+              </strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+                fontSize: 13,
+              }}
+            >
               <span style={{ color: '#64748b' }}>Đã thu trước đó:</span>
-              <span style={{ color: '#16a34a', fontWeight: 600 }}>{(suppInvoice?.paid ?? 0).toLocaleString('vi-VN')} đ</span>
+              <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                {(suppInvoice?.paid ?? 0).toLocaleString('vi-VN')} đ
+              </span>
             </div>
             <div
               style={{
@@ -1118,7 +1428,9 @@ export function DoctorClinicalServiceOrders({
                 fontSize: 15,
               }}
             >
-              <strong style={{ color: '#0f172a' }}>Số tiền cần thu ngay:</strong>
+              <strong style={{ color: '#0f172a' }}>
+                Số tiền cần thu ngay:
+              </strong>
               <strong style={{ color: '#dc2626', fontSize: 17 }}>
                 {unpaidTotal.toLocaleString('vi-VN')} đ
               </strong>
@@ -1126,7 +1438,15 @@ export function DoctorClinicalServiceOrders({
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#334155',
+                marginBottom: 6,
+              }}
+            >
               Hình thức thu viện phí:
             </label>
             <Radio.Group
@@ -1135,10 +1455,28 @@ export function DoctorClinicalServiceOrders({
               style={{ width: '100%' }}
             >
               <div style={{ display: 'flex', gap: 12 }}>
-                <Radio.Button value="CASH" style={{ flex: 1, textAlign: 'center', height: 42, lineHeight: '40px', fontWeight: 600 }}>
+                <Radio.Button
+                  value="CASH"
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    height: 42,
+                    lineHeight: '40px',
+                    fontWeight: 600,
+                  }}
+                >
                   💵 Tiền mặt tại phòng khám
                 </Radio.Button>
-                <Radio.Button value="VIETQR" style={{ flex: 1, textAlign: 'center', height: 42, lineHeight: '40px', fontWeight: 600 }}>
+                <Radio.Button
+                  value="VIETQR"
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    height: 42,
+                    lineHeight: '40px',
+                    fontWeight: 600,
+                  }}
+                >
                   📲 Chuyển khoản VietQR
                 </Radio.Button>
               </div>
@@ -1152,7 +1490,12 @@ export function DoctorClinicalServiceOrders({
         open={previewModalOpen}
         onCancel={handleClosePreview}
         footer={[
-          <Button key="download" icon={<DownloadOutlined />} href={previewFile?.url} download={previewFile?.fileName}>
+          <Button
+            key="download"
+            icon={<DownloadOutlined />}
+            href={previewFile?.url}
+            download={previewFile?.fileName}
+          >
             Tải về máy
           </Button>,
           <Button key="close" type="primary" onClick={handleClosePreview}>
@@ -1174,12 +1517,27 @@ export function DoctorClinicalServiceOrders({
           </div>
         }
       >
-        <div style={{ minHeight: '60vh', maxHeight: '78vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#334155', borderRadius: 8, overflow: 'hidden' }}>
+        <div
+          style={{
+            minHeight: '60vh',
+            maxHeight: '78vh',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: '#334155',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
           {previewFile?.mediaType.startsWith('image/') ? (
             <img
               src={previewFile.url}
               alt={previewFile.fileName}
-              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain' }}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+              }}
             />
           ) : (
             <iframe

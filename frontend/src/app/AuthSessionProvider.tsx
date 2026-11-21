@@ -86,6 +86,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const refreshRef = useRef<Promise<StoredSession> | null>(null);
 
   const commit = useCallback((next: StoredSession | null) => {
+    const previousUserId = sessionRef.current?.user.userId;
+    if (previousUserId && previousUserId !== next?.user.userId) {
+      try { sessionStorage.removeItem(`an-tam-chat:${previousUserId}`); } catch { /* storage unavailable */ }
+    }
     sessionRef.current = next;
     setSession(next);
     setStatus(next ? 'authenticated' : 'anonymous');

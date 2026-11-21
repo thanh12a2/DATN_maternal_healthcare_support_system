@@ -888,6 +888,382 @@
   box-shadow: none;
 }
 
+/* Nút tổng hợp duy nhất cho toàn bộ kết quả của một lần khám */
+.pap-btn-results {
+  background: linear-gradient(135deg, #0f766e 0%, #047857 52%, #059669 100%);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  border: 1px solid #047857;
+  border-radius: 10px;
+  height: 40px;
+  padding: 0 17px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+  transition: all 0.2s ease;
+}
+
+.pap-btn-results:hover {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(5, 150, 105, 0.35);
+}
+
+.pap-btn-results:active {
+  transform: translateY(0);
+}
+
+/* Modal tổng hợp kết quả khám */
+.pap-results-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.pap-results-modal-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #047857;
+  background: #d1fae5;
+  font-size: 21px;
+}
+
+.pap-results-modal-heading {
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.pap-results-modal-subtitle {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pap-results-modal-content {
+  padding: 18px 22px 24px;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+}
+
+.pap-results-visit-summary {
+  display: grid;
+  grid-template-columns: 1.25fr 0.8fr 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
+  background: linear-gradient(110deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.pap-results-visit-summary > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pap-results-summary-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pap-results-visit-summary strong {
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.pap-results-section {
+  padding: 17px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.045);
+}
+
+.pap-results-section:last-child {
+  margin-bottom: 0;
+}
+
+.pap-results-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+}
+
+.pap-results-section-heading > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.pap-results-section-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.pap-results-section-heading p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pap-results-section-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 19px;
+}
+
+.pap-results-section-icon--green {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.pap-results-section-icon--blue {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+.pap-results-loading,
+.pap-results-empty-inline {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #64748b;
+  font-size: 13px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pap-results-empty-inline svg {
+  color: #94a3b8;
+  font-size: 19px;
+}
+
+.pap-results-pdf-box {
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.pap-results-pdf-box iframe {
+  display: block;
+  width: 100%;
+  height: 315px;
+  border: 0;
+  background: #ffffff;
+}
+
+.pap-results-pdf-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid #dbeafe;
+}
+
+.pap-results-pdf-actions > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pap-results-pdf-actions > span svg {
+  color: #dc2626;
+}
+
+.pap-results-pdf-actions > div {
+  display: flex;
+  gap: 8px;
+}
+
+.pap-results-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.pap-results-order {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #fbfdff;
+}
+
+.pap-results-order-number {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  color: #0369a1;
+  background: #e0f2fe;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.pap-results-order-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pap-results-order-main strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13.5px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pap-results-order-main span,
+.pap-results-order-main small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pap-results-order-main small {
+  color: #475569;
+}
+
+.pap-results-order-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.pap-results-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pap-results-modal-footer > span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pap-results-preview {
+  min-height: 510px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 9px;
+}
+
+.pap-results-preview iframe {
+  width: 100%;
+  height: 68vh;
+  border: 0;
+}
+
+.pap-results-preview img {
+  max-width: 100%;
+  max-height: 68vh;
+  object-fit: contain;
+  border-radius: 7px;
+}
+
+.pap-results-preview-other {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #2563eb;
+}
+
+.pap-results-preview-other svg {
+  font-size: 46px;
+}
+
+@media (max-width: 700px) {
+  .pap-results-modal-content {
+    padding: 13px;
+  }
+
+  .pap-results-visit-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .pap-results-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .pap-results-section-heading > div:nth-child(2) {
+    flex: 1 1 calc(100% - 50px);
+  }
+
+  .pap-results-order {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .pap-results-order-main {
+    width: calc(100% - 48px);
+    flex: 1 1 calc(100% - 48px);
+  }
+
+  .pap-results-order-status {
+    width: 100%;
+    padding-left: 43px;
+  }
+
+  .pap-results-pdf-actions,
+  .pap-results-modal-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* Nút 2: Phiếu hẹn khám (Secondary Blue Pill) */
 .pap-btn-ticket {
   background: #f0f9ff;

@@ -6,6 +6,7 @@ export function presentAppointment(x: any) {
     id: x.id,
     appointmentCode: x.appointmentCode,
     patientId: x.patientId,
+    reasonForVisit: x.reasonForVisit ?? null,
     serviceId: x.serviceId,
     channel: x.channel,
     selectionMode: x.selectionMode,

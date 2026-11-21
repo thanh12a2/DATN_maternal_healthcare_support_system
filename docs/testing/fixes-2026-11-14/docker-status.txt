@@ -1,0 +1,37 @@
+﻿appointment-database Up 3 minutes (healthy)
+appointment-service Up 3 minutes
+audit-log-database Up 3 minutes (healthy)
+audit-log-service Up 3 minutes
+auth-database Up 3 minutes (healthy)
+auth-service Up 3 minutes
+billing-database Up 3 minutes (healthy)
+billing-service Up 3 minutes
+catalog-database Up 3 minutes (healthy)
+consultation-database Up 3 minutes (healthy)
+consultation-service Up 3 minutes
+doctor-database Up 3 minutes (healthy)
+doctor-service Up 3 minutes
+document-database Up 3 minutes (healthy)
+document-service Up 3 minutes
+frontend Up 3 minutes
+gateway Up 3 minutes (healthy)
+kong-database Up 3 minutes (healthy)
+medical-record-database Up 3 minutes (healthy)
+medical-record-service Up 3 minutes
+notification-database Up 3 minutes (healthy)
+notification-service Up 3 minutes
+patient-database Up 3 minutes (healthy)
+patient-service Up 3 minutes (healthy)
+prescription-database Up 3 minutes (healthy)
+prescription-service Up 3 minutes
+queue-database Up 3 minutes (healthy)
+queue-service Up 3 minutes
+rabbitmq Up 3 minutes (healthy)
+receptionist-database Up 3 minutes (healthy)
+receptionist-service Up 3 minutes
+reporting-database Up 3 minutes (healthy)
+reporting-service Up 3 minutes
+sample-service Up 3 minutes
+service-catalog-service Up 3 minutes (healthy)
+treatment-plan-database Up 3 minutes (healthy)
+treatment-plan-service Up 3 minutes

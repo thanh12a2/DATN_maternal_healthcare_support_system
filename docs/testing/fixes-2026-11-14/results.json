@@ -1,0 +1,225 @@
+{
+  "counts": {
+    "PASS": 35
+  },
+  "total": 35,
+  "backend": {
+    "passed": 33,
+    "skipped": 1
+  },
+  "frontend": {
+    "passed": 16
+  },
+  "checks": [
+    {
+      "id": "F01-own",
+      "status": "PASS",
+      "detail": "Owner can still read finalized encounter",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-other",
+      "status": "PASS",
+      "detail": "Another patient is denied",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-list",
+      "status": "PASS",
+      "detail": "Encounter listing is scoped, no ID-based bypass",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-forged",
+      "status": "PASS",
+      "detail": "Forged patient filter denied",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-pregnancy",
+      "status": "PASS",
+      "detail": "Pregnancy history cannot bypass patient scope",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F07-demo",
+      "status": "PASS",
+      "detail": "Additive demo pregnancy exists and is scoped to owner",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-write",
+      "status": "PASS",
+      "detail": "Patient cannot write another encounter",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F01-ui",
+      "status": "PASS",
+      "detail": "Owner result page still works after access fix",
+      "evidence": "access-regression.json"
+    },
+    {
+      "id": "F02-nationalId",
+      "status": "PASS",
+      "detail": "Actual national ID, no hardcoded fallback",
+      "evidence": "demographics-regression.json"
+    },
+    {
+      "id": "F02-phone",
+      "status": "PASS",
+      "detail": "Actual phone from Patient Service",
+      "evidence": "demographics-regression.json"
+    },
+    {
+      "id": "F02-address",
+      "status": "PASS",
+      "detail": "Actual address",
+      "evidence": "demographics-regression.json"
+    },
+    {
+      "id": "F02-contact",
+      "status": "PASS",
+      "detail": "Actual emergency contact",
+      "evidence": "demographics-regression.json"
+    },
+    {
+      "id": "F02-age",
+      "status": "PASS",
+      "detail": "DOB and age calculated from actual patient",
+      "evidence": "demographics-regression.json"
+    },
+    {
+      "id": "F06-booking",
+      "status": "PASS",
+      "detail": "Booking persists reason without changing statuses",
+      "evidence": "clinical-setup.json"
+    },
+    {
+      "id": "F04-today",
+      "status": "PASS",
+      "detail": "Same-day reception still succeeds",
+      "evidence": "clinical-setup.json"
+    },
+    {
+      "id": "F06-encounter",
+      "status": "PASS",
+      "detail": "Reception forwards booking reason to encounter",
+      "evidence": "clinical-setup.json"
+    },
+    {
+      "id": "F06-ui",
+      "status": "PASS",
+      "detail": "Doctor sees original booking reason before editing",
+      "evidence": "clinical-lifecycle.json"
+    },
+    {
+      "id": "F03-start",
+      "status": "PASS",
+      "detail": "Direct open from waiting moves consultation ticket to IN_SERVICE",
+      "evidence": "clinical-lifecycle.json"
+    },
+    {
+      "id": "F03-complete",
+      "status": "PASS",
+      "detail": "Completion closes queue ticket",
+      "evidence": "clinical-lifecycle.json"
+    },
+    {
+      "id": "F03-appointment",
+      "status": "PASS",
+      "detail": "Appointment lifecycle preserved",
+      "evidence": "clinical-lifecycle.json"
+    },
+    {
+      "id": "F03-journey",
+      "status": "PASS",
+      "detail": "Journey completed, no residual waiting ticket",
+      "evidence": "clinical-lifecycle.json"
+    },
+    {
+      "id": "F05-copy",
+      "status": "PASS",
+      "detail": "Countdown describes a choice awaiting confirmation, not a server reservation",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "F05-api",
+      "status": "PASS",
+      "detail": "No server hold before confirmation, existing booking flow preserved",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "F06-ui-payload",
+      "status": "PASS",
+      "detail": "Patient-entered reason persists through real UI booking",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "REG-booking",
+      "status": "PASS",
+      "detail": "Future appointment remains directly BOOKED after patient confirmation",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "F04-future",
+      "status": "PASS",
+      "detail": "Future reception blocked before collection",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "F04-no-invoice",
+      "status": "PASS",
+      "detail": "Rejected future reception creates no invoice",
+      "evidence": "future-booking.json"
+    },
+    {
+      "id": "A05",
+      "status": "PASS",
+      "detail": "Bệnh nhân Ngọc Mai không đọc được lịch Thanh Hằng: 404",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "A06",
+      "status": "PASS",
+      "detail": "Không đọc được bệnh án người khác: 403; actual patientId=undefined",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C01",
+      "status": "PASS",
+      "detail": "Hai bệnh nhân tranh cùng slot: 409/201",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C02",
+      "status": "PASS",
+      "detail": "Retry cùng idempotency key trả đúng hold cũ",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C03",
+      "status": "PASS",
+      "detail": "Cùng key khác payload bị chặn: 409",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "A07",
+      "status": "PASS",
+      "detail": "Không giải phóng được hold của người khác: 404",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C04",
+      "status": "PASS",
+      "detail": "Chủ hold giải phóng được chỗ",
+      "evidence": "patient-api-safeguards.json"
+    },
+    {
+      "id": "C05",
+      "status": "PASS",
+      "detail": "Hold đã release không tạo được lịch: 409",
+      "evidence": "patient-api-safeguards.json"
+    }
+  ]
+}

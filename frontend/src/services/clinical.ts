@@ -37,6 +37,11 @@ export function updateServiceOrderResult(request: Requester, orderId: string, st
     body: JSON.stringify({ structuredResult }),
   });
 }
+export function verifyServiceOrderResult(request: Requester, orderId: string) {
+  return request<any>(`/api/medical-records/orders/${encodeURIComponent(orderId)}/verify`, {
+    method: 'POST',
+  });
+}
 export function removeServiceOrderCharge(request: Requester, orderId: string) {
   return request<any>(`/api/billing/invoices/service-order/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
 }

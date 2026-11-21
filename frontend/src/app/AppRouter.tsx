@@ -7,12 +7,14 @@ import { NotFoundPage } from '../shared/pages/NotFoundPage';
 import { PatientHomePage } from '../modules/patient/pages/PatientHomePage';
 import { PortalLandingPage } from '../modules/patient/pages/PortalLandingPage';
 import { PatientProfilePage } from '../modules/patient/pages/PatientProfilePage';
+import { EmailVerificationPage } from '../modules/patient/components/EmailVerification';
 import { PatientBookingPage } from '../modules/patient/pages/PatientBookingPage';
 import { PatientServiceCatalogPage } from '../modules/patient/pages/PatientServiceCatalogPage';
 import {
   AppointmentDetailPage,
   PatientAppointmentsPage,
 } from '../modules/patient/pages/PatientAppointmentsPage';
+import { PatientAppointmentResultsPage } from '../modules/patient/pages/PatientAppointmentResultsPage';
 
 import { PatientNotificationsBillingPage } from '../modules/patient/pages/PatientNotificationsBillingPage';
 import { PatientServiceDetailPage } from '../modules/patient/pages/PatientServiceDetailPage';
@@ -281,6 +283,7 @@ function Routes() {
   }
 
   if (path === '/tong-quan') return <Redirect to="/" />;
+  if (path === '/xac-minh-email') return <EmailVerificationPage />;
   if (path === '/ho-so/hoan-thien' || path === '/ho-so')
     return (
       <Protected>
@@ -313,6 +316,17 @@ function Routes() {
       </Protected>
     );
   const appointmentDetailMatch = rawPath.match(/^\/lich-hen\/([^/]+)$/i);
+  const appointmentResultsMatch = rawPath.match(/^\/lich-hen\/([^/]+)\/ket-qua$/i);
+  if (appointmentResultsMatch)
+    return (
+      <Protected>
+        <PatientProfileRequired>
+          <PatientAppointmentResultsPage
+            appointmentId={decodeURIComponent(appointmentResultsMatch[1])}
+          />
+        </PatientProfileRequired>
+      </Protected>
+    );
   if (appointmentDetailMatch)
     return (
       <Protected>

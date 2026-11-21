@@ -498,13 +498,15 @@ export function PatientAppointmentsPage() {
   const getDoctorDisplay = (apt: Appointment) => {
     if (apt.selectionMode === 'RANK') {
       const doc = apt.assignedDoctorId ? doctorMap.get(apt.assignedDoctorId) : null;
-      if (doc?.displayName) {
-        return `BS. ${doc.displayName}`;
+      const assignedName = apt.assignedDoctorName || doc?.displayName || doc?.fullName || doc?.profile?.fullName || doc?.name;
+      if (assignedName) {
+        return `BS. ${String(assignedName).replace(/^BS\.\s*/i, '')}`;
       }
       return 'Bệnh viện tự động sắp xếp';
     }
     const doc = apt.assignedDoctorId ? doctorMap.get(apt.assignedDoctorId) : null;
-    return doc?.displayName ? `BS. ${doc.displayName}` : 'Bác sĩ chuyên khoa Tâm An';
+    const assignedName = apt.assignedDoctorName || doc?.displayName || doc?.fullName || doc?.profile?.fullName || doc?.name;
+    return assignedName ? `BS. ${String(assignedName).replace(/^BS\.\s*/i, '')}` : 'Bác sĩ chuyên khoa Tâm An';
   };
 
   const renderAppointmentCard = (apt: Appointment) => {
@@ -527,7 +529,9 @@ export function PatientAppointmentsPage() {
       <article
         key={apt.id || apt.appointmentCode}
         className={`pap-card ${cardVariant}`}
-        onClick={() => setSelectedTicket(apt)}
+        onClick={() => {
+          if (apt.id) window.location.href = `/lich-hen/${encodeURIComponent(String(apt.id))}`;
+        }}
         style={{ cursor: 'pointer' }}
         title="Nhấn để xem chi tiết phiếu hẹn"
       >
@@ -634,52 +638,26 @@ export function PatientAppointmentsPage() {
 
           <div className="pap-card-btns-wrap">
             {(apt.status === 'COMPLETED' || apt.completedAt) && (
-              <>
-                <button
-                  type="button"
-                  className="pap-btn-report"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenClsResults(apt);
-                  }}
-                  style={{
-                    background: '#f0fdfa',
-                    borderColor: '#99f6e4',
-                    color: '#0d9488',
-                  }}
-                  title="Xem các tệp kết quả siêu âm, xét nghiệm cận lâm sàng đã thực hiện"
-                >
-                  <FileText size={16} />
-                  <span>Kết quả CLS</span>
-                </button>
-                <button
-                  type="button"
-                  className="pap-btn-report"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenPatientReport(apt);
-                  }}
-                  disabled={loadingReport}
-                  title="Xem và tải phiếu kết quả khám bệnh PDF bản in A4"
-                >
-                  <FileCheck size={16} />
-                  <span>Kết quả khám (PDF)</span>
-                </button>
-              </>
+              <AppLink
+                href={`/lich-hen/${encodeURIComponent(String(apt.id || ''))}/ket-qua`}
+                className="pap-btn-results"
+                onClick={(e: any) => e.stopPropagation()}
+                title="Xem toàn bộ kết quả khám và kết quả chỉ định của lần khám"
+              >
+                <FileCheck size={16} />
+                <span>Xem kết quả</span>
+              </AppLink>
             )}
 
-            <button
-              type="button"
+            <AppLink
+              href={`/lich-hen/${encodeURIComponent(String(apt.id || ''))}`}
               className="pap-btn-ticket"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedTicket(apt);
-              }}
+              onClick={(e: any) => e.stopPropagation()}
               title="Xem thông tin chi tiết phiếu hẹn"
             >
               <FileText size={15} />
               <span>Phiếu hẹn</span>
-            </button>
+            </AppLink>
 
             {isPast && (
               <AppLink
@@ -963,7 +941,9 @@ export function PatientAppointmentsPage() {
                         <button
                           type="button"
                           className="pap-btn-hero-view"
-                          onClick={() => setSelectedTicket(nextAppointment)}
+                          onClick={() => {
+                            if (nextAppointment.id) window.location.href = `/lich-hen/${encodeURIComponent(String(nextAppointment.id))}`;
+                          }}
                         >
                           <FileText size={16} />
                           <span>Xem Chi Tiết Phiếu Hẹn</span>
@@ -1069,6 +1049,7 @@ export function PatientAppointmentsPage() {
         appointmentCode={clsAppointment?.appointmentCode || clsAppointment?.id}
         patientName={patientProfile?.fullName}
       />
+
     </div>
   );
 }

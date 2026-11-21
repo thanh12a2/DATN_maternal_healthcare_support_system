@@ -9,6 +9,7 @@ export interface AppointmentRealtimeEvent {
     | 'appointment.cancelled'
     | 'appointment.rescheduled'
     | 'appointment.order_created'
+    | 'appointment.order_deleted'
     | 'appointment.invoice_updated';
   appointmentId: string;
   patientId: string;

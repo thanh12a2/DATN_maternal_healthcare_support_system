@@ -6,6 +6,12 @@ import { QueueDomainService } from './queue.service';
 @UseGuards(ServiceJwtGuard)
 export class QueueGrpcController {
   constructor(private readonly s: QueueDomainService) {}
+  @GrpcMethod('QueueInternalService', 'SyncClinicalJourney')
+  @ServiceCallers('medical-record-service')
+  @ServiceScopes('queue:clinical:sync')
+  syncClinical(request: any) {
+    return this.s.syncClinicalJourney(request);
+  }
   @GrpcMethod('QueueInternalService', 'CreateOrGetJourney')
   @ServiceCallers('receptionist-service')
   @ServiceScopes('queue:journey:create')

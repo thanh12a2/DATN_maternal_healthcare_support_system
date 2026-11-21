@@ -1,0 +1,133 @@
+{
+  "appointments": [
+    {
+      "id": "35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "appointmentCode": "APTMWFTH9XT234394",
+      "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+      "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+      "channel": "ONLINE",
+      "selectionMode": "DOCTOR",
+      "requestedDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+      "requestedRankCode": null,
+      "assignedDoctorId": "dad9cbac-dd53-4f4c-9858-6abccb6876d4",
+      "assignedRankCode": "HEAD_DOCTOR",
+      "specialtyId": "cb62b6a3-f1eb-407b-95f1-29f3f0b14de8",
+      "roomId": "915191d7-ef75-4556-b4a9-4eee6b9f0510",
+      "roomCode": "P.201",
+      "roomName": "Phòng khám Sản Phụ khoa 201",
+      "room": {
+        "id": "915191d7-ef75-4556-b4a9-4eee6b9f0510",
+        "code": "P.201",
+        "name": "Phòng khám Sản Phụ khoa 201"
+      },
+      "availabilityVersion": 1,
+      "startAt": "2026-11-16T02:00:00.000Z",
+      "endAt": "2026-11-16T02:30:00.000Z",
+      "status": "COMPLETED",
+      "pricing": {
+        "serviceName": "Khám thai định kỳ chuẩn y khoa",
+        "serviceVersion": 1,
+        "basePriceId": "878ff23c-e2d2-4803-87a7-c49c9762a797",
+        "baseAmountMinor": 300000,
+        "rankSurchargePriceId": "279e787a-e0d7-4724-8753-a1d97f283152",
+        "rankSurchargeAmountMinor": 250000,
+        "estimatedTotalMinor": 550000,
+        "currency": "VND"
+      },
+      "queueEstimateMinutes": 0,
+      "receptionCaseId": "0b85a2d7-8507-4bc3-a11c-2826dc3ce750",
+      "encounterId": "19f9fc03-186e-43e0-9a36-11742d33c527",
+      "checkedInAt": "2026-11-14T03:03:30.386Z",
+      "clinicalStartedAt": "2026-11-14T03:04:38.737Z",
+      "completedAt": "2026-11-14T03:05:34.575Z",
+      "cancellationReason": null,
+      "rescheduleCount": 0,
+      "version": 4,
+      "createdAt": "2026-11-14T02:59:12.402Z",
+      "updatedAt": "2026-11-14T03:05:34.601Z"
+    },
+    {
+      "id": "f3d3e8db-b571-4207-8a2d-1ee9ce500ab6",
+      "appointmentCode": "APTMWFTGJ2SAD764C",
+      "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+      "serviceId": "421179bf-19d1-436d-948f-65a61f7c35d7",
+      "channel": "ONLINE",
+      "selectionMode": "DOCTOR",
+      "requestedDoctorId": null,
+      "requestedRankCode": "BASIC",
+      "assignedDoctorId": "d35bd583-ecf1-4213-a201-45d9ccb2de63",
+      "assignedRankCode": "BASIC",
+      "specialtyId": "cb62b6a3-f1eb-407b-95f1-29f3f0b14de8",
+      "roomId": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+      "roomCode": "P.202",
+      "roomName": "Phòng khám Sản Phụ khoa 202",
+      "room": {
+        "id": "cb7fd674-0ad1-4b93-ba1a-3379101d2421",
+        "code": "P.202",
+        "name": "Phòng khám Sản Phụ khoa 202"
+      },
+      "availabilityVersion": 1,
+      "startAt": "2026-11-16T03:00:00.000Z",
+      "endAt": "2026-11-16T03:30:00.000Z",
+      "status": "CANCELLED",
+      "pricing": {
+        "serviceName": "Khám thai định kỳ chuẩn y khoa",
+        "serviceVersion": 1,
+        "basePriceId": "878ff23c-e2d2-4803-87a7-c49c9762a797",
+        "baseAmountMinor": 300000,
+        "rankSurchargePriceId": "e52e30b0-01d0-42fd-87fe-6a3baa7fd42c",
+        "rankSurchargeAmountMinor": 0,
+        "estimatedTotalMinor": 300000,
+        "currency": "VND"
+      },
+      "queueEstimateMinutes": 0,
+      "receptionCaseId": null,
+      "encounterId": null,
+      "checkedInAt": null,
+      "clinicalStartedAt": null,
+      "completedAt": null,
+      "cancellationReason": "Lễ tân hủy lịch theo yêu cầu bệnh nhân",
+      "rescheduleCount": 1,
+      "version": 3,
+      "createdAt": "2026-11-14T02:58:37.589Z",
+      "updatedAt": "2026-11-14T03:09:24.969Z"
+    }
+  ],
+  "queue": {
+    "data": {
+      "id": "ba3281fc-37bc-4345-a6d7-afbad3b29bbc",
+      "journeyId": "ba3281fc-37bc-4345-a6d7-afbad3b29bbc",
+      "appointmentId": "35295482-d57b-4e48-8c04-4b19faa71f0b",
+      "patientId": "7916a729-2282-4604-b45d-02c3983eed71",
+      "encounterId": "19f9fc03-186e-43e0-9a36-11742d33c527",
+      "businessDate": "2026-11-14",
+      "lateMinutes": 0,
+      "lateDemoted": false,
+      "state": "JOURNEY_STATE_ACTIVE",
+      "version": "1",
+      "tickets": [
+        {
+          "id": "b0c31e79-8e1a-4067-9b0b-ff5b96115b0b",
+          "ticketId": "b0c31e79-8e1a-4067-9b0b-ff5b96115b0b",
+          "journeyId": "ba3281fc-37bc-4345-a6d7-afbad3b29bbc",
+          "stageId": "3c3f4862-da45-4901-9756-c3cb4e817a16",
+          "sourceOrderId": "",
+          "stageCode": "CONSULTATION",
+          "roomCode": "P.201",
+          "ordinal": 1,
+          "ticketCode": "201-01",
+          "state": "TICKET_STATE_WAITING",
+          "basePriority": "BASE_PRIORITY_ROUTINE",
+          "lateDemotion": false,
+          "callCount": 0,
+          "version": "1",
+          "enqueuedAt": {
+            "seconds": "1794625410",
+            "nanos": 473000000
+          }
+        }
+      ]
+    },
+    "id": "ba3281fc-37bc-4345-a6d7-afbad3b29bbc"
+  }
+}
