@@ -33,6 +33,10 @@ export class ListServicesQueryDto {
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) page?: number;
 }
 
+export class ListAdminServicesQueryDto extends ListServicesQueryDto {
+  @IsOptional() @IsEnum(CatalogStatus) status?: CatalogStatus;
+}
+
 export class CreateServiceDto {
   @IsString() @Length(2, 50) code!: string;
   @IsOptional() @IsString() @Length(2, 160) slug?: string;
@@ -52,6 +56,12 @@ export class CreateServiceDto {
   @Type(() => Number)
   durationMinutes?: number;
   @IsOptional() @IsBoolean() bookingEnabled?: boolean;
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  @Type(() => Number)
+  initialPriceMinor?: number;
   @IsOptional()
   @IsEnum(DoctorRankSelectionPolicy)
   doctorRankSelectionPolicy?: DoctorRankSelectionPolicy;

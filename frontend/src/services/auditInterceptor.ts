@@ -104,6 +104,10 @@ export function deriveAuditDetails(
   bodyData: any,
   responseResult: any,
 ): DerivedAuditDetails {
+  // Several admin APIs return { data: entity }; use the entity ID in the audit event.
+  if (responseResult?.data && !Array.isArray(responseResult.data)) {
+    responseResult = responseResult.data;
+  }
   const normPath = path.split('?')[0];
   const upperMethod = method.toUpperCase();
 
@@ -128,7 +132,7 @@ export function deriveAuditDetails(
   let aggregateId = 'general';
   let action = `${upperMethod}_${normPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
   const changedFields: string[] = Object.keys(bodyData || {});
-  const metadata: Record<string, any> = { ...bodyData };
+  const metadata: Record<string, any> = {};
 
   // 1. Quản lý người dùng (auth-service)
   if (normPath.includes('/auth/admin/users')) {

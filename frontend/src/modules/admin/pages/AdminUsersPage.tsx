@@ -154,7 +154,7 @@ export function AdminUsersPage() {
     setSelectedRole(undefined);
     setSelectedStatus(undefined);
     setPage(1);
-    void loadData('', undefined, undefined, 1);
+    void loadData('', '', '', 1);
   };
 
   // Notification feedback modal state (Thành công / Thất bại)

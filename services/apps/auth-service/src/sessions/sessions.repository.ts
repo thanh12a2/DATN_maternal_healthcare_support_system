@@ -45,15 +45,16 @@ export class SessionsRepository {
     };
   }
 
-  async rotateRefreshSession(input: RotateRefreshSessionInput): Promise<void> {
-    await this.prisma.authSession.update({
-      where: { id: input.sessionId },
+  async rotateRefreshSession(input: RotateRefreshSessionInput): Promise<boolean> {
+    const changed = await this.prisma.authSession.updateMany({
+      where: { id: input.sessionId, refreshTokenHash: input.previousRefreshTokenHash, revokedAt: null, expiresAt: { gt: input.lastUsedAt } },
       data: {
         refreshTokenHash: input.refreshTokenHash,
         expiresAt: input.expiresAt,
         lastUsedAt: input.lastUsedAt,
       },
     });
+    return changed.count === 1;
   }
 
   async revokeRefreshSession(input: RevokeRefreshSessionInput): Promise<void> {

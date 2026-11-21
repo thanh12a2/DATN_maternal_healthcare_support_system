@@ -14,6 +14,7 @@ const SUPPORTED_ROLES: PatientAuthRole[] = [
   'DOCTOR',
   'NURSE',
   'ADMIN',
+  'CLINIC_MANAGER',
 ];
 
 type PublicJwk = {

@@ -39,6 +39,17 @@ export class AdminUsersService {
 
     const where: Prisma.AccountWhereInput = {};
 
+    if (query.ids) {
+      const ids = query.ids.split(',');
+      if (
+        ids.length > 50 ||
+        ids.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
+      ) {
+        throw new BadRequestException('Danh sách ID tài khoản không hợp lệ');
+      }
+      where.id = { in: ids };
+    }
+
     if (query.search?.trim()) {
       where.email = { contains: query.search.trim(), mode: 'insensitive' };
     }

@@ -3,8 +3,10 @@ import {
   Controller,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -30,7 +32,7 @@ export class TreatmentController {
   constructor(private readonly s: TreatmentService, private readonly access: ClinicalDoctorAccess) {}
 
   private async authorizeWrite(a: PublicAuthContext, encounterId: string, patientId: string, allowFinalized = false) {
-    if (a.role !== 'DOCTOR') return;
+    if (a.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     if (!patientId) throw new BadRequestException('PATIENT_REQUIRED');
     const encounter = await this.access.assertEncounter(a, encounterId, patientId);
     const states = ['IN_PROGRESS', 'ENCOUNTER_STATE_IN_PROGRESS', ...(allowFinalized ? ['FINALIZED', 'ENCOUNTER_STATE_FINALIZED'] : [])];
@@ -39,7 +41,7 @@ export class TreatmentController {
   }
 
   private async authorizeExisting(a: PublicAuthContext, id: string, b: any) {
-    if (a.role !== 'DOCTOR') return;
+    if (a.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     if (!Number.isInteger(b?.version) || b.version < 1) throw new BadRequestException('VERSION_REQUIRED');
     const { data } = await this.s.getRest(id);
     await this.authorizeWrite(a, data.sourceEncounterId, data.patientId, data.status === 'ACTIVE');
@@ -61,7 +63,7 @@ export class TreatmentController {
   ) {
     const hasItems = Array.isArray(b.items) && b.items.length > 0;
     const hasValidItems = hasItems && b.items.every((x: any) => String(x.title ?? '').trim());
-    if (a.role === 'DOCTOR' && (!String(b.title ?? '').trim() || (!b.effectiveTo && !hasValidItems))) {
+    if (!String(b.title ?? '').trim() || (!b.effectiveTo && !hasValidItems)) {
       throw new BadRequestException('PLAN_CONTENT_REQUIRED');
     }
     const doctorId = await this.authorizeWrite(a, b.sourceEncounterId || b.encounterId, b.patientId);
@@ -71,6 +73,7 @@ export class TreatmentController {
   @UseGuards(PublicJwtGuard)
   @Get(['', 'treatment-plans'])
   async listTreatmentPlans(@Query() q: any, @CurrentAuth() a: PublicAuthContext) {
+    if (a.role === 'PATIENT') q.patientId = await this.access.assertPatient(a, q?.patientId);
     if (a.role === 'DOCTOR') await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
   }
@@ -83,8 +86,9 @@ export class TreatmentController {
 
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'treatment-plans/:id'])
-  async getTreatmentPlan(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+  async getTreatmentPlan(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() a: PublicAuthContext) {
     const result = await this.s.getRest(id);
+    if (a.role === 'PATIENT') await this.access.assertPatient(a, result.data.patientId);
     if (a.role === 'DOCTOR') await this.access.assertEncounter(a, result.data.sourceEncounterId, result.data.patientId);
     return result;
   }
@@ -96,7 +100,7 @@ export class TreatmentController {
     @Body() b: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
-    if (a.role === 'DOCTOR' && ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || b.items.some((x: any) => !String(x.title ?? '').trim()))))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
+    if ((b.title !== undefined && !String(b.title).trim()) || (b.items !== undefined && (!Array.isArray(b.items) || b.items.some((x: any) => !String(x.title ?? '').trim())))) throw new BadRequestException('PLAN_CONTENT_REQUIRED');
     await this.authorizeExisting(a, id, b);
     return this.s.updateRest(id, b, a);
   }
@@ -150,7 +154,8 @@ export class TreatmentController {
     // If route was items/:itemId/complete, planId param might be undefined or hold itemId
     const actualItemId = itemId || planId;
     const actualPlanId = itemId ? planId : undefined;
-    if (a.role === 'DOCTOR') {
+    if (a.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
+    {
       const parentId = await this.s.itemPlanId(actualItemId);
       if (actualPlanId && actualPlanId !== parentId) throw new BadRequestException('ITEM_PLAN_MISMATCH');
       await this.authorizeExisting(a, parentId, b);

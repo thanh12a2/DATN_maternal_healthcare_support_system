@@ -35,7 +35,6 @@ export interface PatientSearchResult {
 }
 
 export interface SearchPatientsParams {
-  query?: string;
   fullName?: string;
   phoneNumber?: string;
   nationalId?: string;
@@ -45,7 +44,6 @@ export interface SearchPatientsParams {
 
 export interface CreatePatientPayload {
   fullName: string;
-  email?: string;
   dateOfBirth: string; // YYYY-MM-DD
   phoneNumber: string;
   nationalId?: string;
@@ -85,7 +83,6 @@ export async function searchPatients(
     page: params.page ?? 1,
     limit: params.limit ?? 10,
   };
-  if (params.query?.trim()) body.query = params.query.trim();
   if (params.fullName?.trim()) body.fullName = params.fullName.trim();
   if (params.phoneNumber?.trim()) body.phoneNumber = params.phoneNumber.trim();
   if (params.nationalId?.trim()) body.nationalId = params.nationalId.trim();
@@ -152,15 +149,6 @@ export async function updatePatient(
     },
   );
   return 'data' in res ? res.data : res;
-}
-
-export async function deletePatient(
-  request: Requester,
-  patientId: string,
-): Promise<void> {
-  await request<void>(`/api/patients/${encodeURIComponent(patientId)}`, {
-    method: 'DELETE',
-  });
 }
 
 export interface CreateEmergencyContactPayload {

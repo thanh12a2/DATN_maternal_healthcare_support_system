@@ -220,6 +220,7 @@ export function PatientSidebar({
   const pathname = usePathname();
   const auth = useAuthSession();
   const role = auth.user?.role as Role | undefined;
+  const isAdmin = role === 'ADMIN';
   const storageKey =
     role === 'ADMIN' ? 'an-tam-admin-sidebar-collapsed' : STORAGE_KEY;
   const [collapsed, setCollapsed] = useState(() => {
@@ -278,12 +279,31 @@ export function PatientSidebar({
           href: `/workspace/${role.toLowerCase()}/${item.href}`,
         })) ?? patientNavItems)
       : patientNavItems;
+  const brand = (
+    <>
+      <img
+        src="/brand/logo-symbol-cropped.png"
+        alt={isAdmin ? '' : 'Tâm An'}
+        style={{ width: 28, height: 28, objectFit: 'contain' }}
+      />
+      <div className={isAdmin ? 'admin-sidebar-brand-copy' : undefined}>
+        <strong>Tâm An Hospital</strong>
+        <span>
+          {isAdmin
+            ? 'Admin portal'
+            : role === 'CLINIC_MANAGER'
+              ? 'Clinic manager portal'
+              : 'Patient portal'}
+        </span>
+      </div>
+    </>
+  );
   return (
     <div
       className={`patient-nav-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`}
     >
       <button
-        className="patient-menu-toggle patient-mobile-menu"
+        className={`patient-menu-toggle patient-mobile-menu ${isAdmin ? 'admin-mobile-brand' : ''}`}
         type="button"
         aria-label={
           mobileOpen ? 'Đóng thanh điều hướng' : 'Mở thanh điều hướng'
@@ -291,47 +311,59 @@ export function PatientSidebar({
         aria-expanded={mobileOpen}
         onClick={() => setMobileOpen((v) => !v)}
       >
-        <MenuGlyph />
+        {isAdmin ? (
+          <img src="/brand/logo-symbol-cropped.png" alt="" />
+        ) : (
+          <MenuGlyph />
+        )}
       </button>
       <aside className="patient-sidebar" aria-label="Điều hướng chính">
         <div className="patient-sidebar-head">
-          <button
-            className="patient-menu-toggle"
-            type="button"
-            aria-label={
-              collapsed
-                ? 'Mở rộng thanh điều hướng'
-                : 'Thu gọn thanh điều hướng'
-            }
-            aria-expanded={!collapsed}
-            onClick={() => {
-              if (window.matchMedia?.('(max-width: 820px)').matches)
-                setMobileOpen(false);
-              else setCollapsed((v) => !v);
-            }}
-          >
-            <MenuGlyph />
-          </button>
-          <div
-            className="patient-sidebar-brand"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <img
-              src="/brand/logo-symbol-cropped.png"
-              alt="Tâm An"
-              style={{ width: 28, height: 28, objectFit: 'contain' }}
-            />
-            <div>
-              <strong>Tâm An Hospital</strong>
-              <span>
-                {role === 'ADMIN'
-                  ? 'Admin portal'
-                  : role === 'CLINIC_MANAGER'
-                    ? 'Clinic manager portal'
-                    : 'Patient portal'}
-              </span>
+          {!isAdmin && (
+            <button
+              className="patient-menu-toggle"
+              type="button"
+              aria-label={
+                collapsed
+                  ? 'Mở rộng thanh điều hướng'
+                  : 'Thu gọn thanh điều hướng'
+              }
+              aria-expanded={!collapsed}
+              onClick={() => {
+                if (window.matchMedia?.('(max-width: 820px)').matches)
+                  setMobileOpen(false);
+                else setCollapsed((v) => !v);
+              }}
+            >
+              <MenuGlyph />
+            </button>
+          )}
+          {isAdmin ? (
+            <button
+              className="patient-sidebar-brand admin-sidebar-brand"
+              type="button"
+              aria-label={
+                collapsed
+                  ? 'Mở rộng thanh điều hướng'
+                  : 'Thu gọn thanh điều hướng'
+              }
+              aria-expanded={!collapsed}
+              onClick={() => {
+                if (window.matchMedia?.('(max-width: 820px)').matches)
+                  setMobileOpen(false);
+                else setCollapsed((v) => !v);
+              }}
+            >
+              {brand}
+            </button>
+          ) : (
+            <div
+              className="patient-sidebar-brand"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              {brand}
             </div>
-          </div>
+          )}
         </div>
         <nav className="patient-sidebar-nav">
           <p className="patient-nav-label">

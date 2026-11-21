@@ -19,6 +19,7 @@ import {
 import {
   AvailabilityReasonCode,
   AvailabilityType,
+  DoctorConsultationRank,
   DoctorStatus,
   RoomStatus,
   ScheduleStatus,
@@ -47,9 +48,13 @@ export class ProfileDto {
 export class CreateDoctorDto {
   @IsUUID() accountId!: string;
   @IsString() @Length(3, 50) licenseNumber!: string;
+  @IsOptional() @IsEnum(DoctorConsultationRank) consultationRank?: DoctorConsultationRank;
+  @IsOptional() @IsUUID() specialtyId?: string;
   @ValidateNested() @Type(() => ProfileDto) profile!: ProfileDto;
 }
 export class UpdateDoctorDto {
+  @IsOptional() @IsEnum(DoctorConsultationRank) consultationRank?: DoctorConsultationRank;
+  @IsOptional() @IsUUID() specialtyId?: string;
   @IsOptional() @IsString() @Length(2, 150) fullName?: string;
   @IsOptional() @IsString() @MaxLength(100) professionalTitle?: string;
   @IsOptional() @IsString() @MaxLength(2000) biography?: string;
@@ -73,6 +78,12 @@ export class CreateSpecialtyDto {
   @IsString() @Length(2, 50) code!: string;
   @IsString() @Length(2, 120) name!: string;
   @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @IsOptional() @IsEnum(SpecialtyStatus) status?: SpecialtyStatus;
+}
+export class UpdateSpecialtyDto {
+  @IsOptional() @IsString() @Length(2, 120) name?: string;
+  @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @IsOptional() @IsEnum(SpecialtyStatus) status?: SpecialtyStatus;
 }
 export class SpecialtyLinkDto {
   @Transform(({ value }) => {

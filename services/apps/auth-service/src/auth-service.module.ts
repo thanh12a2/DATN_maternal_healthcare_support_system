@@ -9,6 +9,7 @@ import { PasswordManagementModule } from './password-management/password-managem
 import { SecurityModule } from './security/security.module';
 import { AuthGrpcModule } from './grpc/auth-grpc.module';
 import { EmailVerificationModule } from './email-verification/email-verification.module';
+import { AdminUsersModule } from './admin-users/admin-users.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EmailVerificationModule } from './email-verification/email-verification
     SecurityModule,
     AuthGrpcModule,
     EmailVerificationModule,
+    AdminUsersModule,
   ],
   controllers: [AuthServiceController],
   providers: [AuthServiceService],

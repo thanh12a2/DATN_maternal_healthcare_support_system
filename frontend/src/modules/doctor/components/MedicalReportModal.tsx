@@ -8,6 +8,7 @@ import {
   CheckCircleFilled,
   ReloadOutlined,
 } from '@ant-design/icons';
+import { useAuthSession } from '../../../app/AuthSessionProvider';
 
 const { Text } = Typography;
 
@@ -29,14 +30,12 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
   patientName,
   fileName,
 }) => {
+  const { stream } = useAuthSession();
   const [loading, setLoading] = useState(false);
   const [blobPdfUrl, setBlobPdfUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const activeBlobRef = useRef<string | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-  const pdfUrl = documentId ? `${API_BASE_URL}/api/documents/${documentId}/content?format=pdf` : '';
-  const downloadUrl = documentId ? `${API_BASE_URL}/api/documents/${documentId}/content?download=true` : '';
 
   const loadPdfContent = async () => {
     if (!documentId || !open) return;
@@ -51,12 +50,7 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
     setBlobPdfUrl(null);
 
     try {
-      const response = await fetch(pdfUrl, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/pdf',
-        },
-      });
+      const response = await stream(`/api/documents/${encodeURIComponent(documentId)}/content?format=pdf`);
 
       if (!response.ok) {
         throw new Error(`Máy chủ trả về trạng thái ${response.status}`);
@@ -97,10 +91,10 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
         activeBlobRef.current = null;
       }
     };
-  }, [open, documentId, pdfUrl]);
+  }, [open, documentId, stream]);
 
   const handlePrint = () => {
-    const targetUrl = blobPdfUrl || pdfUrl;
+    const targetUrl = blobPdfUrl;
     if (targetUrl) {
       const win = window.open(targetUrl, '_blank');
       if (win) {
@@ -114,7 +108,7 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
   };
 
   const handleOpenNewTab = () => {
-    const targetUrl = blobPdfUrl || pdfUrl;
+    const targetUrl = blobPdfUrl;
     if (targetUrl) {
       window.open(targetUrl, '_blank');
     }
@@ -175,14 +169,14 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
             {fileName ? <Text ellipsis style={{ maxWidth: 350 }}>Tên file: <code>{fileName}</code></Text> : 'Định dạng chuẩn A4 có chữ ký và dấu mộc'}
           </div>
           <Space size={10}>
-            <Button icon={<FullscreenOutlined />} onClick={handleOpenNewTab} disabled={!blobPdfUrl && !pdfUrl}>
+            <Button icon={<FullscreenOutlined />} onClick={handleOpenNewTab} disabled={!blobPdfUrl}>
               Mở tab mới
             </Button>
             <Button
               icon={<DownloadOutlined />}
-              href={blobPdfUrl || downloadUrl}
+              href={blobPdfUrl || undefined}
               download={fileName || 'phieu_kham_benh.pdf'}
-              disabled={!blobPdfUrl && !downloadUrl}
+              disabled={!blobPdfUrl}
             >
               Tải file PDF
             </Button>
@@ -190,7 +184,7 @@ export const MedicalReportModal: React.FC<MedicalReportModalProps> = ({
               type="primary"
               icon={<PrinterOutlined />}
               onClick={handlePrint}
-              disabled={!blobPdfUrl && !pdfUrl}
+              disabled={!blobPdfUrl}
               style={{ background: '#0B5CAD', borderColor: '#0B5CAD', fontWeight: 600 }}
             >
               In Phiếu Khám (A4)

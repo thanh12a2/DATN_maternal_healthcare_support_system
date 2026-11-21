@@ -822,40 +822,53 @@ export class MedicalDomainService {
     };
   }
 
-  async orderState(orderId: string, state: any, data?: any) {
+  async orderState(orderId: string, state: any, data?: any, actor?: string, role?: string) {
+    if (!['DOCTOR', 'NURSE', 'ADMIN'].includes(role ?? ''))
+      throw new ForbiddenException('CLINICAL_WRITE_REQUIRED');
     const order = await this.db.clinicalServiceOrder.findUnique({
       where: { id: orderId },
     });
     if (!order) throw new NotFoundException('ORDER_NOT_FOUND');
-    const updated = await this.db.clinicalServiceOrder.update({
-      where: { id: orderId },
+    if (role === 'DOCTOR') await this.assertDoctorAssigned(order.encounterId, actor!);
+    const encounter = await this.db.clinicalEncounter.findUnique({ where: { id: order.encounterId }, select: { state: true } });
+    if (encounter?.state === EncounterState.FINALIZED) throw new ConflictException('ENCOUNTER_FINALIZED');
+    const prior: Record<string, string> = { IN_PROGRESS: 'ORDERED', PERFORMED: 'IN_PROGRESS', RESULT_AVAILABLE: 'PERFORMED', VERIFIED: order.requiredResult ? 'RESULT_AVAILABLE' : 'PERFORMED' };
+    if (order.status !== prior[state]) throw new ConflictException('INVALID_ORDER_TRANSITION');
+    if (state === 'RESULT_AVAILABLE' && (data === null || data === undefined || (typeof data === 'object' && !Object.keys(data).length)))
+      throw new BadRequestException('RESULT_REQUIRED');
+    if (state === 'VERIFIED' && (!order.performedAt || (order.requiredResult && !order.structuredResult)))
+      throw new ConflictException('ORDER_RESULT_REQUIRED');
+    const changed = await this.db.clinicalServiceOrder.updateMany({
+      where: { id: orderId, version: order.version, status: order.status },
       data: {
         status: state,
         performedAt: state === 'PERFORMED' ? new Date() : undefined,
         verifiedAt: state === 'VERIFIED' ? new Date() : undefined,
-        structuredResult: data,
+        structuredResult: state === 'RESULT_AVAILABLE' ? data : undefined,
         version: { increment: 1 },
       },
     });
+    if (!changed.count) throw new ConflictException('ORDER_VERSION_CONFLICT');
+    const updated = await this.db.clinicalServiceOrder.findUniqueOrThrow({ where: { id: orderId } });
     return { data: updated };
   }
 
   async deleteOrder(orderId: string, actor: string, role?: string) {
+    if (role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     const order = await this.db.clinicalServiceOrder.findUnique({
       where: { id: orderId },
     });
     if (!order) throw new NotFoundException('ORDER_NOT_FOUND');
-    if (order.status === 'VERIFIED') {
-      throw new BadRequestException('CANNOT_DELETE_VERIFIED_ORDER');
-    }
-    await this.db.clinicalServiceOrder.delete({
-      where: { id: orderId },
-    });
+    await this.assertDoctorAssigned(order.encounterId, actor);
+    if (order.status !== 'ORDERED') throw new ConflictException('CANNOT_DELETE_STARTED_ORDER');
+    const changed = await this.db.clinicalServiceOrder.deleteMany({ where: { id: orderId, status: 'ORDERED', version: order.version } });
+    if (!changed.count) throw new ConflictException('ORDER_VERSION_CONFLICT');
     return { success: true, deletedOrderId: orderId };
   }
 
   async amend(id: string, data: any, actor: string, role?: string) {
-    if (role === 'DOCTOR') await this.assertDoctorAssigned(id, actor);
+    if (role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
+    await this.assertDoctorAssigned(id, actor);
     const x = await this.get(id);
     if (x.state !== EncounterState.FINALIZED) {
       throw new ConflictException('NOT_FINALIZED');

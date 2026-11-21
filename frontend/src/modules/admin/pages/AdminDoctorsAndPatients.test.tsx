@@ -130,23 +130,19 @@ describe('AdminDoctorsPage', () => {
       screen.getByRole('button', { name: /Chỉnh sửa/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Xóa bác sĩ/i }),
+      screen.getByRole('button', { name: /Xóa bác sĩ \(chưa hỗ trợ\)/i }),
     ).toBeInTheDocument();
   });
 
-  it('opens delete confirmation modal with red Xóa and Hủy', async () => {
+  it('disables doctor deletion when the API has no delete endpoint', async () => {
     render(<AdminDoctorsPage />);
     const nameEl = await screen.findByText(/Trần Quốc Việt/);
     await userEvent.click(nameEl);
 
     const deleteBtn = await screen.findByRole('button', {
-      name: /Xóa bác sĩ/i,
+      name: /Xóa bác sĩ \(chưa hỗ trợ\)/i,
     });
-    await userEvent.click(deleteBtn);
-
-    expect(await screen.findByText('Xác nhận xóa bác sĩ')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Xóa' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Hủy' })).toBeInTheDocument();
+    expect(deleteBtn).toBeDisabled();
   });
 
   it('opens create doctor modal when clicking Thêm bác sĩ', async () => {
@@ -160,6 +156,15 @@ describe('AdminDoctorsPage', () => {
 });
 
 describe('AdminPatientsPage', () => {
+  const searchSeedPatient = async () => {
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder="Tra cứu theo họ tên, số điện thoại hoặc số CCCD..."]',
+    );
+    if (!input) throw new Error('Patient search input not found');
+    await userEvent.type(input, 'Nguyễn Thị Bích Ngọc');
+    await screen.findByText('Nguyễn Thị Bích Ngọc');
+  };
+
   beforeEach(() => {
     mockRequest.mockReset();
     mockRequest.mockImplementation((path: string) => {
@@ -178,14 +183,41 @@ describe('AdminPatientsPage', () => {
   it('renders patients table and search toolbar', async () => {
     render(<AdminPatientsPage />);
 
+    expect(
+      screen.getByText('Nhập họ tên, số điện thoại hoặc CCCD để tra cứu'),
+    ).toBeInTheDocument();
+    expect(mockRequest).not.toHaveBeenCalled();
+    await searchSeedPatient();
     expect(await screen.findByText('Nguyễn Thị Bích Ngọc')).toBeInTheDocument();
     expect(screen.getByText('0935112233')).toBeInTheDocument();
     expect(screen.getByText('001295012345')).toBeInTheDocument();
     expect(screen.getByText('Thêm bệnh nhân')).toBeInTheDocument();
   });
 
+  it('shows the linked account status returned by the auth service', async () => {
+    const linked = {
+      ...mockPatients[0],
+      authAccountId: '11111111-1111-4111-8111-111111111111',
+    };
+    mockRequest.mockImplementation((path: string) => {
+      if (path.startsWith('/api/patients/search')) {
+        return Promise.resolve({ data: { items: [linked], total: 1, page: 1, limit: 10 } });
+      }
+      if (path.startsWith('/auth/admin/users?')) {
+        return Promise.resolve({ items: [{ id: linked.authAccountId, email: 'linked@test.local', status: 'LOCKED' }], total: 1, page: 1, limit: 50 });
+      }
+      return Promise.resolve({ data: linked });
+    });
+    render(<AdminPatientsPage />);
+    await searchSeedPatient();
+    expect(await screen.findByText('linked@test.local')).toBeInTheDocument();
+    expect(screen.getByText('Tạm khóa')).toBeInTheDocument();
+    expect(mockRequest.mock.calls.some(([path]) => String(path).includes('ids=11111111-1111-4111-8111-111111111111'))).toBe(true);
+  });
+
   it('opens drawer detail and shows emergency contact table', async () => {
     render(<AdminPatientsPage />);
+    await searchSeedPatient();
     const nameEl = await screen.findByText('Nguyễn Thị Bích Ngọc');
     await userEvent.click(nameEl);
 
@@ -200,23 +232,18 @@ describe('AdminPatientsPage', () => {
       screen.getByRole('button', { name: /Chỉnh sửa/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Xóa hồ sơ/i }),
+      screen.getByRole('button', { name: /Xóa hồ sơ \(chưa hỗ trợ\)/i }),
     ).toBeInTheDocument();
   });
 
-  it('opens delete confirmation modal with red Xóa and Hủy', async () => {
+  it('disables patient deletion when the API has no delete endpoint', async () => {
     render(<AdminPatientsPage />);
+    await searchSeedPatient();
     const nameEl = await screen.findByText('Nguyễn Thị Bích Ngọc');
     await userEvent.click(nameEl);
 
-    const deleteBtn = await screen.findByRole('button', { name: /Xóa hồ sơ/i });
-    await userEvent.click(deleteBtn);
-
-    expect(
-      await screen.findByText('Xác nhận xóa hồ sơ bệnh nhân'),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Xóa' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Hủy' })).toBeInTheDocument();
+    const deleteBtn = await screen.findByRole('button', { name: /Xóa hồ sơ \(chưa hỗ trợ\)/i });
+    expect(deleteBtn).toBeDisabled();
   });
 });
 
@@ -246,7 +273,8 @@ describe('AdminFeedbackModal', () => {
     );
   });
 
-  it('renders error feedback stroke modal', () => {
+  it('keeps error feedback dismissible by the user', async () => {
+    const handleClose = vi.fn();
     render(
       <AdminFeedbackModal
         feedback={{
@@ -255,11 +283,13 @@ describe('AdminFeedbackModal', () => {
           title: 'Cập nhật thất bại!',
           description: 'Có lỗi xảy ra.',
         }}
-        onClose={() => undefined}
+        onClose={handleClose}
       />,
     );
 
     expect(screen.getByText('Cập nhật thất bại!')).toBeInTheDocument();
     expect(screen.getByText('Có lỗi xảy ra.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(handleClose).toHaveBeenCalledOnce();
   });
 });

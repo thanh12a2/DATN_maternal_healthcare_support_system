@@ -83,9 +83,7 @@ describe('SessionsService', () => {
       refreshTokenHash: 'new-refresh-token-hash',
       expiresAt,
     } as never);
-    sessionsRepository.rotateRefreshSession.mockResolvedValue(
-      undefined as never,
-    );
+    sessionsRepository.rotateRefreshSession.mockResolvedValue(true as never);
 
     await expect(
       sessionsService.refreshSession('old-refresh-token', now),
@@ -104,6 +102,7 @@ describe('SessionsService', () => {
     ).toHaveBeenCalledWith('old-refresh-token-hash');
     expect(sessionsRepository.rotateRefreshSession).toHaveBeenCalledWith({
       sessionId: 'session-id',
+      previousRefreshTokenHash: 'old-refresh-token-hash',
       refreshTokenHash: 'new-refresh-token-hash',
       expiresAt,
       lastUsedAt: now,

@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +14,46 @@ export class ConsultationAccessGateway {
     private readonly config: ConfigService,
     private readonly grpc: GrpcClientFactory,
   ) {}
+  async assertAppointment(appointmentId: string, patientId: string) {
+    const client = this.grpc.client({
+      key: 'appointment', target: this.config.get<string>('APPOINTMENT_GRPC_TARGET') ?? 'appointment-service:6008',
+      proto: 'appointment/v1/appointment_internal.proto', package: 'maternal.appointment.v1', service: 'AppointmentInternalService',
+    });
+    let appointment: any;
+    try {
+      const result = await this.grpc.unary<any, any>(client, 'getAppointment', { appointmentId },
+        this.grpc.metadata('appointment-service', ['appointment:internal:read']));
+      appointment = result?.appointment;
+    } catch (error: any) {
+      if (error?.code === 5) throw new NotFoundException('APPOINTMENT_NOT_FOUND');
+      throw new ServiceUnavailableException('APPOINTMENT_SERVICE_UNAVAILABLE');
+    }
+    if (!appointment?.appointmentId) throw new NotFoundException('APPOINTMENT_NOT_FOUND');
+    if (appointment.patientId !== patientId) throw new ForbiddenException('PATIENT_MISMATCH');
+    if (!['APPOINTMENT_STATUS_CHECKED_IN', 'APPOINTMENT_STATUS_IN_CLINICAL_CARE', 'APPOINTMENT_STATUS_COMPLETED'].includes(appointment.status))
+      throw new ForbiddenException('APPOINTMENT_NOT_CHECKED_IN');
+    return appointment;
+  }
+  async assertDoctorEligible(doctorId: string) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(doctorId)))
+      throw new NotFoundException('DOCTOR_NOT_FOUND');
+    const client = this.grpc.client({
+      key: 'doctor', target: this.config.get<string>('DOCTOR_GRPC_TARGET') ?? 'doctor-service:6005',
+      proto: 'doctor/v1/doctor_internal.proto', package: 'maternal.doctor.v1', service: 'DoctorInternalService',
+    });
+    let doctor: any;
+    try {
+      const result = await this.grpc.unary<any, any>(client, 'getDoctorEligibility', { doctorId },
+        this.grpc.metadata('doctor-service', ['doctor:internal:read']));
+      doctor = result?.doctor;
+    } catch (error: any) {
+      if (error?.code === 5) throw new NotFoundException('DOCTOR_NOT_FOUND');
+      throw new ServiceUnavailableException('DOCTOR_SERVICE_UNAVAILABLE');
+    }
+    if (!doctor?.doctorId || doctor.status !== 'DOCTOR_OPERATIONAL_STATUS_ACTIVE')
+      throw new NotFoundException('DOCTOR_NOT_ACTIVE');
+    return doctor;
+  }
   async doctorId(auth: PublicAuthContext): Promise<string> {
     const client = this.grpc.client({
       key: 'doctor',

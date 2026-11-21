@@ -5,7 +5,7 @@ const os = require('node:os');
 const { chromium } = require(path.join(os.tmpdir(), 'maternal-baseline-tools/node_modules/playwright'));
 const role = process.argv[2];
 const scenario = path.resolve(process.argv[3]);
-const emails = { patient: 'patient.thanhhang@gmail.com', other: 'patient.ngocmai@gmail.com', receptionist: 'reception.hoangyen@antam.local', doctor: 'dr.lethuha@antam.local' };
+const emails = { patient: 'patient.thanhhang@gmail.com', other: 'patient.ngocmai@gmail.com', receptionist: 'reception.hoangyen@antam.local', doctor: 'dr.lethuha@antam.local', doctor2: 'dr.hoangminhtuan@antam.local', nurse: 'nurse.huong@antam.local', admin: 'admin@antam.local', manager: 'manager@antam.local' };
 const output = path.resolve(process.env.QA_OUTPUT_DIR || 'docs/testing/baseline-2026-11-14');
 (async () => {
   await fs.mkdir(output, { recursive: true });
@@ -15,7 +15,7 @@ const output = path.resolve(process.env.QA_OUTPUT_DIR || 'docs/testing/baseline-
   });
   const page = context.pages()[0] || await context.newPage();
   const events = [], errors = [], assertions = [];
-  page.setDefaultTimeout(10000);
+  page.setDefaultTimeout(30000);
   page.on('pageerror', e => errors.push(e.message));
   page.on('response', async response => {
     if (!response.url().startsWith('http://localhost:8080/') || response.url().includes('/auth/')) return;
@@ -27,16 +27,24 @@ const output = path.resolve(process.env.QA_OUTPUT_DIR || 'docs/testing/baseline-
   });
   let failure;
   try {
-    await page.goto('http://localhost:3000/');
+    const adminRole = role === 'admin';
+    await page.goto('http://localhost:3000' + (adminRole ? '/admin/login' : '/'), { waitUntil: 'commit' });
     await page.waitForTimeout(500);
-    if (await page.getByRole('link', { name: 'Đăng nhập', exact: true }).count()) {
+    if (adminRole) {
+      if (!new URL(page.url()).pathname.includes('/workspace/admin/')) {
+        await page.locator('#admin-login-email').fill(emails[role]);
+        await page.locator('input[name="password"]').fill(process.env.QA_DEMO_PASSWORD || 'Demo@123456');
+        await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+        await page.waitForURL(url => url.pathname.includes('/workspace/admin/'));
+      }
+    } else if (role !== 'guest' && await page.getByRole('link', { name: 'Đăng nhập', exact: true }).count()) {
       await page.goto('http://localhost:3000/dang-nhap');
       await page.locator('#login-email').fill(emails[role]);
       await page.getByLabel('Mật khẩu', { exact: true }).fill(process.env.QA_DEMO_PASSWORD || 'Demo@123456');
       await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
       await page.waitForURL(url => !url.pathname.includes('dang-nhap'));
     }
-    await require(scenario)({ page, context, output, events, assertions, fs,
+    await require(scenario)({ page, context, output, events, assertions, errors, fs, role,
       check: (id, ok, detail) => { assertions.push({ id, status: ok ? 'PASS' : 'FAIL', detail }); },
     });
   } catch (e) { failure = e.message; console.error(failure); }

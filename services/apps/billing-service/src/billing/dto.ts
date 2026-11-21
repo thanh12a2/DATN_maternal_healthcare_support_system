@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Min,
 } from 'class-validator';
@@ -21,7 +22,7 @@ export class InvoiceListDto {
   @IsOptional() @IsEnum(InvoiceType) type?: InvoiceType;
   @IsOptional() @IsEnum(InvoiceStatus) status?: InvoiceStatus;
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) limit?: number;
-  @IsOptional() @IsString() cursor?: string;
+  @IsOptional() @IsUUID() cursor?: string;
 }
 export class RecordPaymentDto {
   @IsIn([PaymentMethod.CASH, PaymentMethod.MANUAL_BANK_TRANSFER])

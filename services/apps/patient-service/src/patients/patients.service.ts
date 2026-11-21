@@ -157,7 +157,7 @@ export class PatientsService {
     auth: PatientAuthContext,
     requestId: string,
   ) {
-    this.receptionistOnly(auth);
+    this.receptionistOrAdminOnly(auth);
     this.uuid(patientId, 'INVALID_PATIENT_ID');
     const patient = await this.db.$transaction(async (transaction) => {
       const found = await transaction.patient.findUnique({
@@ -176,7 +176,9 @@ export class PatientsService {
           actorRole: auth.role,
           patientId,
           requestId,
-          metadata: { purpose: 'CHECK_IN' },
+          metadata: {
+            purpose: auth.role === 'RECEPTIONIST' ? 'CHECK_IN' : 'ADMIN_REVIEW',
+          },
         },
       });
       return found;
@@ -189,7 +191,7 @@ export class PatientsService {
     auth: PatientAuthContext,
     requestId: string,
   ) {
-    this.receptionistOnly(auth);
+    this.receptionistOrAdminOnly(auth);
     if (!dto.phoneNumber && !dto.nationalId && !dto.fullName) {
       throw new DomainException(
         'SEARCH_FILTER_REQUIRED',
@@ -262,7 +264,7 @@ export class PatientsService {
     auth: PatientAuthContext,
     requestId: string,
   ) {
-    this.receptionistOnly(auth);
+    this.receptionistOrAdminOnly(auth);
     if (!idempotencyKey) {
       throw new DomainException(
         'IDEMPOTENCY_KEY_REQUIRED',
@@ -381,7 +383,7 @@ export class PatientsService {
     auth: PatientAuthContext,
     requestId: string,
   ) {
-    this.receptionistOnly(auth);
+    this.receptionistOrAdminOnly(auth);
     this.uuid(patientId, 'INVALID_PATIENT_ID');
     const fields = [
       'fullName',
@@ -984,9 +986,12 @@ export class PatientsService {
       throw new ForbiddenException('Patient role is required');
   }
 
-  private receptionistOnly(auth: PatientAuthContext): void {
-    if (auth.role !== 'RECEPTIONIST')
-      throw new ForbiddenException('Receptionist role is required');
+  private receptionistOrAdminOnly(auth: PatientAuthContext): void {
+    if (!['RECEPTIONIST', 'ADMIN', 'CLINIC_MANAGER'].includes(auth.role)) {
+      throw new ForbiddenException(
+        'Receptionist or administrator role is required',
+      );
+    }
   }
 
   private notFound(): never {

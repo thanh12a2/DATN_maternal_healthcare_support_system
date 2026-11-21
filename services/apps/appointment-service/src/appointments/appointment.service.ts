@@ -646,7 +646,7 @@ export class AppointmentDomainService {
       roomName = winner.interval.roomName || null;
     }
 
-    const hash = this.hash(dto);
+    const hash = this.hash({ request: dto, actorAccountId: auth.userId });
     const replay = await this.replay('create-hold', idem, hash);
     if (replay) return replay;
 
@@ -744,7 +744,7 @@ export class AppointmentDomainService {
     key?: string,
   ) {
     const idem = this.key(key),
-      hash = this.hash(dto),
+      hash = this.hash({ request: dto, actorAccountId: auth.userId }),
       ctx = this.ctx(auth, idem);
     const replay = await this.replay('create-appointment', idem, hash);
     if (replay) return replay;
@@ -1290,7 +1290,7 @@ export class AppointmentDomainService {
     payload?: any,
   ) {
     const idem = key ? this.key(key) : undefined;
-    const hash = this.hash(payload ?? {});
+    const hash = this.hash({ request: payload ?? {}, actorAccountId: auth.userId });
     if (idem) {
       const r = await this.replay(event, idem, hash);
       if (r) return r;

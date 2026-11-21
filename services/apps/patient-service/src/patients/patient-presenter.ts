@@ -16,6 +16,7 @@ export const presentPatient = (
   crypto: NationalIdCryptoService,
 ) => ({
   id: patient.id,
+  authAccountId: patient.authAccountId,
   fullName: patient.fullName,
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
   phoneNumber: patient.phoneNumber,
@@ -39,11 +40,12 @@ export const presentPatient = (
 export const presentSearchPatient = (
   patient: Pick<
     Patient,
-    'id' | 'fullName' | 'dateOfBirth' | 'phoneNumber' | 'nationalIdCiphertext'
+    'id' | 'authAccountId' | 'fullName' | 'dateOfBirth' | 'phoneNumber' | 'nationalIdCiphertext'
   >,
   crypto: NationalIdCryptoService,
 ) => ({
   id: patient.id,
+  authAccountId: patient.authAccountId,
   fullName: patient.fullName,
   dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
   phoneNumber: patient.phoneNumber,

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -29,6 +30,11 @@ export class QueryUsersDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1850)
+  ids?: string;
 
   @IsOptional()
   @IsEnum(AuthRole)

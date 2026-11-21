@@ -37,6 +37,7 @@ export interface UpdateAdminUserPayload {
 }
 
 export interface QueryUsersParams {
+  ids?: string[];
   search?: string;
   role?: string;
   status?: string;
@@ -55,6 +56,7 @@ export async function listAdminUsers(
 ): Promise<AdminUserListResponse> {
   const query = new URLSearchParams();
   if (params.search?.trim()) query.set('search', params.search.trim());
+  if (params.ids?.length) query.set('ids', params.ids.join(','));
   if (params.role) query.set('role', params.role);
   if (params.status) query.set('status', params.status);
   if (params.page) query.set('page', String(params.page));

@@ -1,5 +1,5 @@
 import {
-  useEffect,
+  useLayoutEffect,
   useState,
   type AnchorHTMLAttributes,
   type MouseEvent,
@@ -24,7 +24,7 @@ export function navigate(path: string, options?: { replace?: boolean }) {
 
 export function usePathname() {
   const [path, setPath] = useState(window.location.pathname);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const update = () => setPath(window.location.pathname);
     window.addEventListener('popstate', update);
     return () => window.removeEventListener('popstate', update);

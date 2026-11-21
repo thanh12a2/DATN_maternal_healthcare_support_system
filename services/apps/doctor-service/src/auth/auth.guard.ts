@@ -18,15 +18,13 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    if (
-      this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ])
-    )
-      return true;
+    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const header = request.headers.authorization;
+    if (isPublic && !header) return true;
     if (!header?.startsWith('Bearer '))
       throw new UnauthorizedException('UNAUTHENTICATED');
     const token = header.slice(7);

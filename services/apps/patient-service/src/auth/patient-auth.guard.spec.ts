@@ -55,7 +55,7 @@ describe('PatientAuthGuard', () => {
     const jwtVerifierService = {
       verifyAccessToken: jest.fn(() => ({
         userId: 'account-id',
-        role: 'ADMIN',
+        role: 'DOCTOR',
         tokenId: 'token-id',
       })),
     } as unknown as JwtVerifierService;

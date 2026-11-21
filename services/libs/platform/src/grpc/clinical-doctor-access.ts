@@ -14,6 +14,48 @@ export class ClinicalDoctorAccess {
     private readonly config: ConfigService,
     private readonly grpc: GrpcClientFactory,
   ) {}
+  async assertPatient(auth: PublicAuthContext, patientId?: string) {
+    if (auth.role !== 'PATIENT') throw new ForbiddenException('PATIENT_REQUIRED');
+    const context = {
+      requestId: randomUUID(), correlationId: randomUUID(),
+      actorAccountId: auth.userId, actorRole: auth.role,
+    };
+    try {
+      const patient = this.grpc.client({
+        key: 'patient',
+        target: this.config.get<string>('PATIENT_GRPC_TARGET') ?? 'patient-service:6004',
+        proto: 'patient/v1/patient_internal.proto',
+        package: 'maternal.patient.v1',
+        service: 'PatientInternalService',
+      });
+      const resolved = await this.grpc.unary<any, any>(patient, 'getPatientEligibility',
+        { context }, this.grpc.metadata('patient-service', ['patient:eligibility:read'], context));
+      if (!resolved?.patientId || (patientId && resolved.patientId !== patientId))
+        throw new ForbiddenException('PATIENT_MISMATCH');
+      return resolved.patientId as string;
+    } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
+      throw new ServiceUnavailableException('PATIENT_DEPENDENCY_UNAVAILABLE');
+    }
+  }
+  async encounterSummary(encounterId: string) {
+    const context = { requestId: randomUUID(), correlationId: randomUUID() };
+    try {
+      const medical = this.grpc.client({
+        key: 'medical',
+        target: this.config.get<string>('MEDICAL_RECORD_GRPC_TARGET') ?? 'medical-record-service:6011',
+        proto: 'medical_record/v1/medical_record_internal.proto',
+        package: 'maternal.medical_record.v1', service: 'MedicalRecordInternalService',
+      });
+      const summary = await this.grpc.unary<any, any>(medical, 'getEncounterSummary',
+        { context, encounterId }, this.grpc.metadata('medical-record-service', ['medical:encounter:read'], context));
+      if (!summary?.encounterId) throw new ForbiddenException('ENCOUNTER_NOT_FOUND');
+      return summary;
+    } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
+      throw new ServiceUnavailableException('CLINICAL_DEPENDENCY_UNAVAILABLE');
+    }
+  }
   async assertEncounter(
     auth: PublicAuthContext,
     encounterId: string,

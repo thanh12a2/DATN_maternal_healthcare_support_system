@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Modal, Typography } from 'antd';
+import { Button, Modal, Typography } from 'antd';
 
 export interface AdminFeedbackState {
   open: boolean;
@@ -15,17 +15,17 @@ interface AdminFeedbackModalProps {
 
 /**
  * Modal hiển thị thông báo kết quả (Thành công / Thất bại) với hiệu ứng vẽ nét (Stroke Draw Animation):
- * - Tự động đóng sau 2s (khi thành công) hoặc 2.5s (khi thất bại)
+ * - Tự động đóng sau 2s khi thành công; lỗi ở lại để người dùng đọc và đóng
  * - Căn giữa màn hình (centered)
- * - Không có nút X hay nút Đóng
+ * - Lỗi có nút Đóng
  */
 export function AdminFeedbackModal({
   feedback,
   onClose,
 }: AdminFeedbackModalProps) {
   useEffect(() => {
-    if (!feedback?.open) return;
-    const duration = feedback.type === 'error' ? 2500 : 2000;
+    if (!feedback?.open || feedback.type === 'error') return;
+    const duration = 2000;
     const timer = setTimeout(() => {
       onClose();
     }, duration);
@@ -41,8 +41,9 @@ export function AdminFeedbackModal({
       }
       open={feedback.open}
       centered
-      closable={false}
-      footer={null}
+      closable={feedback.type === 'error'}
+      onCancel={onClose}
+      footer={feedback.type === 'error' ? <Button onClick={onClose}>Đóng</Button> : null}
       width={380}
       zIndex={2500}
       destroyOnClose

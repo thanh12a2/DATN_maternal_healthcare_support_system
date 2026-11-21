@@ -30,7 +30,8 @@ const patients = {
   })),
   search: jest.fn(async () => ({ items: [], page: 1, limit: 20, total: 0 })),
   getById: jest.fn(async (_id: string, auth: { role: string }) => {
-    if (auth.role !== 'RECEPTIONIST') throw new ForbiddenException();
+    if (!['RECEPTIONIST', 'ADMIN', 'CLINIC_MANAGER'].includes(auth.role))
+      throw new ForbiddenException();
     return responsePatient;
   }),
   patchByReceptionist: jest.fn(async () => ({
@@ -110,6 +111,14 @@ describe('Receptionist/internal API contract', () => {
           .send({ limit: 51 })
       ).status,
     ).toBe(400);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post('/patients/search')
+          .set('Authorization', 'Bearer ' + token('ADMIN'))
+          .send({ fullName: 'Nguyễn' })
+      ).status,
+    ).toBe(200);
   });
   it('serves receptionist detail/update and blocks PATIENT arbitrary detail', async () => {
     const receptionist = 'Bearer ' + token('RECEPTIONIST');
@@ -135,6 +144,13 @@ describe('Receptionist/internal API contract', () => {
           .set('Authorization', 'Bearer ' + token('PATIENT'))
       ).status,
     ).toBe(403);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get('/patients/' + patientId)
+          .set('Authorization', 'Bearer ' + token('ADMIN'))
+      ).status,
+    ).toBe(200);
   });
   it('requires dedicated internal token for eligibility', async () => {
     const path = '/internal/patients/' + patientId + '/eligibility';

@@ -1,4 +1,4 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import { Controller, HttpException, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   ServiceCallers,
@@ -20,14 +20,16 @@ export class AppointmentGrpcController {
     'medical-record-service',
     'queue-service',
     'notification-service',
+    'consultation-service',
   )
   @ServiceScopes('appointment:internal:read')
   async getAppointment(request: any) {
-    return {
-      appointment: this.view(
-        (await this.service.get(request.appointmentId)) as any,
-      ),
-    };
+    try {
+      return { appointment: this.view((await this.service.get(request.appointmentId)) as any) };
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === 404) return {};
+      throw error;
+    }
   }
 
   @GrpcMethod('AppointmentInternalService', 'ValidateForAdmission')

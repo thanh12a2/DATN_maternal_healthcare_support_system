@@ -28,6 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
   LOCKED: 'Tạm khóa',
   DISABLED: 'Vô hiệu hóa',
   PENDING_VERIFICATION: 'Chờ xác thực',
+  UNKNOWN: 'Chưa xác minh',
 };
 
 export function StatusTag({ status }: { status: unknown }) {

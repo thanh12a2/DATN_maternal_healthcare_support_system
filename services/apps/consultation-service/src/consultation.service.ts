@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -10,6 +11,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
   ConsultationStatus,
   EscalationStatus,
+  Prisma,
 } from '../../../generated/consultation-client';
 import { AppPrismaService } from './database/prisma.service';
 
@@ -18,6 +20,9 @@ export class ConsultationService {
   constructor(private readonly db: AppPrismaService) {}
 
   async create(r: any) {
+    const initialMessage = String(r.initialMessage ?? '').trim();
+    if (!initialMessage || initialMessage.length > 4000)
+      throw new BadRequestException('INVALID_INITIAL_MESSAGE');
     const doctorId = r.doctorId || r.assignedDoctorId || null;
     const status = doctorId
       ? ConsultationStatus.ASSIGNED
@@ -30,8 +35,15 @@ export class ConsultationService {
         appointmentId: r.appointmentId || null,
         subject: r.subject || r.topic || 'Hỏi đáp thai kỳ',
         status,
+        lastSequenceNo: 1n,
+        lastMessageAt: new Date(),
         assignedDoctorId: doctorId,
         createdByAccountId: r.actorId,
+        messages: { create: {
+          sequenceNo: 1n, senderAccountId: r.actorId, senderType: 'PATIENT',
+          clientMessageId: r.clientMessageId || randomUUID(), body: initialMessage,
+          bodyHash: createHash('sha256').update(initialMessage).digest('hex'),
+        } },
         assignments: doctorId
           ? {
               create: {
@@ -56,6 +68,10 @@ export class ConsultationService {
     auth: PublicAuthContext,
     access: ConsultationAccessGateway,
   ) {
+    if (q?.status && !Object.values(ConsultationStatus).includes(q.status))
+      throw new BadRequestException('INVALID_STATUS');
+    if (q?.cursor && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(q.cursor)))
+      throw new BadRequestException('INVALID_CURSOR');
     const where: any = {};
     if (auth.role === 'PATIENT') {
       const patientId = await access.assertPatientOwner(undefined, auth);
@@ -105,7 +121,11 @@ export class ConsultationService {
 
   async assign(id: string, doctorId: string, actor: string) {
     const updated = await this.db.$transaction(async (tx) => {
-      const previous = await tx.consultationThread.findUnique({ where: { id }, select: { assignedDoctorId: true } });
+      const previous = await tx.consultationThread.findUnique({ where: { id }, select: { assignedDoctorId: true, status: true, version: true } });
+      if (!previous) throw new NotFoundException('CONSULTATION_NOT_FOUND');
+      if (previous.status === ConsultationStatus.CLOSED) throw new ConflictException('CONSULTATION_CLOSED');
+      const changed = await tx.consultationThread.updateMany({ where: { id, version: previous.version, status: { not: ConsultationStatus.CLOSED } }, data: { assignedDoctorId: doctorId, status: ConsultationStatus.ASSIGNED, version: { increment: 1 } } });
+      if (!changed.count) throw new ConflictException('VERSION_CONFLICT');
       await tx.consultationAssignment.updateMany({
         where: { threadId: id, status: 'ACTIVE' },
         data: { status: 'ENDED', endedAt: new Date() },
@@ -113,14 +133,7 @@ export class ConsultationService {
       await tx.consultationAssignment.create({
         data: { threadId: id, doctorId, assignedBy: actor },
       });
-      const thread = await tx.consultationThread.update({
-        where: { id },
-        data: {
-          assignedDoctorId: doctorId,
-          status: ConsultationStatus.ASSIGNED,
-          version: { increment: 1 },
-        },
-      });
+      const thread = await tx.consultationThread.findUniqueOrThrow({ where: { id } });
       if (previous?.assignedDoctorId !== doctorId) await this.assignmentEvent(tx, id, doctorId);
       return thread;
     });
@@ -133,41 +146,44 @@ export class ConsultationService {
   }
 
   async message(id: string, r: any) {
-    const t = await this.raw(id);
-    if (t.status === ConsultationStatus.CLOSED)
-      throw new ConflictException('CONSULTATION_CLOSED');
-    const next = t.lastSequenceNo + 1n;
     const body = String(r.body ?? r.content ?? '').trim();
+    if (!body || body.length > 4000) throw new BadRequestException('INVALID_MESSAGE_BODY');
     const clientMessageId = r.clientMessageId || randomUUID();
-    const m = await this.db.consultationMessage.upsert({
-      where: {
-        threadId_senderAccountId_clientMessageId: {
-          threadId: id,
-          senderAccountId: r.senderAccountId,
-          clientMessageId,
-        },
-      },
-      create: {
-        threadId: id,
-        sequenceNo: next,
-        senderAccountId: r.senderAccountId,
-        senderType: r.senderType,
-        clientMessageId,
-        body,
-        bodyHash: createHash('sha256').update(body).digest('hex'),
-      },
-      update: {},
-    });
-    await this.db.consultationThread.update({
-      where: { id },
-      data: {
-        lastSequenceNo: next,
-        lastMessageAt: new Date(),
-        status:
-          r.senderType === 'DOCTOR' ? ConsultationStatus.ANSWERED : t.status,
-        version: { increment: 1 },
-      },
-    });
+    const bodyHash = createHash('sha256').update(body).digest('hex');
+    let m: any;
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        m = await this.db.$transaction(async tx => {
+          const existing = await tx.consultationMessage.findUnique({ where: {
+            threadId_senderAccountId_clientMessageId: { threadId: id, senderAccountId: r.senderAccountId, clientMessageId },
+          } });
+          if (existing) {
+            if (existing.bodyHash !== bodyHash) throw new ConflictException('CLIENT_MESSAGE_ID_REUSED');
+            return existing;
+          }
+          const t = await tx.consultationThread.findUnique({ where: { id } });
+          if (!t) throw new NotFoundException('CONSULTATION_NOT_FOUND');
+          if (t.status === ConsultationStatus.CLOSED) throw new ConflictException('CONSULTATION_CLOSED');
+          const next = t.lastSequenceNo + 1n;
+          const changed = await tx.consultationThread.updateMany({
+            where: { id, lastSequenceNo: t.lastSequenceNo, version: t.version, status: { not: ConsultationStatus.CLOSED } },
+            data: { lastSequenceNo: next, lastMessageAt: new Date(), status: r.senderType === 'DOCTOR' ? ConsultationStatus.ANSWERED : t.status, version: { increment: 1 } },
+          });
+          if (!changed.count) throw new ConflictException('MESSAGE_RACE');
+          return tx.consultationMessage.create({ data: {
+            threadId: id, sequenceNo: next, senderAccountId: r.senderAccountId,
+            senderType: r.senderType, clientMessageId, body, bodyHash,
+          } });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        break;
+      } catch (error: any) {
+        const retryable = error?.code === 'P2034' || error?.code === 'P2002' || error?.message === 'MESSAGE_RACE';
+        if (!retryable || attempt === maxAttempts - 1) throw error;
+        const delayMs = Math.min(5 * 2 ** attempt, 80) + Math.floor(Math.random() * 10);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
     return {
       data: {
         id: m.id,

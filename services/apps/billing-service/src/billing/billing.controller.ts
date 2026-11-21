@@ -9,6 +9,7 @@ import {
   NotFoundException,
   Optional,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -98,7 +99,7 @@ export class BillingController {
     return this.s.list(q, a);
   }
   @Get('invoices/:id') get(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() a: PublicAuthContext,
   ) {
     return this.s.get(id, a);

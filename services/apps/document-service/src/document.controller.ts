@@ -4,6 +4,7 @@ import {
   Get,
   Headers,
   Param,
+  ParseUUIDPipe,
   Post,
   Req,
   Res,
@@ -62,16 +63,17 @@ export class DocumentController {
     return this.s.generateEncounterReportRest(b, auth);
   }
 
-  @PublicHttp()
+  @UseGuards(PublicJwtGuard)
   @Get([
     'encounter-reports/:encounterId',
     'documents/encounter-reports/:encounterId',
     'api/documents/encounter-reports/:encounterId',
   ])
   getEncounterReport(
-    @Param('encounterId') encounterId: string,
+    @Param('encounterId', ParseUUIDPipe) encounterId: string,
+    @CurrentAuth() auth: PublicAuthContext,
   ) {
-    return this.s.getEncounterReportRest(encounterId);
+    return this.s.getEncounterReportRest(encounterId, auth);
   }
 
   @UseGuards(PublicJwtGuard)
@@ -83,7 +85,7 @@ export class DocumentController {
     return this.s.getDownloadUrlRest(documentId, auth);
   }
 
-  @PublicHttp()
+  @UseGuards(PublicJwtGuard)
   @Get([
     ':id/content',
     'documents/:id/content',
@@ -93,11 +95,12 @@ export class DocumentController {
     'api/documents/content/:id',
   ])
   getContent(
-    @Param('id') documentId: string,
+    @Param('id', ParseUUIDPipe) documentId: string,
     @Req() req: any,
     @Res() res: any,
+    @CurrentAuth() auth: PublicAuthContext,
   ) {
-    return this.s.getContent(documentId, req, res);
+    return this.s.getContent(documentId, req, res, auth);
   }
 
   @UseGuards(PublicJwtGuard)
@@ -124,7 +127,7 @@ export class DocumentController {
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'documents/:id'])
   getDocument(
-    @Param('id') documentId: string,
+    @Param('id', ParseUUIDPipe) documentId: string,
     @CurrentAuth() auth: PublicAuthContext,
   ) {
     return this.s.getDocumentRest(documentId, auth);

@@ -1,4 +1,4 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import { Controller, HttpException, UseGuards } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   ServiceCallers,
@@ -47,18 +47,19 @@ export class DoctorGrpcController {
     'appointment-service',
     'medical-record-service',
     'notification-service',
+    'consultation-service',
   )
   async getDoctorEligibility(request: {
     doctorId: string;
     requiredSpecialtyId?: string;
     at?: any;
   }) {
-    return {
-      doctor: await this.doctors.getInternalEligibility(
-        request.doctorId,
-        request.requiredSpecialtyId,
-      ),
-    };
+    try {
+      return { doctor: await this.doctors.getInternalEligibility(request.doctorId, request.requiredSpecialtyId) };
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === 404) return {};
+      throw error;
+    }
   }
 
   @GrpcMethod('DoctorInternalService', 'ListEligibleDoctors')

@@ -72,21 +72,21 @@ export interface QueryDoctorsParams {
 }
 
 export interface CreateDoctorPayload {
-  accountId?: string;
-  email: string;
-  phoneNumber: string;
+  accountId: string;
   licenseNumber: string;
   consultationRank?: DoctorConsultationRank;
+  specialtyId?: string;
   profile: {
     fullName: string;
     professionalTitle?: string;
     biography?: string;
     practiceStartYear?: number;
-    photoUrl?: string;
+    photoUrl?: string | null;
   };
 }
 
 export interface UpdateDoctorPayload {
+  specialtyId?: string;
   email?: string;
   phoneNumber?: string;
   licenseNumber?: string;
@@ -96,7 +96,7 @@ export interface UpdateDoctorPayload {
     professionalTitle?: string;
     biography?: string;
     practiceStartYear?: number;
-    photoUrl?: string;
+    photoUrl?: string | null;
   };
 }
 
@@ -162,7 +162,15 @@ export async function updateDoctor(
       headers: {
         'if-match': String(version),
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        licenseNumber: payload.licenseNumber,
+        consultationRank: payload.consultationRank,
+        specialtyId: payload.specialtyId,
+        fullName: payload.profile?.fullName,
+        biography: payload.profile?.biography,
+        practiceStartYear: payload.profile?.practiceStartYear,
+        photoUrl: payload.profile?.photoUrl,
+      }),
     },
   );
   return 'data' in res ? res.data : res;
@@ -218,7 +226,6 @@ export async function listSpecialties(
   request: Requester,
   params?: { status?: string; limit?: number },
 ): Promise<SpecialtyItem[]> {
-  try {
     const q = new URLSearchParams();
     if (params?.status) q.set('status', params.status);
     q.set('limit', String(params?.limit ?? 100));
@@ -227,9 +234,6 @@ export async function listSpecialties(
     const res = await request<{ data: SpecialtyItem[] } | SpecialtyItem[]>(url);
     if (Array.isArray(res)) return res;
     return res.data ?? [];
-  } catch {
-    return [];
-  }
 }
 
 export async function linkDoctorSpecialty(
@@ -264,6 +268,7 @@ export interface CreateSpecialtyPayload {
   code: string;
   name: string;
   description?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface UpdateSpecialtyPayload {
@@ -293,11 +298,9 @@ export async function updateSpecialty(
   request: Requester,
   id: string,
   payload: UpdateSpecialtyPayload,
-  options?: { suppressAudit?: boolean },
 ): Promise<SpecialtyItem> {
-  const querySuffix = options?.suppressAudit ? '?suppressAudit=true' : '';
   const res = await request<{ data: SpecialtyItem } | SpecialtyItem>(
-    `/api/doctors/specialties/${encodeURIComponent(id)}${querySuffix}`,
+    `/api/doctors/specialties/${encodeURIComponent(id)}`,
     {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -346,15 +349,11 @@ export interface UpdateConsultationRankPayload {
 export async function listConsultationRanks(
   request: Requester,
 ): Promise<ConsultationRankItem[]> {
-  try {
     const res = await request<
       { data: ConsultationRankItem[] } | ConsultationRankItem[]
     >('/api/doctors/consultation-ranks');
     if (Array.isArray(res)) return res;
     return res.data ?? [];
-  } catch {
-    return [];
-  }
 }
 
 export async function createConsultationRank(

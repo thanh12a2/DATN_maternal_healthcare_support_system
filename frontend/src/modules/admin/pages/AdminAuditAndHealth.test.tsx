@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AdminAuditLogsPage } from './AdminAuditLogsPage';
 import { AdminSystemHealthPage } from './AdminSystemHealthPage';
+
+const auditPaths: string[] = [];
 
 vi.mock('../../../app/AuthSessionProvider', () => ({
   useAuthSession: () => ({
@@ -58,6 +61,7 @@ vi.mock('../../../app/AuthSessionProvider', () => ({
         });
       }
       if (path.includes('/api/audit-logs')) {
+        auditPaths.push(path);
         return Promise.resolve({
           items: [
             {
@@ -96,6 +100,19 @@ vi.mock('../../../app/AuthSessionProvider', () => ({
 }));
 
 describe('AdminAuditLogsPage & AdminSystemHealthPage', () => {
+  it('resets a submitted audit search and reloads unfiltered records', async () => {
+    auditPaths.length = 0;
+    render(<AdminAuditLogsPage />);
+    await screen.findByText('192.168.1.45');
+    await userEvent.type(screen.getByPlaceholderText('Tìm hành động, ID, người sửa...'), 'price');
+    await userEvent.click(screen.getByRole('button', { name: /Tìm kiếm/ }));
+    await waitFor(() => expect(auditPaths.some((path) => path.includes('search=price'))).toBe(true));
+    await userEvent.click(screen.getByRole('button', { name: /Làm mới/ }));
+    await waitFor(() => {
+      expect(auditPaths.length).toBeGreaterThanOrEqual(3);
+      expect(auditPaths.at(-1)).not.toContain('search=');
+    });
+  });
   it('renders AdminAuditLogsPage with audit stats and audit records', async () => {
     render(<AdminAuditLogsPage />);
     expect(

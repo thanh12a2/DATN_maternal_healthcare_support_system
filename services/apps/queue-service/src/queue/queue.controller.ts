@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Res,
@@ -55,7 +56,10 @@ export class QueueController {
   async listStageTickets(
     @Param('stageId') stageId: string,
     @Query() query: any,
+    @CurrentAuth() auth: PublicAuthContext,
   ) {
+    if (!['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'].includes(auth.role))
+      throw new ForbiddenException('STAFF_REQUIRED');
     return this.s.listStageTickets(stageId, query);
   }
 
@@ -95,14 +99,12 @@ export class QueueController {
   }
 
   @Get('journeys/:id')
-  async getJourney(@Param('id') id: string) {
+  async getJourney(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() auth: PublicAuthContext) {
     const data = await this.s.getJourneyById(id);
-    return { data, id: data.id };
-  }
-
-  @Post('journeys')
-  async createJourneyRest(@Body() b: any) {
-    const data = await this.s.createOrGetJourneyRest(b);
+    if (auth.role === 'PATIENT') {
+      const patientId = await this.patient.resolvePatientId(auth.userId);
+      if (patientId !== data.patientId) throw new ForbiddenException('PATIENT_MISMATCH');
+    }
     return { data, id: data.id };
   }
 

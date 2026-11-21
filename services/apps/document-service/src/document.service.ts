@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,7 +12,7 @@ import {
 } from '../../../generated/document-client';
 import { createHash, randomUUID } from 'node:crypto';
 import { DocumentPrismaService } from './database/prisma.service';
-import type { PublicAuthContext } from '@platform';
+import { ClinicalDoctorAccess, type PublicAuthContext } from '@platform';
 import {
   MedicalReportPdfService,
   type MedicalReportData,
@@ -22,7 +23,16 @@ export class DocumentService {
   constructor(
     private readonly db: DocumentPrismaService,
     private readonly reportPdfService: MedicalReportPdfService,
+    private readonly clinicalAccess: ClinicalDoctorAccess,
   ) {}
+  private async authorizeDocument(doc: { patientId: string; ownerId: string; ownerType: string }, auth?: PublicAuthContext) {
+    if (!auth) throw new ForbiddenException('AUTH_REQUIRED');
+    if (auth.role === 'PATIENT') return this.clinicalAccess.assertPatient(auth, doc.patientId);
+    if (auth.role === 'DOCTOR' && doc.ownerType === 'ENCOUNTER')
+      return this.clinicalAccess.assertEncounter(auth, doc.ownerId, doc.patientId);
+    if (['ADMIN', 'RECEPTIONIST', 'NURSE'].includes(auth.role)) return;
+    throw new ForbiddenException('DOCUMENT_ACCESS_DENIED');
+  }
 
   // ─── REST Handlers ────────────────────────────────────────────────────────
 
@@ -190,6 +200,7 @@ export class DocumentService {
     }
     if (doc.purpose === 'CLINICAL_RESULT_FILE')
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    await this.authorizeDocument(doc, auth);
 
     const latest = doc.versions[0];
     const data = {
@@ -223,6 +234,7 @@ export class DocumentService {
     }
     if (doc.purpose === 'CLINICAL_RESULT_FILE')
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    await this.authorizeDocument(doc, auth);
     const expiresAt = new Date(Date.now() + 300000).toISOString();
     const url = `http://localhost:8080/api/documents/${doc.id}/content`;
     return {
@@ -239,6 +251,13 @@ export class DocumentService {
 
   async generateEncounterReportRest(data: MedicalReportData, auth?: PublicAuthContext) {
     if (!data.encounterId) throw new BadRequestException('ENCOUNTER_ID_REQUIRED');
+    if (!auth) throw new ForbiddenException('AUTH_REQUIRED');
+    const encounter = await this.clinicalAccess.encounterSummary(data.encounterId);
+    if (!data.patientId || encounter.patientId !== data.patientId)
+      throw new ForbiddenException('PATIENT_MISMATCH');
+    if (auth.role === 'PATIENT') await this.clinicalAccess.assertPatient(auth, encounter.patientId);
+    else if (auth.role === 'DOCTOR') await this.clinicalAccess.assertEncounter(auth, data.encounterId, encounter.patientId);
+    else if (!['ADMIN', 'RECEPTIONIST', 'NURSE'].includes(auth.role)) throw new ForbiddenException('DOCUMENT_ACCESS_DENIED');
 
     // 1. Sinh file PDF chuẩn y tế
     const pdfBuffer = await this.reportPdfService.generateReportPdf(data);
@@ -348,6 +367,7 @@ export class DocumentService {
     if (!doc) {
       return { data: null };
     }
+    await this.authorizeDocument(doc, auth);
 
     const latest = doc.versions[0];
     const res = {
@@ -360,7 +380,7 @@ export class DocumentService {
     return { data: res, ...res };
   }
 
-  async getContent(documentId: string, req: any, res: any) {
+  async getContent(documentId: string, req: any, res: any, auth?: PublicAuthContext) {
     const doc = await this.db.document.findUnique({
       where: { id: documentId },
       include: {
@@ -372,6 +392,7 @@ export class DocumentService {
     }
     if (doc.purpose === 'CLINICAL_RESULT_FILE')
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    await this.authorizeDocument(doc, auth);
 
     const latest = doc.versions[0];
     const format = req.query?.format;

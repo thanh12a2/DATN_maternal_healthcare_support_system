@@ -57,21 +57,24 @@ export function AdminSystemHealthPage() {
   const [health, setHealth] = useState<SystemHealthOverview | null>(null);
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [healthError, setHealthError] = useState(false);
+  const [backupError, setBackupError] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   async function loadData() {
     setLoading(true);
+    setBackupError(false);
     try {
       const [hRes, bRes] = await Promise.all([
         fetchSystemHealth(request),
-        fetchBackupRecords(request).catch(() => ({
-          items: [],
-          lastBackup: null,
-        })),
+        fetchBackupRecords(request).catch(() => { setBackupError(true); return { items: [], lastBackup: null }; }),
       ]);
       setHealth(hRes);
       setBackups(bRes.items || []);
+      setHealthError(false);
     } catch {
+      setHealthError(true);
+      setHealth(null);
       message.error('Không thể nạp dữ liệu tình trạng hệ thống');
     } finally {
       setLoading(false);
@@ -94,6 +97,8 @@ export function AdminSystemHealthPage() {
 
   return (
     <div className="admin-page-container" style={{ padding: '0 4px' }}>
+      {healthError && <Alert type="error" showIcon message="Không thể đo tình trạng dịch vụ" description="Dữ liệu giám sát hiện không khả dụng." style={{ marginBottom: 16 }} />}
+      {backupError && <Alert type="warning" showIcon message="Dữ liệu sao lưu chưa khả dụng" description="Chưa có dịch vụ giám sát bản sao lưu được cấu hình." style={{ marginBottom: 16 }} />}
       {/* Top Banner Alert */}
       <Alert
         message={
@@ -113,7 +118,7 @@ export function AdminSystemHealthPage() {
             </Tag>
           </Space>
         }
-        description={`Hệ thống đang tự động giám sát trực tiếp 17/17 cụm microservices. Lần đo gần nhất: ${health?.lastCheckedAt ? new Date(health.lastCheckedAt).toLocaleTimeString('vi-VN') : 'Đang tải...'}`}
+        description={`Kiểm tra trực tiếp ${health?.totalServices ?? 0} dịch vụ. Lần đo gần nhất: ${health?.lastCheckedAt ? new Date(health.lastCheckedAt).toLocaleTimeString('vi-VN') : 'Chưa có dữ liệu'}`}
         type={health?.overallStatus === 'OPERATIONAL' ? 'success' : 'warning'}
         showIcon
         style={{ marginBottom: 20, borderRadius: 12 }}
@@ -148,7 +153,7 @@ export function AdminSystemHealthPage() {
                 </Text>
               }
               value={health?.healthyCount ?? 0}
-              suffix={`/ ${health?.totalServices ?? 17}`}
+              suffix={`/ ${health?.totalServices ?? 0}`}
               valueStyle={{ color: '#16a34a', fontWeight: 700 }}
             />
           </Card>
@@ -166,10 +171,10 @@ export function AdminSystemHealthPage() {
               title={
                 <Text strong style={{ color: '#0284c7' }}>
                   <ThunderboltOutlined style={{ marginRight: 6 }} />
-                  Tỷ lệ khả dụng (Uptime)
+                  Tỷ lệ dịch vụ phản hồi lúc đo
                 </Text>
               }
-              value={health?.uptimePercentage ?? 100}
+              value={health?.uptimePercentage ?? '—'}
               suffix="%"
               valueStyle={{ color: '#0284c7', fontWeight: 700 }}
             />
@@ -410,7 +415,7 @@ export function AdminSystemHealthPage() {
           </Space>
         }
         extra={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<PlusOutlined />} disabled title="Chưa cấu hình dịch vụ sao lưu">
             Tạo bản sao lưu ngay
           </Button>
         }

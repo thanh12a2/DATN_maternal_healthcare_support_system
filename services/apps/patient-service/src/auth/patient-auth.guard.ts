@@ -20,8 +20,12 @@ export class PatientAuthGuard implements CanActivate {
     const authContext =
       await this.jwtVerifierService.verifyAccessToken(accessToken);
 
-    if (!['PATIENT', 'RECEPTIONIST'].includes(authContext.role)) {
-      throw new ForbiddenException('Patient or receptionist role is required');
+    if (
+      !['PATIENT', 'RECEPTIONIST', 'ADMIN', 'CLINIC_MANAGER'].includes(
+        authContext.role,
+      )
+    ) {
+      throw new ForbiddenException('Role is not allowed to access patient APIs');
     }
 
     request.patientAuth = authContext;

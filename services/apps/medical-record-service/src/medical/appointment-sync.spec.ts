@@ -36,6 +36,20 @@ describe('appointment synchronization', () => {
     );
   });
 
+  it('persists retry metadata for long gRPC errors', async () => {
+    const updateMany = jest.fn();
+    const db = { encounterAppointmentSync: {
+      findMany: jest.fn().mockResolvedValue([job]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      updateMany,
+    } };
+    await new AppointmentSyncService(db as any, {
+      reconcileAppointment: jest.fn().mockRejectedValue(new Error('UNAVAILABLE '.repeat(30))),
+    } as any).flush();
+    expect(updateMany.mock.calls[0][0].data.attempts).toEqual({ increment: 1 });
+    expect(updateMany.mock.calls[0][0].data.lastError.length).toBeLessThanOrEqual(100);
+  });
+
   it('does not process a later transition while an earlier one is pending', async () => {
     const reconcileAppointment = jest.fn();
     const db = {

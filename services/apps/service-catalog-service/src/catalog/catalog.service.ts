@@ -13,6 +13,7 @@ import {
   CreateServiceDto,
   CreateTagDto,
   EligibilityQueryDto,
+  ListAdminServicesQueryDto,
   ListServicesQueryDto,
   ResolveServicesDto,
   ScheduleBasePriceDto,
@@ -75,6 +76,87 @@ export class CatalogService {
       data: items.map((item) => this.presentService(item)),
       meta: { page, limit, total },
     };
+  }
+
+  async listAdminServices(query: ListAdminServicesQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.MedicalServiceWhereInput = {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.bookingEnabled === undefined
+        ? {}
+        : { bookingEnabled: query.bookingEnabled }),
+      ...(query.kind ? { kind: query.kind } : {}),
+      ...(query.specialtyId ? { specialtyId: query.specialtyId } : {}),
+      ...(query.q
+        ? {
+            OR: [
+              { name: { contains: query.q, mode: 'insensitive' } },
+              { code: { contains: query.q, mode: 'insensitive' } },
+              { summary: { contains: query.q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(query.tag
+        ? {
+            tags: { some: { tag: { OR: this.tagIdentifierWhere(query.tag) } } },
+          }
+        : {}),
+    };
+    const [items, total] = await this.db.$transaction([
+      this.db.medicalService.findMany({
+        where,
+        include: this.serviceIncludes(),
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.db.medicalService.count({ where }),
+    ]);
+    return {
+      data: items.map((item) => this.presentService(item)),
+      meta: { page, limit, total },
+    };
+  }
+
+  async getAdminService(serviceId: string) {
+    const service = await this.db.medicalService.findUnique({
+      where: { id: serviceId },
+      include: this.serviceIncludes(),
+    });
+    if (!service)
+      this.notFound('SERVICE_NOT_FOUND', 'Medical service was not found');
+    return { data: this.presentService(service) };
+  }
+
+  async listAdminServicePrices(serviceId: string) {
+    await this.ensureServiceExists(serviceId);
+    const prices = await this.db.basePrice.findMany({
+      where: { medicalServiceId: serviceId },
+      orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+    });
+    return { data: prices.map((price) => this.presentPrice(price)) };
+  }
+
+  async listAdminCategories() {
+    // Catalog schema currently has no category table. Return a stable empty
+    // result until category persistence is introduced instead of a 404.
+    return { data: [] };
+  }
+
+  async listAdminTags() {
+    const tags = await this.db.catalogTag.findMany({
+      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+      include: { _count: { select: { services: true } } },
+    });
+    return { data: tags.map((tag) => this.presentTag(tag)) };
+  }
+
+  async listAdminRankSurcharges() {
+    const surcharges = await this.db.doctorRankSurcharge.findMany({
+      orderBy: [{ rankCode: 'asc' }, { effectiveFrom: 'desc' }],
+    });
+    return { data: surcharges.map((item) => this.presentSurcharge(item)) };
   }
 
   async getPublicService(idOrSlug: string) {
@@ -173,6 +255,17 @@ export class CatalogService {
             ...(dto.content !== undefined ? { content: dto.content } : {}),
           },
         });
+        if (dto.initialPriceMinor !== undefined) {
+          await tx.basePrice.create({
+            data: {
+              medicalServiceId: created.id,
+              amountMinor: BigInt(dto.initialPriceMinor),
+              currency: 'VND',
+              effectiveFrom: new Date(),
+              status: 'ACTIVE',
+            },
+          });
+        }
         await this.replaceServiceLinks(tx, created.id, dto.tagIds);
         return tx.medicalService.findUniqueOrThrow({
           where: { id: created.id },
@@ -230,6 +323,23 @@ export class CatalogService {
         });
       });
       return { data: this.presentService(service) };
+    } catch (error) {
+      this.mapPrismaError(error);
+    }
+  }
+
+  async deleteDraftService(serviceId: string) {
+    const service = await this.ensureServiceExists(serviceId);
+    if (service.status !== 'DRAFT' || service.publishedAt) {
+      throw new DomainException(
+        'PUBLISHED_SERVICE_CANNOT_BE_DELETED',
+        'Only unpublished draft services can be deleted; deactivate published services instead',
+        HttpStatus.CONFLICT,
+      );
+    }
+    try {
+      await this.db.medicalService.delete({ where: { id: serviceId } });
+      return { success: true, message: 'Draft service deleted' };
     } catch (error) {
       this.mapPrismaError(error);
     }
@@ -302,6 +412,18 @@ export class CatalogService {
         },
       });
       return { data: this.presentTag(tag) };
+    } catch (error) {
+      this.mapPrismaError(error);
+    }
+  }
+
+  async deleteTag(tagId: string) {
+    try {
+      await this.db.$transaction(async (tx) => {
+        await tx.medicalServiceTag.deleteMany({ where: { tagId } });
+        await tx.catalogTag.delete({ where: { id: tagId } });
+      });
+      return { success: true, message: 'Tag deleted' };
     } catch (error) {
       this.mapPrismaError(error);
     }
@@ -818,6 +940,7 @@ export class CatalogService {
     description: string | null;
     status: CatalogStatus;
     sortOrder: number;
+    _count?: { services: number };
   }) {
     return {
       id: tag.id,
@@ -828,6 +951,7 @@ export class CatalogService {
       description: tag.description,
       status: tag.status,
       sortOrder: tag.sortOrder,
+      servicesCount: tag._count?.services,
     };
   }
 

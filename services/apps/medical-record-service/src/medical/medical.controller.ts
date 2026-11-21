@@ -6,6 +6,7 @@ import {
   Get,
   Headers,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -44,7 +45,7 @@ export class MedicalController {
 
   @Get('encounters/:id')
   async getEncounter(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() auth: PublicAuthContext,
   ) {
     await this.s.assertReadAccess(id, auth);
@@ -119,23 +120,23 @@ export class MedicalController {
   }
 
   @Post('orders/:id/start')
-  orderStart(@Param('id') id: string) {
-    return this.s.orderState(id, 'IN_PROGRESS');
+  orderStart(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+    return this.s.orderState(id, 'IN_PROGRESS', undefined, a.userId, a.role);
   }
 
   @Post('orders/:id/performed')
-  performed(@Param('id') id: string) {
-    return this.s.orderState(id, 'PERFORMED');
+  performed(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+    return this.s.orderState(id, 'PERFORMED', undefined, a.userId, a.role);
   }
 
   @Post('orders/:id/results')
-  result(@Param('id') id: string, @Body() b: any) {
-    return this.s.orderState(id, 'RESULT_AVAILABLE', b.structuredResult);
+  result(@Param('id') id: string, @Body() b: any, @CurrentAuth() a: PublicAuthContext) {
+    return this.s.orderState(id, 'RESULT_AVAILABLE', b.structuredResult, a.userId, a.role);
   }
 
   @Post('orders/:id/verify')
-  verify(@Param('id') id: string) {
-    return this.s.orderState(id, 'VERIFIED');
+  verify(@Param('id') id: string, @CurrentAuth() a: PublicAuthContext) {
+    return this.s.orderState(id, 'VERIFIED', undefined, a.userId, a.role);
   }
 
   @Delete('orders/:id')

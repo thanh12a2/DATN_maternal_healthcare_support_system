@@ -1,5 +1,10 @@
 export type PatientAuthRole =
-  'PATIENT' | 'RECEPTIONIST' | 'DOCTOR' | 'NURSE' | 'ADMIN';
+  | 'PATIENT'
+  | 'RECEPTIONIST'
+  | 'DOCTOR'
+  | 'NURSE'
+  | 'ADMIN'
+  | 'CLINIC_MANAGER';
 
 export interface PatientAuthContext {
   userId: string;

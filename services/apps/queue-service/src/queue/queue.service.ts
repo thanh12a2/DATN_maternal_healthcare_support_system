@@ -407,15 +407,29 @@ export class QueueDomainService {
     version: number,
     reason?: string,
   ) {
+    const allowedPrior: Record<string, TicketState[]> = {
+      [TicketState.IN_SERVICE]: [TicketState.CALLED],
+      [TicketState.COMPLETED]: [TicketState.IN_SERVICE],
+      [TicketState.WAITING]: [TicketState.SKIPPED],
+      [TicketState.CANCELLED]: [TicketState.WAITING, TicketState.CALLED, TicketState.SKIPPED],
+    };
+    const allowed = allowedPrior[state];
+    if (!allowed) throw new ConflictException('INVALID_STATE_TRANSITION');
     const data: any = { state, version: { increment: 1 } };
     if (state === TicketState.IN_SERVICE) data.serviceStartedAt = new Date();
     if (state === TicketState.COMPLETED) data.completedAt = new Date();
     if (state === TicketState.WAITING)
       data.enqueueSequence = BigInt(Date.now());
     return this.db.$transaction(async tx => {
-      const u = await tx.stageTicket.updateMany({ where: { id, version }, data });
+      const current = await tx.stageTicket.findUnique({ where: { id }, select: { state: true } });
+      if (!current || !allowed.includes(current.state)) throw new ConflictException('INVALID_STATE_TRANSITION');
+      const u = await tx.stageTicket.updateMany({ where: { id, version, state: { in: allowed } }, data });
       if (!u.count) throw new ConflictException('VERSION_CONFLICT');
       const ticket = await tx.stageTicket.findUniqueOrThrow({ where: { id }, include: { stage: true, journey: { select: { patientId: true } } } });
+      if (state === TicketState.COMPLETED) {
+        const pending = await tx.stageTicket.count({ where: { journeyId: ticket.journeyId, state: { in: [TicketState.WAITING, TicketState.CALLED, TicketState.IN_SERVICE, TicketState.SKIPPED] } } });
+        if (!pending) await tx.queueJourney.updateMany({ where: { id: ticket.journeyId, state: JourneyState.ACTIVE }, data: { state: JourneyState.COMPLETED, version: { increment: 1 } } });
+      }
       const eventType = state === TicketState.WAITING ? 'queue.ticket_requeued.v1' : state === TicketState.CANCELLED ? 'queue.ticket_cancelled.v1' : null;
       if (eventType) await tx.queueOutbox.create({ data: { eventType, aggregateId: id, aggregateVersion: ticket.version,
         payload: { eventVersion: 1, aggregateType: 'queue_ticket', aggregateId: id, data: { patientId: ticket.journey.patientId, journeyId: ticket.journeyId } } } });

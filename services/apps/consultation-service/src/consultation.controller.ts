@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -47,6 +48,10 @@ export class ConsultationController {
       request.patientId,
       auth,
     );
+    if (!request.appointmentId) throw new ForbiddenException('APPOINTMENT_REQUIRED');
+    await this.access.assertAppointment(request.appointmentId, patientId);
+    if (request.doctorId || request.assignedDoctorId)
+      await this.access.assertDoctorEligible(request.doctorId || request.assignedDoctorId);
     return this.service.create({
       ...request,
       patientId,
@@ -62,7 +67,7 @@ export class ConsultationController {
 
   @UseGuards(PublicJwtGuard)
   @Get(['consultations/:id', ':id'])
-  async get(@Param('id') id: string, @CurrentAuth() auth: PublicAuthContext) {
+  async get(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() auth: PublicAuthContext) {
     await this.service.authorizeParticipant(id, auth, this.access);
     return this.service.getRest(id);
   }
@@ -95,7 +100,7 @@ export class ConsultationController {
 
   @UseGuards(PublicJwtGuard)
   @Post(['consultations/:id/assign', ':id/assign'])
-  assign(
+  async assign(
     @Param('id') id: string,
     @Body() request: any,
     @CurrentAuth() auth: PublicAuthContext,
@@ -103,6 +108,7 @@ export class ConsultationController {
     if (!['RECEPTIONIST', 'ADMIN'].includes(auth.role)) {
       throw new ForbiddenException('FORBIDDEN');
     }
+    await this.access.assertDoctorEligible(request.doctorId);
     return this.service.assign(id, request.doctorId, auth.userId);
   }
 

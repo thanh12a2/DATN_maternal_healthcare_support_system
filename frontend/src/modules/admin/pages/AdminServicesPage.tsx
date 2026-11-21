@@ -43,7 +43,6 @@ import { useAuthSession } from '../../../app/AuthSessionProvider';
 import {
   activateCategory,
   activateService,
-  activateTag,
   cancelPrice,
   cancelRankSurcharge,
   createCategory,
@@ -51,7 +50,6 @@ import {
   createTag,
   deactivateCategory,
   deactivateService,
-  deactivateTag,
   deleteCategory,
   deleteService,
   deleteTag,
@@ -222,6 +220,7 @@ export function AdminServicesPage() {
   // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [servicesError, setServicesError] = useState<string | null>(null);
 
   // Modals & Drawers
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -465,6 +464,7 @@ export function AdminServicesPage() {
       targetStatus = statusFilter,
     ) => {
       setServicesLoading(true);
+      setServicesError(null);
       try {
         const res = await listAdminServices(request, {
           q: targetSearch.trim() || undefined,
@@ -478,7 +478,9 @@ export function AdminServicesPage() {
         setServicesTotal(res.total);
         void loadActiveCount();
       } catch (err) {
-        console.error(err);
+        setServices([]);
+        setServicesTotal(0);
+        setServicesError(err instanceof Error ? err.message : 'Không thể tải danh sách dịch vụ.');
       } finally {
         setServicesLoading(false);
       }
@@ -574,7 +576,6 @@ export function AdminServicesPage() {
 
   const handleOpenEditService = (svc: MedicalServiceItem) => {
     setServiceToEdit(svc);
-    const categoryIds = (svc.categories || []).map((c) => c.id);
     const tagIds = (svc.tags || []).map((t) => t.id);
 
     editServiceForm.setFieldsValue({
@@ -586,7 +587,6 @@ export function AdminServicesPage() {
       specialtyId: svc.specialtyId ?? undefined,
       bookingEnabled: svc.bookingEnabled,
       doctorRankSelectionPolicy: svc.doctorRankSelectionPolicy,
-      categoryIds,
       tagIds,
       status: svc.status,
     });
@@ -1085,7 +1085,7 @@ export function AdminServicesPage() {
     setTogglingTag(true);
     try {
       if (tagToToggle.status === 'ACTIVE') {
-        await deactivateTag(request, tagToToggle.id);
+        await updateTag(request, tagToToggle.id, { status: 'INACTIVE' });
         setFeedback({
           open: true,
           type: 'success',
@@ -1093,7 +1093,7 @@ export function AdminServicesPage() {
           description: `Thẻ tag "${tagToToggle.name}" đã được tạm khóa.`,
         });
       } else {
-        await activateTag(request, tagToToggle.id);
+        await updateTag(request, tagToToggle.id, { status: 'ACTIVE' });
         setFeedback({
           open: true,
           type: 'success',
@@ -1480,12 +1480,13 @@ export function AdminServicesPage() {
               onClick={() => handleRequestToggleServiceStatus(record)}
             />
           </Tooltip>
-          <Tooltip title="Xóa dịch vụ">
+          <Tooltip title={record.status === 'DRAFT' ? 'Xóa bản nháp' : 'Chỉ có thể xóa dịch vụ chưa từng công bố; hãy tạm khóa dịch vụ đang hoạt động'}>
             <Button
               type="text"
               size="small"
               danger
               icon={<DeleteOutlined />}
+              disabled={record.status !== 'DRAFT'}
               onClick={() => {
                 setServiceToDelete(record);
                 setDeleteModalOpen(true);
@@ -2059,14 +2060,11 @@ export function AdminServicesPage() {
                   onClick={() => openScheduleSurchargeForRank(record)}
                 />
               </Tooltip>
-              <Tooltip
-                title={
-                  record.rankStatus === 'ACTIVE' ? 'Tạm khóa' : 'Kích hoạt'
-                }
-              >
+              <Tooltip title="API chưa hỗ trợ thay đổi trạng thái hạng bác sĩ">
                 <Button
                   type="text"
                   size="small"
+                  disabled
                   icon={
                     record.rankStatus === 'ACTIVE' ? (
                       <PauseCircleOutlined style={{ color: '#fa8c16' }} />
@@ -2077,19 +2075,21 @@ export function AdminServicesPage() {
                   onClick={() => openToggleRankModal(rankItem)}
                 />
               </Tooltip>
-              <Tooltip title="Chỉnh sửa hạng">
+              <Tooltip title="API chưa hỗ trợ chỉnh sửa hạng bác sĩ">
                 <Button
                   type="text"
                   size="small"
+                  disabled
                   icon={<EditOutlined style={{ color: 'var(--deep)' }} />}
                   onClick={() => openEditRank(rankItem)}
                 />
               </Tooltip>
-              <Tooltip title="Xóa hạng">
+              <Tooltip title="API chưa hỗ trợ xóa hạng bác sĩ">
                 <Button
                   type="text"
                   size="small"
                   danger
+                  disabled
                   icon={<DeleteOutlined />}
                   onClick={() => openDeleteRank(rankItem)}
                 />
@@ -2320,8 +2320,10 @@ export function AdminServicesPage() {
                         allowClear
                       />
                       <Select
-                        placeholder="Lọc nhóm danh mục"
+                        placeholder="Nhóm danh mục chưa hỗ trợ"
                         value={categoryFilter}
+                        disabled
+                        title="Service Catalog chưa lưu nhóm danh mục"
                         onChange={(val) => {
                           setCategoryFilter(val);
                           setPage(1);
@@ -2397,6 +2399,15 @@ export function AdminServicesPage() {
                   </div>
 
                   {/* Services Table */}
+                  {servicesError && (
+                    <Alert
+                      type="error"
+                      showIcon
+                      title="Không thể tải danh sách dịch vụ"
+                      description={servicesError}
+                      action={<Button size="small" onClick={() => void loadServices()}>Thử lại</Button>}
+                    />
+                  )}
                   <Table
                     columns={serviceColumns}
                     dataSource={services}
@@ -2433,6 +2444,12 @@ export function AdminServicesPage() {
                 <div
                   style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
                 >
+                  <Alert
+                    type="info"
+                    showIcon
+                    title="Nhóm danh mục chưa được hỗ trợ"
+                    description="Danh mục dịch vụ hiện chưa có nơi lưu trữ trong Service Catalog. Bạn vẫn có thể quản lý dịch vụ theo chuyên khoa và thẻ tag."
+                  />
                   <div
                     style={{
                       display: 'flex',
@@ -2459,6 +2476,8 @@ export function AdminServicesPage() {
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
+                      disabled
+                      title="Nhóm danh mục chưa có nơi lưu trữ trong Service Catalog"
                       style={{ background: '#0284c7' }}
                       onClick={() => {
                         createCategoryForm.resetFields();
@@ -2642,13 +2661,15 @@ export function AdminServicesPage() {
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
+                      disabled
+                      title="Hạng bác sĩ dùng mã enum cố định; API chưa hỗ trợ tạo hạng mới"
                       style={{ background: '#0284c7' }}
                       onClick={() => {
                         createRankForm.resetFields();
                         setCreateRankModalOpen(true);
                       }}
                     >
-                      Thêm hạng bác sĩ
+                      Thêm hạng bác sĩ (chưa hỗ trợ)
                     </Button>
                   </div>
 
@@ -3301,26 +3322,7 @@ export function AdminServicesPage() {
             </Form.Item>
 
             <Form.Item
-              name="categoryIds"
-              label="Nhóm danh mục"
-              rules={[
-                {
-                  required: true,
-                  message: 'Vui lòng chọn ít nhất 1 nhóm danh mục',
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Chọn một hoặc nhiều nhóm danh mục..."
-                options={categories.map((c) => ({
-                  label: c.name,
-                  value: c.id,
-                }))}
-              />
-            </Form.Item>
-
-            <Form.Item name="specialtyId" label="Chuyên khoa liên kết">
+              name="specialtyId" label="Chuyên khoa liên kết">
               <Select
                 placeholder="Chọn chuyên khoa (nếu có)..."
                 allowClear
@@ -3489,26 +3491,7 @@ export function AdminServicesPage() {
             </Form.Item>
 
             <Form.Item
-              name="categoryIds"
-              label="Nhóm danh mục"
-              rules={[
-                {
-                  required: true,
-                  message: 'Vui lòng chọn ít nhất 1 nhóm danh mục',
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Chọn một hoặc nhiều nhóm danh mục..."
-                options={categories.map((c) => ({
-                  label: c.name,
-                  value: c.id,
-                }))}
-              />
-            </Form.Item>
-
-            <Form.Item name="specialtyId" label="Chuyên khoa liên kết">
+              name="specialtyId" label="Chuyên khoa liên kết">
               <Select
                 allowClear
                 options={specialties.map((s) => ({
@@ -3852,9 +3835,8 @@ export function AdminServicesPage() {
           )?
         </p>
         <p style={{ color: '#64748b', fontSize: 13 }}>
-          * Nếu dịch vụ đã từng có lịch hẹn hoặc hóa đơn liên quan, hệ thống sẽ
-          tự động chuyển sang trạng thái <strong>Lưu trữ (ARCHIVED)</strong> để
-          bảo toàn toàn vẹn dữ liệu lịch sử khám bệnh.
+          Chỉ bản nháp chưa từng công bố mới được xóa. Dịch vụ đã công bố cần
+          được tạm khóa để giữ lịch sử khám bệnh và thanh toán.
         </p>
       </Modal>
 
@@ -4958,6 +4940,8 @@ export function AdminServicesPage() {
                     <Button
                       style={{ color: '#fa8c16', borderColor: '#fa8c16' }}
                       icon={<PauseCircleOutlined />}
+                      disabled
+                      title="API chưa hỗ trợ thay đổi trạng thái hạng bác sĩ"
                       onClick={() => {
                         const rk = activeSelectedRank.rawRank!;
                         setDetailRankDrawerOpen(false);
@@ -4970,6 +4954,8 @@ export function AdminServicesPage() {
                     <Button
                       style={{ color: '#52c41a', borderColor: '#52c41a' }}
                       icon={<CheckCircleOutlined />}
+                      disabled
+                      title="API chưa hỗ trợ thay đổi trạng thái hạng bác sĩ"
                       onClick={() => {
                         const rk = activeSelectedRank.rawRank!;
                         setDetailRankDrawerOpen(false);
@@ -4982,24 +4968,28 @@ export function AdminServicesPage() {
                   <Button
                     type="primary"
                     icon={<EditOutlined />}
+                    disabled
+                    title="API chưa hỗ trợ chỉnh sửa hạng bác sĩ"
                     onClick={() => {
                       const rk = activeSelectedRank.rawRank!;
                       setDetailRankDrawerOpen(false);
                       openEditRank(rk);
                     }}
                   >
-                    Chỉnh sửa hạng
+                    Chỉnh sửa hạng (chưa hỗ trợ)
                   </Button>
                   <Button
                     danger
                     icon={<DeleteOutlined />}
+                    disabled
+                    title="API chưa hỗ trợ xóa hạng bác sĩ"
                     onClick={() => {
                       const rk = activeSelectedRank.rawRank!;
                       setDetailRankDrawerOpen(false);
                       openDeleteRank(rk);
                     }}
                   >
-                    Xóa hạng
+                    Xóa hạng (chưa hỗ trợ)
                   </Button>
                 </>
               )}

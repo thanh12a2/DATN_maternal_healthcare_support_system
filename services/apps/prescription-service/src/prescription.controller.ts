@@ -3,8 +3,10 @@ import {
   Controller,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -38,7 +40,7 @@ export class PrescriptionController {
     patientId: string,
     allowFinalized = false,
   ) {
-    if (a.role !== 'DOCTOR') return;
+    if (a.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     if (!patientId) throw new BadRequestException('PATIENT_REQUIRED');
     const encounter = await this.access.assertEncounter(
       a,
@@ -61,7 +63,7 @@ export class PrescriptionController {
     b: any,
     allowFinalized = false,
   ) {
-    if (a.role !== 'DOCTOR') return;
+    if (a.role !== 'DOCTOR') throw new ForbiddenException('DOCTOR_REQUIRED');
     if (!Number.isInteger(b?.version) || b.version < 1)
       throw new BadRequestException('VERSION_REQUIRED');
     const { data } = await this.s.getRest(id);
@@ -88,15 +90,14 @@ export class PrescriptionController {
     @CurrentAuth() a: PublicAuthContext,
   ) {
     if (
-      a.role === 'DOCTOR' &&
-      (!Array.isArray(b.items) ||
+      !Array.isArray(b.items) ||
         !b.items.length ||
         b.items.some(
           (x: any) =>
             !String(x.medicationName ?? '').trim() ||
             !String(x.dose ?? '').trim() ||
             !String(x.frequency ?? '').trim(),
-        ))
+        )
     )
       throw new BadRequestException('PRESCRIPTION_ITEMS_REQUIRED');
     const doctorId = await this.authorizeWrite(a, b.encounterId, b.patientId);
@@ -109,6 +110,7 @@ export class PrescriptionController {
     @Query() q: any,
     @CurrentAuth() a: PublicAuthContext,
   ) {
+    if (a.role === 'PATIENT') q.patientId = await this.access.assertPatient(a, q?.patientId);
     if (a.role === 'DOCTOR')
       await this.access.assertEncounter(a, q?.encounterId, q?.patientId);
     return this.s.listRest(q);
@@ -117,10 +119,11 @@ export class PrescriptionController {
   @UseGuards(PublicJwtGuard)
   @Get([':id', 'prescriptions/:id'])
   async getPrescription(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() a: PublicAuthContext,
   ) {
     const result = await this.s.getRest(id);
+    if (a.role === 'PATIENT') await this.access.assertPatient(a, result.data.patientId);
     if (a.role === 'DOCTOR')
       await this.access.assertEncounter(
         a,
@@ -138,7 +141,6 @@ export class PrescriptionController {
     @CurrentAuth() a: PublicAuthContext,
   ) {
     if (
-      a.role === 'DOCTOR' &&
       b.items !== undefined &&
       (!Array.isArray(b.items) ||
         !b.items.length ||

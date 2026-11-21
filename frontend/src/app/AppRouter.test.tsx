@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { AppRouter } from './AppRouter';
 
 const patientSession = {
@@ -32,6 +32,14 @@ beforeEach(() => {
 });
 
 describe('AppRouter patient flow', () => {
+  it('renders the login form after redirecting an anonymous booking visit', async () => {
+    window.history.replaceState({}, '', '/dat-lich');
+    render(<AppRouter />);
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dang-nhap'));
+    expect(await screen.findByRole('heading', { name: 'Chào mừng trở lại' })).toBeTruthy();
+  });
+
   it('redirects /tong-quan to home', async () => {
     window.localStorage.setItem(
       'an-tam-auth-session',

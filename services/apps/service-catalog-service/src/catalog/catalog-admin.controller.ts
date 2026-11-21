@@ -1,10 +1,20 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
 import { CatalogService } from './catalog.service';
 import {
   CreateCategoryDto,
   CreateServiceDto,
   CreateTagDto,
+  ListAdminServicesQueryDto,
   ScheduleBasePriceDto,
   ScheduleRankSurchargeDto,
   UpdateCategoryDto,
@@ -17,6 +27,36 @@ import {
 export class CatalogAdminController {
   constructor(private readonly service: CatalogService) {}
 
+  @Get('services')
+  listServices(@Query() query: ListAdminServicesQueryDto) {
+    return this.service.listAdminServices(query);
+  }
+
+  @Get('services/:serviceId')
+  getService(@Param('serviceId') serviceId: string) {
+    return this.service.getAdminService(serviceId);
+  }
+
+  @Get('services/:serviceId/prices')
+  listServicePrices(@Param('serviceId') serviceId: string) {
+    return this.service.listAdminServicePrices(serviceId);
+  }
+
+  @Get('categories')
+  listCategories() {
+    return this.service.listAdminCategories();
+  }
+
+  @Get('tags')
+  listTags() {
+    return this.service.listAdminTags();
+  }
+
+  @Get('doctor-rank-surcharges')
+  listRankSurcharges() {
+    return this.service.listAdminRankSurcharges();
+  }
+
   @Post('services')
   createService(@Body() dto: CreateServiceDto) {
     return this.service.createService(dto);
@@ -28,6 +68,11 @@ export class CatalogAdminController {
     @Body() dto: UpdateServiceDto,
   ) {
     return this.service.updateService(serviceId, dto);
+  }
+
+  @Delete('services/:serviceId')
+  deleteService(@Param('serviceId') serviceId: string) {
+    return this.service.deleteDraftService(serviceId);
   }
 
   @Post('services/:serviceId/activate')
@@ -61,6 +106,11 @@ export class CatalogAdminController {
   @Patch('tags/:tagId')
   updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateTagDto) {
     return this.service.updateTag(tagId, dto);
+  }
+
+  @Delete('tags/:tagId')
+  deleteTag(@Param('tagId') tagId: string) {
+    return this.service.deleteTag(tagId);
   }
 
   @Post('services/:serviceId/prices')

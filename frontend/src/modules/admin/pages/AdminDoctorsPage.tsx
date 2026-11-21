@@ -44,8 +44,6 @@ import {
   deactivateDoctor,
   deleteDoctor,
   getDoctor,
-  linkDoctorSpecialty,
-  unlinkDoctorSpecialty,
   listConsultationRanks,
   listDoctors,
   listSpecialties,
@@ -64,9 +62,9 @@ import {
   AdminFeedbackModal,
   type AdminFeedbackState,
 } from '../components/AdminFeedbackModal';
-import { DoctorPhotoUpload } from '../components/DoctorPhotoUpload';
 import {
   listAdminUsers,
+  createAdminUser,
   getAdminUser,
   deleteAdminUser,
   updateAdminUser,
@@ -99,83 +97,14 @@ const STATUS_OPTIONS: Array<{
   { label: 'Tạm khóa (INACTIVE)', value: 'INACTIVE', color: 'warning' },
 ];
 
-const SEED_DOCTOR_PHONES: Record<string, string> = {
-  'dr.hongtam@antam.local': '0903112001',
-  'dr.quocviet@antam.local': '0903112002',
-  'dr.thuha@antam.local': '0903112003',
-  'dr.hoangnam@antam.local': '0903112004',
-  'dr.bichngoc@antam.local': '0903112005',
-  'dr.phuongthao@antam.local': '0903112006',
-  'dr.minhduc@antam.local': '0903112007',
-  'dr.kimoanh@antam.local': '0903112008',
-};
-
 function getDoctorPhone(
   doctor?: Partial<DoctorItem> | null,
 ): string | undefined {
-  if (!doctor) return undefined;
-  if (doctor.phoneNumber && doctor.phoneNumber.trim())
-    return doctor.phoneNumber.trim();
-  if (typeof window !== 'undefined') {
-    if (doctor.id) {
-      const p1 = localStorage.getItem(`doctor_phone_${doctor.id}`);
-      if (p1 && p1.trim()) return p1.trim();
-    }
-    if (doctor.accountId) {
-      const p2 = localStorage.getItem(`doctor_phone_${doctor.accountId}`);
-      if (p2 && p2.trim()) return p2.trim();
-    }
-  }
-  if (doctor.email && SEED_DOCTOR_PHONES[doctor.email]) {
-    return SEED_DOCTOR_PHONES[doctor.email];
-  }
-  return undefined;
+  return doctor?.phoneNumber?.trim() || undefined;
 }
 
 function getDoctorPhoto(doctor: DoctorItem): string | undefined {
-  if (typeof window !== 'undefined') {
-    if (doctor.id) {
-      const saved = localStorage.getItem(`doctor_avatar_${doctor.id}`);
-      if (saved) return saved;
-    }
-    if (doctor.accountId) {
-      const saved = localStorage.getItem(`doctor_avatar_${doctor.accountId}`);
-      if (saved) return saved;
-    }
-  }
   return doctor.profile?.photoUrl || undefined;
-}
-
-function saveDoctorPhone(
-  doctorId?: string | null,
-  accountId?: string | null,
-  phone?: string | null,
-) {
-  if (typeof window === 'undefined') return;
-  const p = phone?.trim();
-  if (p) {
-    if (doctorId) localStorage.setItem(`doctor_phone_${doctorId}`, p);
-    if (accountId) localStorage.setItem(`doctor_phone_${accountId}`, p);
-  } else {
-    if (doctorId) localStorage.removeItem(`doctor_phone_${doctorId}`);
-    if (accountId) localStorage.removeItem(`doctor_phone_${accountId}`);
-  }
-}
-
-function saveDoctorPhoto(
-  doctorId?: string | null,
-  accountId?: string | null,
-  photoUrl?: string | null,
-) {
-  if (typeof window === 'undefined') return;
-  const p = photoUrl?.trim();
-  if (p) {
-    if (doctorId) localStorage.setItem(`doctor_avatar_${doctorId}`, p);
-    if (accountId) localStorage.setItem(`doctor_avatar_${accountId}`, p);
-  } else {
-    if (doctorId) localStorage.removeItem(`doctor_avatar_${doctorId}`);
-    if (accountId) localStorage.removeItem(`doctor_avatar_${accountId}`);
-  }
 }
 
 export function AdminDoctorsPage() {
@@ -200,9 +129,6 @@ export function AdminDoctorsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<DoctorItem | null>(null);
-  const [editPhotoUrl, setEditPhotoUrl] = useState<string | undefined>(
-    undefined,
-  );
   const [submitting, setSubmitting] = useState(false);
 
   // Detail drawer state
@@ -225,7 +151,7 @@ export function AdminDoctorsPage() {
   const [feedback, setFeedback] = useState<AdminFeedbackState | null>(null);
 
   const [createForm] = Form.useForm<
-    CreateDoctorPayload & { specialtyId?: string }
+    Omit<CreateDoctorPayload, 'accountId'> & { email: string; password: string }
   >();
   const [editForm] = Form.useForm<
     UpdateDoctorPayload & { specialtyId?: string }
@@ -416,7 +342,6 @@ export function AdminDoctorsPage() {
     }
     const resolvedPhoto = getDoctorPhoto(currentDoctor);
     setEditingDoctor(currentDoctor);
-    setEditPhotoUrl(resolvedPhoto);
     const primarySpecialtyId =
       currentDoctor.specialties?.find((s) => s.isPrimary)?.id ??
       currentDoctor.specialties?.[0]?.id;
@@ -484,7 +409,10 @@ export function AdminDoctorsPage() {
 
   // Xử lý tạo mới bác sĩ
   const handleCreate = async (
-    values: CreateDoctorPayload & { specialtyId?: string },
+    values: Omit<CreateDoctorPayload, 'accountId'> & {
+      email: string;
+      password: string;
+    },
   ) => {
     // Kiểm tra validation giữa Hạng tư vấn và Năm bắt đầu hành nghề
     const createRankCode = values.consultationRank;
@@ -520,18 +448,34 @@ export function AdminDoctorsPage() {
 
     setSubmitting(true);
     try {
-      const created = await createDoctor(request, {
-        email: values.email,
-        phoneNumber: values.phoneNumber,
-        licenseNumber: values.licenseNumber,
-        consultationRank: values.consultationRank,
-        profile: {
-          fullName: values.profile.fullName,
-
-          biography: values.profile.biography || undefined,
-          practiceStartYear: values.profile.practiceStartYear || undefined,
-        },
+      const account = await createAdminUser(request, {
+        email: values.email.trim(),
+        password: values.password,
+        role: 'DOCTOR',
       });
+      let created: DoctorItem;
+      try {
+        created = await createDoctor(request, {
+          accountId: account.id,
+          licenseNumber: values.licenseNumber,
+          consultationRank: values.consultationRank,
+          specialtyId: values.specialtyId,
+          profile: {
+            fullName: values.profile.fullName,
+            biography: values.profile.biography || undefined,
+            practiceStartYear: values.profile.practiceStartYear || undefined,
+          },
+        });
+      } catch (createError) {
+        try {
+          await deleteAdminUser(request, account.id);
+        } catch {
+          throw new Error(
+            `Không thể tạo hồ sơ bác sĩ và không thể hoàn tác tài khoản ${account.email}. Vui lòng kiểm tra tài khoản này trước khi thử lại.`,
+          );
+        }
+        throw createError;
+      }
 
       registerDoctorToCache(
         created.id,
@@ -545,28 +489,10 @@ export function AdminDoctorsPage() {
         ? specialties.find((s) => s.id === values.specialtyId)
         : undefined;
       setDoctorContext(created.id, {
-        phoneNumber: values.phoneNumber,
         specialtyName: createMatchedSpec
           ? `${createMatchedSpec.name} (${createMatchedSpec.code})`
           : undefined,
       });
-
-      if (values.specialtyId) {
-        try {
-          await linkDoctorSpecialty(
-            request,
-            created.id,
-            values.specialtyId,
-            true,
-          );
-        } catch (linkErr) {
-          console.warn('Could not link specialty immediately:', linkErr);
-        }
-      }
-
-      if (values.phoneNumber) {
-        saveDoctorPhone(created.id, created.accountId, values.phoneNumber);
-      }
 
       createForm.resetFields();
       setCreateModalOpen(false);
@@ -650,18 +576,25 @@ export function AdminDoctorsPage() {
 
     setSubmitting(true);
     try {
-      const finalPhotoUrl =
-        editPhotoUrl !== undefined ? editPhotoUrl : values.profile?.photoUrl;
+      const finalPhotoUrl = values.profile?.photoUrl?.trim() || null;
 
       const payload: UpdateDoctorPayload = {
-        consultationRank: values.consultationRank,
+        consultationRank:
+          values.consultationRank !== editingDoctor.consultationRank
+            ? values.consultationRank
+            : undefined,
         licenseNumber: values.licenseNumber,
+        specialtyId:
+          values.specialtyId !==
+          editingDoctor.specialties.find((specialty) => specialty.isPrimary)?.id
+            ? values.specialtyId
+            : undefined,
         profile: {
           fullName: values.profile?.fullName,
 
-          biography: values.profile?.biography || undefined,
+          biography: values.profile?.biography ?? '',
           practiceStartYear: values.profile?.practiceStartYear || undefined,
-          photoUrl: finalPhotoUrl || undefined,
+          photoUrl: finalPhotoUrl,
         },
       };
 
@@ -695,57 +628,9 @@ export function AdminDoctorsPage() {
         payload,
       );
 
-      if (values.specialtyId) {
-        try {
-          // 1. Gán chuyên khoa mới làm chuyên khoa chính
-          await linkDoctorSpecialty(
-            request,
-            editingDoctor.id,
-            values.specialtyId,
-            true,
-          );
-
-          // 2. Hủy liên kết tất cả các chuyên khoa cũ khác để bác sĩ chỉ có duy nhất 1 chuyên khoa
-          const oldSpecialties = editingDoctor.specialties || [];
-          for (const oldSpec of oldSpecialties) {
-            if (oldSpec.id !== values.specialtyId) {
-              try {
-                await unlinkDoctorSpecialty(
-                  request,
-                  editingDoctor.id,
-                  oldSpec.id,
-                );
-              } catch (unlinkErr) {
-                console.warn(
-                  `Could not unlink old specialty ${oldSpec.id}:`,
-                  unlinkErr,
-                );
-              }
-            }
-          }
-        } catch (linkErr) {
-          console.warn('Could not update specialty link:', linkErr);
-        }
-      }
-
-      // Cập nhật số điện thoại và ảnh đại diện
-      if (values.phoneNumber !== undefined) {
-        saveDoctorPhone(
-          editingDoctor.id,
-          editingDoctor.accountId,
-          values.phoneNumber,
-        );
-      }
-      if (finalPhotoUrl !== undefined) {
-        saveDoctorPhoto(
-          editingDoctor.id,
-          editingDoctor.accountId,
-          finalPhotoUrl,
-        );
-      }
-
       // Cập nhật email nếu có thay đổi và có accountId
-      let finalEmail = values.email || editingDoctor.email;
+      let finalEmail = editingDoctor.email;
+      let emailUpdateFailed = false;
       if (
         values.email &&
         values.email !== editingDoctor.email &&
@@ -761,13 +646,13 @@ export function AdminDoctorsPage() {
           finalEmail = values.email.trim();
         } catch (authErr) {
           console.warn('Could not update auth email:', authErr);
+          emailUpdateFailed = true;
         }
       }
 
       editForm.resetFields();
       setEditModalOpen(false);
       setEditingDoctor(null);
-      setEditPhotoUrl(undefined);
       if (selectedDoctor?.id === editingDoctor.id) {
         setSelectedDoctor({
           ...updated,
@@ -784,9 +669,13 @@ export function AdminDoctorsPage() {
       }
       setFeedback({
         open: true,
-        type: 'success',
-        title: 'Cập nhật thành công!',
-        description: `Thông tin bác sĩ ${updated.profile?.fullName} đã được cập nhật thành công.`,
+        type: emailUpdateFailed ? 'error' : 'success',
+        title: emailUpdateFailed
+          ? 'Hồ sơ đã lưu, email chưa cập nhật'
+          : 'Cập nhật thành công!',
+        description: emailUpdateFailed
+          ? `Hồ sơ bác sĩ ${updated.profile?.fullName} đã lưu, nhưng email đăng nhập vẫn là ${editingDoctor.email || 'email cũ'}. Vui lòng thử cập nhật email lại.`
+          : `Thông tin bác sĩ ${updated.profile?.fullName} đã được cập nhật thành công.`,
       });
       void loadData();
     } catch (err: unknown) {
@@ -1102,11 +991,12 @@ export function AdminDoctorsPage() {
                 onClick={() => void openEditModal(record)}
               />
             </Tooltip>
-            <Tooltip title="Xóa bác sĩ">
+            <Tooltip title="API chưa hỗ trợ xóa bác sĩ; hãy tạm khóa tài khoản và hồ sơ">
               <Button
                 type="text"
                 danger
                 icon={<DeleteOutlined />}
+                disabled
                 onClick={() => openDeleteModal(record)}
               />
             </Tooltip>
@@ -1452,13 +1342,15 @@ export function AdminDoctorsPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
+                disabled
+                title="API chưa hỗ trợ xóa bác sĩ; hãy tạm khóa tài khoản và hồ sơ"
                 onClick={() => {
                   const d = selectedDoctor;
                   setDetailDrawerOpen(false);
                   openDeleteModal(d);
                 }}
               >
-                Xóa bác sĩ
+                Xóa bác sĩ (chưa hỗ trợ)
               </Button>
             </div>
           </div>
@@ -1519,13 +1411,14 @@ export function AdminDoctorsPage() {
             </Form.Item>
 
             <Form.Item
-              name="phoneNumber"
-              label="Số điện thoại"
+              name="password"
+              label="Mật khẩu đăng nhập"
               rules={[
-                { required: true, message: 'Vui lòng nhập số điện thoại' },
+                { required: true, message: 'Vui lòng nhập mật khẩu' },
+                { min: 8, message: 'Mật khẩu tối thiểu 8 ký tự' },
               ]}
             >
-              <Input prefix={<PhoneOutlined />} placeholder="0901234567" />
+              <Input.Password placeholder="Tối thiểu 8 ký tự" />
             </Form.Item>
           </div>
 
@@ -1559,7 +1452,7 @@ export function AdminDoctorsPage() {
             >
               <Select
                 placeholder="Chọn chuyên khoa"
-                options={specialties.map((s) => ({
+                options={specialties.filter((s) => s.status === 'ACTIVE').map((s) => ({
                   label: s.name,
                   value: s.id,
                 }))}
@@ -1569,6 +1462,7 @@ export function AdminDoctorsPage() {
             <Form.Item
               name={['profile', 'practiceStartYear']}
               label="Năm bắt đầu hành nghề"
+              rules={[{ required: true, message: 'Vui lòng nhập năm bắt đầu hành nghề để xác nhận kinh nghiệm của hạng tư vấn' }]}
             >
               <InputNumber
                 min={1970}
@@ -1619,27 +1513,13 @@ export function AdminDoctorsPage() {
           onFinish={handleEdit}
           style={{ marginTop: 16 }}
         >
-          {/* Avatar Upload */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginBottom: 20,
-            }}
+          <Form.Item
+            name={['profile', 'photoUrl']}
+            label="Ảnh đại diện (URL HTTPS)"
+            rules={[{ pattern: /^https:\/\//i, message: 'Chỉ hỗ trợ URL HTTPS' }]}
           >
-            <Form.Item name={['profile', 'photoUrl']} noStyle>
-              <DoctorPhotoUpload
-                value={
-                  editPhotoUrl ?? editingDoctor?.profile?.photoUrl ?? undefined
-                }
-                doctorName={editingDoctor?.profile?.fullName}
-                onChange={(newUrl) => {
-                  setEditPhotoUrl(newUrl);
-                  editForm.setFieldValue(['profile', 'photoUrl'], newUrl);
-                }}
-              />
-            </Form.Item>
-          </div>
+            <Input placeholder="https://example.com/doctor.jpg" allowClear />
+          </Form.Item>
 
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
@@ -1672,9 +1552,6 @@ export function AdminDoctorsPage() {
               <Input prefix={<MailOutlined />} placeholder="bacsi@antam.vn" />
             </Form.Item>
 
-            <Form.Item name="phoneNumber" label="Số điện thoại">
-              <Input prefix={<PhoneOutlined />} placeholder="0901234567" />
-            </Form.Item>
           </div>
 
           <div
@@ -1703,7 +1580,7 @@ export function AdminDoctorsPage() {
             <Form.Item name="specialtyId" label="Chuyên khoa chính">
               <Select
                 placeholder="Chọn chuyên khoa"
-                options={specialties.map((s) => ({
+                options={specialties.filter((s) => s.status === 'ACTIVE').map((s) => ({
                   label: s.name,
                   value: s.id,
                 }))}

@@ -146,9 +146,15 @@ export async function recordClientAuditLog(
     await request('/api/audit-logs/logs', {
       method: 'POST',
       body: JSON.stringify({
-        ...payload,
+        action: payload.action,
+        aggregateType: payload.aggregateType,
+        aggregateId: payload.aggregateId,
         result: payload.result ?? 'SUCCESS',
-        actorType: payload.actorType ?? 'ADMIN',
+        changedFields: payload.changedFields ?? [],
+        metadata: {
+          description: payload.metadata?.description,
+          targetService: payload.sourceService,
+        },
       }),
     });
   } catch {

@@ -30,7 +30,8 @@ export class AppointmentSyncService implements OnModuleInit, OnModuleDestroy {
         } catch (err: any) {
           this.logger.error(`Reconcile appointment error for job ${job.id}: ${err?.message || err}`);
           const delay = Math.min(300000, 10000 * (2 ** Math.min(job.attempts, 5)));
-          await this.db.encounterAppointmentSync.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { attempts: { increment: 1 }, nextAttemptAt: new Date(Date.now() + delay), lastError: err?.message || 'RECONCILIATION_FAILED' } });
+          const lastError = String(err?.message || 'RECONCILIATION_FAILED').slice(0, 100);
+          await this.db.encounterAppointmentSync.updateMany({ where: { id: job.id, status: 'PENDING' }, data: { attempts: { increment: 1 }, nextAttemptAt: new Date(Date.now() + delay), lastError } });
         }
       }
     } catch (error) {

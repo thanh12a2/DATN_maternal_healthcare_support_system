@@ -57,12 +57,14 @@ export class SessionsService {
 
     const issuedRefreshToken = this.refreshTokenService.issueRefreshToken(now);
 
-    await this.sessionsRepository.rotateRefreshSession({
+    const rotated = await this.sessionsRepository.rotateRefreshSession({
       sessionId: session.sessionId,
+      previousRefreshTokenHash: refreshTokenHash,
       refreshTokenHash: issuedRefreshToken.refreshTokenHash,
       expiresAt: issuedRefreshToken.expiresAt,
       lastUsedAt: now,
     });
+    if (!rotated) throw new InvalidRefreshSessionError();
 
     return {
       accountId: session.accountId,

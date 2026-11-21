@@ -17,6 +17,7 @@ export interface RefreshSessionRecord {
 
 export interface RotateRefreshSessionInput {
   sessionId: string;
+  previousRefreshTokenHash: string;
   refreshTokenHash: string;
   expiresAt: Date;
   lastUsedAt: Date;

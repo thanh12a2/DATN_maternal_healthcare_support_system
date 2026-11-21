@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Avatar,
   Badge,
   Button,
@@ -62,6 +63,7 @@ export function AdminSpecialtiesPage() {
   const [loading, setLoading] = useState(false);
   const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
     undefined,
@@ -92,18 +94,26 @@ export function AdminSpecialtiesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const [specRes, docRes] = await Promise.all([
+      const [specRes, docRes] = await Promise.allSettled([
         listSpecialties(request, { limit: 100 }),
         listDoctors(request, { limit: 100 }),
       ]);
-      const specList = Array.isArray(specRes) ? specRes : [];
-      setSpecialties(specList);
-      registerSpecialtyBatchToCache(specList);
-      const docList = Array.isArray(docRes) ? docRes : (docRes?.data ?? []);
-      setDoctors(docList);
-    } catch (err: unknown) {
-      console.error(err);
+      if (specRes.status === 'fulfilled') {
+        setSpecialties(specRes.value);
+        registerSpecialtyBatchToCache(specRes.value);
+      } else {
+        setSpecialties([]);
+        setLoadError(specRes.reason instanceof Error ? specRes.reason.message : 'Không thể tải chuyên khoa.');
+      }
+      if (docRes.status === 'fulfilled') {
+        setDoctors(docRes.value.data);
+      } else {
+        setDoctors([]);
+        if (specRes.status === 'fulfilled')
+          setLoadError('Không thể tải danh sách bác sĩ của chuyên khoa.');
+      }
     } finally {
       setLoading(false);
     }
@@ -136,22 +146,8 @@ export function AdminSpecialtiesPage() {
   const handleCreate = async (values: CreateSpecialtyPayload) => {
     setSubmitting(true);
     try {
-      const created = await createSpecialty(request, values);
+      const created = await createSpecialty(request, { ...values, status: 'INACTIVE' });
       registerSpecialtyToCache(created.id, created.name);
-
-      // Chuyển chuyên khoa vừa tạo về trạng thái Tạm khóa (INACTIVE/Bản nháp)
-      // Dùng suppressAudit=true để không bị sinh lặp log thừa, chỉ lưu duy nhất 1 log tạo chuyên khoa (SPECIALTY_CREATED)
-      try {
-        await updateSpecialty(
-          request,
-          created.id,
-          { status: 'INACTIVE' },
-          { suppressAudit: true },
-        );
-        created.status = 'INACTIVE';
-      } catch (statusErr) {
-        console.warn('Could not set initial draft status:', statusErr);
-      }
 
       createForm.resetFields();
       setCreateModalOpen(false);
@@ -471,11 +467,12 @@ export function AdminSpecialtiesPage() {
                 onClick={() => openEdit(record)}
               />
             </Tooltip>
-            <Tooltip title="Xóa chuyên khoa">
+            <Tooltip title="API chưa hỗ trợ xóa chuyên khoa; hãy tạm khóa nếu không còn sử dụng">
               <Button
                 type="text"
                 danger
                 icon={<DeleteOutlined />}
+                disabled
                 onClick={() => openDelete(record)}
               />
             </Tooltip>
@@ -535,6 +532,8 @@ export function AdminSpecialtiesPage() {
             </Button>
           </Space>
         </div>
+
+        {loadError && <Alert type="error" showIcon title="Không thể tải đầy đủ dữ liệu" description={loadError} action={<Button size="small" onClick={() => void loadData()}>Thử lại</Button>} style={{ marginBottom: 16 }} />}
 
         {/* Table */}
         <Table<SpecialtyItem>
@@ -934,13 +933,15 @@ export function AdminSpecialtiesPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
+                disabled
+                title="API chưa hỗ trợ xóa chuyên khoa; hãy tạm khóa nếu không còn sử dụng"
                 onClick={() => {
                   const s = selectedSpecialty;
                   setDetailDrawerOpen(false);
                   openDelete(s);
                 }}
               >
-                Xóa chuyên khoa
+                Xóa chuyên khoa (chưa hỗ trợ)
               </Button>
             </div>
           </div>

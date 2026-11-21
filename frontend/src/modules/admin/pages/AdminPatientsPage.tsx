@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Avatar,
   Button,
+  Checkbox,
   DatePicker,
   Descriptions,
   Divider,
@@ -24,7 +25,6 @@ import {
   CheckCircleOutlined,
   DeleteOutlined,
   EditOutlined,
-  ExclamationCircleOutlined,
   EyeOutlined,
   IdcardOutlined,
   MailOutlined,
@@ -40,7 +40,6 @@ import { useAuthSession } from '../../../app/AuthSessionProvider';
 import {
   createPatient,
   updatePatient,
-  deletePatient,
   getPatient,
   searchPatients,
   createEmergencyContact,
@@ -53,8 +52,7 @@ import {
   type UpdatePatientPayload,
 } from '../../../services/adminPatients';
 import { formatDateTime, formatPhoneNumber } from '../format';
-import { updateAdminUser } from '../../../services/adminUsers';
-import { DoctorPhotoUpload } from '../components/DoctorPhotoUpload';
+import { getAdminUser, listAdminUsers, updateAdminUser } from '../../../services/adminUsers';
 import { StatusTag } from '../components/StatusTag';
 import {
   AdminFeedbackModal,
@@ -70,8 +68,8 @@ export function AdminPatientsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [error, setError] = useState('');
+  const loadSequence = useRef(0);
 
   // Drawer detail state
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -86,13 +84,6 @@ export function AdminPatientsPage() {
     null,
   );
   const [submitting, setSubmitting] = useState(false);
-
-  // Delete modal state
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState<PatientItem | null>(
-    null,
-  );
-  const [deleting, setDeleting] = useState(false);
 
   // Status toggle modal state (Tạm khóa / Kích hoạt)
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -119,42 +110,63 @@ export function AdminPatientsPage() {
 
   const [createForm] = Form.useForm<{
     fullName: string;
-    email: string;
     dateOfBirth: dayjs.Dayjs;
     phoneNumber: string;
     nationalId: string;
     address: string;
-    photoUrl?: string;
   }>();
 
   const [editForm] = Form.useForm<{
     fullName: string;
-    email: string;
     dateOfBirth: dayjs.Dayjs;
     phoneNumber: string;
     nationalId: string;
     address: string;
-    photoUrl?: string;
   }>();
 
   const loadData = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    const q = searchQuery.trim();
+    const isOnlyDigits = /^\d+$/.test(q);
+    const hasValidCriteria = isOnlyDigits
+      ? [9, 10, 11, 12].includes(q.length)
+      : q.length >= 2;
+    if (!hasValidCriteria) {
+      setPatients([]);
+      setTotal(0);
+      setError('');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const q = searchQuery.trim();
-      const isOnlyDigits = /^\d+$/.test(q);
       const res = await searchPatients(request, {
         page,
         limit: pageSize,
-        query: q || undefined,
         phoneNumber:
           isOnlyDigits && q.length >= 10 && q.length <= 11 ? q : undefined,
-        nationalId: isOnlyDigits && q.length === 12 ? q : undefined,
+        nationalId: isOnlyDigits && [9, 12].includes(q.length) ? q : undefined,
         fullName: !isOnlyDigits && q.length >= 2 ? q : undefined,
       });
-      setPatients(res.items ?? []);
+      const items = res.items ?? [];
+      const accountIds = [...new Set(items.map((item) => item.authAccountId).filter((id): id is string => Boolean(id)))];
+      const accounts = accountIds.length
+        ? await listAdminUsers(request, { ids: accountIds, limit: 50 }).catch(() => ({ items: [] }))
+        : { items: [] };
+      const accountById = new Map(accounts.items.map((account) => [account.id, account]));
+      if (sequence !== loadSequence.current) return;
+      setPatients(items.map((item) => {
+        const account = item.authAccountId ? accountById.get(item.authAccountId) : undefined;
+        return {
+          ...item,
+          email: account?.email ?? null,
+          status: item.authAccountId ? account?.status ?? 'UNKNOWN' : 'DRAFT',
+        };
+      }));
       setTotal(res.total ?? 0);
     } catch (err: unknown) {
+      if (sequence !== loadSequence.current) return;
       const msg =
         err instanceof Error
           ? err.message
@@ -163,12 +175,13 @@ export function AdminPatientsPage() {
       setPatients([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   }, [request, page, pageSize, searchQuery]);
 
   useEffect(() => {
-    void loadData();
+    const timer = window.setTimeout(() => void loadData(), 300);
+    return () => window.clearTimeout(timer);
   }, [loadData]);
 
   // Xem chi tiết bệnh nhân
@@ -177,7 +190,14 @@ export function AdminPatientsPage() {
     setDetailDrawerOpen(true);
     try {
       const full = await getPatient(request, record.id);
-      setSelectedPatient(full);
+      const account = full.authAccountId
+        ? await getAdminUser(request, full.authAccountId).catch(() => null)
+        : null;
+      setSelectedPatient({
+        ...full,
+        email: account?.email ?? null,
+        status: full.authAccountId ? account?.status ?? 'UNKNOWN' : 'DRAFT',
+      });
     } catch {
       // Giữ nguyên record ban đầu nếu gọi full bị lỗi
     }
@@ -186,26 +206,14 @@ export function AdminPatientsPage() {
   // Mở modal chỉnh sửa
   const openEditModal = (record: PatientItem) => {
     setEditingPatient(record);
-    const savedAvatar =
-      typeof window !== 'undefined'
-        ? localStorage.getItem(`patient_avatar_${record.id}`)
-        : null;
     editForm.setFieldsValue({
       fullName: record.fullName,
-      email: record.email ?? '',
       dateOfBirth: record.dateOfBirth ? dayjs(record.dateOfBirth) : undefined,
       phoneNumber: formatPhoneNumber(record.phoneNumber),
       nationalId: record.nationalId || record.nationalIdMasked || '',
       address: record.address ?? '',
-      photoUrl: savedAvatar || undefined,
     });
     setEditModalOpen(true);
-  };
-
-  // Mở modal xóa bệnh nhân
-  const openDeleteModal = (record: PatientItem) => {
-    setPatientToDelete(record);
-    setDeleteModalOpen(true);
   };
 
   // Mở modal đổi trạng thái (Tạm khóa / Kích hoạt)
@@ -291,41 +299,21 @@ export function AdminPatientsPage() {
   // Xử lý tạo mới bệnh nhân
   const handleCreate = async (values: {
     fullName: string;
-    email: string;
     dateOfBirth: dayjs.Dayjs;
     phoneNumber: string;
     nationalId: string;
     address: string;
-    photoUrl?: string;
   }) => {
     setSubmitting(true);
     try {
       const payload: CreatePatientPayload = {
         fullName: values.fullName.trim(),
-        email: values.email.trim(),
         dateOfBirth: values.dateOfBirth.format('YYYY-MM-DD'),
         phoneNumber: formatPhoneNumber(values.phoneNumber),
         nationalId: values.nationalId.trim(),
         address: values.address.trim(),
       };
       const created = await createPatient(request, payload);
-      if (typeof window !== 'undefined' && values.photoUrl && created.id) {
-        localStorage.setItem(`patient_avatar_${created.id}`, values.photoUrl);
-      }
-
-      // Đưa tài khoản về Bản nháp (LOCKED/DRAFT) ngay sau khi tạo, đợi admin kích hoạt
-      if (created.authAccountId) {
-        try {
-          await updateAdminUser(request, created.authAccountId, {
-            status: 'LOCKED',
-          });
-        } catch (lockErr) {
-          console.warn(
-            'Could not set initial patient account status to LOCKED:',
-            lockErr,
-          );
-        }
-      }
 
       createForm.resetFields();
       setCreateModalOpen(false);
@@ -333,7 +321,7 @@ export function AdminPatientsPage() {
         open: true,
         type: 'success',
         title: 'Tạo hồ sơ bệnh nhân thành công!',
-        description: `Bệnh nhân ${created.fullName} đã được thêm vào hệ thống ở trạng thái "Bản nháp". Bạn có thể xem lại thông tin và bấm nút "Kích hoạt" khi sẵn sàng.`,
+        description: `Hồ sơ ${created.fullName} đã được lưu. Hồ sơ này chưa có tài khoản đăng nhập liên kết.`,
       });
       void loadData();
     } catch (err: unknown) {
@@ -354,12 +342,10 @@ export function AdminPatientsPage() {
   // Xử lý cập nhật thông tin bệnh nhân
   const handleEdit = async (values: {
     fullName: string;
-    email: string;
     dateOfBirth: dayjs.Dayjs;
     phoneNumber: string;
     nationalId: string;
     address: string;
-    photoUrl?: string;
   }) => {
     if (!editingPatient) return;
     setSubmitting(true);
@@ -376,40 +362,11 @@ export function AdminPatientsPage() {
       };
       const updated = await updatePatient(request, editingPatient.id, payload);
 
-      // Cập nhật email trong tài khoản auth-service nếu có tài khoản liên kết
-      if (
-        values.email &&
-        values.email.trim() &&
-        values.email.trim() !== (editingPatient.email || '')
-      ) {
-        if (editingPatient.authAccountId) {
-          try {
-            await updateAdminUser(request, editingPatient.authAccountId, {
-              email: values.email.trim(),
-            });
-          } catch {
-            // bỏ qua nếu cập nhật tài khoản auth thất bại
-          }
-        }
-      }
-
-      // Lưu ảnh đại diện vào localStorage theo patientId
-      if (typeof window !== 'undefined') {
-        if (values.photoUrl) {
-          localStorage.setItem(
-            `patient_avatar_${editingPatient.id}`,
-            values.photoUrl,
-          );
-        } else {
-          localStorage.removeItem(`patient_avatar_${editingPatient.id}`);
-        }
-      }
-
       editForm.resetFields();
       setEditModalOpen(false);
       setEditingPatient(null);
       if (selectedPatient?.id === editingPatient.id) {
-        setSelectedPatient({ ...updated, email: values.email.trim() });
+        setSelectedPatient({ ...updated, email: editingPatient.email, status: editingPatient.status });
       }
       setFeedback({
         open: true,
@@ -430,39 +387,6 @@ export function AdminPatientsPage() {
       });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  // Xử lý xác nhận xóa bệnh nhân
-  const handleConfirmDelete = async () => {
-    if (!patientToDelete) return;
-    setDeleting(true);
-    try {
-      await deletePatient(request, patientToDelete.id);
-      const name = patientToDelete.fullName;
-      setDeleteModalOpen(false);
-      if (selectedPatient?.id === patientToDelete.id) {
-        setDetailDrawerOpen(false);
-        setSelectedPatient(null);
-      }
-      setPatientToDelete(null);
-      setFeedback({
-        open: true,
-        type: 'success',
-        title: 'Xóa hồ sơ bệnh nhân thành công!',
-        description: `Hồ sơ bệnh nhân ${name} đã được xóa hoàn toàn khỏi hệ thống.`,
-      });
-      void loadData();
-    } catch (err: unknown) {
-      setFeedback({
-        open: true,
-        type: 'error',
-        title: 'Xóa bệnh nhân thất bại!',
-        description:
-          err instanceof Error ? err.message : 'Không thể xóa hồ sơ bệnh nhân.',
-      });
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -520,7 +444,7 @@ export function AdminPatientsPage() {
 
       // Refresh drawer data
       const refreshed = await getPatient(request, selectedPatient.id);
-      setSelectedPatient(refreshed);
+      setSelectedPatient({ ...refreshed, email: selectedPatient.email, status: selectedPatient.status });
       void loadData();
 
       setFeedback({
@@ -554,7 +478,7 @@ export function AdminPatientsPage() {
     try {
       await deleteEmergencyContact(request, selectedPatient.id, contactId);
       const refreshed = await getPatient(request, selectedPatient.id);
-      setSelectedPatient(refreshed);
+      setSelectedPatient({ ...refreshed, email: selectedPatient.email, status: selectedPatient.status });
       void loadData();
       setFeedback({
         open: true,
@@ -593,7 +517,7 @@ export function AdminPatientsPage() {
         newContactIds,
       );
       const refreshed = await getPatient(request, selectedPatient.id);
-      setSelectedPatient(refreshed);
+      setSelectedPatient({ ...refreshed, email: selectedPatient.email, status: selectedPatient.status });
       void loadData();
       setFeedback({
         open: true,
@@ -628,15 +552,10 @@ export function AdminPatientsPage() {
             ? words[words.length - 1].charAt(0).toUpperCase()
             : 'B';
 
-        const savedAvatar =
-          typeof window !== 'undefined'
-            ? localStorage.getItem(`patient_avatar_${record.id}`)
-            : null;
         return (
           <Space orientation="horizontal" size={12}>
             <Avatar
               size={42}
-              src={savedAvatar || undefined}
               style={{
                 backgroundColor: '#52c41a',
                 color: '#fff',
@@ -749,7 +668,7 @@ export function AdminPatientsPage() {
                   onClick={() => void handleOpenDetail(record)}
                 />
               </Tooltip>
-              {record.authAccountId &&
+              {record.authAccountId && ['ACTIVE', 'LOCKED', 'INACTIVE'].includes(record.status ?? '') &&
                 (isLocked ? (
                   <Tooltip title="Kích hoạt bệnh nhân">
                     <Button
@@ -778,12 +697,13 @@ export function AdminPatientsPage() {
                   onClick={() => openEditModal(record)}
                 />
               </Tooltip>
-              <Tooltip title="Xóa bệnh nhân">
+              <Tooltip title="API chưa hỗ trợ xóa hồ sơ bệnh nhân">
                 <Button
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => openDeleteModal(record)}
+                  disabled
+                  aria-label="Xóa hồ sơ chưa được hỗ trợ"
                 />
               </Tooltip>
             </Space>
@@ -813,29 +733,11 @@ export function AdminPatientsPage() {
             style={{ width: 420 }}
             allowClear
           />
-          <Select
-            placeholder="Lọc trạng thái"
-            allowClear
-            value={selectedStatus || undefined}
-            onChange={(val) => {
-              setSelectedStatus(val ?? '');
-              setPage(1);
-            }}
-            style={{ width: 170 }}
-            options={[
-              { label: 'Tất cả trạng thái', value: '' },
-              { label: 'Hoạt động', value: 'ACTIVE' },
-              { label: 'Tạm khóa', value: 'LOCKED' },
-              { label: 'Bản nháp', value: 'DRAFT' },
-            ]}
-          />
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
               setSearchQuery('');
-              setSelectedStatus('');
               setPage(1);
-              void loadData();
             }}
             loading={loading}
           >
@@ -858,6 +760,16 @@ export function AdminPatientsPage() {
         </Space>
       </div>
 
+      {!searchQuery.trim() && (
+        <Alert
+          type="info"
+          showIcon
+          title="Nhập họ tên, số điện thoại hoặc CCCD để tra cứu"
+          description="Để bảo vệ dữ liệu cá nhân, hệ thống không tải danh sách toàn bộ bệnh nhân."
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {error && (
         <Alert
           type="error"
@@ -870,26 +782,18 @@ export function AdminPatientsPage() {
 
       {/* Main Patients Table */}
       {(() => {
-        const displayedPatients = selectedStatus
-          ? patients.filter((p) => {
-              const st = p.status || (p.authAccountId ? 'ACTIVE' : 'DRAFT');
-              if (selectedStatus === 'LOCKED')
-                return st === 'LOCKED' || st === 'INACTIVE';
-              return st === selectedStatus;
-            })
-          : patients;
         return (
           <Table<PatientItem>
             rowKey="id"
             columns={columns}
-            dataSource={displayedPatients}
+            dataSource={patients}
             loading={loading}
             size="middle"
             scroll={{ x: 'max-content' }}
             pagination={{
               current: page,
               pageSize,
-              total: selectedStatus ? displayedPatients.length : total,
+              total,
               showSizeChanger: true,
               pageSizeOptions: ['10', '20', '50'],
               onChange: (p, ps) => {
@@ -917,13 +821,6 @@ export function AdminPatientsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Avatar
               size={48}
-              src={
-                typeof window !== 'undefined' && selectedPatient
-                  ? localStorage.getItem(
-                      `patient_avatar_${selectedPatient.id}`,
-                    ) || undefined
-                  : undefined
-              }
               icon={<UserOutlined />}
               style={{ backgroundColor: '#52c41a' }}
             >
@@ -1219,7 +1116,7 @@ export function AdminPatientsPage() {
                 Chỉnh sửa
               </Button>
 
-              {selectedPatient.authAccountId &&
+              {selectedPatient.authAccountId && ['ACTIVE', 'LOCKED', 'INACTIVE'].includes(selectedPatient.status ?? '') &&
                 (selectedPatient.status === 'LOCKED' ||
                 selectedPatient.status === 'INACTIVE' ? (
                   <Button
@@ -1250,9 +1147,10 @@ export function AdminPatientsPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => openDeleteModal(selectedPatient)}
+                disabled
+                title="API chưa hỗ trợ xóa hồ sơ bệnh nhân"
               >
-                Xóa hồ sơ
+                Xóa hồ sơ (chưa hỗ trợ)
               </Button>
             </div>
           </div>
@@ -1288,6 +1186,7 @@ export function AdminPatientsPage() {
           onFinish={(values) => void handleCreate(values)}
           style={{ marginTop: 16 }}
         >
+          <Alert type="info" showIcon title="Hồ sơ mới chưa có tài khoản đăng nhập liên kết." style={{ marginBottom: 16 }} />
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
           >
@@ -1301,7 +1200,7 @@ export function AdminPatientsPage() {
 
             <Form.Item
               name="phoneNumber"
-              label="Số điện thoại (Mật khẩu ban đầu)"
+              label="Số điện thoại"
               rules={[
                 { required: true, message: 'Vui lòng nhập số điện thoại' },
                 {
@@ -1320,20 +1219,6 @@ export function AdminPatientsPage() {
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
           >
-            <Form.Item
-              name="email"
-              label="Email đăng nhập"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email bệnh nhân' },
-                { type: 'email', message: 'Email không đúng định dạng' },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined style={{ color: '#1677ff' }} />}
-                placeholder="Ví dụ: mai.nguyen@gmail.com"
-              />
-            </Form.Item>
-
             <Form.Item
               name="dateOfBirth"
               label="Ngày sinh"
@@ -1362,8 +1247,8 @@ export function AdminPatientsPage() {
                   message: 'Vui lòng nhập số CCCD / Định danh',
                 },
                 {
-                  pattern: /^\d{9,12}$/,
-                  message: 'Số CCCD gồm 9 đến 12 chữ số',
+                  pattern: /^(?:\d{9}|\d{12})$/,
+                  message: 'Số CCCD gồm 9 hoặc 12 chữ số',
                 },
               ]}
             >
@@ -1416,18 +1301,6 @@ export function AdminPatientsPage() {
           onFinish={(values) => void handleEdit(values)}
           style={{ marginTop: 16 }}
         >
-          {/* Ảnh đại diện bệnh nhân với căn chỉnh khung hình */}
-          <Form.Item
-            noStyle
-            shouldUpdate={(prev, curr) => prev.fullName !== curr.fullName}
-          >
-            {({ getFieldValue }) => (
-              <Form.Item name="photoUrl" noStyle>
-                <DoctorPhotoUpload doctorName={getFieldValue('fullName')} />
-              </Form.Item>
-            )}
-          </Form.Item>
-
           <div
             style={{
               display: 'grid',
@@ -1466,20 +1339,6 @@ export function AdminPatientsPage() {
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
           >
             <Form.Item
-              name="email"
-              label="Email đăng nhập"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email bệnh nhân' },
-                { type: 'email', message: 'Email không đúng định dạng' },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined style={{ color: '#1677ff' }} />}
-                placeholder="Ví dụ: benhnhan@gmail.com"
-              />
-            </Form.Item>
-
-            <Form.Item
               name="dateOfBirth"
               label="Ngày sinh"
               rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
@@ -1506,8 +1365,8 @@ export function AdminPatientsPage() {
                   message: 'Vui lòng nhập số CCCD / Định danh',
                 },
                 {
-                  pattern: /^\d{9,12}$/,
-                  message: 'Số CCCD gồm 9 đến 12 chữ số',
+                  pattern: /^(?:\d{9}|\d{12})$/,
+                  message: 'Số CCCD gồm 9 hoặc 12 chữ số',
                 },
               ]}
             >
@@ -1528,58 +1387,6 @@ export function AdminPatientsPage() {
             </Form.Item>
           </div>
         </Form>
-      </Modal>
-
-      {/* Modal Xác nhận Xóa bệnh nhân (Căn giữa màn hình, Nút Xóa đỏ bên trái, Hủy bên phải) */}
-      <Modal
-        title={
-          <Space>
-            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Xác nhận xóa hồ sơ bệnh nhân</span>
-          </Space>
-        }
-        open={deleteModalOpen}
-        centered
-        onCancel={() => {
-          if (!deleting) {
-            setDeleteModalOpen(false);
-            setPatientToDelete(null);
-          }
-        }}
-        footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-            <Button
-              danger
-              type="primary"
-              loading={deleting}
-              onClick={() => void handleConfirmDelete()}
-            >
-              Xóa
-            </Button>
-            <Button
-              disabled={deleting}
-              onClick={() => {
-                setDeleteModalOpen(false);
-                setPatientToDelete(null);
-              }}
-            >
-              Hủy
-            </Button>
-          </div>
-        }
-        destroyOnClose
-      >
-        <div style={{ padding: '8px 0' }}>
-          <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-            Bạn có chắc muốn xóa hồ sơ bệnh nhân{' '}
-            <strong>{patientToDelete?.fullName}</strong> (SĐT:{' '}
-            {patientToDelete?.phoneNumber})?
-          </p>
-          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)' }}>
-            Hành động này sẽ xóa vĩnh viễn hồ sơ bệnh nhân cùng danh bạ người
-            thân khẩn cấp khỏi hệ thống.
-          </p>
-        </div>
       </Modal>
 
       {/* Modal Xác nhận Tạm khóa / Kích hoạt bệnh nhân */}
@@ -1778,7 +1585,7 @@ export function AdminPatientsPage() {
           </Form.Item>
 
           <Form.Item name="isPrimary" valuePropName="checked">
-            <Select style={{ display: 'none' }} />
+            <Checkbox>Liên hệ chính</Checkbox>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>

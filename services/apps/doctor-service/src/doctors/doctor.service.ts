@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   AvailabilityStatus,
   AvailabilityType,
+  DoctorConsultationRank,
   DoctorStatus,
   Prisma,
   RoomStatus,
@@ -20,6 +21,7 @@ import {
   CreateRoomDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
+  UpdateSpecialtyDto,
   ListQueryDto,
   ReasonDto,
   RoomListQueryDto,
@@ -218,6 +220,19 @@ export class DoctorDomainService {
       await this.verifyAccount(dto.accountId);
       const normalized = this.normalizeLicense(dto.licenseNumber);
       this.validateProfile(dto.profile);
+      if (dto.consultationRank) {
+        await this.validateConsultationRank(
+          dto.consultationRank,
+          dto.profile.practiceStartYear,
+        );
+      }
+      if (dto.specialtyId) {
+        const specialty = await this.prisma.specialty.findUnique({
+          where: { id: dto.specialtyId },
+        });
+        if (!specialty || specialty.status !== SpecialtyStatus.ACTIVE)
+          this.fail(422, 'SPECIALTY_NOT_ACTIVE');
+      }
       const result = await this.prisma.$transaction(async (tx) => {
         const existing = await tx.doctor.findFirst({
           where: {
@@ -232,7 +247,11 @@ export class DoctorDomainService {
           data: {
             accountId: dto.accountId,
             licenseNumber: normalized,
+            consultationRank: dto.consultationRank ?? 'BASIC',
             profile: { create: this.profileData(dto.profile) },
+            ...(dto.specialtyId
+              ? { specialties: { create: { specialtyId: dto.specialtyId, isPrimary: true } } }
+              : {}),
           },
           include: FULL_INCLUDE,
         });
@@ -256,15 +275,16 @@ export class DoctorDomainService {
 
   async listDoctors(query: ListQueryDto, actor?: Identity) {
     const admin = this.isClinicOperator(actor);
-    const where: AnyRecord =
-      admin && query.status
+    const where: AnyRecord = admin
+      ? query.status
         ? { status: query.status }
-        : { status: DoctorStatus.ACTIVE };
+        : {}
+      : { status: DoctorStatus.ACTIVE };
     if (query.specialtyId)
       where.specialties = {
         some: {
           specialtyId: query.specialtyId,
-          specialty: { status: SpecialtyStatus.ACTIVE },
+          ...(!admin ? { specialty: { status: SpecialtyStatus.ACTIVE } } : {}),
         },
       };
     if (query.q)
@@ -280,7 +300,7 @@ export class DoctorDomainService {
     const hasNext = rows.length > (query.limit ?? 20);
     const data = rows
       .slice(0, query.limit ?? 20)
-      .map((x) => this.publicView(x));
+      .map((x) => (admin ? this.adminView(x) : this.publicView(x)));
     return {
       data,
       meta: {
@@ -360,6 +380,8 @@ export class DoctorDomainService {
           'languages',
           'photoUrl',
           'licenseNumber',
+          'consultationRank',
+          'specialtyId',
         ]
       : manager
         ? [
@@ -369,6 +391,7 @@ export class DoctorDomainService {
             'practiceStartYear',
             'languages',
             'photoUrl',
+            'specialtyId',
           ]
         : ['biography', 'languages', 'photoUrl'];
     const sent = Object.keys(dto).filter(
@@ -378,6 +401,19 @@ export class DoctorDomainService {
       this.fail(400, 'FIELD_NOT_ALLOWED');
     if (dto.licenseNumber)
       dto.licenseNumber = this.normalizeLicense(dto.licenseNumber);
+    if (dto.consultationRank) {
+      await this.validateConsultationRank(
+        dto.consultationRank,
+        dto.practiceStartYear ?? doctor.profile?.practiceStartYear,
+      );
+    }
+    if (dto.specialtyId) {
+      const specialty = await this.prisma.specialty.findUnique({
+        where: { id: dto.specialtyId },
+      });
+      if (!specialty || specialty.status !== SpecialtyStatus.ACTIVE)
+        this.fail(422, 'SPECIALTY_NOT_ACTIVE');
+    }
     if (
       dto.fullName ||
       dto.biography ||
@@ -395,6 +431,9 @@ export class DoctorDomainService {
         where: { id, version },
         data: {
           ...(dto.licenseNumber ? { licenseNumber: dto.licenseNumber } : {}),
+          ...(dto.consultationRank
+            ? { consultationRank: dto.consultationRank }
+            : {}),
           version: { increment: 1 },
         },
       });
@@ -403,6 +442,19 @@ export class DoctorDomainService {
         where: { doctorId: id },
         data: this.profilePatch(dto),
       });
+      if (dto.specialtyId) {
+        await tx.doctorSpecialty.updateMany({
+          where: { doctorId: id, isPrimary: true },
+          data: { isPrimary: false },
+        });
+        await tx.doctorSpecialty.upsert({
+          where: {
+            doctorId_specialtyId: { doctorId: id, specialtyId: dto.specialtyId },
+          },
+          create: { doctorId: id, specialtyId: dto.specialtyId, isPrimary: true },
+          update: { isPrimary: true },
+        });
+      }
       const current = await tx.doctor.findUnique({
         where: { id },
         include: FULL_INCLUDE,
@@ -520,9 +572,49 @@ export class DoctorDomainService {
     if (duplicate?.code === code) this.fail(409, 'SPECIALTY_CODE_EXISTS');
     if (duplicate) this.fail(409, 'SPECIALTY_NAME_EXISTS');
     const specialty = await this.prisma.specialty.create({
-      data: { code, name, description: dto.description?.trim() },
+      data: {
+        code,
+        name,
+        description: dto.description?.trim(),
+        status: dto.status ?? 'ACTIVE',
+      },
     });
     return { data: specialty };
+  }
+
+  async updateSpecialty(id: string, dto: UpdateSpecialtyDto, actor: Identity) {
+    this.requireAdmin(actor);
+    const current = await this.prisma.specialty.findUnique({ where: { id } });
+    if (!current) this.fail(404, 'SPECIALTY_NOT_FOUND');
+    if (
+      dto.name &&
+      dto.name.trim().toLowerCase() !== current.name.toLowerCase()
+    ) {
+      const duplicate = await this.prisma.specialty.findFirst({
+        where: {
+          name: { equals: dto.name.trim(), mode: 'insensitive' },
+          id: { not: id },
+        },
+      });
+      if (duplicate) this.fail(409, 'SPECIALTY_NAME_EXISTS');
+    }
+    if (dto.status === 'INACTIVE' && current.status === 'ACTIVE') {
+      const activeDoctors = await this.prisma.doctorSpecialty.count({
+        where: { specialtyId: id, doctor: { status: 'ACTIVE' } },
+      });
+      if (activeDoctors > 0) this.fail(409, 'SPECIALTY_HAS_ACTIVE_DOCTORS');
+    }
+    const updated = await this.prisma.specialty.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description.trim() }
+          : {}),
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
+      },
+    });
+    return { data: updated };
   }
 
   private generateSpecialtySlug(text: string): string {
@@ -535,19 +627,20 @@ export class DoctorDomainService {
       .replace(/^-+|-+$/g, '');
   }
 
-  async listConsultationRanks() {
+  async listConsultationRanks(actor?: Identity) {
     const rows = await this.prisma.consultationRank.findMany({
-      where: { status: 'ACTIVE' },
+      where: actor?.role === 'ADMIN' ? {} : { status: 'ACTIVE' },
       orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
     });
     return { data: rows };
   }
 
   async listSpecialties(query: SpecialtyListQueryDto, actor?: Identity) {
-    const where =
-      actor?.role === 'ADMIN' && query.status
+    const where = actor?.role === 'ADMIN'
+      ? query.status
         ? { status: query.status }
-        : { status: SpecialtyStatus.ACTIVE };
+        : {}
+      : { status: SpecialtyStatus.ACTIVE };
     const rows = await this.prisma.specialty.findMany({
       where,
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
@@ -1372,6 +1465,21 @@ export class DoctorDomainService {
     if (v.effectiveTo && v.effectiveTo < v.effectiveFrom)
       this.fail(422, 'INVALID_DATE_RANGE');
   }
+  private async validateConsultationRank(
+    code: DoctorConsultationRank,
+    practiceStartYear?: number | null,
+  ) {
+    const rank = await this.prisma.consultationRank.findUnique({
+      where: { code },
+    });
+    if (!rank || rank.status !== 'ACTIVE') this.fail(422, 'RANK_NOT_ACTIVE');
+    const experienceYears = practiceStartYear
+      ? new Date().getFullYear() - practiceStartYear
+      : 0;
+    if (experienceYears < rank.experienceYearsMin)
+      this.fail(422, 'RANK_EXPERIENCE_NOT_MET');
+  }
+
   private validateProfile(p: AnyRecord) {
     if (
       !p.fullName?.trim() ||
@@ -1513,6 +1621,14 @@ export class DoctorDomainService {
   private adminView(x: AnyRecord) {
     return {
       ...this.publicView(x),
+      specialties:
+        x.specialties?.map((link: AnyRecord) => ({
+          id: link.specialty.id,
+          code: link.specialty.code,
+          name: link.specialty.name,
+          status: link.specialty.status,
+          isPrimary: link.isPrimary,
+        })) ?? [],
       accountId: x.accountId,
       licenseNumber: x.licenseNumber,
       version: x.version,

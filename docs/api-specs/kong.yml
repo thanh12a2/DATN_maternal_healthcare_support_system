@@ -156,6 +156,9 @@ services:
         paths: ["~/api/documents/[0-9a-fA-F-]+/content", /api/documents/content]
         regex_priority: 100
         strip_path: false
+        plugins:
+          - name: jwt
+            config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
       - name: document-service-route
         paths: [/api/documents]
         strip_path: true
@@ -188,6 +191,16 @@ services:
     routes:
       - name: reporting-service-route
         paths: [/api/reports]
+        strip_path: true
+    plugins:
+      - name: jwt
+        config: { claims_to_verify: [exp], key_claim_name: iss, run_on_preflight: false }
+
+  - name: audit-log-service
+    url: http://audit-log-service:5017
+    routes:
+      - name: audit-log-service-route
+        paths: [/api/audit-logs]
         strip_path: true
     plugins:
       - name: jwt

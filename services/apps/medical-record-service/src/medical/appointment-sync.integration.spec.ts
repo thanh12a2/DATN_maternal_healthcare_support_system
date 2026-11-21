@@ -49,6 +49,7 @@ integration(
         proto.maternal.appointment.v1.AppointmentInternalService.service;
       let server: Server | undefined;
       let doctorServer: Server | undefined;
+      let queueServer: Server | undefined;
       const listen = async (address: string) => {
         const next = new Server();
         next.addService(serviceDefinition, {
@@ -112,9 +113,22 @@ integration(
             (error, bound) => (error ? reject(error) : resolve(bound)),
           ),
         );
+        const queueDefinition = loadSync(protoPath('queue/v1/queue_internal.proto'), {
+          includeDirs: [protoRoot()], longs: String, enums: String, defaults: true, oneofs: true,
+        });
+        const queueProto: any = loadPackageDefinition(queueDefinition);
+        queueServer = new Server();
+        queueServer.addService(queueProto.maternal.queue.v1.QueueInternalService.service, {
+          syncClinicalJourney: (_call: any, done: any) => done(null, { synchronized: true }),
+        });
+        const queuePort = await new Promise<number>((resolve, reject) =>
+          queueServer!.bindAsync('127.0.0.1:0', ServerCredentials.createInsecure(),
+            (error, bound) => (error ? reject(error) : resolve(bound))),
+        );
         const config = new ConfigService({
           APPOINTMENT_GRPC_TARGET: `127.0.0.1:${port}`,
           DOCTOR_GRPC_TARGET: `127.0.0.1:${doctorPort}`,
+          QUEUE_GRPC_TARGET: `127.0.0.1:${queuePort}`,
           SERVICE_ID: 'medical-record-service',
         });
         const grpc = new GrpcClientFactory(config, {
@@ -246,6 +260,7 @@ integration(
       } finally {
         server?.forceShutdown();
         doctorServer?.forceShutdown();
+        queueServer?.forceShutdown();
         await appointments.$disconnect();
         await medical.$disconnect();
         await doctors.$disconnect();

@@ -13,6 +13,7 @@ import {
 import {
   BookingChannel,
   SelectionMode,
+  AppointmentStatus,
 } from '../../../../generated/appointment-client';
 export class SlotQueryDto {
   @IsUUID() serviceId!: string;
@@ -56,11 +57,11 @@ export class AppointmentListDto {
   @IsOptional() @IsUUID() doctorId?: string;
   @IsOptional() @IsUUID() roomId?: string;
   @IsOptional() @IsString() @Length(1, 50) roomCode?: string;
-  @IsOptional() @IsString() status?: string;
+  @IsOptional() @IsEnum(AppointmentStatus) status?: string;
   @IsOptional() @IsDateString() from?: string;
   @IsDateString() @IsOptional() to?: string;
   @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
-  @IsOptional() @IsString() cursor?: string;
+  @IsOptional() @IsUUID() cursor?: string;
   @IsOptional() @IsString() appointmentCode?: string;
   @IsOptional() @IsString() code?: string;
 }

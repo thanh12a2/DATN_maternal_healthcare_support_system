@@ -24,6 +24,7 @@ import {
   CreateRoomDto,
   CreateScheduleDto,
   CreateSpecialtyDto,
+  UpdateSpecialtyDto,
   ListQueryDto,
   ReasonDto,
   RoomListQueryDto,
@@ -88,10 +89,19 @@ export class DoctorController {
   ) {
     return this.service.listSpecialties(query, req.identity);
   }
+  @Patch('specialties/:specialtyId')
+  @Roles('ADMIN')
+  updateSpecialty(
+    @Param('specialtyId', ParseUUIDPipe) specialtyId: string,
+    @Body() dto: UpdateSpecialtyDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateSpecialty(specialtyId, dto, this.identity(req));
+  }
   @Public()
   @Get('consultation-ranks')
-  consultationRanks() {
-    return this.service.listConsultationRanks();
+  consultationRanks(@Req() req: AuthenticatedRequest) {
+    return this.service.listConsultationRanks(req.identity);
   }
 
   @Post('rooms')

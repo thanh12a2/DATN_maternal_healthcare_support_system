@@ -16,6 +16,7 @@ import {
   Statistic,
   Tooltip,
   Badge,
+  Alert,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -319,6 +320,8 @@ export function AdminAuditLogsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<AuditLogStats | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Filters & Pagination
   const [page, setPage] = useState(1);
@@ -355,7 +358,8 @@ export function AdminAuditLogsPage() {
       ]);
       setLogs(res.items);
       setTotal(res.total);
-      if (st) setStats(st);
+      setLoadError(false);
+      setStats(st);
       const mapping: Record<string, string> = {};
       if (userListRes?.items) {
         for (const u of userListRes.items) {
@@ -375,7 +379,10 @@ export function AdminAuditLogsPage() {
       }
       setUserEmailMap((prev) => ({ ...prev, ...mapping }));
     } catch {
-      // Handled
+      setLoadError(true);
+      setStats(null);
+      setLogs([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -383,11 +390,11 @@ export function AdminAuditLogsPage() {
 
   useEffect(() => {
     void loadData();
-  }, [page, pageSize, selectedAction, selectedService, dateRange]);
+  }, [page, pageSize, selectedAction, selectedService, dateRange, refreshTick]);
 
   const handleSearchSubmit = () => {
     setPage(1);
-    void loadData();
+    setRefreshTick((value) => value + 1);
   };
 
   const handleReset = () => {
@@ -396,6 +403,7 @@ export function AdminAuditLogsPage() {
     setSelectedService(undefined);
     setDateRange(null);
     setPage(1);
+    setRefreshTick((value) => value + 1);
   };
 
   const columns: ColumnsType<AuditLogItem> = [
@@ -624,6 +632,7 @@ export function AdminAuditLogsPage() {
 
   return (
     <div className="admin-page-container" style={{ padding: '0 4px' }}>
+      {loadError && <Alert type="error" showIcon message="Không thể tải nhật ký kiểm toán" description="Dữ liệu kiểm toán hiện không khả dụng. Vui lòng thử lại sau." style={{ marginBottom: 16 }} />}
       {/* Overview Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={8}>
@@ -642,7 +651,7 @@ export function AdminAuditLogsPage() {
                   Tổng lượt kiểm toán hệ thống
                 </Text>
               }
-              value={stats?.totalLogs ?? total}
+              value={loadError ? '—' : (stats?.totalLogs ?? total)}
               suffix="sự kiện"
               valueStyle={{ color: '#0284c7', fontWeight: 700 }}
             />
@@ -664,7 +673,7 @@ export function AdminAuditLogsPage() {
                   Kiểm toán ghi nhận hôm nay
                 </Text>
               }
-              value={stats?.todayLogs ?? 0}
+              value={loadError ? '—' : (stats?.todayLogs ?? '—')}
               suffix="thao tác"
               valueStyle={{ color: '#16a34a', fontWeight: 700 }}
             />
@@ -686,8 +695,7 @@ export function AdminAuditLogsPage() {
                   Tính toàn vẹn kiểm toán (SHA-256)
                 </Text>
               }
-              value="100%"
-              suffix="Hợp lệ"
+              value="Chưa kiểm tra"
               valueStyle={{ color: '#d97706', fontWeight: 700 }}
             />
           </Card>

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PlatformModule, RabbitMqModule } from '@platform';
+import { ClinicalDoctorAccess, PlatformModule, RabbitMqModule } from '@platform';
 import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { DocumentDatabaseModule } from './database/database.module';
@@ -21,6 +21,6 @@ import { MedicalReportPdfService } from './medical-report-pdf.service';
     ClinicalResultsGrpcController,
     DocumentController,
   ],
-  providers: [DocumentService, ClinicalResultsService, MedicalReportPdfService],
+  providers: [DocumentService, ClinicalResultsService, MedicalReportPdfService, ClinicalDoctorAccess],
 })
 export class DocumentServiceModule {}
