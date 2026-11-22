@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Dancing+Script:wght@500;700&display=swap');
 * {
   box-sizing: border-box;
   font-family: 'Be Vietnam Pro', sans-serif;
@@ -99,4 +99,9 @@ p {
   margin: 0 auto;
   padding: 0 20px;
   box-sizing: border-box;
+}
+
+/* Shared typography for patient-facing pages and controls. */
+body:has(.public-portal-header) :is(h1, h2, h3, h4, h5, p, li, button, input, textarea, select, label, a) {
+  font-family: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
 }

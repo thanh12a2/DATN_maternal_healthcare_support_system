@@ -3466,3 +3466,33 @@
   color: #78350f;
   margin: 0;
 }
+
+/* PillNav-inspired hover fill, retaining the existing dropdown and active marker. */
+.portal-nav-bar :is(.portal-nav-item, .portal-nav-item-dropdown-btn) {
+  isolation: isolate;
+  border-radius: 999px;
+  padding-inline: 12px;
+  transition: color .35s ease;
+}
+.portal-nav-bar :is(.portal-nav-item, .portal-nav-item-dropdown-btn)::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 4px 0;
+  border-radius: inherit;
+  background: #0b4f9c;
+  transform: scale(.3);
+  opacity: 0;
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1), opacity .25s ease;
+}
+.portal-nav-bar :is(.portal-nav-item, .portal-nav-item-dropdown-btn):is(:hover, :focus-visible)::before {
+  transform: scale(1);
+  opacity: 1;
+}
+.portal-nav-bar :is(.portal-nav-item, .portal-nav-item-dropdown-btn):is(:hover, :focus-visible),
+.portal-nav-bar .portal-nav-item-dropdown-btn:is(:hover, :focus-visible) .portal-dropdown-chevron {
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-nav-bar :is(.portal-nav-item, .portal-nav-item-dropdown-btn)::before { transition: none; }
+}

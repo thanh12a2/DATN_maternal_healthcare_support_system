@@ -1,0 +1,2041 @@
+#patient-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  position: relative;
+  z-index: 100;
+}
+#patient-actions a,
+#patient-actions button {
+  font-family: inherit;
+}
+/* Two visible navigation rows, using the new design's colors and typography. */
+body > nav {
+  position: sticky;
+  top: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 24px 0;
+  background: var(--page);
+  color: var(--fg);
+  pointer-events: auto;
+  border-bottom: 1px solid #bcae9633;
+}
+body > nav > .logo {
+  order: 0;
+  margin-right: auto;
+}
+body > nav > #patient-actions {
+  order: 1;
+}
+body > nav > .bk {
+  order: 2;
+}
+body > nav > .landing-primary-nav {
+  position: static;
+  inset: auto;
+  translate: none;
+  order: 3;
+  display: flex;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 28px;
+  height: auto;
+  padding: 14px 0;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  border-top: 1px solid #bcae9633;
+}
+.landing-primary-nav > a[hidden] {
+  display: none;
+}
+.landing-primary-nav > a[aria-current='page'] {
+  color: var(--tom);
+}
+.landing-primary-nav a:focus-visible,
+.landing-primary-nav summary:focus-visible,
+.landing-auth-links a:focus-visible {
+  outline: 2px solid var(--tom);
+  outline-offset: 5px;
+}
+.landing-specialties {
+  position: relative;
+}
+.landing-specialties summary {
+  cursor: pointer;
+  list-style: none;
+}
+.landing-specialties summary::-webkit-details-marker {
+  display: none;
+}
+.landing-specialties summary span {
+  margin-left: 6px;
+}
+.landing-specialties-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 0;
+  width: min(540px, calc(100vw - 48px));
+  max-height: 60vh;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid #e7d8c6;
+  border-radius: 16px;
+  background: #fff8ef;
+  color: #251a16;
+  box-shadow: 0 16px 50px #0003;
+  text-transform: none;
+  font-weight: 500;
+  z-index: 110;
+}
+.landing-specialties-panel a {
+  padding: 10px;
+  border-radius: 8px;
+}
+.landing-specialties-panel a:hover {
+  background: #ef4a2312;
+  color: #b52d0e;
+}
+.landing-specialties-all,
+.landing-specialties-panel p {
+  grid-column: 1 / -1;
+}
+.landing-specialties-all {
+  border-top: 1px solid #e7d8c6;
+}
+.landing-auth-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.landing-auth-links a:last-child {
+  padding: 10px 16px;
+  border: 1px solid currentColor;
+  border-radius: 24px;
+}
+.patient-menu {
+  position: relative;
+}
+.patient-menu summary {
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid currentColor;
+  border-radius: 24px;
+  list-style: none;
+  background: var(--page);
+  color: var(--fg);
+}
+.patient-menu-panel {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  min-width: 220px;
+  padding: 16px;
+  background: #fff8ef;
+  color: #251a16;
+  border-radius: 16px;
+  box-shadow: 0 16px 50px #0003;
+  display: grid;
+  gap: 14px;
+}
+.patient-menu-panel a,
+.patient-menu-panel button {
+  display: block;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.patient-summary {
+  margin: 32px auto;
+  max-width: 1200px;
+  padding: 32px;
+  border-radius: 24px;
+  background: #fff5e8;
+  color: #32231d;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.patient-summary h2 {
+  font-size: clamp(24px, 4vw, 36px);
+  margin: 0 0 12px;
+}
+.patient-summary p {
+  margin: 10px 0;
+}
+.patient-summary-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.patient-summary a,
+.patient-summary button {
+  border: 1px solid #d7bca5;
+  border-radius: 30px;
+  padding: 10px 18px;
+  background: #fff;
+  color: #4c3023;
+  font: inherit;
+  cursor: pointer;
+}
+.live-link {
+  display: inline-block;
+  margin-top: 14px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  font-size: 1rem;
+}
+.landing-note {
+  padding: 16px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.landing-note a {
+  text-decoration: underline;
+}
+.landing-note button {
+  font: inherit;
+  padding: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+#patient-actions .notification-popover {
+  font-size: 16px;
+  max-height: 70vh;
+  overflow: auto;
+  width: min(430px, 90vw);
+  z-index: 200;
+}
+#patient-actions .notification-inbox nav {
+  position: static;
+  inset: auto;
+  backdrop-filter: none;
+  transform: none;
+  height: auto;
+  box-shadow: none;
+  padding: 0;
+  background: none;
+  color: #183d68;
+}
+#patient-actions .notification-inbox header {
+  position: static;
+}
+@media (max-width: 991px) {
+  body > nav {
+    gap: 8px;
+  }
+  #patient-actions {
+    margin-left: auto;
+  }
+  .patient-summary {
+    margin: 20px 12px;
+    padding: 20px;
+  }
+}
+@media (max-width: 600px) {
+  #patient-actions {
+    font-size: 12px;
+  }
+  #patient-actions .notification-popover {
+    position: fixed;
+    top: 85px;
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+  .patient-summary a {
+    font-size: 14px;
+  }
+}
+
+
+body > nav > .bk {
+  margin: 0;
+  display: flex;
+  font-size: 14px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 24px;
+  background: var(--tom);
+  color: white;
+}
+@media (max-width: 600px) {
+  body > nav {
+    padding: 12px 12px 0;
+    gap: 10px;
+  }
+  body > nav > .logo {
+    font-size: 28px;
+  }
+  body > nav > .bk {
+    height: 36px;
+    font-size: 12px;
+    padding: 0 12px;
+  }
+  .landing-auth-links {
+    gap: 8px;
+  }
+  .landing-auth-links a:last-child {
+    padding: 8px;
+  }
+  body > nav > .landing-primary-nav {
+    gap: 12px 18px;
+    font-size: 12px;
+  }
+  .landing-specialties {
+    position: static;
+  }
+  .landing-specialties-panel {
+    left: 12px;
+    right: 12px;
+    top: 100%;
+    width: auto;
+    grid-template-columns: 1fr;
+  }
+}
+.dc > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.landing-doctor-fallback:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  padding: 24px;
+}
+.landing-doctor-fallback article {
+  padding: 24px;
+  background: var(--cream);
+  color: #251a16;
+  border-radius: 20px;
+}
+.landing-doctor-fallback a {
+  display: inline-block;
+  margin-top: 16px;
+  text-decoration: underline;
+}
+.landing-empty {
+  height: auto !important;
+  min-height: 150px;
+  display: grid !important;
+  place-items: center;
+  padding: 24px;
+}
+.ag-t h3 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html[data-animation-fallback] #row:not(.landing-empty) {
+  display: none;
+}
+html[data-animation-fallback] #ag:not(.landing-empty) {
+  height: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+html[data-animation-fallback] .ag-p {
+  min-height: 360px;
+}
+html[data-animation-fallback] .ag-t,
+html[data-animation-fallback] .ag-b {
+  opacity: 1;
+}
+.ta-footer .ta-footer__grid { grid-template-columns: 1.4fr 1fr 1fr 1.1fr; }
+.landing-footer-brand { display: flex; align-items: center; gap: 12px; color: inherit; }
+.landing-footer-brand img { width: 48px; height: 48px; object-fit: contain; }
+.landing-footer-brand span { display: grid; gap: 4px; }
+.landing-footer-brand b { font-size: 1.2rem; }
+.landing-footer-brand small, .landing-footer-badges { font-size: .85rem; color: #faf3e4b8; }
+.landing-footer-badges { margin-top: 1rem; line-height: 1.4; }
+@media (max-width: 991px) { .ta-footer .ta-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .ta-footer .ta-footer__grid { grid-template-columns: 1fr; } }
+
+/* Navigation shares the warm palette and rounded forms of the landing page. */
+body > nav {
+  position: sticky;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: clamp(12px, 1.5vw, 28px);
+  padding: 16px clamp(20px, 3vw, 48px);
+  background: #faf3e4;
+  color: #141110;
+  border-bottom: 1px solid #e8decb;
+}
+body > nav > .logo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  order: 0;
+  margin: 0 auto 0 0;
+  color: #ef4a23;
+  font-size: 20px;
+  font-variation-settings: 'wght' 700, 'wdth' 100, 'opsz' 20;
+  white-space: nowrap;
+}
+body > nav > .logo img { display: block; width: 44px; height: 44px; object-fit: contain; }
+.landing-brand-name { display: flex; flex-direction: column; gap: 2px; color: #253c4c; line-height: 1; letter-spacing: .02em; }
+.landing-brand-name small { font-size: 9px; letter-spacing: .19em; font-weight: 600; }
+body > nav > .landing-primary-nav {
+  order: 1;
+  flex: 0 1 auto;
+  justify-content: center;
+  gap: clamp(12px, 1.4vw, 24px);
+  padding: 0;
+  border: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variation-settings: 'wght' 600, 'wdth' 100, 'opsz' 20;
+  text-transform: none;
+  white-space: nowrap;
+}
+body > nav > #patient-actions { order: 2; flex: none; margin: 0; }
+body > nav > .bk {
+  order: 3;
+  flex: none;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 700;
+  font-variation-settings: 'wght' 700, 'wdth' 100, 'opsz' 20;
+  text-transform: none;
+  white-space: nowrap;
+}
+body > nav > .bk i { background: #fff; width: 6px; height: 6px; }
+.landing-auth-links { gap: 12px; white-space: nowrap; }
+.landing-auth-links a, .patient-menu summary {
+  font-size: 15px;
+  font-weight: 600;
+  font-variation-settings: 'wght' 600, 'wdth' 100, 'opsz' 20;
+}
+.landing-auth-links a:last-child, .patient-menu summary {
+  padding: 10px 16px;
+  border-color: #d8c9b7;
+  background: #fffaf2;
+}
+.landing-specialties-panel {
+  top: calc(100% + 20px);
+  font-variation-settings: 'wght' 500, 'wdth' 100, 'opsz' 20;
+  white-space: normal;
+}
+@media (max-width: 1200px) {
+  body > nav { flex-wrap: wrap; }
+  body > nav > .logo { margin-right: auto; }
+  body > nav > #patient-actions { order: 1; }
+  body > nav > .bk { order: 2; }
+  body > nav > .landing-primary-nav {
+    order: 3;
+    flex: 0 0 100%;
+    justify-content: flex-start;
+    gap: 12px 24px;
+    flex-wrap: wrap;
+    padding-top: 14px;
+    border-top: 1px solid #e8decb;
+  }
+}
+@media (max-width: 600px) {
+  body > nav { gap: 10px; padding: 12px 16px; }
+  body > nav > .logo { font-size: 16px; }
+  body > nav > .logo img { width: 36px; height: 36px; }
+  .landing-brand-name small { font-size: 8px; }
+  body > nav > .bk { height: 38px; padding: 0 12px; font-size: 14px; }
+  .landing-auth-links { gap: 8px; }
+  .landing-auth-links a, .patient-menu summary { font-size: 14px; }
+  .landing-auth-links a:last-child, .patient-menu summary { padding: 8px 10px; }
+  body > nav > .landing-primary-nav { gap: 10px 18px; font-size: 14px; padding-top: 10px; }
+}
+
+/* Two-row header matching the patient portal. The page animations are unchanged. */
+body > nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+  padding: 0 clamp(20px, 3.2vw, 48px);
+  background: #fff;
+  color: #263b55;
+  border-bottom: 1px solid #e1e8f0;
+  font-family: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+}
+body > nav > .logo {
+  order: 0;
+  min-height: 76px;
+  margin-right: auto;
+  gap: 12px;
+  color: #0757a9;
+  font-family: inherit;
+  font-variation-settings: normal;
+}
+body > nav > .logo img { width: 44px; height: 50px; }
+.landing-brand-text { display: flex; flex-direction: column; gap: 4px; }
+.landing-brand-name { display: block; color: #0757a9; font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: .04em; }
+.landing-brand-name small { color: #e76807; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.landing-brand-slogan { color: #475569; font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.landing-brand-slogan strong { color: #ea720b; }
+body > nav > #patient-actions { order: 1; margin: 0; font-family: inherit; }
+.landing-auth-links { gap: 10px; }
+.landing-auth-links a, .patient-menu summary {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 0 19px; border: 1px solid #cedbe9;
+  border-radius: 24px; background: #fff; color: #0757a9;
+  font: 700 14px/1.2 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  font-variation-settings: normal;
+}
+.landing-auth-links a:last-child { background: #e7f1ff; border-color: #e7f1ff; }
+body > nav > .bk {
+  order: 2; height: 38px; gap: 8px; padding: 0 20px;
+  background: #e86c08; color: white; border-radius: 24px;
+  box-shadow: 0 4px 10px #df6d0c35;
+  font: 700 14px/1.2 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  font-variation-settings: normal;
+}
+body > nav > .landing-primary-nav {
+  order: 3; flex: 0 0 100%; justify-content: flex-start;
+  gap: 0 36px; padding: 0; min-height: 48px;
+  border: 0; border-top: 1px solid #eff3f8; background: #fff;
+  color: #263b55; font: 600 15px/1.3 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  font-variation-settings: normal; text-transform: none;
+}
+.landing-primary-nav > a, .landing-specialties > summary { display: inline-flex; align-items: center; min-height: 48px; }
+.landing-primary-nav > a[aria-current='page'] { color: #0757a9; }
+.landing-primary-nav > a[aria-current='page']::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; border-radius: 3px 3px 0 0; background: #1267be; }
+.landing-primary-nav > a:not([aria-current='page'])::after,
+.landing-specialties > summary::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: transparent;
+  transition: background-color 0.18s ease;
+}
+.landing-specialties > summary { position: relative; }
+.landing-primary-nav > a:not([aria-current='page']):hover::after { background: #93c5fd; }
+.landing-specialties > summary:hover::after,
+.landing-specialties[open] > summary::after { background: #0757a9; }
+.landing-specialties-panel { top: 100%; background: #fff; color: #263b55; border-color: #dce5ef; font: 500 14px/1.4 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif; }
+.landing-specialties-panel a:hover { background: #edf5ff; color: #0757a9; }
+@media (max-width: 800px) {
+  body > nav { padding: 0 16px; gap: 0 8px; }
+  body > nav > .logo { min-height: 68px; }
+  body > nav > .landing-primary-nav { gap: 0 20px; flex-wrap: wrap; }
+}
+@media (max-width: 520px) {
+  body > nav > .logo img { width: 36px; height: 42px; }
+  .landing-brand-name { font-size: 17px; }
+  .landing-brand-name small { font-size: 9px; }
+  .landing-brand-slogan { font-size: 10px; }
+  body > nav > #patient-actions { margin-left: auto; }
+  .landing-auth-links { gap: 5px; }
+  .landing-auth-links a, .patient-menu summary { min-height: 34px; padding: 0 9px; font-size: 12px; }
+  body > nav > .bk { height: 34px; padding: 0 10px; font-size: 12px; }
+  body > nav > .landing-primary-nav { gap: 0 17px; font-size: 13px; }
+}
+
+/* Keep the hero motion, but retain a single neutral background while its words rotate. */
+#hero .vy { background: transparent !important; }
+
+/* Header actions follow the logged-in patient order: booking, notifications, account. */
+body > nav > .bk { order: 1; }
+body > nav > #patient-actions { order: 2; margin-left: 0; }
+.patient-menu summary {
+  gap: 8px;
+  padding-left: 7px;
+}
+.patient-menu-avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #19a878;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+@media (max-width: 520px) {
+  body > nav > #patient-actions { margin-left: 0; }
+  .patient-menu summary { gap: 5px; padding-left: 5px; }
+  .patient-menu-avatar { width: 22px; height: 22px; font-size: 10px; }
+}
+
+/* Use the same cool, light page canvas as the other patient screens. */
+.patient-summary {
+  background: #fff;
+  color: #183153;
+  border: 1px solid #dfeaf3;
+  box-shadow: 0 16px 42px #18315312;
+}
+.patient-summary a,
+.patient-summary button {
+  border-color: #c9dced;
+  background: #fff;
+  color: #0b4f9c;
+}
+.landing-doctor-fallback article {
+  background: #fff;
+  color: #183153;
+  border: 1px solid #dfeaf3;
+  box-shadow: 0 12px 28px #1831530d;
+}
+.landing-note {
+  color: #52677f;
+}
+.vst b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   TÂM AN HOSPITAL - COMPREHENSIVE LUXURY MEDICAL THEME & VISUAL HIERARCHY
+   ========================================================================== */
+
+/* 1. Global Section Backgrounds & Visual Separation */
+.sec, .sec0 {
+  position: relative;
+  padding: 6.5rem 2rem 5.5rem !important;
+}
+
+#about {
+  background: linear-gradient(180deg, #fbfcfe 0%, #f4f8fc 100%) !important;
+  border-top: 1px solid #dce8f5 !important;
+  border-bottom: 1px solid #dce8f5 !important;
+}
+
+#spec {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e1ebf5 !important;
+}
+
+#dv {
+  background: linear-gradient(180deg, #f4f8fc 0%, #eaf2fa 100%) !important;
+  border-bottom: 1px solid #dbe7f3 !important;
+}
+
+#why {
+  background: linear-gradient(180deg, #fffdfa 0%, #faf3ea 100%) !important;
+  border-bottom: 1px solid #eedecb !important;
+}
+
+#ts {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e1ebf5 !important;
+}
+
+#bs {
+  background: linear-gradient(180deg, #f8fbfe 0%, #f0f6fc 100%) !important;
+  border-bottom: 1px solid #dce8f5 !important;
+}
+
+#hk {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e1ebf5 !important;
+  padding: 6.5rem 2rem 5.5rem !important;
+}
+
+#fb {
+  background: linear-gradient(180deg, #f3f8fc 0%, #eaf2f8 100%) !important;
+  border-bottom: 1px solid #dce8f5 !important;
+}
+
+#faq {
+  background: #ffffff !important;
+}
+
+/* 2. Prestigious Medical Eyebrow Badges & Typography Hierarchy */
+.sec .eb, .sec0 .eb {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 20px !important;
+  border-radius: 999px !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  background: #eaf3fc !important;
+  color: #0b4f9c !important;
+  border: 1.5px solid #cfe2f7 !important;
+  box-shadow: 0 3px 10px rgba(11, 79, 156, 0.06) !important;
+  margin-bottom: 1.4rem !important;
+}
+
+.sec .h, .sec0 .h {
+  color: #07376e !important;
+  font-size: clamp(2.6rem, 5vw, 4.2rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.025em !important;
+  margin-bottom: 1rem !important;
+}
+
+.sec .h .alt, .sec0 .h .alt {
+  color: #e86c08 !important;
+  font-weight: 400 !important;
+  font-style: italic !important;
+}
+
+.sec .p, .sec0 .p {
+  color: #475569 !important;
+  font-size: 1.15rem !important;
+  line-height: 1.65 !important;
+  max-width: 38rem !important;
+  margin: 0.8rem auto 0 !important;
+  font-weight: 450 !important;
+}
+
+/* 3. Patient Summary (Dashboard Banner) */
+.patient-summary {
+  margin: 32px auto !important;
+  max-width: 1220px !important;
+  padding: 34px 38px !important;
+  border-radius: 24px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f6faff 100%) !important;
+  border: 1.5px solid #d0e4f7 !important;
+  box-shadow: 0 16px 42px rgba(11, 79, 156, 0.08) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.patient-summary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0b4f9c 0%, #1677ff 50%, #e86c08 100%);
+}
+
+.patient-greeting {
+  display: block !important;
+  font-size: clamp(24px, 3.5vw, 34px) !important;
+  font-weight: 850 !important;
+  margin: 0 0 14px !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.patient-greeting__letters {
+  display: inline-flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+}
+
+.patient-greeting__letter {
+  display: inline-block !important;
+  opacity: 0;
+  color: #07376e !important;
+  transform: translate3d(0, 0.45em, 0) scale(0.8) rotate(5deg);
+  filter: blur(8px);
+  will-change: transform, opacity, filter;
+}
+
+.patient-greeting.patient-greeting--play .patient-greeting__letter {
+  animation: apple-hello-bloom 780ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.patient-greeting__letter--name {
+  color: #e86c08 !important;
+  font-weight: 900 !important;
+}
+
+@keyframes apple-hello-bloom {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0.45em, 0) scale(0.8) rotate(5deg);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -0.06em, 0) scale(1.05) rotate(-1deg);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patient-greeting__letter {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+}
+
+.patient-summary p {
+  color: #334e68 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.6 !important;
+}
+
+.patient-summary-links {
+  display: flex !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  margin-top: 24px !important;
+}
+
+.patient-summary-links a,
+.patient-summary-links button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border: 1.5px solid #cce1f7 !important;
+  border-radius: 999px !important;
+  padding: 10px 22px !important;
+  background: #ffffff !important;
+  color: #0b4f9c !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  box-shadow: 0 3px 10px rgba(11, 79, 156, 0.05) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-decoration: none !important;
+}
+
+.patient-summary-links a:first-child {
+  background: linear-gradient(135deg, #e86c08 0%, #d35400 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 16px rgba(232, 108, 8, 0.35) !important;
+}
+
+.patient-summary-links a:hover,
+.patient-summary-links button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(11, 79, 156, 0.12) !important;
+}
+
+.patient-summary-links a:first-child:hover {
+  background: linear-gradient(135deg, #f39c12 0%, #e86c08 100%) !important;
+  box-shadow: 0 8px 24px rgba(232, 108, 8, 0.45) !important;
+}
+
+/* 4. Dịch vụ & Bảng giá Cards (#dv .cd) */
+.gr3 {
+  gap: 1.8rem !important;
+  max-width: 78rem !important;
+  margin: 3.5rem auto 0 !important;
+}
+
+#dv .cd {
+  padding: 32px 26px !important;
+  border-radius: 22px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #dce8f5 !important;
+  box-shadow: 0 8px 24px rgba(11, 79, 156, 0.05) !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease, min-height 0.35s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 250px !important;
+}
+
+#dv .cd::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 5px !important;
+  background: var(--c, #0b4f9c) !important;
+  border-radius: 22px 22px 0 0 !important;
+  transition: height 0.3s ease !important;
+}
+
+#dv .cd:hover {
+  transform: translateY(-8px) !important;
+  border-color: #a3c9f2 !important;
+  box-shadow: 0 20px 48px rgba(11, 79, 156, 0.14) !important;
+}
+
+#dv .cd:hover::before {
+  height: 6px !important;
+}
+
+#dv .cd i {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--c, #0b4f9c) 16%, #ffffff) !important;
+  border: 1.5px solid color-mix(in srgb, var(--c, #0b4f9c) 30%, transparent) !important;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--c, #0b4f9c) 20%, transparent) !important;
+  display: grid !important;
+  place-items: center !important;
+  margin-bottom: 8px !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.3s ease !important;
+}
+
+#dv .cd:hover i {
+  transform: scale(1.08) rotate(4deg) !important;
+}
+
+#dv .cd h3 {
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  color: #07376e !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+  margin: 0 !important;
+  transition: color 0.2s ease !important;
+}
+
+#dv .cd:hover h3 {
+  color: #0b4f9c !important;
+}
+
+/* Ẩn thông tin gói khám, chỉ hiện tiêu đề; khi hover nội dung trồi lên */
+#dv .cd p {
+  color: #4b6279 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transform: translateY(22px) !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s ease, margin 0.3s ease !important;
+}
+
+#dv .cd .pr {
+  display: inline-flex !important;
+  align-items: center !important;
+  align-self: flex-start !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  background: #fff6ed !important;
+  color: #d95c00 !important;
+  border: 1px solid #ffd8b5 !important;
+  box-shadow: 0 2px 6px rgba(217, 92, 0, 0.08) !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transform: translateY(22px) !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease 0.04s, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.04s, max-height 0.35s ease, margin 0.3s ease !important;
+}
+
+#dv .cd .live-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 10px 18px !important;
+  border-radius: 999px !important;
+  background: #f0f7ff !important;
+  color: #0b4f9c !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  text-decoration: none !important;
+  border: 1.5px solid #cfe2f7 !important;
+  margin-top: auto !important;
+  opacity: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transform: translateY(22px) !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease 0.08s, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s, max-height 0.35s ease, margin 0.3s ease, background 0.2s, color 0.2s !important;
+}
+
+/* Hover / Focus: trồi nội dung lên mượt mà */
+#dv .cd:hover p,
+#dv .cd:focus-within p {
+  opacity: 1 !important;
+  max-height: 140px !important;
+  margin-top: 12px !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+#dv .cd:hover .pr,
+#dv .cd:focus-within .pr {
+  opacity: 1 !important;
+  max-height: 48px !important;
+  margin-top: 14px !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+#dv .cd:hover .live-link,
+#dv .cd:focus-within .live-link {
+  opacity: 1 !important;
+  max-height: 48px !important;
+  margin-top: 14px !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+#dv .cd .live-link:hover {
+  background: #0b4f9c !important;
+  color: #ffffff !important;
+  border-color: #0b4f9c !important;
+  transform: translateY(-2px) !important;
+}
+
+@media (hover: none) {
+  #dv .cd {
+    min-height: auto !important;
+  }
+  #dv .cd p,
+  #dv .cd .pr,
+  #dv .cd .live-link {
+    opacity: 1 !important;
+    max-height: none !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    margin-top: 10px !important;
+  }
+}
+/* Photo-backed service cards; the image is decorative and has a solid fallback. */
+#dv .service-photo-card {
+  min-height: 380px !important;
+  padding: 26px !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #b6cee0 !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(4,23,43,.05) 20%, rgba(4,23,43,.93) 100%), var(--service-photo) center / cover no-repeat, #173d5a !important;
+  box-shadow: 0 8px 24px #0b28451a !important;
+}
+#dv .service-photo-card::before {
+  inset: 9px !important;
+  height: auto !important;
+  border: 1px solid #ffffff80 !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+#dv .service-photo-card:hover::before { height: auto !important; }
+#dv .service-photo-card > * { position: relative; z-index: 1; }
+#dv .service-photo-card .service-card-number { color: #e2c99f; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+#dv .service-photo-card h3, #dv .service-photo-card:hover h3 {
+  color: #fff !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(22px, 1.7rem, 28px) !important;
+  line-height: 1.2 !important;
+}
+#dv .service-photo-card p { color: #fff !important; }
+#dv .service-photo-card .pr { color: #fff !important; background: #ffffff24 !important; border-color: #ffffff80 !important; }
+#dv .service-photo-card .live-link { background: #fff !important; color: #0b4f9c !important; border-color: #fff !important; }
+#dv .service-photo-card:focus-within { outline: 3px solid #ed9b3d; outline-offset: 3px; }
+@media (hover: none) {
+  #dv .service-photo-card { min-height: 380px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dv .service-photo-card p, #dv .service-photo-card .pr, #dv .service-photo-card .live-link { transition: none !important; }
+}
+
+#dv > .live-link, #bs > .live-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 12px 28px !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #0b4f9c !important;
+  font-weight: 750 !important;
+  font-size: 1rem !important;
+  text-decoration: none !important;
+  border: 1.5px solid #cfe2f7 !important;
+  box-shadow: 0 4px 14px rgba(11, 79, 156, 0.07) !important;
+  margin-top: 3rem !important;
+  transition: all 0.25s ease !important;
+}
+
+#dv > .live-link:hover, #bs > .live-link:hover {
+  background: #0b4f9c !important;
+  color: #ffffff !important;
+  border-color: #0b4f9c !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(11, 79, 156, 0.22) !important;
+}
+
+/* 5. Vì sao chọn Tâm An Cards (#why .cd) */
+#why .gr2 {
+  gap: 1.8rem !important;
+  max-width: 66rem !important;
+}
+
+#why .cd {
+  padding: 30px 28px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #eddcc6 !important;
+  box-shadow: 0 8px 24px rgba(230, 126, 34, 0.05) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#why .cd::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, var(--c, #e86c08) 0%, transparent 100%) !important;
+}
+
+#why .cd:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 18px 40px rgba(11, 79, 156, 0.1) !important;
+  border-color: #f3b778 !important;
+}
+
+#why .cd i {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--c, #e86c08) 15%, #ffffff) !important;
+  border: 1.5px solid color-mix(in srgb, var(--c, #e86c08) 28%, transparent) !important;
+  box-shadow: 0 4px 12px rgba(232, 108, 8, 0.12) !important;
+  display: grid !important;
+  place-items: center !important;
+  margin-bottom: 12px !important;
+}
+
+#why .cd i svg {
+  stroke: var(--c, #e86c08) !important;
+  width: 25px !important;
+  height: 25px !important;
+}
+
+#why .cd h3 {
+  color: #07376e !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  text-transform: none !important;
+  margin-bottom: 10px !important;
+  letter-spacing: -0.01em !important;
+}
+
+#why .cd p {
+  color: #4b6279 !important;
+  font-size: 1rem !important;
+  line-height: 1.65 !important;
+}
+
+/* 6. Về chúng tôi Feature Cards (#about .ac) */
+.ag4 {
+  gap: 1.3rem !important;
+  margin-top: 2.2rem !important;
+}
+
+#about .ac {
+  padding: 24px 22px !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #dce8f5 !important;
+  box-shadow: 0 6px 18px rgba(11, 79, 156, 0.04) !important;
+  transition: all 0.25s ease !important;
+}
+
+#about .ac:hover {
+  transform: translateY(-4px) !important;
+  border-color: #9ac2ef !important;
+  box-shadow: 0 14px 32px rgba(11, 79, 156, 0.09) !important;
+}
+
+#about .ac i {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 13px !important;
+  background: color-mix(in srgb, var(--c, #0b4f9c) 15%, #ffffff) !important;
+  border: 1.5px solid color-mix(in srgb, var(--c, #0b4f9c) 25%, transparent) !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+#about .ac i svg {
+  stroke: var(--c, #0b4f9c) !important;
+  width: 23px !important;
+  height: 23px !important;
+}
+
+#about .ac h3 {
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  color: #07376e !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.3 !important;
+}
+
+#about .ac p {
+  font-size: 0.96rem !important;
+  color: #52677f !important;
+  line-height: 1.55 !important;
+}
+
+/* 7. Lời cảm ơn / Testimonial Cards (#fb .fc) */
+.fc {
+  width: 26rem !important;
+  padding: 30px 26px !important;
+  background: #ffffff !important;
+  border-radius: 22px !important;
+  border: 1.5px solid #dce8f5 !important;
+  box-shadow: 0 12px 34px rgba(11, 79, 156, 0.07) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease !important;
+}
+
+.fc::before {
+  content: "“" !important;
+  position: absolute !important;
+  top: 8px !important;
+  right: 18px !important;
+  font-size: 6rem !important;
+  line-height: 1 !important;
+  color: #eaf2fb !important;
+  font-family: Georgia, serif !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.fc:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 20px 48px rgba(11, 79, 156, 0.13) !important;
+  border-color: #a3c9f2 !important;
+}
+
+.fc p {
+  position: relative !important;
+  z-index: 1 !important;
+  font-size: 1.08rem !important;
+  color: #243b53 !important;
+  line-height: 1.6 !important;
+}
+
+.fc div {
+  position: relative !important;
+  z-index: 1 !important;
+  border-top: 1px solid #edf4fa !important;
+  padding-top: 18px !important;
+  margin-top: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: #07376e !important;
+  font-size: 1.05rem !important;
+}
+
+.fc i {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 50% !important;
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 3px 12px rgba(11, 79, 156, 0.2) !important;
+}
+
+.fc small {
+  color: #64748b !important;
+  font-size: 0.88rem !important;
+  margin-top: 3px !important;
+}
+
+/* 8. Quy trình khám bệnh 5 bước (#hk .st) */
+.steps {
+  max-width: 58rem !important;
+  position: relative !important;
+}
+
+.ln {
+  background: linear-gradient(180deg, #0b4f9c 0%, #1677ff 60%, #e86c08 100%) !important;
+  width: 3.5px !important;
+  left: 1.8rem !important;
+}
+
+.st {
+  position: relative !important;
+  padding: 26px 30px !important;
+  margin-bottom: 24px !important;
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1.5px solid #dce8f5 !important;
+  box-shadow: 0 6px 20px rgba(11, 79, 156, 0.04) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  margin-left: 2.2rem !important;
+}
+
+.st:hover {
+  transform: translateX(8px) !important;
+  border-color: #9ac2ef !important;
+  box-shadow: 0 12px 32px rgba(11, 79, 156, 0.09) !important;
+}
+
+.st:before {
+  width: 3.4rem !important;
+  height: 3.4rem !important;
+  left: -5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: linear-gradient(135deg, #0b4f9c 0%, #1677ff 100%) !important;
+  box-shadow: 0 4px 16px rgba(11, 79, 156, 0.35) !important;
+  border: 3.5px solid #ffffff !important;
+  font-size: 1.35rem !important;
+  font-weight: 850 !important;
+}
+
+.st h3 {
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+  color: #07376e !important;
+  letter-spacing: -0.015em !important;
+  text-transform: none !important;
+  margin-bottom: 8px !important;
+}
+
+.st .p {
+  color: #4b6279 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.55 !important;
+  opacity: 1 !important;
+}
+
+/* 9. Hành trình thai sản Cockpit (.wkc & .wk-cols) */
+.wkc {
+  background: #ffffff !important;
+  border: 1.5px solid #dce8f5 !important;
+  border-radius: 26px !important;
+  box-shadow: 0 18px 46px rgba(11, 79, 156, 0.08) !important;
+  padding: 34px 38px !important;
+}
+
+.wk-q h3 {
+  color: #07376e !important;
+  font-size: 1.4rem !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.wk-pill {
+  border: 1.5px solid #f3c2d4 !important;
+  box-shadow: 0 2px 8px rgba(246, 169, 194, 0.25) !important;
+}
+
+.wk-cols {
+  gap: 1.2rem !important;
+}
+
+.wk-cols article {
+  background: #f8fbfe !important;
+  border: 1.5px solid #e1ecf6 !important;
+  border-radius: 18px !important;
+  padding: 22px !important;
+  box-shadow: 0 4px 14px rgba(11, 79, 156, 0.03) !important;
+  transition: all 0.22s ease !important;
+}
+
+.wk-cols article:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 26px rgba(11, 79, 156, 0.08) !important;
+  border-color: #aed1f5 !important;
+}
+
+.wk-cols h4 {
+  color: #0b4f9c !important;
+  font-size: 0.95rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 10px !important;
+}
+
+.wk-cols p, .wk-cols li {
+  color: #2b4560 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.6 !important;
+}
+
+/* 10. FAQ Card Accordion (#faq .fq) */
+.fq {
+  max-width: 52rem !important;
+  margin: 3.5rem auto 0 !important;
+}
+
+.fq details {
+  background: #ffffff !important;
+  border: 1.5px solid #dce8f5 !important;
+  border-radius: 18px !important;
+  margin-bottom: 14px !important;
+  padding: 22px 26px !important;
+  box-shadow: 0 4px 14px rgba(11, 79, 156, 0.03) !important;
+  transition: all 0.22s ease !important;
+}
+
+.fq details:hover {
+  border-color: #a3c9f2 !important;
+  box-shadow: 0 8px 24px rgba(11, 79, 156, 0.06) !important;
+}
+
+.fq details[open] {
+  border-color: #1677ff !important;
+  box-shadow: 0 10px 28px rgba(22, 119, 255, 0.09) !important;
+  background: #fbfdff !important;
+}
+
+.fq summary {
+  font-size: 1.25rem !important;
+  font-weight: 750 !important;
+  color: #07376e !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+}
+
+.fq summary:after {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: #f0f7ff !important;
+  color: #0b4f9c !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.fq details[open] summary:after {
+  background: #0b4f9c !important;
+  color: #ffffff !important;
+  transform: rotate(180deg) !important;
+}
+
+.fq details p {
+  color: #4b6279 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.6 !important;
+  margin-top: 14px !important;
+  padding-top: 14px !important;
+  border-top: 1px dashed #dce8f5 !important;
+}
+
+/* 11. Specialty gallery (#ag) Card Refinement */
+.ag-p {
+  border-radius: 20px !important;
+  box-shadow: 0 14px 34px rgba(11, 79, 156, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.ag-t h3 {
+  font-size: 2.2rem !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.015em !important;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7) !important;
+}
+
+.ag-t small {
+  font-size: 1.15rem !important;
+  opacity: 0.95 !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8) !important;
+}
+
+.ag-t .live-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 18px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  color: #07376e !important;
+  font-weight: 750 !important;
+  font-size: 0.95rem !important;
+  text-decoration: none !important;
+  margin-top: 14px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.22s ease !important;
+}
+
+.ag-t .live-link:hover {
+  background: #ffffff !important;
+  color: #e86c08 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 12. Cylinder carousel (.cyl) refinement */
+.cyl-cta {
+  height: 3.4rem !important;
+  padding: 0 2rem !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #e86c08 0%, #d35400 100%) !important;
+  box-shadow: 0 6px 20px rgba(232, 108, 8, 0.38) !important;
+  font-size: 1.1rem !important;
+  font-weight: 750 !important;
+  transition: all 0.25s ease !important;
+}
+
+.cyl-cta:hover {
+  background: linear-gradient(135deg, #f39c12 0%, #e86c08 100%) !important;
+  box-shadow: 0 10px 28px rgba(232, 108, 8, 0.48) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 13. Fallback Doctors Grid */
+.landing-doctor-fallback article {
+  padding: 28px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #dce8f5 !important;
+  box-shadow: 0 8px 24px rgba(11, 79, 156, 0.05) !important;
+  transition: all 0.25s ease !important;
+}
+
+.landing-doctor-fallback article:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 36px rgba(11, 79, 156, 0.1) !important;
+  border-color: #9ac2ef !important;
+}
+
+.landing-doctor-fallback h3 {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #07376e !important;
+  margin-bottom: 6px !important;
+}
+
+.landing-doctor-fallback p {
+  color: #4b6279 !important;
+  font-size: 0.98rem !important;
+  margin-bottom: 14px !important;
+}
+
+.landing-doctor-fallback a {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 18px !important;
+  border-radius: 999px !important;
+  background: #f0f7ff !important;
+  color: #0b4f9c !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  text-decoration: none !important;
+  border: 1px solid #cfe2f7 !important;
+  transition: all 0.2s ease !important;
+}
+
+.landing-doctor-fallback a:hover {
+  background: #0b4f9c !important;
+  color: #ffffff !important;
+  border-color: #0b4f9c !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 14. Real Imagery Support & Visual Cleanup */
+.ag-m {
+  background-repeat: no-repeat !important;
+  filter: none !important;
+}
+
+.ag-m:before,
+.ag-m:after {
+  display: none !important;
+  content: none !important;
+}
+
+.ag-o {
+  background: linear-gradient(180deg, transparent 40%, rgba(6, 0, 16, 0.82) 100%) !important;
+}
+
+.cc {
+  position: absolute;
+  border-radius: 1.2rem;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25) !important;
+  color: #fff;
+  background: #071e3d !important;
+}
+
+.cc img.cc-bg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  z-index: 1 !important;
+  opacity: 1 !important;
+  filter: brightness(0.92) contrast(1.08) !important;
+}
+
+.cc i,
+.cc i.cc-shadow {
+  position: absolute !important;
+  inset: 0 !important;
+  background: #000000 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+}
+
+.cc span {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  padding: 3.8rem 1.2rem 1.2rem !important;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 30, 61, 0.65) 42%, rgba(7, 30, 61, 0.96) 100%) !important;
+  z-index: 3 !important;
+}
+
+.cc u {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cc b {
+  position: relative;
+  z-index: 2;
+  font-size: 1.25rem !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+  margin-top: 6px;
+  display: block;
+}
+
+.cc small {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  line-height: 1.45;
+  opacity: 0.92;
+}
+
+#about .am,
+#about .as {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 16px 38px rgba(11, 79, 156, 0.14) !important;
+  border: 4px solid #ffffff !important;
+}
+
+#about .am img,
+#about .as img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==========================================================================
+   DOCTORS CAROUSEL & CAPTION CONTRAST FIX
+   Ensure doctor names, specialties, and counters are 100% crisp & readable
+   ========================================================================== */
+
+#bs {
+  color: #183153 !important;
+}
+
+#row,
+#cyl {
+  color: #183153 !important;
+}
+
+/* Caption bar under active carousel card */
+.cap,
+#row .cap,
+#cyl .cap {
+  color: #07376e !important;
+  text-align: center !important;
+  padding: 0 1rem !important;
+  pointer-events: none !important;
+}
+
+#row .cap b,
+#cyl .cap b {
+  display: block !important;
+  font-family: 'Be Vietnam Pro', 'Bricolage Grotesque', sans-serif !important;
+  color: #07376e !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.015em !important;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9) !important;
+}
+
+#row .cap small,
+#cyl .cap small {
+  display: block !important;
+  font-family: 'Be Vietnam Pro', 'Bricolage Grotesque', sans-serif !important;
+  color: #0b4f9c !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+  margin-top: 4px !important;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9) !important;
+}
+
+#row .cap em,
+#cyl .cap em {
+  display: inline-block !important;
+  font-family: 'Be Vietnam Pro', 'Bricolage Grotesque', sans-serif !important;
+  font-style: normal !important;
+  color: #c25e00 !important;
+  background: #fff4e6 !important;
+  border: 1px solid #ffd8a8 !important;
+  padding: 3px 12px !important;
+  border-radius: 999px !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  opacity: 1 !important;
+  margin-top: 8px !important;
+}
+
+/* Expanded Doctor Details Overlay (.dwrap) */
+.dwrap {
+  color: #183153 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 60px rgba(7, 55, 110, 0.16) !important;
+  border: 1.5px solid #dce8f5 !important;
+}
+
+.dwrap .dn {
+  color: #0b4f9c !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.08em !important;
+  opacity: 1 !important;
+}
+
+.dwrap .dh {
+  color: #07376e !important;
+  font-weight: 850 !important;
+  font-size: 2.6rem !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.025em !important;
+  text-transform: none !important;
+}
+
+.dwrap .dr {
+  color: #e86c08 !important;
+  font-weight: 700 !important;
+  font-size: 1.3rem !important;
+}
+
+.dwrap .db {
+  color: #334155 !important;
+  font-size: 1.1rem !important;
+  line-height: 1.65 !important;
+  opacity: 1 !important;
+}
+
+.dwrap .dy b {
+  color: #07376e !important;
+  font-weight: 850 !important;
+  font-size: 3.6rem !important;
+}
+
+.dwrap .dy span {
+  color: #5b6f8a !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.dwrap .de {
+  color: #0b4f9c !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.dwrap .ds {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+.dwrap .ds li {
+  color: #334155 !important;
+  margin-bottom: 6px !important;
+}
+
+.dwrap .dt {
+  color: #07376e !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+  background: #f0f7ff !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  border-left: 3px solid #1677ff !important;
+}
+
+.dwrap .dbk {
+  background: #e86c08 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(232, 108, 8, 0.35) !important;
+  transition: all 0.25s ease !important;
+}
+
+.dwrap .dbk:hover {
+  background: #c9572a !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(232, 108, 8, 0.45) !important;
+}
+
+/* Patient welcome and restored dark doctor section. */
+#hero { height: auto; }
+#hero .vp { height: min(75vh, 720px); min-height: 480px; }
+main > .vs { height: auto; min-height: 190px; padding: 40px 0; }
+main > .vs .vn { display: none; }
+main > .vs .vq { min-height: 110px; }
+.patient-summary { width: calc(100% - 48px) !important; max-width: 1220px !important; padding: clamp(24px, 4vw, 48px) !important; }
+.patient-greeting { font-family: 'Segoe Script', 'Bradley Hand', cursive !important; font-size: clamp(32px, 4vw, 54px) !important; font-weight: 600 !important; }
+.patient-greeting__letter { opacity: 1; transform: none; filter: none; }
+.patient-greeting.patient-greeting--play .patient-greeting__letter { animation: apple-hello-bloom 780ms cubic-bezier(.16,1,.3,1) both !important; }
+:root[data-theme='dark'] { --page: #141110; --fg: #faf3e4; color-scheme: dark; }
+#bs { background: #f6fafd !important; color: #183153 !important; transition: background-color .7s cubic-bezier(.65,.05,0,1), color .7s cubic-bezier(.65,.05,0,1); }
+:root[data-theme='dark'] #bs { background: #141110 !important; color: #faf3e4 !important; }
+:root[data-theme='dark'] #bs .h, :root[data-theme='dark'] #bs .eb, :root[data-theme='dark'] #bs .sec0 .p, :root[data-theme='dark'] #bs .p, :root[data-theme='dark'] #bs .cap { color: #f7f5ef !important; }
+#bs .dwrap { background: rgba(20,17,16,.97) !important; color: #fff !important; }
+#bs .dwrap .dn, #bs .dwrap .dh, #bs .dwrap .db, #bs .dwrap .dy b, #bs .dwrap .dy span, #bs .dwrap .de, #bs .dwrap .ds, #bs .dwrap .ds li, #bs .dwrap .dt { color: #f7f5ef !important; opacity: 1 !important; }
+#bs .dwrap .dr { color: #ff9670 !important; }
+.cc img.cc-bg { filter: none !important; opacity: 1 !important; }
+.cc span { background: linear-gradient(180deg, transparent, rgba(7,30,61,.85) 70%, rgba(7,30,61,.96)) !important; }
+
+/* Framed doctor portraits and readable detail on the light page. */
+#bs .dc {
+  border: 12px solid #c6aa7c !important;
+  border-radius: 4px !important;
+  outline: 1px solid #816947;
+  outline-offset: -5px;
+  background: #d6c09b;
+  box-shadow: 0 8px 24px #1a314129, inset 0 0 0 2px #725e42 !important;
+}
+#bs .dc > img, #bs .dc > svg { width: 100%; height: 100%; object-fit: cover; }
+#bs .dwrap { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: 0 !important; box-shadow: none !important; color: #183153 !important; }
+#bs .dwrap .di { background: transparent !important; border: 0; padding: 20px; box-shadow: none; }
+#bs .dwrap .dn, #bs .dwrap .dh, #bs .dwrap .dy b, #bs .dwrap .dt { color: #07376e !important; }
+#bs .dwrap .db, #bs .dwrap .dy span, #bs .dwrap .de, #bs .dwrap .ds, #bs .dwrap .ds li { color: #334155 !important; }
+#bs .dwrap .dr { color: #b54a00 !important; }
+@media (max-width: 760px) {
+  #hero .vp { height: auto; min-height: 0; }
+  .patient-summary { width: calc(100% - 24px) !important; margin: 20px auto !important; }
+  main > .vs { padding: 30px 0 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .patient-greeting.patient-greeting--play .patient-greeting__letter { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; }
+}
+
+/* Trang chủ: nhịp nội dung gọn hơn, giữ nguyên các chuyển động của mẫu. */
+.sec, .sec0, #hk, #fb {
+  padding: clamp(56px, 5.5vw, 80px) clamp(20px, 4vw, 48px) !important;
+}
+#about, #hk, #ts, #faq { background: #fff !important; }
+#spec, #bs, #fb { background: #f2f7fa !important; }
+#dv { background: #eaf2f6 !important; }
+#why { background: #f8f5ef !important; }
+#about, #spec, #dv, #hk, #bs, #why, #ts, #fb, #faq {
+  border-top: 1px solid #dce6eb !important;
+  border-bottom: 0 !important;
+}
+.sec .eb, .sec0 .eb, #hk .eb, #fb .eb {
+  padding: 0 0 0 12px !important;
+  margin-bottom: 16px !important;
+  border: 0 !important;
+  border-left: 2px solid #df761e !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #526c7d !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em !important;
+}
+.sec .h, .sec0 .h, #hk .h, #fb .h {
+  font-size: clamp(32px, 3.6vw, 48px) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.02em !important;
+  font-weight: 650 !important;
+  margin-bottom: 12px !important;
+}
+.sec .p, .sec0 .p, #hk .p, #fb .p {
+  font-size: 16px !important;
+  line-height: 1.65 !important;
+  margin-top: 8px !important;
+}
+.patient-summary {
+  margin: 24px auto !important;
+  padding: clamp(24px, 3vw, 36px) !important;
+  background: #fff !important;
+  border: 1px solid #dbe6ec !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px #2038490c !important;
+}
+.patient-summary::before { height: 3px !important; background: #e7781d !important; }
+.gr3 { gap: 16px !important; margin-top: 32px !important; }
+#dv .service-photo-card {
+  min-height: 340px !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+#dv .service-photo-card::before { border-radius: 6px !important; }
+#dv > .live-link, #bs > .live-link { margin-top: 28px !important; }
+#about .ag4 { gap: 0 !important; margin-top: 24px !important; }
+#about .ac {
+  padding: 20px !important;
+  border: 0 !important;
+  border-top: 1px solid #d6e3e8 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#about .ac i, #why .cd i {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 8px !important;
+  background: #e8f1f5 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#about .ac h3, #why .cd h3 { font-size: 18px !important; font-weight: 650 !important; }
+#why .gr2 { gap: 16px !important; }
+#why .cd {
+  padding: 24px !important;
+  border: 1px solid #e4ded4 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+#why .cd::before { width: 32px !important; height: 2px !important; top: 0 !important; left: 24px !important; background: #d97827 !important; }
+.steps { max-width: 64rem !important; }
+.ln { width: 2px !important; background: #bfd2dc !important; }
+.st {
+  padding: 20px 24px !important;
+  margin-bottom: 12px !important;
+  border: 1px solid #dce6eb !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+.st:before { background: #145d83 !important; box-shadow: none !important; }
+.st h3 { font-size: 20px !important; font-weight: 650 !important; }
+.wkc { padding: clamp(24px, 3vw, 36px) !important; border: 1px solid #d9e5e9 !important; border-radius: 16px !important; box-shadow: none !important; }
+.wk-cols { gap: 0 !important; }
+.wk-cols article { border: 0 !important; border-left: 2px solid #ccdde4 !important; border-radius: 0 !important; background: #f6f9fa !important; box-shadow: none !important; padding: 20px !important; }
+.wk-cols h4 { letter-spacing: 0 !important; font-weight: 650 !important; }
+.fc { border: 1px solid #dce6eb !important; border-radius: 12px !important; box-shadow: none !important; }
+.fq { margin-top: 32px !important; }
+.fq details { padding: 18px 20px !important; margin-bottom: 8px !important; border: 1px solid #dce6eb !important; border-radius: 10px !important; box-shadow: none !important; }
+.fq summary { font-size: 17px !important; font-weight: 600 !important; }
+@media (max-width: 760px) {
+  .sec, .sec0, #hk, #fb { padding: 48px 20px !important; }
+  .gr3 { margin-top: 24px !important; }
+  #dv .service-photo-card { min-height: 320px !important; }
+  .wk-cols { gap: 8px !important; }
+}
+
+/* Chỉ ảnh và nội dung bên trong chuyển động; khung card không dịch chuyển. */
+#dv .service-photo-card {
+  height: 380px;
+  background: #173d5a !important;
+}
+#dv .service-photo-card:hover {
+  transform: none !important;
+  border-color: #b6cee0 !important;
+  box-shadow: none !important;
+}
+#dv .service-photo-card::before { z-index: 2; }
+#dv .service-photo-card > .service-card-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(4, 23, 43, .05) 20%, rgba(4, 23, 43, .93) 100%), var(--service-photo) center / cover no-repeat, #173d5a;
+  transform: scale(1);
+  transition: transform 600ms cubic-bezier(.22, 1, .36, 1);
+  pointer-events: none;
+}
+#dv .service-photo-card:hover .service-card-photo,
+#dv .service-photo-card:focus-within .service-card-photo { transform: scale(1.045); }
+#dv .service-card-content { position: relative; z-index: 1; }
+#dv .service-card-number { display: block; }
+#dv .service-card-reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transform: translateY(12px); transition: grid-template-rows 420ms cubic-bezier(.22, 1, .36, 1), opacity 320ms ease, transform 420ms cubic-bezier(.22, 1, .36, 1); }
+#dv .service-card-details { min-height: 0; overflow: hidden; }
+#dv .service-photo-card:is(:hover, :focus-within) .service-card-reveal { grid-template-rows: 1fr; opacity: 1; transform: translateY(0); }
+#dv .service-photo-card .service-card-details :is(p, .pr, .live-link),
+#dv .service-photo-card:is(:hover, :focus-within) .service-card-details :is(p, .pr, .live-link) {
+  opacity: 1 !important;
+  max-height: none !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  transition: background-color .2s ease, color .2s ease !important;
+}
+#dv .service-card-details p { margin: 12px 0 0 !important; }
+#dv .service-card-details .pr, #dv .service-card-details .live-link { margin: 12px 0 0 !important; }
+@media (hover: none) {
+  #dv .service-photo-card { height: auto; }
+  #dv .service-card-reveal { grid-template-rows: 1fr; opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dv .service-card-photo, #dv .service-card-reveal { transition: none; }
+  #dv .service-photo-card:hover .service-card-photo, #dv .service-photo-card:focus-within .service-card-photo { transform: none; }
+}
+
+/* Vietnamese text uses the same complete glyph set throughout the portal. */
+body :not(.patient-greeting):not(.patient-greeting *) { font-family: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif !important; font-variation-settings: normal !important; }
+
+/* Match the fill motion of the patient navigation. */
+.landing-primary-nav > a, .landing-specialties > summary {
+  isolation: isolate;
+  border-radius: 999px;
+  padding-inline: 12px;
+  transition: color .35s ease;
+}
+.landing-primary-nav > a::before, .landing-specialties > summary::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 4px 0;
+  background: #0b4f9c;
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(.3);
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1), opacity .25s ease;
+}
+.landing-primary-nav > a:is(:hover, :focus-visible)::before,
+.landing-specialties > summary:is(:hover, :focus-visible)::before { opacity: 1; transform: scale(1); }
+.landing-primary-nav > a:is(:hover, :focus-visible),
+.landing-specialties > summary:is(:hover, :focus-visible) { color: #fff !important; }
+@media (prefers-reduced-motion: reduce) {
+  .landing-primary-nav > a::before, .landing-specialties > summary::before { transition: none; }
+}

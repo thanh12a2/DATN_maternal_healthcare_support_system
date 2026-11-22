@@ -1,9 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
+import AnimatedContent from '../components/AnimatedContent';
+import PillNav from '../components/PillNav';
 import { AppLink } from '../../../app/navigation';
 import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
 import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
-import { HeroMotherArt } from '../components/HeroMotherArt';
 import { ChatbotLauncher } from '../components/chatbot/ChatbotLauncher';
+import { PregnancyWeekNavigator } from '../components/PregnancyWeekNavigator';
+import { PregnancyStoryFrame } from '../components/PregnancyStoryFrame';
 import '../../../styles/pregnancy-guide.css';
 
 // --- ICONS Y KHOA NỘI BỘ (SVG CHUẨN) ---
@@ -147,6 +154,91 @@ function ChevronDownIcon({ className }: { className?: string }) {
       aria-hidden="true"
     >
       <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 0l2.6 8.4L23 11l-8.4 2.6L12 22l-2.6-8.4L1 11l8.4-2.6z" />
+    </svg>
+  );
+}
+
+function LeafIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+    </svg>
+  );
+}
+
+function ActivityIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+function HeartHandIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   );
 }
@@ -299,6 +391,88 @@ const FAQ_ITEMS = [
 export const PatientPregnancyGuidePage: React.FC = () => {
   // Trạng thái bộ chọn tuần thai (1 - 40)
   const [selectedWeek, setSelectedWeek] = useState<number>(12);
+  const story = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+  useEffect(() => {
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let lenis: Lenis | null = null;
+    const configure = () => {
+      lenis?.destroy();
+      lenis = null;
+      lenisRef.current = null;
+      if (motion.matches) return;
+      lenis = new Lenis({ autoRaf: true, anchors: true, lerp: 0.1 });
+      lenis.on('scroll', ScrollTrigger.update);
+      lenisRef.current = lenis;
+    };
+    configure();
+    motion.addEventListener('change', configure);
+    return () => {
+      motion.removeEventListener('change', configure);
+      lenis?.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('.pg-guide-content');
+    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const selector = [
+      '.pg-week-journey', '.pg-week-journey-top', '.pg-week-journey-range',
+      '.pg-week-journey-heading', '.pg-week-journey-subtitle', '.pg-week-journey-columns article',
+      '.pg-week-journey-milestones', '.pg-week-journey-note',
+      '.pg-story-frame figcaption', '.pg-photo-story .pg-story-images',
+      '.pg-chapter-card', '.pg-chapter-header', '.pg-quad-cell', '.pg-chapter-footer-note',
+      '.pg-section-title-wrap', '.pg-gantt-wrapper', '.pg-gantt-item', '.pg-milestone-card',
+      '.pg-clinical-card', '.pg-tabs-nav', '.pg-tab-title', '.pg-tab-lead', '.pg-topic-box',
+      '.pg-discomfort-card', '.pg-emergency-box', '.pg-emergency-head', '.pg-emergency-intro',
+      '.pg-tier-card', '.pg-emergency-hotline-bar', '.pg-birth-card',
+      '.pg-faq-item', '.pg-cta-banner', '.pg-sources-block'
+    ].join(', ');
+    const observed = new WeakSet<Element>();
+    const animations: gsap.core.Tween[] = [];
+    const attach = () => {
+      root.querySelectorAll<HTMLElement>(selector).forEach(element => {
+        if (observed.has(element)) return;
+        observed.add(element);
+        const isPhotoContainer = element.classList.contains('pg-week-journey') || element.classList.contains('pg-story-images');
+        const tween = gsap.fromTo(element,
+          { opacity: 0, y: isPhotoContainer ? 0 : 24 },
+          {
+            opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+            clearProps: 'opacity,transform',
+            scrollTrigger: { trigger: element, start: 'top 90%', once: true },
+          });
+        animations.push(tween);
+      });
+      ScrollTrigger.refresh();
+    };
+    attach();
+    const changes = new MutationObserver(attach);
+    changes.observe(root, { childList: true, subtree: true });
+    const revealFocus = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      animations.forEach(animation => {
+        if (animation.targets().some(element => element instanceof Element && element.contains(target))) animation.progress(1);
+      });
+    };
+    root.addEventListener('focusin', revealFocus);
+    return () => {
+      changes.disconnect();
+      root.removeEventListener('focusin', revealFocus);
+      animations.forEach(animation => { animation.scrollTrigger?.kill(); animation.revert(); });
+    };
+  }, []);
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>('.public-portal-header');
+    const root = story.current;
+    if (!header || !root) return;
+    const update = () => root.style.setProperty('--pg-header-height', `${header.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   // Trạng thái tab chủ đề chung (dinh-duong | van-dong | kho-chiu | tinh-than)
   const [activeTopicTab, setActiveTopicTab] = useState<
     'dinh-duong' | 'van-dong' | 'kho-chiu' | 'tinh-than'
@@ -317,7 +491,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      if (lenisRef.current) lenisRef.current.scrollTo(el);
+      else el.scrollIntoView({ behavior: 'instant' });
     }
   };
 
@@ -328,128 +503,56 @@ export const PatientPregnancyGuidePage: React.FC = () => {
   return (
     <div className="pregnancy-guide-page">
       <PublicPortalHeader />
+      <main><section className="pg-guide-content" aria-label="Cẩm nang thai kỳ">
 
-      {/* ====================================================================
-          A1. HERO SECTION (ĐẦU TRANG)
-          ==================================================================== */}
-      <section
-        className="pg-hero-section"
-        aria-label="Giới thiệu cẩm nang thai kỳ"
-      >
-        <div className="portal-container">
-          <div className="pg-hero-grid">
-            {/* Cột trái: Tiêu đề, mô tả, nút bấm, bộ chọn tuần */}
-            <div className="pg-hero-content">
-              <div className="pg-hero-badge">
-                <StethoscopeIcon />
-                <span>Bác sĩ Sản khoa Tâm An Hospital đồng hành</span>
-              </div>
-
-              <h1 className="pg-hero-title">Cẩm nang thai kỳ</h1>
-
-              <p className="pg-hero-desc">
-                Những điều mẹ cần biết từ lúc biết tin có thai đến ngày gặp con:
-                khám gì và khi nào, ăn uống và sinh hoạt ra sao, và dấu hiệu nào
-                cần đến bệnh viện ngay.
-              </p>
-
-              <div className="pg-hero-actions">
-                <button
-                  type="button"
-                  className="pg-btn pg-btn-emergency"
-                  onClick={() => scrollToSection('emergency-warning')}
-                >
-                  <AlertTriangleIcon />
-                  <span>Dấu hiệu cần đi khám ngay</span>
-                </button>
-                <AppLink href="/dat-lich" className="pg-btn pg-btn-primary">
-                  <CalendarCheckIcon />
-                  <span>Đặt lịch khám thai</span>
-                </AppLink>
-              </div>
-
-              {/* Bộ chọn tuần thai tương tác */}
-              <div
-                className="pg-week-selector-card"
-                aria-label="Bộ chọn tuần thai hiện tại"
-              >
-                <div className="pg-week-selector-header">
-                  <span className="pg-week-selector-title">
-                    <BabyIcon />
-                    Mẹ đang ở tuần thai nào?
-                  </span>
-                  <span className="pg-week-selector-badge">
-                    Tuần {selectedWeek} · Tam cá nguyệt {currentTrimester}
-                  </span>
-                </div>
-                <div className="pg-week-slider-wrapper">
-                  <input
-                    type="range"
-                    min={1}
-                    max={40}
-                    value={selectedWeek}
-                    onChange={(e) => setSelectedWeek(Number(e.target.value))}
-                    className="pg-week-slider"
-                    aria-label="Chọn tuần thai từ 1 đến 40"
-                  />
-                </div>
-                <div className="pg-week-ticks">
-                  <span>Tuần 1</span>
-                  <span>TCN 1 (1–13)</span>
-                  <span>TCN 2 (14–27)</span>
-                  <span>TCN 3 (28–40)</span>
-                  <span>Tuần 40</span>
-                </div>
-              </div>
-
-              <div className="pg-hero-disclaimer">
-                Nội dung tổng hợp từ khuyến cáo của WHO, CDC, ACOG và NHS, mang
-                tính tham khảo, không thay thế tư vấn của bác sĩ. Duyệt nội
-                dung: [BV điền: tên bác sĩ, ngày duyệt].
-              </div>
+      <div className="pg-photo-story" ref={story}>
+        <header className="pg-story-intro portal-container">
+          <AnimatedContent className="pg-intro-copy" distance={30} duration={0.8} stagger={0.08} trigger="mount">
+            <p className="pg-intro-label">Cẩm nang thai kỳ</p>
+            <h1>Đồng hành cùng mẹ<br /><em>qua từng tuần thai.</em></h1>
+            <p className="pg-intro-lead">Con đang lớn thế nào, cơ thể mẹ thay đổi ra sao? Chọn tuần thai để theo dõi hành trình của mẹ và chuẩn bị cho lần khám tới.</p>
+            <div className="pg-intro-actions">
+              <a className="pg-btn pg-btn-primary" href="#pregnancy-weeks">Tra cứu tuần thai <span aria-hidden="true">↓</span></a>
+              <AppLink className="pg-btn" href="/dat-lich">Đặt lịch khám thai</AppLink>
             </div>
-
-            {/* Cột phải: Minh họa mẹ bầu nghệ thuật trong khung vòm */}
-            <div className="pg-hero-art-col">
-              <div className="pg-hero-art-wrapper">
-                <HeroMotherArt quote="Lắng nghe cơ thể mẹ, nâng niu từng nhịp đập yêu thương của bé." />
-              </div>
-            </div>
-          </div>
+            <a className="pg-intro-warning" href="#emergency-warning">Dấu hiệu cần đi khám ngay</a>
+            <p className="pg-intro-note">Thông tin mang tính tham khảo và không thay thế tư vấn của bác sĩ.</p>
+          </AnimatedContent>
+          <PregnancyStoryFrame trimester={1} showCaption={false} />
+        </header>
+        <div className="portal-container" id="pregnancy-weeks">
+          <PregnancyWeekNavigator week={selectedWeek} onWeekChange={setSelectedWeek} />
         </div>
-      </section>
 
       {/* ====================================================================
           B1. THANH HÀNH TRÌNH CỐ ĐỊNH (STICKY JOURNEY TIMELINE)
           ==================================================================== */}
       <nav className="pg-sticky-nav" aria-label="Điều hướng hành trình thai kỳ">
         <div className="portal-container">
-          <div className="pg-journey-track">
-            <button
-              type="button"
-              className={`pg-journey-tab ${currentTrimester === 1 ? 'active-t1' : ''}`}
-              onClick={() => scrollToSection('chapter-t1')}
-            >
-              <span className="pg-journey-tab-badge">1</span>
-              <span>Tam cá nguyệt 1 (khoảng tuần 1–13)</span>
-            </button>
-            <button
-              type="button"
-              className={`pg-journey-tab ${currentTrimester === 2 ? 'active-t2' : ''}`}
-              onClick={() => scrollToSection('chapter-t2')}
-            >
-              <span className="pg-journey-tab-badge">2</span>
-              <span>Tam cá nguyệt 2 (khoảng tuần 14–27)</span>
-            </button>
-            <button
-              type="button"
-              className={`pg-journey-tab ${currentTrimester === 3 ? 'active-t3' : ''}`}
-              onClick={() => scrollToSection('chapter-t3')}
-            >
-              <span className="pg-journey-tab-badge">3</span>
-              <span>Tam cá nguyệt 3 (khoảng tuần 28–40)</span>
-            </button>
-          </div>
+          <PillNav
+            items={[
+              { label: 'Tam cá nguyệt 1 (tuần 1–13)', href: '#chapter-t1' },
+              { label: 'Tam cá nguyệt 2 (tuần 14–27)', href: '#chapter-t2' },
+              { label: 'Tam cá nguyệt 3 (tuần 28–40)', href: '#chapter-t3' },
+            ]}
+            activeHref={`#chapter-t${currentTrimester}`}
+            onItemClick={(item, _index, event) => {
+              if (!item.href) return;
+              event.preventDefault();
+              scrollToSection(item.href.slice(1));
+            }}
+            theme="light"
+            surface="none"
+            itemStyle="plain"
+            hoverEffect="fill"
+            indicator="pill"
+            highlightColor="#0b4f9c"
+            highlightTextColor="#ffffff"
+            textColor="#183153"
+            collapse="never"
+            intro={false}
+            ariaLabel="Điều hướng tam cá nguyệt"
+          />
         </div>
       </nav>
 
@@ -457,21 +560,30 @@ export const PatientPregnancyGuidePage: React.FC = () => {
         {/* ====================================================================
             A2. BA GIAI ĐOẠN CỦA THAI KỲ (CHƯƠNG 1, 2, 3)
             ==================================================================== */}
-        <section
+        <div role="region"
           className="pg-section"
           aria-label="Ba giai đoạn phát triển thai kỳ"
         >
           <div className="pg-chapter-container">
             {/* CHƯƠNG 1: TAM CÁ NGUYỆT 1 */}
+            <div className="pg-photo-chapter" id="chapter-t1">
+              <div className="pg-photo-margin"><PregnancyStoryFrame trimester={1} /></div>
             <article
-              id="chapter-t1"
               className={`pg-chapter-card t1 ${currentTrimester === 1 ? 'highlighted' : ''}`}
             >
               <div className="pg-chapter-header">
-                <div className="pg-arch-badge t1">1</div>
+                <div className="pg-arch-badge t1">
+                  <span className="pg-arch-label">TCN</span>
+                  <span className="pg-arch-num">01</span>
+                </div>
                 <div className="pg-chapter-title-group">
+                  <div className="pg-eyebrow-tag">
+                    <SparkleIcon />
+                    GIAI ĐOẠN ĐẦU TIÊN
+                  </div>
                   <h2>Tam cá nguyệt 1</h2>
-                  <span className="pg-approx-pill">khoảng tuần 1–13</span>
+                  <div className="pg-gold-rule" />
+                  <span className="pg-approx-pill">khoảng tuần 1–13 · 3 tháng đầu thai kỳ</span>
                 </div>
               </div>
 
@@ -541,17 +653,27 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                 </div>
               </div>
             </article>
+            </div>
 
             {/* CHƯƠNG 2: TAM CÁ NGUYỆT 2 */}
+            <div className="pg-photo-chapter" id="chapter-t2">
+              <div className="pg-photo-margin"><PregnancyStoryFrame trimester={2} /></div>
             <article
-              id="chapter-t2"
               className={`pg-chapter-card t2 ${currentTrimester === 2 ? 'highlighted' : ''}`}
             >
               <div className="pg-chapter-header">
-                <div className="pg-arch-badge t2">2</div>
+                <div className="pg-arch-badge t2">
+                  <span className="pg-arch-label">TCN</span>
+                  <span className="pg-arch-num">02</span>
+                </div>
                 <div className="pg-chapter-title-group">
+                  <div className="pg-eyebrow-tag">
+                    <SparkleIcon />
+                    GIAI ĐOẠN PHÁT TRIỂN
+                  </div>
                   <h2>Tam cá nguyệt 2</h2>
-                  <span className="pg-approx-pill">khoảng tuần 14–27</span>
+                  <div className="pg-gold-rule" />
+                  <span className="pg-approx-pill">khoảng tuần 14–27 · 3 tháng giữa thai kỳ</span>
                 </div>
               </div>
 
@@ -615,17 +737,27 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                 </div>
               </div>
             </article>
+            </div>
 
             {/* CHƯƠNG 3: TAM CÁ NGUYỆT 3 */}
+            <div className="pg-photo-chapter" id="chapter-t3">
+              <div className="pg-photo-margin"><PregnancyStoryFrame trimester={3} /></div>
             <article
-              id="chapter-t3"
               className={`pg-chapter-card t3 ${currentTrimester === 3 ? 'highlighted' : ''}`}
             >
               <div className="pg-chapter-header">
-                <div className="pg-arch-badge t3">3</div>
+                <div className="pg-arch-badge t3">
+                  <span className="pg-arch-label">TCN</span>
+                  <span className="pg-arch-num">03</span>
+                </div>
                 <div className="pg-chapter-title-group">
+                  <div className="pg-eyebrow-tag">
+                    <SparkleIcon />
+                    GIAI ĐOẠN VỀ ĐÍCH
+                  </div>
                   <h2>Tam cá nguyệt 3</h2>
-                  <span className="pg-approx-pill">khoảng tuần 28–40</span>
+                  <div className="pg-gold-rule" />
+                  <span className="pg-approx-pill">khoảng tuần 28–40 · 3 tháng cuối thai kỳ</span>
                 </div>
               </div>
 
@@ -694,27 +826,33 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                 quyết định hướng xử trí y khoa.
               </div>
             </article>
+            </div>
           </div>
-        </section>
+        </div>
+      </div>
       </div>
 
       {/* ====================================================================
           A3. LỊCH KHÁM VÀ XÉT NGHIỆM CHI TIẾT (TIMELINE GANTT-STYLE)
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-timeline-section"
         id="schedule-section"
         aria-label="Lịch khám và xét nghiệm chi tiết"
       >
         <div className="portal-container">
           <div className="pg-section-title-wrap">
+            <div className="pg-eyebrow-tag">
+              <SparkleIcon />
+              LỘ TRÌNH THĂM KHÁM TIỀN SẢN CHUẨN MỰC
+            </div>
             <h2>Lịch khám và xét nghiệm tiền sản</h2>
+            <div className="pg-gold-rule centered" />
             <p>
-              WHO khuyến cáo tối thiểu 8 lần tiếp xúc với nhân viên y tế trong
-              thai kỳ (1 lần ở tam cá nguyệt 1, 2 lần ở tam cá nguyệt 2 và 5 lần
-              ở tam cá nguyệt 3). Số lần và thời điểm cụ thể sẽ do bác sĩ điều
-              chỉnh theo sức khỏe của từng mẹ. Các khoảng tuần dưới đây khác
-              nhau đôi chút giữa các hướng dẫn nên chỉ mang tính tham khảo.
+              WHO khuyến cáo tối thiểu 8 lần tiếp xúc với nhân viên y tế: 1 lần
+              ở tam cá nguyệt 1, 2 lần ở tam cá nguyệt 2 và 5 lần ở tam cá nguyệt 3.
+              Lịch cụ thể do bác sĩ điều chỉnh theo sức khỏe của mẹ; các khoảng
+              tuần dưới đây chỉ mang tính tham khảo và có thể khác giữa các hướng dẫn.
             </p>
           </div>
 
@@ -760,7 +898,7 @@ export const PatientPregnancyGuidePage: React.FC = () => {
 
           {/* Danh mục chi tiết các mốc khám */}
           <div className="pg-milestones-list">
-            {MILESTONES.map((item) => {
+            {MILESTONES.map((item, idx) => {
               const isItemActive =
                 selectedWeek >= item.startWeek && selectedWeek <= item.endWeek;
 
@@ -770,7 +908,10 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                   className={`pg-milestone-card ${isItemActive ? 'highlighted' : ''}`}
                 >
                   <div className="pg-milestone-head">
-                    <h3>{item.name}</h3>
+                    <div className="pg-milestone-title-wrap">
+                      <span className="pg-milestone-step-node">0{idx + 1}</span>
+                      <h3>{item.name}</h3>
+                    </div>
                     <span className="pg-milestone-badge">
                       {item.rangeLabel}
                     </span>
@@ -782,8 +923,9 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                     </p>
                     <div className="pg-milestone-note">{item.note}</div>
                     {item.hospitalNote && (
-                      <p style={{ color: '#0B4F9C', fontWeight: 600 }}>
-                        {item.hospitalNote}
+                      <p className="pg-milestone-hospital-note">
+                        <CheckCircleIcon />
+                        <span>{item.hospitalNote}</span>
                       </p>
                     )}
                   </div>
@@ -805,22 +947,26 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ====================================================================
           A4 - A7. CÁC CHỦ ĐỀ CHUNG DẠNG TAB
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-topics-section"
         id="topics-section"
         aria-label="Các chủ đề chăm sóc chung suốt thai kỳ"
       >
         <div className="portal-container">
           <div className="pg-section-title-wrap">
+            <div className="pg-eyebrow-tag">
+              <SparkleIcon />
+              CẨM NANG CHĂM SÓC TOÀN DIỆN
+            </div>
             <h2>Chăm sóc sức khỏe toàn diện</h2>
+            <div className="pg-gold-rule centered" />
             <p>
-              Dinh dưỡng, vận động, cách xử trí khó chịu và chăm sóc tinh thần
-              đúng khoa học ở mọi giai đoạn thai kỳ.
+              Dinh dưỡng, vận động, xử trí khó chịu và chăm sóc tinh thần trong thai kỳ.
             </p>
           </div>
 
@@ -832,7 +978,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
               className={`pg-tab-btn ${activeTopicTab === 'dinh-duong' ? 'active' : ''}`}
               onClick={() => setActiveTopicTab('dinh-duong')}
             >
-              🥗 Dinh dưỡng &amp; Vi chất
+              <LeafIcon />
+              <span>Dinh dưỡng &amp; Vi chất</span>
             </button>
             <button
               type="button"
@@ -841,7 +988,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
               className={`pg-tab-btn ${activeTopicTab === 'van-dong' ? 'active' : ''}`}
               onClick={() => setActiveTopicTab('van-dong')}
             >
-              🧘‍♀️ Vận động &amp; Sinh hoạt
+              <ActivityIcon />
+              <span>Vận động &amp; Sinh hoạt</span>
             </button>
             <button
               type="button"
@@ -850,7 +998,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
               className={`pg-tab-btn ${activeTopicTab === 'kho-chiu' ? 'active' : ''}`}
               onClick={() => setActiveTopicTab('kho-chiu')}
             >
-              🌿 Khó chịu thường gặp
+              <StethoscopeIcon />
+              <span>Khó chịu thường gặp</span>
             </button>
             <button
               type="button"
@@ -859,7 +1008,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
               className={`pg-tab-btn ${activeTopicTab === 'tinh-than' ? 'active' : ''}`}
               onClick={() => setActiveTopicTab('tinh-than')}
             >
-              💛 Sức khỏe tinh thần
+              <HeartHandIcon />
+              <span>Sức khỏe tinh thần</span>
             </button>
           </div>
 
@@ -1260,12 +1410,12 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             )}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ====================================================================
           A8. DẤU HIỆU CẦN ĐI KHÁM NGAY (CỐ ĐỊNH, KHÔNG ẨN TRONG TAB/ACCORDION)
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-emergency-section"
         id="emergency-warning"
         aria-label="Cảnh báo an toàn y tế khẩn cấp"
@@ -1277,10 +1427,12 @@ export const PatientPregnancyGuidePage: React.FC = () => {
                 <AlertTriangleIcon />
               </div>
               <div>
+                <div className="pg-eyebrow-tag" style={{ color: '#dc2626' }}>
+                  <AlertTriangleIcon />
+                  AN TOÀN Y TẾ TRỌNG YẾU
+                </div>
                 <h2>Dấu hiệu cần đi khám ngay</h2>
-                <span
-                  style={{ fontSize: 13.5, color: '#B71C1C', fontWeight: 700 }}
-                >
+                <span className="pg-emergency-badge">
                   KHỐI AN TOÀN TRỌNG YẾU — LUÔN HIỂN THỊ CỐ ĐỊNH
                 </span>
               </div>
@@ -1363,22 +1515,26 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             </p>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ====================================================================
           A9. CHUẨN BỊ SINH VÀ HẬU SẢN
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-birth-section"
         id="birth-prep-section"
         aria-label="Chuẩn bị sinh và chăm sóc sau sinh"
       >
         <div className="portal-container">
           <div className="pg-section-title-wrap">
+            <div className="pg-eyebrow-tag">
+              <SparkleIcon />
+              HÀNH TRANG VƯỢT CẠN
+            </div>
             <h2>Chuẩn bị sinh và chăm sóc sau sinh</h2>
+            <div className="pg-gold-rule centered" />
             <p>
-              Hành trang chu đáo để mẹ tự tin, an tâm đón chào bé yêu chào đời
-              bình an.
+              Những điều cần chuẩn bị trước và sau khi sinh.
             </p>
           </div>
 
@@ -1452,19 +1608,24 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ====================================================================
           A10. HỎI ĐÁP THƯỜNG GẶP (ACCORDION)
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-faq-section"
         id="faq-section"
         aria-label="Câu hỏi thường gặp về thai kỳ"
       >
         <div className="portal-container">
           <div className="pg-section-title-wrap">
+            <div className="pg-eyebrow-tag">
+              <SparkleIcon />
+              HỎI ĐÁP &amp; THẮC MẮC PHỔ BIẾN
+            </div>
             <h2>Hỏi đáp thường gặp trong thai kỳ</h2>
+            <div className="pg-gold-rule centered" />
             <p>
               Giải đáp thắc mắc phổ biến theo khuyến cáo y khoa chính thống từ
               các chuyên gia sản phụ khoa.
@@ -1499,12 +1660,12 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             })}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ====================================================================
           A11. KÊU GỌI HÀNH ĐỘNG & CUỐI TRANG
           ==================================================================== */}
-      <section
+      <div role="region"
         className="pg-cta-section"
         aria-label="Đặt lịch khám và nguồn tham chiếu"
       >
@@ -1576,7 +1737,8 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+      </div>
+      </section></main>
 
       {/* ====================================================================
           B1 / B8. DẢI CỐ ĐỊNH DƯỚI ĐÁY MÀN HÌNH (STICKY EMERGENCY PILL)
