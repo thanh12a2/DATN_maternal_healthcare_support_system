@@ -4344,6 +4344,7 @@ export namespace Prisma {
     consultationRank: $Enums.DoctorConsultationRank | null
     status: $Enums.DoctorStatus | null
     version: number | null
+    deletedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4355,6 +4356,7 @@ export namespace Prisma {
     consultationRank: $Enums.DoctorConsultationRank | null
     status: $Enums.DoctorStatus | null
     version: number | null
+    deletedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4366,6 +4368,7 @@ export namespace Prisma {
     consultationRank: number
     status: number
     version: number
+    deletedAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4387,6 +4390,7 @@ export namespace Prisma {
     consultationRank?: true
     status?: true
     version?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4398,6 +4402,7 @@ export namespace Prisma {
     consultationRank?: true
     status?: true
     version?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4409,6 +4414,7 @@ export namespace Prisma {
     consultationRank?: true
     status?: true
     version?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4507,6 +4513,7 @@ export namespace Prisma {
     consultationRank: $Enums.DoctorConsultationRank
     status: $Enums.DoctorStatus
     version: number
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: DoctorCountAggregateOutputType | null
@@ -4537,6 +4544,7 @@ export namespace Prisma {
     consultationRank?: boolean
     status?: boolean
     version?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     profile?: boolean | Doctor$profileArgs<ExtArgs>
@@ -4557,6 +4565,7 @@ export namespace Prisma {
     consultationRank?: boolean
     status?: boolean
     version?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     rank?: boolean | Doctor$rankArgs<ExtArgs>
@@ -4569,6 +4578,7 @@ export namespace Prisma {
     consultationRank?: boolean
     status?: boolean
     version?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     rank?: boolean | Doctor$rankArgs<ExtArgs>
@@ -4581,11 +4591,12 @@ export namespace Prisma {
     consultationRank?: boolean
     status?: boolean
     version?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type DoctorOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "accountId" | "licenseNumber" | "consultationRank" | "status" | "version" | "createdAt" | "updatedAt", ExtArgs["result"]["doctor"]>
+  export type DoctorOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "accountId" | "licenseNumber" | "consultationRank" | "status" | "version" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["doctor"]>
   export type DoctorInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     profile?: boolean | Doctor$profileArgs<ExtArgs>
     rank?: boolean | Doctor$rankArgs<ExtArgs>
@@ -4623,6 +4634,7 @@ export namespace Prisma {
       consultationRank: $Enums.DoctorConsultationRank
       status: $Enums.DoctorStatus
       version: number
+      deletedAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["doctor"]>
@@ -5062,6 +5074,7 @@ export namespace Prisma {
     readonly consultationRank: FieldRef<"Doctor", 'DoctorConsultationRank'>
     readonly status: FieldRef<"Doctor", 'DoctorStatus'>
     readonly version: FieldRef<"Doctor", 'Int'>
+    readonly deletedAt: FieldRef<"Doctor", 'DateTime'>
     readonly createdAt: FieldRef<"Doctor", 'DateTime'>
     readonly updatedAt: FieldRef<"Doctor", 'DateTime'>
   }
@@ -5686,6 +5699,7 @@ export namespace Prisma {
     biography: string | null
     practiceStartYear: number | null
     photoUrl: string | null
+    photoStorageKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5696,6 +5710,7 @@ export namespace Prisma {
     biography: string | null
     practiceStartYear: number | null
     photoUrl: string | null
+    photoStorageKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5707,6 +5722,7 @@ export namespace Prisma {
     practiceStartYear: number
     languages: number
     photoUrl: number
+    photoStorageKey: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -5727,6 +5743,7 @@ export namespace Prisma {
     biography?: true
     practiceStartYear?: true
     photoUrl?: true
+    photoStorageKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5737,6 +5754,7 @@ export namespace Prisma {
     biography?: true
     practiceStartYear?: true
     photoUrl?: true
+    photoStorageKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5748,6 +5766,7 @@ export namespace Prisma {
     practiceStartYear?: true
     languages?: true
     photoUrl?: true
+    photoStorageKey?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5846,6 +5865,7 @@ export namespace Prisma {
     practiceStartYear: number | null
     languages: string[]
     photoUrl: string | null
+    photoStorageKey: string | null
     createdAt: Date
     updatedAt: Date
     _count: DoctorProfileCountAggregateOutputType | null
@@ -5876,6 +5896,7 @@ export namespace Prisma {
     practiceStartYear?: boolean
     languages?: boolean
     photoUrl?: boolean
+    photoStorageKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
@@ -5888,6 +5909,7 @@ export namespace Prisma {
     practiceStartYear?: boolean
     languages?: boolean
     photoUrl?: boolean
+    photoStorageKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
@@ -5900,6 +5922,7 @@ export namespace Prisma {
     practiceStartYear?: boolean
     languages?: boolean
     photoUrl?: boolean
+    photoStorageKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
@@ -5912,11 +5935,12 @@ export namespace Prisma {
     practiceStartYear?: boolean
     languages?: boolean
     photoUrl?: boolean
+    photoStorageKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type DoctorProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"doctorId" | "fullName" | "biography" | "practiceStartYear" | "languages" | "photoUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["doctorProfile"]>
+  export type DoctorProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"doctorId" | "fullName" | "biography" | "practiceStartYear" | "languages" | "photoUrl" | "photoStorageKey" | "createdAt" | "updatedAt", ExtArgs["result"]["doctorProfile"]>
   export type DoctorProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
   }
@@ -5939,6 +5963,7 @@ export namespace Prisma {
       practiceStartYear: number | null
       languages: string[]
       photoUrl: string | null
+      photoStorageKey: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["doctorProfile"]>
@@ -6371,6 +6396,7 @@ export namespace Prisma {
     readonly practiceStartYear: FieldRef<"DoctorProfile", 'Int'>
     readonly languages: FieldRef<"DoctorProfile", 'String[]'>
     readonly photoUrl: FieldRef<"DoctorProfile", 'String'>
+    readonly photoStorageKey: FieldRef<"DoctorProfile", 'String'>
     readonly createdAt: FieldRef<"DoctorProfile", 'DateTime'>
     readonly updatedAt: FieldRef<"DoctorProfile", 'DateTime'>
   }
@@ -14913,6 +14939,7 @@ export namespace Prisma {
     consultationRank: 'consultationRank',
     status: 'status',
     version: 'version',
+    deletedAt: 'deletedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -14927,6 +14954,7 @@ export namespace Prisma {
     practiceStartYear: 'practiceStartYear',
     languages: 'languages',
     photoUrl: 'photoUrl',
+    photoStorageKey: 'photoStorageKey',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -15434,6 +15462,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFilter<"Doctor"> | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFilter<"Doctor"> | $Enums.DoctorStatus
     version?: IntFilter<"Doctor"> | number
+    deletedAt?: DateTimeNullableFilter<"Doctor"> | Date | string | null
     createdAt?: DateTimeFilter<"Doctor"> | Date | string
     updatedAt?: DateTimeFilter<"Doctor"> | Date | string
     profile?: XOR<DoctorProfileNullableScalarRelationFilter, DoctorProfileWhereInput> | null
@@ -15453,6 +15482,7 @@ export namespace Prisma {
     consultationRank?: SortOrder
     status?: SortOrder
     version?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     profile?: DoctorProfileOrderByWithRelationInput
@@ -15475,6 +15505,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFilter<"Doctor"> | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFilter<"Doctor"> | $Enums.DoctorStatus
     version?: IntFilter<"Doctor"> | number
+    deletedAt?: DateTimeNullableFilter<"Doctor"> | Date | string | null
     createdAt?: DateTimeFilter<"Doctor"> | Date | string
     updatedAt?: DateTimeFilter<"Doctor"> | Date | string
     profile?: XOR<DoctorProfileNullableScalarRelationFilter, DoctorProfileWhereInput> | null
@@ -15494,6 +15525,7 @@ export namespace Prisma {
     consultationRank?: SortOrder
     status?: SortOrder
     version?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: DoctorCountOrderByAggregateInput
@@ -15513,6 +15545,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankWithAggregatesFilter<"Doctor"> | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusWithAggregatesFilter<"Doctor"> | $Enums.DoctorStatus
     version?: IntWithAggregatesFilter<"Doctor"> | number
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"Doctor"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Doctor"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Doctor"> | Date | string
   }
@@ -15527,6 +15560,7 @@ export namespace Prisma {
     practiceStartYear?: IntNullableFilter<"DoctorProfile"> | number | null
     languages?: StringNullableListFilter<"DoctorProfile">
     photoUrl?: StringNullableFilter<"DoctorProfile"> | string | null
+    photoStorageKey?: StringNullableFilter<"DoctorProfile"> | string | null
     createdAt?: DateTimeFilter<"DoctorProfile"> | Date | string
     updatedAt?: DateTimeFilter<"DoctorProfile"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
@@ -15539,6 +15573,7 @@ export namespace Prisma {
     practiceStartYear?: SortOrderInput | SortOrder
     languages?: SortOrder
     photoUrl?: SortOrderInput | SortOrder
+    photoStorageKey?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     doctor?: DoctorOrderByWithRelationInput
@@ -15554,6 +15589,7 @@ export namespace Prisma {
     practiceStartYear?: IntNullableFilter<"DoctorProfile"> | number | null
     languages?: StringNullableListFilter<"DoctorProfile">
     photoUrl?: StringNullableFilter<"DoctorProfile"> | string | null
+    photoStorageKey?: StringNullableFilter<"DoctorProfile"> | string | null
     createdAt?: DateTimeFilter<"DoctorProfile"> | Date | string
     updatedAt?: DateTimeFilter<"DoctorProfile"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
@@ -15566,6 +15602,7 @@ export namespace Prisma {
     practiceStartYear?: SortOrderInput | SortOrder
     languages?: SortOrder
     photoUrl?: SortOrderInput | SortOrder
+    photoStorageKey?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: DoctorProfileCountOrderByAggregateInput
@@ -15585,6 +15622,7 @@ export namespace Prisma {
     practiceStartYear?: IntNullableWithAggregatesFilter<"DoctorProfile"> | number | null
     languages?: StringNullableListFilter<"DoctorProfile">
     photoUrl?: StringNullableWithAggregatesFilter<"DoctorProfile"> | string | null
+    photoStorageKey?: StringNullableWithAggregatesFilter<"DoctorProfile"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"DoctorProfile"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"DoctorProfile"> | Date | string
   }
@@ -16316,6 +16354,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -16335,6 +16374,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -16352,6 +16392,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -16371,6 +16412,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -16389,6 +16431,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -16399,6 +16442,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -16410,6 +16454,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -16420,6 +16465,7 @@ export namespace Prisma {
     practiceStartYear?: number | null
     languages?: DoctorProfileCreatelanguagesInput | string[]
     photoUrl?: string | null
+    photoStorageKey?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     doctor: DoctorCreateNestedOneWithoutProfileInput
@@ -16432,6 +16478,7 @@ export namespace Prisma {
     practiceStartYear?: number | null
     languages?: DoctorProfileCreatelanguagesInput | string[]
     photoUrl?: string | null
+    photoStorageKey?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -16442,6 +16489,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     doctor?: DoctorUpdateOneRequiredWithoutProfileNestedInput
@@ -16454,6 +16502,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -16465,6 +16514,7 @@ export namespace Prisma {
     practiceStartYear?: number | null
     languages?: DoctorProfileCreatelanguagesInput | string[]
     photoUrl?: string | null
+    photoStorageKey?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -16475,6 +16525,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -16486,6 +16537,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17361,6 +17413,17 @@ export namespace Prisma {
     not?: NestedEnumDoctorStatusFilter<$PrismaModel> | $Enums.DoctorStatus
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type DoctorProfileNullableScalarRelationFilter = {
     is?: DoctorProfileWhereInput | null
     isNot?: DoctorProfileWhereInput | null
@@ -17395,6 +17458,11 @@ export namespace Prisma {
     none?: OutboxEventWhereInput
   }
 
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
+  }
+
   export type DoctorSpecialtyOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -17418,6 +17486,7 @@ export namespace Prisma {
     consultationRank?: SortOrder
     status?: SortOrder
     version?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17433,6 +17502,7 @@ export namespace Prisma {
     consultationRank?: SortOrder
     status?: SortOrder
     version?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17444,6 +17514,7 @@ export namespace Prisma {
     consultationRank?: SortOrder
     status?: SortOrder
     version?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17460,6 +17531,20 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDoctorStatusFilter<$PrismaModel>
     _max?: NestedEnumDoctorStatusFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type StringNullableFilter<$PrismaModel = never> = {
@@ -17501,11 +17586,6 @@ export namespace Prisma {
     isNot?: DoctorWhereInput
   }
 
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
-  }
-
   export type DoctorProfileCountOrderByAggregateInput = {
     doctorId?: SortOrder
     fullName?: SortOrder
@@ -17513,6 +17593,7 @@ export namespace Prisma {
     practiceStartYear?: SortOrder
     languages?: SortOrder
     photoUrl?: SortOrder
+    photoStorageKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17527,6 +17608,7 @@ export namespace Prisma {
     biography?: SortOrder
     practiceStartYear?: SortOrder
     photoUrl?: SortOrder
+    photoStorageKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17537,6 +17619,7 @@ export namespace Prisma {
     biography?: SortOrder
     practiceStartYear?: SortOrder
     photoUrl?: SortOrder
+    photoStorageKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -17723,17 +17806,6 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type UuidNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -17822,20 +17894,6 @@ export namespace Prisma {
     dayOfWeek?: SortOrder
     slotDurationMinutes?: SortOrder
     version?: SortOrder
-  }
-
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type UuidNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -18405,6 +18463,10 @@ export namespace Prisma {
     set?: $Enums.DoctorStatus
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type DoctorProfileUpdateOneWithoutDoctorNestedInput = {
     create?: XOR<DoctorProfileCreateWithoutDoctorInput, DoctorProfileUncheckedCreateWithoutDoctorInput>
     connectOrCreate?: DoctorProfileCreateOrConnectWithoutDoctorInput
@@ -18728,10 +18790,6 @@ export namespace Prisma {
     connect?: ClinicRoomWhereUniqueInput
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
-  }
-
   export type EnumScheduleStatusFieldUpdateOperationsInput = {
     set?: $Enums.ScheduleStatus
   }
@@ -19002,6 +19060,17 @@ export namespace Prisma {
     not?: NestedEnumDoctorStatusFilter<$PrismaModel> | $Enums.DoctorStatus
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedEnumDoctorStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.DoctorStatus | EnumDoctorStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DoctorStatus[] | ListEnumDoctorStatusFieldRefInput<$PrismaModel>
@@ -19010,6 +19079,31 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDoctorStatusFilter<$PrismaModel>
     _max?: NestedEnumDoctorStatusFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -19024,17 +19118,6 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -19134,17 +19217,6 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedUuidNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -19161,20 +19233,6 @@ export namespace Prisma {
     in?: $Enums.ScheduleStatus[] | ListEnumScheduleStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.ScheduleStatus[] | ListEnumScheduleStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumScheduleStatusFilter<$PrismaModel> | $Enums.ScheduleStatus
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedUuidNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -19281,6 +19339,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -19298,6 +19357,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -19345,6 +19405,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFilter<"Doctor"> | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFilter<"Doctor"> | $Enums.DoctorStatus
     version?: IntFilter<"Doctor"> | number
+    deletedAt?: DateTimeNullableFilter<"Doctor"> | Date | string | null
     createdAt?: DateTimeFilter<"Doctor"> | Date | string
     updatedAt?: DateTimeFilter<"Doctor"> | Date | string
   }
@@ -19511,6 +19572,7 @@ export namespace Prisma {
     practiceStartYear?: number | null
     languages?: DoctorProfileCreatelanguagesInput | string[]
     photoUrl?: string | null
+    photoStorageKey?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -19521,6 +19583,7 @@ export namespace Prisma {
     practiceStartYear?: number | null
     languages?: DoctorProfileCreatelanguagesInput | string[]
     photoUrl?: string | null
+    photoStorageKey?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -19776,6 +19839,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -19786,6 +19850,7 @@ export namespace Prisma {
     practiceStartYear?: NullableIntFieldUpdateOperationsInput | number | null
     languages?: DoctorProfileUpdatelanguagesInput | string[]
     photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    photoStorageKey?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -19980,6 +20045,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     rank?: ConsultationRankCreateNestedOneWithoutDoctorsInput
@@ -19998,6 +20064,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
@@ -20030,6 +20097,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rank?: ConsultationRankUpdateOneWithoutDoctorsNestedInput
@@ -20048,6 +20116,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20102,6 +20171,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20120,6 +20190,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20181,6 +20252,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20199,6 +20271,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20250,6 +20323,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20268,6 +20342,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20325,6 +20400,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20343,6 +20419,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20390,6 +20467,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20408,6 +20486,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20465,6 +20544,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20483,6 +20563,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20530,6 +20611,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20548,6 +20630,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20580,6 +20663,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20598,6 +20682,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20614,6 +20699,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20632,6 +20718,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20664,6 +20751,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20682,6 +20770,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20698,6 +20787,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
@@ -20716,6 +20806,7 @@ export namespace Prisma {
     consultationRank?: $Enums.DoctorConsultationRank
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
@@ -20748,6 +20839,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20766,6 +20858,7 @@ export namespace Prisma {
     consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20782,6 +20875,7 @@ export namespace Prisma {
     licenseNumber: string
     status?: $Enums.DoctorStatus
     version?: number
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -20792,6 +20886,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
@@ -20809,6 +20904,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
@@ -20826,6 +20922,7 @@ export namespace Prisma {
     licenseNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
     version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -27,7 +27,9 @@ export async function apiRequest<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init.body && !(typeof FormData !== 'undefined' && init.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.headers ?? {}),
     },
@@ -36,7 +38,9 @@ export async function apiRequest<T>(
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get('content-type') ?? '';
   const payload =
-    contentType.includes('text/') || contentType.includes('csv')
+    response.ok && contentType.includes('application/pdf')
+      ? await response.blob()
+      : contentType.includes('text/') || contentType.includes('csv')
       ? await response.text()
       : ((await response.json().catch(() => null)) as ErrorPayload | T | null);
   if (!response.ok) {

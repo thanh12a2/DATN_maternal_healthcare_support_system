@@ -6,6 +6,7 @@ import { AdminPatientsPage } from './AdminPatientsPage';
 import { AdminFeedbackModal } from '../components/AdminFeedbackModal';
 import * as adminDoctorsService from '../../../services/adminDoctors';
 import * as adminPatientsService from '../../../services/adminPatients';
+import { ApiError } from '../../../services/api';
 
 const mockRequest = vi.fn();
 
@@ -130,19 +131,74 @@ describe('AdminDoctorsPage', () => {
       screen.getByRole('button', { name: /Chỉnh sửa/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Xóa bác sĩ \(chưa hỗ trợ\)/i }),
+      screen.getByRole('button', { name: /Xóa bác sĩ/i }),
     ).toBeInTheDocument();
   });
 
-  it('disables doctor deletion when the API has no delete endpoint', async () => {
+  it('disables the login and removes a doctor from the list after confirmation', async () => {
+    let removed = false;
+    mockRequest.mockImplementation((path: string, init?: RequestInit) => {
+      if (path.includes('/specialties')) return Promise.resolve([]);
+      if (path.includes('/consultation-ranks')) return Promise.resolve([]);
+      if (path.startsWith('/auth/admin/users/acc-uuid-001') && init?.method === 'PATCH') {
+        return Promise.resolve({ id: 'acc-uuid-001', status: 'DISABLED' });
+      }
+      if (path === '/auth/admin/users/acc-uuid-001') {
+        return Promise.resolve({ id: 'acc-uuid-001', status: 'ACTIVE' });
+      }
+      if (path === '/api/doctors/doc-uuid-001' && init?.method === 'DELETE') {
+        removed = true;
+        return Promise.resolve({ data: { deleted: true } });
+      }
+      if (path === '/api/doctors/doc-uuid-001') return Promise.resolve({ data: mockDoctors[0] });
+      if (path.startsWith('/api/doctors')) {
+        return Promise.resolve({ data: removed ? [] : mockDoctors });
+      }
+      return Promise.resolve({});
+    });
     render(<AdminDoctorsPage />);
-    const nameEl = await screen.findByText(/Trần Quốc Việt/);
-    await userEvent.click(nameEl);
+    await userEvent.click(await screen.findByText(mockDoctors[0].profile.fullName));
 
     const deleteBtn = await screen.findByRole('button', {
-      name: /Xóa bác sĩ \(chưa hỗ trợ\)/i,
+      name: /Xóa bác sĩ/i,
     });
-    expect(deleteBtn).toBeDisabled();
+    expect(deleteBtn).toBeEnabled();
+    await userEvent.click(deleteBtn);
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa' }));
+
+    await waitFor(() => expect(removed).toBe(true));
+    const calls = mockRequest.mock.calls;
+    const disabled = calls.findIndex(([path, init]) => path.startsWith('/auth/admin/users/acc-uuid-001') && init?.method === 'PATCH');
+    const deleted = calls.findIndex(([path, init]) => path === '/api/doctors/doc-uuid-001' && init?.method === 'DELETE');
+    expect(disabled).toBeGreaterThan(-1);
+    expect(deleted).toBeGreaterThan(disabled);
+    expect(calls[deleted][1].headers['if-match']).toBe('1');
+    await waitFor(() => expect(screen.queryByRole('row', { name: new RegExp(mockDoctors[0].profile.fullName) })).not.toBeInTheDocument());
+  });
+
+  it('restores the account status when the doctor has unfinished appointments', async () => {
+    const statusUpdates: string[] = [];
+    mockRequest.mockImplementation((path: string, init?: RequestInit) => {
+      if (path.includes('/specialties') || path.includes('/consultation-ranks')) return Promise.resolve([]);
+      if (path.startsWith('/auth/admin/users/acc-uuid-001') && init?.method === 'PATCH') {
+        const status = JSON.parse(String(init.body)).status;
+        statusUpdates.push(status);
+        return Promise.resolve({ id: 'acc-uuid-001', status });
+      }
+      if (path === '/auth/admin/users/acc-uuid-001') return Promise.resolve({ id: 'acc-uuid-001', status: 'ACTIVE' });
+      if (path === '/api/doctors/doc-uuid-001' && init?.method === 'DELETE') {
+        return Promise.reject(new ApiError('Open appointments', 409, 'DOCTOR_HAS_OPEN_APPOINTMENTS'));
+      }
+      if (path === '/api/doctors/doc-uuid-001') return Promise.resolve({ data: mockDoctors[0] });
+      if (path.startsWith('/api/doctors')) return Promise.resolve({ data: mockDoctors });
+      return Promise.resolve({});
+    });
+    render(<AdminDoctorsPage />);
+    await userEvent.click(await screen.findByText(mockDoctors[0].profile.fullName));
+    await userEvent.click(await screen.findByRole('button', { name: /Xóa bác sĩ/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa' }));
+    await waitFor(() => expect(statusUpdates).toEqual(['DISABLED', 'ACTIVE']));
+    expect(await screen.findByText(/Hãy chuyển hoặc hủy các lịch hẹn/i)).toBeInTheDocument();
   });
 
   it('opens create doctor modal when clicking Thêm bác sĩ', async () => {

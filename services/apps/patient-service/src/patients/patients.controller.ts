@@ -14,7 +14,13 @@ import {
   Req,
   Res,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ProfileImageStorage, PROFILE_IMAGE_MAX_BYTES, type ProfileImageFile } from '@platform';
 import type { Response } from 'express';
 import { PatientAuthGuard } from '../auth/patient-auth.guard';
 import type { PatientRequest } from '../common/request-context';
@@ -34,7 +40,42 @@ import { PatientsService } from './patients.service';
 @Controller('patients')
 @UseGuards(PatientAuthGuard)
 export class PatientsController {
-  constructor(private readonly patients: PatientsService) {}
+  constructor(
+    private readonly patients: PatientsService,
+    private readonly images: ProfileImageStorage,
+  ) {}
+
+  private avatarOwner(request: PatientRequest): string {
+    if (request.patientAuth?.role !== 'PATIENT')
+      throw new ForbiddenException('PATIENT_AVATAR_ACCESS_DENIED');
+    return request.patientAuth.userId;
+  }
+
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: PROFILE_IMAGE_MAX_BYTES, files: 1 } }))
+  async uploadAvatar(@UploadedFile() file: ProfileImageFile, @Req() request: PatientRequest) {
+    const owner = this.avatarOwner(request);
+    await this.images.save('patients', owner, file, true);
+    return { data: { uploaded: true } };
+  }
+
+  @Get('me/avatar')
+  async getAvatar(@Req() request: PatientRequest, @Res() response: Response) {
+    const owner = this.avatarOwner(request);
+    const content = await this.images.read(this.images.fixedKey('patients', owner));
+    if (!content) throw new NotFoundException('PATIENT_AVATAR_NOT_FOUND');
+    response.setHeader('Content-Type', 'image/webp');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.send(content);
+  }
+
+  @Delete('me/avatar')
+  async deleteAvatar(@Req() request: PatientRequest) {
+    const owner = this.avatarOwner(request);
+    await this.images.remove(this.images.fixedKey('patients', owner));
+    return { data: { deleted: true } };
+  }
 
   @Put('me')
   async upsert(

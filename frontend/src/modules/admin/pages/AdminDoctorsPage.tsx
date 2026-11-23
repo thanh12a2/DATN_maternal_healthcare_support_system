@@ -38,6 +38,9 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
+import { ApiError } from '../../../services/api';
+import { dataUrlToImage, uploadProfileImage } from '../../../services/profileImages';
+import { DoctorPhotoUpload } from '../components/DoctorPhotoUpload';
 import {
   activateDoctor,
   createDoctor,
@@ -149,6 +152,8 @@ export function AdminDoctorsPage() {
 
   // Feedback modal
   const [feedback, setFeedback] = useState<AdminFeedbackState | null>(null);
+  const [createPhotoDataUrl, setCreatePhotoDataUrl] = useState<string | undefined>();
+  const [editPhotoDataUrl, setEditPhotoDataUrl] = useState<string | null | undefined>();
 
   const [createForm] = Form.useForm<
     Omit<CreateDoctorPayload, 'accountId'> & { email: string; password: string }
@@ -342,6 +347,7 @@ export function AdminDoctorsPage() {
     }
     const resolvedPhoto = getDoctorPhoto(currentDoctor);
     setEditingDoctor(currentDoctor);
+    setEditPhotoDataUrl(undefined);
     const primarySpecialtyId =
       currentDoctor.specialties?.find((s) => s.isPrimary)?.id ??
       currentDoctor.specialties?.[0]?.id;
@@ -361,7 +367,6 @@ export function AdminDoctorsPage() {
         biography: currentDoctor.profile?.biography ?? '',
         practiceStartYear:
           currentDoctor.profile?.practiceStartYear ?? undefined,
-        photoUrl: currentDoctor.profile?.photoUrl ?? '',
       },
     } as any);
     setEditModalOpen(true);
@@ -494,13 +499,25 @@ export function AdminDoctorsPage() {
           : undefined,
       });
 
+      let photoUploadFailed = false;
+      if (createPhotoDataUrl) {
+        try {
+          await uploadProfileImage(request, `/api/doctors/${created.id}/photo`, await dataUrlToImage(createPhotoDataUrl));
+        } catch {
+          photoUploadFailed = true;
+        }
+      }
+
       createForm.resetFields();
+      setCreatePhotoDataUrl(undefined);
       setCreateModalOpen(false);
       setFeedback({
         open: true,
-        type: 'success',
-        title: 'Tạo bác sĩ thành công!',
-        description: `Bác sĩ ${created.profile.fullName} đã được thêm vào hệ thống cùng tài khoản đăng nhập (${values.email}).`,
+        type: photoUploadFailed ? 'error' : 'success',
+        title: photoUploadFailed ? 'Đã tạo bác sĩ, chưa lưu được ảnh' : 'Tạo bác sĩ thành công!',
+        description: photoUploadFailed
+          ? `Hồ sơ ${created.profile.fullName} đã được tạo. Hãy mở chỉnh sửa để tải lại ảnh.`
+          : `Bác sĩ ${created.profile.fullName} đã được thêm vào hệ thống cùng tài khoản đăng nhập (${values.email}).`,
       });
       void loadData();
     } catch (err: unknown) {
@@ -576,8 +593,6 @@ export function AdminDoctorsPage() {
 
     setSubmitting(true);
     try {
-      const finalPhotoUrl = values.profile?.photoUrl?.trim() || null;
-
       const payload: UpdateDoctorPayload = {
         consultationRank:
           values.consultationRank !== editingDoctor.consultationRank
@@ -594,7 +609,6 @@ export function AdminDoctorsPage() {
 
           biography: values.profile?.biography ?? '',
           practiceStartYear: values.profile?.practiceStartYear || undefined,
-          photoUrl: finalPhotoUrl,
         },
       };
 
@@ -628,6 +642,21 @@ export function AdminDoctorsPage() {
         payload,
       );
 
+      let photoUpdateFailed = false;
+      let latestDoctor = updated;
+      if (editPhotoDataUrl !== undefined) {
+        try {
+          if (editPhotoDataUrl === null) {
+            await request(`/api/doctors/${editingDoctor.id}/photo`, { method: 'DELETE' });
+          } else {
+            await uploadProfileImage(request, `/api/doctors/${editingDoctor.id}/photo`, await dataUrlToImage(editPhotoDataUrl));
+          }
+          latestDoctor = await getDoctor(request, editingDoctor.id);
+        } catch {
+          photoUpdateFailed = true;
+        }
+      }
+
       // Cập nhật email nếu có thay đổi và có accountId
       let finalEmail = editingDoctor.email;
       let emailUpdateFailed = false;
@@ -651,29 +680,33 @@ export function AdminDoctorsPage() {
       }
 
       editForm.resetFields();
+      setEditPhotoDataUrl(undefined);
       setEditModalOpen(false);
       setEditingDoctor(null);
       if (selectedDoctor?.id === editingDoctor.id) {
         setSelectedDoctor({
-          ...updated,
+          ...latestDoctor,
           email: finalEmail,
           phoneNumber:
             values.phoneNumber !== undefined
               ? values.phoneNumber
               : selectedDoctor.phoneNumber,
           profile: {
-            ...updated.profile,
-            photoUrl: finalPhotoUrl || updated.profile?.photoUrl,
+            ...latestDoctor.profile,
           },
         });
       }
       setFeedback({
         open: true,
-        type: emailUpdateFailed ? 'error' : 'success',
-        title: emailUpdateFailed
+        type: emailUpdateFailed || photoUpdateFailed ? 'error' : 'success',
+        title: photoUpdateFailed
+          ? 'Hồ sơ đã lưu, ảnh chưa cập nhật'
+          : emailUpdateFailed
           ? 'Hồ sơ đã lưu, email chưa cập nhật'
           : 'Cập nhật thành công!',
-        description: emailUpdateFailed
+        description: photoUpdateFailed
+          ? `Thông tin bác sĩ ${updated.profile?.fullName} đã lưu. Hãy thử tải ảnh lại.`
+          : emailUpdateFailed
           ? `Hồ sơ bác sĩ ${updated.profile?.fullName} đã lưu, nhưng email đăng nhập vẫn là ${editingDoctor.email || 'email cũ'}. Vui lòng thử cập nhật email lại.`
           : `Thông tin bác sĩ ${updated.profile?.fullName} đã được cập nhật thành công.`,
       });
@@ -697,22 +730,27 @@ export function AdminDoctorsPage() {
   const handleConfirmDelete = async () => {
     if (!doctorToDelete) return;
     setDeleting(true);
+    let previousAccountStatus: AdminUser['status'] | undefined;
+    let accountDisabledByThisAction = false;
     try {
       const delEmail =
         doctorToDelete.email || doctorToDelete.profile?.fullName || '';
       if (delEmail) {
         registerDoctorToCache(doctorToDelete.id, delEmail);
       }
-      await deleteDoctor(request, doctorToDelete.id);
       if (doctorToDelete.accountId) {
         try {
-          await deleteAdminUser(request, doctorToDelete.accountId, {
-            suppressAudit: true,
-          });
-        } catch (authErr) {
-          console.warn('Could not delete auth user account directly:', authErr);
+          const account = await getAdminUser(request, doctorToDelete.accountId);
+          previousAccountStatus = account.status;
+          if (account.status !== 'DISABLED') {
+            await updateAdminUser(request, account.id, { status: 'DISABLED' }, { suppressAudit: true });
+            accountDisabledByThisAction = true;
+          }
+        } catch (error) {
+          if (!(error instanceof ApiError && error.statusCode === 404)) throw error;
         }
       }
+      await deleteDoctor(request, doctorToDelete.id, doctorToDelete.version);
       const name = doctorToDelete.profile?.fullName || 'Bác sĩ';
       setDeleteModalOpen(false);
       if (selectedDoctor?.id === doctorToDelete.id) {
@@ -724,16 +762,27 @@ export function AdminDoctorsPage() {
         open: true,
         type: 'success',
         title: 'Xóa bác sĩ thành công!',
-        description: `Hồ sơ bác sĩ ${name} và tài khoản đăng nhập đã được xóa hoàn toàn khỏi hệ thống.`,
+        description: `Bác sĩ ${name} đã được ẩn khỏi danh sách và ngừng hoạt động. Tài khoản đăng nhập đã bị vô hiệu hóa; lịch sử khám vẫn được lưu.`,
       });
       void loadData();
     } catch (err: unknown) {
+      let rollbackFailed = false;
+      if (accountDisabledByThisAction && previousAccountStatus && doctorToDelete.accountId) {
+        try {
+          await updateAdminUser(request, doctorToDelete.accountId, { status: previousAccountStatus }, { suppressAudit: true });
+        } catch {
+          rollbackFailed = true;
+        }
+      }
       setFeedback({
         open: true,
         type: 'error',
         title: 'Xóa bác sĩ thất bại!',
-        description:
-          err instanceof Error ? err.message : 'Không thể xóa hồ sơ bác sĩ.',
+        description: rollbackFailed
+          ? 'Không thể xóa bác sĩ và không thể khôi phục trạng thái tài khoản. Hãy kiểm tra tài khoản trong Quản lý người dùng.'
+          : err instanceof ApiError && err.code === 'DOCTOR_HAS_OPEN_APPOINTMENTS'
+            ? 'Bác sĩ còn lịch hẹn chưa hoàn tất. Hãy chuyển hoặc hủy các lịch hẹn trước khi xóa.'
+            : err instanceof Error ? err.message : 'Không thể xóa hồ sơ bác sĩ.',
       });
     } finally {
       setDeleting(false);
@@ -991,12 +1040,11 @@ export function AdminDoctorsPage() {
                 onClick={() => void openEditModal(record)}
               />
             </Tooltip>
-            <Tooltip title="API chưa hỗ trợ xóa bác sĩ; hãy tạm khóa tài khoản và hồ sơ">
+            <Tooltip title="Xóa bác sĩ">
               <Button
                 type="text"
                 danger
                 icon={<DeleteOutlined />}
-                disabled
                 onClick={() => openDeleteModal(record)}
               />
             </Tooltip>
@@ -1342,15 +1390,13 @@ export function AdminDoctorsPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                disabled
-                title="API chưa hỗ trợ xóa bác sĩ; hãy tạm khóa tài khoản và hồ sơ"
                 onClick={() => {
                   const d = selectedDoctor;
                   setDetailDrawerOpen(false);
                   openDeleteModal(d);
                 }}
               >
-                Xóa bác sĩ (chưa hỗ trợ)
+                Xóa bác sĩ
               </Button>
             </div>
           </div>
@@ -1361,7 +1407,7 @@ export function AdminDoctorsPage() {
       <Modal
         title="Thêm bác sĩ mới"
         open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
+        onCancel={() => { setCreatePhotoDataUrl(undefined); setCreateModalOpen(false); }}
         footer={null}
         destroyOnClose
         centered
@@ -1376,6 +1422,11 @@ export function AdminDoctorsPage() {
           }}
           style={{ marginTop: 16 }}
         >
+          <DoctorPhotoUpload
+            value={createPhotoDataUrl}
+            onChange={setCreatePhotoDataUrl}
+            doctorName={createForm.getFieldValue(['profile', 'fullName'])}
+          />
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
           >
@@ -1485,7 +1536,7 @@ export function AdminDoctorsPage() {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setCreateModalOpen(false)}>Hủy</Button>
+              <Button onClick={() => { setCreatePhotoDataUrl(undefined); setCreateModalOpen(false); }}>Hủy</Button>
               <Button type="primary" htmlType="submit" loading={submitting}>
                 Tạo bác sĩ
               </Button>
@@ -1499,6 +1550,7 @@ export function AdminDoctorsPage() {
         title={`Chỉnh sửa hồ sơ: ${editingDoctor?.profile?.fullName ?? ''}`}
         open={editModalOpen}
         onCancel={() => {
+          setEditPhotoDataUrl(undefined);
           setEditModalOpen(false);
           setEditingDoctor(null);
         }}
@@ -1513,13 +1565,11 @@ export function AdminDoctorsPage() {
           onFinish={handleEdit}
           style={{ marginTop: 16 }}
         >
-          <Form.Item
-            name={['profile', 'photoUrl']}
-            label="Ảnh đại diện (URL HTTPS)"
-            rules={[{ pattern: /^https:\/\//i, message: 'Chỉ hỗ trợ URL HTTPS' }]}
-          >
-            <Input placeholder="https://example.com/doctor.jpg" allowClear />
-          </Form.Item>
+          <DoctorPhotoUpload
+            value={editPhotoDataUrl === undefined ? editingDoctor?.profile?.photoUrl ?? undefined : editPhotoDataUrl ?? undefined}
+            onChange={(value) => setEditPhotoDataUrl(value ?? null)}
+            doctorName={editingDoctor?.profile?.fullName}
+          />
 
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
@@ -1610,6 +1660,7 @@ export function AdminDoctorsPage() {
             <Space>
               <Button
                 onClick={() => {
+                  setEditPhotoDataUrl(undefined);
                   setEditModalOpen(false);
                   setEditingDoctor(null);
                 }}
@@ -1677,8 +1728,9 @@ export function AdminDoctorsPage() {
               fontWeight: 500,
             }}
           >
-            ⚠️ Thao tác này sẽ xóa vĩnh viễn hồ sơ bác sĩ và tài khoản người
-            dùng đăng nhập trong Quản lý người dùng.
+            Bác sĩ sẽ được ẩn khỏi danh sách và ngừng hoạt động. Tài khoản đăng nhập
+            sẽ bị vô hiệu hóa; lịch sử khám vẫn được lưu. Cần xử lý các lịch hẹn chưa
+            hoàn tất trước khi xóa.
           </p>
         </div>
       </Modal>

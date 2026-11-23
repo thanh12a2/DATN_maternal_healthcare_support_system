@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import {
   CameraOutlined,
   CheckCircleOutlined,
@@ -17,6 +17,8 @@ import {
   type MyDoctor,
 } from '../../../services/doctor';
 import { getDoctorOccupancy } from '../../../services/appointment';
+import { dataUrlToImage, uploadProfileImage } from '../../../services/profileImages';
+import { DoctorPhotoUpload } from '../../admin/components/DoctorPhotoUpload';
 import '../../../styles/doctor-profile.css';
 
 const localDate = () => {
@@ -121,19 +123,12 @@ export function DoctorProfileSchedule({
   const [biography, setBiography] = useState('');
   const [languages, setLanguages] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [pendingPhoto, setPendingPhoto] = useState<string | null | undefined>();
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackError, setFeedbackError] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-
-  const prevPhotoRef = useRef(photoUrl);
-  useEffect(() => {
-    if (prevPhotoRef.current !== photoUrl) {
-      setImageFailed(false);
-      prevPhotoRef.current = photoUrl;
-    }
-  }, [photoUrl]);
 
   useEffect(() => {
     let active = true;
@@ -164,6 +159,7 @@ export function DoctorProfileSchedule({
       setBiography(profile.profile?.biography ?? '');
       setLanguages((profile.profile?.languages ?? []).join(', '));
       setPhotoUrl(profile.profile?.photoUrl ?? '');
+      setImageFailed(false);
       setIntervals(
         availability ? splitOccupancy(availability.intervals, occupancy) : [],
       );
@@ -199,20 +195,6 @@ export function DoctorProfileSchedule({
       );
       return;
     }
-    if (!photoUrl.trim() && doctor.profile?.photoUrl) {
-      setFeedbackError(true);
-      setFeedback('Để xóa ảnh hiện tại, vui lòng liên hệ quản trị viên.');
-      return;
-    }
-    if (photoUrl.trim()) {
-      try {
-        if (new URL(photoUrl.trim()).protocol !== 'https:') throw new Error();
-      } catch {
-        setFeedbackError(true);
-        setFeedback('Vui lòng nhập đường dẫn ảnh HTTPS hợp lệ.');
-        return;
-      }
-    }
     setSaving(true);
     setFeedback('');
     setFeedbackError(false);
@@ -220,15 +202,30 @@ export function DoctorProfileSchedule({
       const body = {
         biography,
         languages: normalizedLanguages,
-        ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
       };
       const updated = await updateMyDoctor(request, doctor, body);
-      setDoctor(updated);
-      setPhotoUrl(updated.profile?.photoUrl ?? '');
+      let photoFailed = false;
+      if (pendingPhoto !== undefined) {
+        try {
+          if (pendingPhoto === null) {
+            await request(`/api/doctors/${doctor.id}/photo`, { method: 'DELETE' });
+          } else {
+            await uploadProfileImage(request, `/api/doctors/${doctor.id}/photo`, await dataUrlToImage(pendingPhoto));
+          }
+        } catch {
+          photoFailed = true;
+        }
+      }
+      const refreshed = pendingPhoto !== undefined && !photoFailed ? await getMyDoctor(request) : updated;
+      setDoctor(refreshed);
+      setPhotoUrl(refreshed.profile?.photoUrl ?? '');
+      setImageFailed(false);
       setBiography(updated.profile?.biography ?? '');
       setLanguages((updated.profile?.languages ?? []).join(', '));
       setEditingPhoto(false);
-      setFeedback('Đã lưu thông tin hồ sơ.');
+      setPendingPhoto(undefined);
+      setFeedbackError(photoFailed);
+      setFeedback(photoFailed ? 'Hồ sơ đã lưu, nhưng ảnh chưa cập nhật. Vui lòng thử lại.' : 'Đã lưu thông tin hồ sơ.');
     } catch (e) {
       setFeedbackError(true);
       setFeedback(e instanceof Error ? e.message : 'Không thể lưu hồ sơ.');
@@ -494,23 +491,11 @@ export function DoctorProfileSchedule({
             </label>
             {editingPhoto && (
               <div className="doctor-account-photo-editor">
-                <label className="doctor-account-field">
-                  <span>
-                    <CameraOutlined /> Ảnh đại diện
-                  </span>
-                  <input
-                    aria-label="Ảnh đại diện"
-                    type="url"
-                    maxLength={2048}
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                  <small>
-                    Nhập đường dẫn ảnh HTTPS để xem trước. Lưu thay đổi để cập
-                    nhật hồ sơ.
-                  </small>
-                </label>
+                <DoctorPhotoUpload
+                  value={pendingPhoto === undefined ? photoUrl : pendingPhoto ?? undefined}
+                  onChange={(value) => setPendingPhoto(value ?? null)}
+                  doctorName={doctor.profile?.fullName}
+                />
                 {imageFailed && photoUrl && (
                   <p className="doctor-account-photo-error">
                     Không thể tải ảnh từ đường dẫn này. Vui lòng kiểm tra lại.
@@ -520,7 +505,7 @@ export function DoctorProfileSchedule({
                   type="button"
                   className="doctor-account-link"
                   onClick={() => {
-                    setPhotoUrl(doctor.profile?.photoUrl ?? '');
+                    setPendingPhoto(undefined);
                     setEditingPhoto(false);
                   }}
                 >
@@ -532,8 +517,7 @@ export function DoctorProfileSchedule({
               <ClockCircleOutlined />
               <span>
                 Tên, chức danh, chứng chỉ và chuyên khoa do quản trị viên hoặc
-                người quản lý cập nhật. Để xóa ảnh hiện tại, vui lòng liên hệ
-                quản trị viên.
+                người quản lý cập nhật. Ảnh đại diện được lưu trên server.
               </span>
             </div>
             {feedback && (

@@ -44,6 +44,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/proto ./proto
+COPY --from=builder /app/assets ./assets
 
 ARG APP_NAME=auth-service
 ENV APP_NAME=$APP_NAME

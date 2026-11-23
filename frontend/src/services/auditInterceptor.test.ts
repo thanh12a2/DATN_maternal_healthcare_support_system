@@ -14,4 +14,10 @@ describe('admin audit details', () => {
     expect(details.aggregateId).toBe('doctor-id');
     expect(JSON.stringify(details.metadata)).not.toContain('secret-value');
   });
+
+  it('labels photo uploads as photo changes on the doctor record', () => {
+    const details = deriveAuditDetails('POST', '/api/doctors/doctor-id/photo', null, { data: { version: 2 } });
+    expect(details.action).toBe('DOCTOR_PHOTO_UPLOADED');
+    expect(details.aggregateId).toBe('doctor-id');
+  });
 });

@@ -13,7 +13,13 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
+  Res,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { PROFILE_IMAGE_MAX_BYTES, type ProfileImageFile } from '@platform';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
@@ -36,10 +42,14 @@ import {
   UpdateScheduleDto,
 } from '../common/dto';
 import { DoctorDomainService } from './doctor.service';
+import { DoctorPhotoService } from './doctor-photo.service';
 
 @Controller('doctors')
 export class DoctorController {
-  constructor(private readonly service: DoctorDomainService) {}
+  constructor(
+    private readonly service: DoctorDomainService,
+    private readonly photos: DoctorPhotoService,
+  ) {}
   private identity(req: AuthenticatedRequest) {
     if (!req.identity) throw new Error('Missing identity');
     return req.identity;
@@ -141,6 +151,46 @@ export class DoctorController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.service.getDoctor(id, req.identity);
+  }
+  @Post(':doctorId/photo')
+  @Roles('ADMIN', 'CLINIC_MANAGER', 'DOCTOR')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: PROFILE_IMAGE_MAX_BYTES, files: 1 } }))
+  uploadPhoto(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @UploadedFile() file: ProfileImageFile,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.photos.upload(id, this.identity(req), file, req.requestId);
+  }
+  @Public()
+  @Get(':doctorId/photo')
+  async getPhoto(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Res() response: Response,
+  ) {
+    const content = await this.photos.content(id);
+    response.setHeader('Content-Type', 'image/webp');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Cache-Control', 'public, no-store');
+    response.send(content);
+  }
+  @Delete(':doctorId/photo')
+  @Roles('ADMIN', 'CLINIC_MANAGER', 'DOCTOR')
+  deletePhoto(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.photos.delete(id, this.identity(req), req.requestId);
+  }
+  @Delete(':doctorId')
+  @Roles('ADMIN')
+  remove(
+    @Param('doctorId', ParseUUIDPipe) id: string,
+    @Headers('if-match') match: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.deleteDoctor(id, this.identity(req), this.version(match), authorization, req.requestId);
   }
   @Patch(':doctorId')
   update(

@@ -42,11 +42,13 @@ export class ReportingService implements OnModuleInit {
         )
           return;
         const occurredAt = new Date(event.occurredAt);
+        // Report dates follow the clinic's Asia/Ho_Chi_Minh business day (UTC+7).
+        const clinicTime = new Date(occurredAt.getTime() + 7 * 60 * 60 * 1000);
         const businessDate = new Date(
           Date.UTC(
-            occurredAt.getUTCFullYear(),
-            occurredAt.getUTCMonth(),
-            occurredAt.getUTCDate(),
+            clinicTime.getUTCFullYear(),
+            clinicTime.getUTCMonth(),
+            clinicTime.getUTCDate(),
           ),
         );
 
@@ -110,21 +112,19 @@ export class ReportingService implements OnModuleInit {
               event.eventType === 'billing.payment.recorded.v1'
             ) {
               const payloadData = (event.data ?? {}) as Record<string, any>;
-              const amount = Number(
-                payloadData.amountMinor ??
-                  payloadData.totalMinor ??
-                  payloadData.amount ??
-                  350000,
-              );
-              await upsertMetric(
-                'REVENUE_DAILY',
-                'ALL',
-                { paymentMethod: 'ALL' },
-                (m) => {
-                  m.collected = Number(m.collected ?? 0) + amount;
-                  m.transactions = Number(m.transactions ?? 0) + 1;
-                },
-              );
+              const rawAmount = payloadData.amountMinor ?? payloadData.totalMinor ?? payloadData.amount;
+              const amount = Number(rawAmount);
+              if (rawAmount !== undefined && rawAmount !== null && rawAmount !== '' && Number.isSafeInteger(amount) && amount >= 0) {
+                await upsertMetric(
+                  'REVENUE_DAILY',
+                  'ALL',
+                  { paymentMethod: 'ALL' },
+                  (m) => {
+                    m.collected = Number(m.collected ?? 0) + amount;
+                    m.transactions = Number(m.transactions ?? 0) + 1;
+                  },
+                );
+              }
             }
           }
 

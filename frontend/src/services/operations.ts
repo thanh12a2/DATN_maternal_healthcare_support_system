@@ -227,6 +227,11 @@ export function getAppointmentReport(request: Requester, query = '') {
 export function getRevenueReport(request: Requester, query = '') {
   return request<Report>(`/api/reports/revenue${query ? `?${query}` : ''}`);
 }
+export function getOverviewPdf(request: Requester, query: string) {
+  return request<Blob>(`/api/reports/overview.pdf?${query}`, {
+    headers: { Accept: 'application/pdf' },
+  });
+}
 
 export async function listConsultations(request: Requester, query = '') {
   return list<Consultation>(

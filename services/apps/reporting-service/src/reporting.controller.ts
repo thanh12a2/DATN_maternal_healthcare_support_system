@@ -1,5 +1,6 @@
 import {
   Controller,
+  BadRequestException,
   ForbiddenException,
   Get,
   Param,
@@ -18,10 +19,11 @@ import {
   ServiceScopes,
 } from '@platform';
 import { ReportingService } from './reporting.service';
+import { ReportingPdfService } from './reporting-pdf.service';
 
 @Controller()
 export class ReportingController {
-  constructor(private readonly s: ReportingService) {}
+  constructor(private readonly s: ReportingService, private readonly pdf: ReportingPdfService) {}
 
   @PublicHttp()
   @Get('health')
@@ -55,6 +57,30 @@ export class ReportingController {
     const toDate = query?.toDate || new Date().toISOString().slice(0, 10);
     const result = await this.s.overview({ period: { fromDate, toDate } });
     return { data: result, ...result };
+  }
+
+  @UseGuards(PublicJwtGuard)
+  @Get(['reports/overview.pdf', 'overview.pdf'])
+  async overviewPdfRest(
+    @Query() query: { fromDate?: string; toDate?: string },
+    @Res() res: Response,
+    @CurrentAuth() auth: PublicAuthContext,
+  ) {
+    this.requireClinicManager(auth);
+    const fromDate = query?.fromDate;
+    const toDate = query?.toDate;
+    const validDate = (value: string | undefined) =>
+      !!value && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`)) &&
+      new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+    if (!validDate(fromDate) || !validDate(toDate) || fromDate! > toDate!) {
+      throw new BadRequestException('Invalid reporting date range');
+    }
+    const file = await this.pdf.overview(fromDate!, toDate!);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="bao-cao-van-hanh-${fromDate}-${toDate}.pdf"`);
+    res.setHeader('Content-Length', file.length);
+    return res.send(file);
   }
 
   @UseGuards(PublicJwtGuard)

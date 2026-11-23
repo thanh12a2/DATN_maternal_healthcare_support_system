@@ -1,7 +1,7 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../database/prisma.service';
-import { GrpcClientFactory } from '@platform';
+import { GrpcClientFactory, ProfileImageStorage } from '@platform';
 import { ConfigService } from '@nestjs/config';
 import {
   AvailabilityStatus,
@@ -53,6 +53,7 @@ export class DoctorDomainService {
     private readonly prisma: PrismaService,
     private readonly grpc: GrpcClientFactory,
     private readonly config: ConfigService,
+    private readonly images: ProfileImageStorage,
   ) {}
 
   async health() {
@@ -280,6 +281,7 @@ export class DoctorDomainService {
         ? { status: query.status }
         : {}
       : { status: DoctorStatus.ACTIVE };
+    where.deletedAt = null;
     if (query.specialtyId)
       where.specialties = {
         some: {
@@ -313,7 +315,7 @@ export class DoctorDomainService {
 
   async findDoctorIdByAccount(accountId: string) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { accountId },
+      where: { accountId, deletedAt: null },
       select: { id: true },
     });
     return doctor?.id ?? null;
@@ -336,7 +338,7 @@ export class DoctorDomainService {
       where: { id },
       include: FULL_INCLUDE,
     });
-    if (!doctor) this.notFound();
+    if (!doctor || doctor.deletedAt) this.notFound();
     const own = actor?.userId === doctor.accountId;
     if (
       doctor.status !== DoctorStatus.ACTIVE &&
@@ -366,7 +368,7 @@ export class DoctorDomainService {
       where: { id },
       include: { profile: true },
     });
-    if (!doctor) this.notFound();
+    if (!doctor || doctor.deletedAt) this.notFound();
     const admin = actor.role === 'ADMIN';
     const manager = actor.role === 'CLINIC_MANAGER';
     if (!admin && !manager && actor.userId !== doctor.accountId)
@@ -440,7 +442,10 @@ export class DoctorDomainService {
       if (changed.count !== 1) this.fail(409, 'VERSION_CONFLICT');
       await tx.doctorProfile.update({
         where: { doctorId: id },
-        data: this.profilePatch(dto),
+        data: {
+          ...this.profilePatch(dto),
+          ...(dto.photoUrl !== undefined ? { photoStorageKey: null } : {}),
+        },
       });
       if (dto.specialtyId) {
         await tx.doctorSpecialty.updateMany({
@@ -479,6 +484,94 @@ export class DoctorDomainService {
     };
   }
 
+  async deleteDoctor(
+    id: string,
+    actor: Identity,
+    version: number,
+    authorization: string | undefined,
+    requestId?: string,
+  ) {
+    this.requireAdmin(actor);
+    if (!Number.isInteger(version)) this.fail(400, 'VALIDATION_FAILED');
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id }, include: { profile: true },
+    });
+    if (!doctor || doctor.deletedAt) this.notFound();
+    if (doctor.version !== version) this.fail(409, 'VERSION_CONFLICT');
+    if (!authorization?.startsWith('Bearer ')) this.fail(401, 'UNAUTHORIZED');
+
+    await this.assertAccountDisabled(doctor.accountId);
+    await this.assertNoOpenAppointments(id, authorization);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const changed = await tx.doctor.updateMany({
+        where: { id, version, deletedAt: null },
+        data: { deletedAt: new Date(), status: DoctorStatus.INACTIVE, version: { increment: 1 } },
+      });
+      if (changed.count !== 1) this.fail(409, 'VERSION_CONFLICT');
+      await tx.doctorSchedule.updateMany({
+        where: { doctorId: id, status: ScheduleStatus.ACTIVE },
+        data: { status: ScheduleStatus.CANCELLED, version: { increment: 1 } },
+      });
+      await tx.doctorAvailability.updateMany({
+        where: { doctorId: id, status: AvailabilityStatus.ACTIVE },
+        data: { status: AvailabilityStatus.CANCELLED, version: { increment: 1 } },
+      });
+      await tx.doctorProfile.update({
+        where: { doctorId: id }, data: { photoUrl: null, photoStorageKey: null },
+      });
+      await this.auditOutbox(tx, 'doctor.deleted', actor.userId, id, version + 1, requestId,
+        { historyRetained: true });
+      return { id, version: version + 1, deleted: true };
+    });
+    await this.images.remove(doctor.profile?.photoStorageKey);
+    return { data: result };
+  }
+
+  private async assertAccountDisabled(accountId: string) {
+    try {
+      const client = this.grpc.client({
+        key: 'auth',
+        target: this.config.get<string>('AUTH_GRPC_TARGET') ?? 'auth-service:6003',
+        proto: 'auth/v1/auth_internal.proto',
+        package: 'maternal.auth.v1',
+        service: 'AuthInternalService',
+      });
+      const context = { requestId: randomUUID(), correlationId: randomUUID(), actorRole: 'ADMIN' };
+      const response = await this.grpc.unary<any, any>(client, 'getAccountAuthorization',
+        { context, accountId },
+        this.grpc.metadata('auth-service', ['auth:account:read'], context), 1500);
+      if (response.account?.status !== 'ACCOUNT_STATUS_DISABLED')
+        this.fail(409, 'DOCTOR_ACCOUNT_MUST_BE_DISABLED');
+    } catch (error: any) {
+      if (error instanceof HttpException) throw error;
+      // An account deleted earlier cannot sign in; keep the doctor archive operation available.
+      if (error?.code === 5) return;
+      this.fail(503, 'AUTH_DEPENDENCY_UNAVAILABLE');
+    }
+  }
+
+  private async assertNoOpenAppointments(doctorId: string, authorization: string) {
+    const statuses = ['BOOKED', 'REASSIGNMENT_REQUIRED', 'CHECKED_IN', 'IN_CLINICAL_CARE'];
+    const base = this.config.get<string>('APPOINTMENT_HTTP_BASE_URL') || 'http://appointment-service:5008';
+    let open: boolean[];
+    try {
+      open = await Promise.all(statuses.map(async (status) => {
+        const query = new URLSearchParams({ doctorId, status, limit: '1' });
+        const response = await fetch(`${base.replace(/\/$/, '')}/appointments?${query}`, {
+          headers: { Authorization: authorization }, signal: AbortSignal.timeout(4000),
+        });
+        if (!response.ok) throw new Error(`APPOINTMENT_HTTP_${response.status}`);
+        const payload = await response.json() as { items?: unknown[] };
+        if (!Array.isArray(payload.items)) throw new Error('INVALID_APPOINTMENT_RESPONSE');
+        return payload.items.length > 0;
+      }));
+    } catch {
+      this.fail(503, 'APPOINTMENT_DEPENDENCY_UNAVAILABLE');
+    }
+    if (open.some(Boolean)) this.fail(409, 'DOCTOR_HAS_OPEN_APPOINTMENTS');
+  }
+
   async changeStatus(
     id: string,
     activate: boolean,
@@ -498,7 +591,7 @@ export class DoctorDomainService {
       where: { id },
       include: { profile: true, specialties: { include: { specialty: true } } },
     });
-    if (!doctor) this.notFound();
+    if (!doctor || doctor.deletedAt) this.notFound();
     const target = activate ? DoctorStatus.ACTIVE : DoctorStatus.INACTIVE;
     if (doctor.status === target)
       return { data: { id, status: target, version: doctor.version } };
@@ -1604,7 +1697,15 @@ export class DoctorDomainService {
       roomCode: primaryRoom?.code ?? null,
       roomName: primaryRoom?.name ?? null,
       room: this.formatRoom(primaryRoom),
-      profile: x.profile,
+      profile: x.profile
+        ? {
+            ...x.profile,
+            photoStorageKey: undefined,
+            photoUrl: x.profile.photoStorageKey
+              ? `${(this.config.get<string>('PUBLIC_API_BASE_URL') || 'http://localhost:8080').replace(/\/$/, '')}/api/doctors/${x.id}/photo`
+              : x.profile.photoUrl,
+          }
+        : null,
       specialties:
         x.specialties
           ?.filter(

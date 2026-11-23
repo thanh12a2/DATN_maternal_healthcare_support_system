@@ -297,3 +297,17 @@ Trên Windows có thể chạy trực tiếp các lệnh PowerShell/Docker ở t
 - [Tài liệu tích hợp](docs/integration/)
 
 Các file `docs/first-run.md` và `docs/setup-all-environment.md` không còn chứa command setup riêng; hãy quay lại README này để tránh chạy theo hướng dẫn đã lỗi thời.
+
+## 11. Ảnh đại diện bác sĩ, bệnh nhân và lễ tân
+
+Ba cổng gửi ảnh JPG, PNG hoặc WebP tối đa 5 MB lên API. Server kiểm tra nội dung ảnh, xoay theo EXIF, chuyển thành WebP 512 × 512 và lưu vào Docker volume `profile-image-data`. Ảnh bệnh nhân và lễ tân chỉ đọc được bằng tài khoản của chính họ; ảnh bác sĩ có URL công khai để hiển thị trong danh mục. Ảnh bệnh nhân từng lưu trong trình duyệt vẫn hiển thị trên máy cũ cho đến khi người dùng chọn lại ảnh để đưa lên server.
+
+Với chế độ chạy service trực tiếp trên máy, thư mục mặc định trong `.env.example` là `./data/profile-images` tính từ thư mục `services`. Khi triển khai nhiều máy, đặt `PROFILE_IMAGE_STORAGE_BACKEND=s3` và cấu hình bucket, endpoint cùng thông tin truy cập trong `.env`; bucket cần được tạo trước. `PUBLIC_API_BASE_URL` phải trỏ đến địa chỉ gateway mà trình duyệt truy cập được.
+
+Kiểm tra API trên một stack local có thể xóa dữ liệu QA tạm:
+
+```powershell
+$env:QA_PROFILE_IMAGE_SMOKE='1'
+$env:QA_ADMIN_PASSWORD='<mật khẩu admin local>'
+node services/scripts/profile-image-smoke.cjs
+```

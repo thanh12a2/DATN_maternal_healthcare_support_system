@@ -94,6 +94,7 @@ model Doctor {
   consultationRank DoctorConsultationRank @default(BASIC) @map("consultation_rank")
   status           DoctorStatus           @default(DRAFT)
   version          Int                    @default(1)
+  deletedAt        DateTime?              @map("deleted_at") @db.Timestamptz(6)
   createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   profile          DoctorProfile?
@@ -106,6 +107,7 @@ model Doctor {
   outboxEvents     OutboxEvent[]
 
   @@index([status, consultationRank], map: "doctors_status_consultation_rank_idx")
+  @@index([deletedAt, status], map: "doctors_deleted_at_status_idx")
   @@map("doctors")
 }
 
@@ -117,6 +119,7 @@ model DoctorProfile {
   practiceStartYear Int?     @map("practice_start_year")
   languages         String[] @default([])
   photoUrl          String?  @map("photo_url") @db.VarChar(2048)
+  photoStorageKey   String?  @map("photo_storage_key") @db.VarChar(500)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor            Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)

@@ -4,6 +4,7 @@ import { PlatformModule, RabbitMqModule } from '@platform';
 import { DatabaseModule } from './database/database.module';
 import { ReportingController } from './reporting.controller';
 import { ReportingService } from './reporting.service';
+import { ReportingPdfService } from './reporting-pdf.service';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -12,6 +13,6 @@ import { ReportingService } from './reporting.service';
     DatabaseModule,
   ],
   controllers: [ReportingController],
-  providers: [ReportingService],
+  providers: [ReportingService, ReportingPdfService],
 })
 export class ReportingServiceModule {}

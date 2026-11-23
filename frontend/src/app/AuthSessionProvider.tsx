@@ -63,9 +63,13 @@ function readStoredSession(): StoredSession | null {
   return null;
 }
 
-function persist(session: StoredSession | null) {
+function sessionKeyForRole(role: string): string {
+  return window.location.port === '3001' || role === 'ADMIN'
+    ? 'an-tam-admin-session' : 'an-tam-auth-session';
+}
+
+function persist(session: StoredSession | null, key: string) {
   if (typeof window === 'undefined') return;
-  const key = getSessionStorageKey();
   window.localStorage.removeItem(key);
   window.sessionStorage.removeItem(key);
   if (!session) return;
@@ -83,17 +87,25 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     session ? 'loading' : 'anonymous',
   );
   const sessionRef = useRef(session);
+  const sessionKeyRef = useRef(getSessionStorageKey());
   const refreshRef = useRef<Promise<StoredSession> | null>(null);
 
   const commit = useCallback((next: StoredSession | null) => {
-    const previousUserId = sessionRef.current?.user.userId;
+    const previous = sessionRef.current;
+    const previousUserId = previous?.user.userId;
     if (previousUserId && previousUserId !== next?.user.userId) {
       try { sessionStorage.removeItem(`an-tam-chat:${previousUserId}`); } catch { /* storage unavailable */ }
+    }
+    const nextKey = next ? sessionKeyForRole(next.user.role) : sessionKeyRef.current;
+    if (next && previous?.user.userId === next.user.userId && nextKey !== sessionKeyRef.current) {
+      window.localStorage.removeItem(sessionKeyRef.current);
+      window.sessionStorage.removeItem(sessionKeyRef.current);
     }
     sessionRef.current = next;
     setSession(next);
     setStatus(next ? 'authenticated' : 'anonymous');
-    persist(next);
+    persist(next, nextKey);
+    sessionKeyRef.current = nextKey;
   }, []);
 
   const renew = useCallback(async () => {

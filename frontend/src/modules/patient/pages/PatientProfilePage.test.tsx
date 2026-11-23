@@ -23,6 +23,13 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+function stubProfileFetch(fetchMock: (url: string, init?: RequestInit) => Promise<Response>) {
+  vi.stubGlobal('fetch', (url: string, init?: RequestInit) =>
+    url.endsWith('/api/patients/me/avatar')
+      ? Promise.resolve(jsonResponse({ message: 'PATIENT_AVATAR_NOT_FOUND' }, 404))
+      : fetchMock(url, init),
+  );
+}
 const profile = (contacts: unknown[] = []) => ({
   id: 'p1',
   fullName: 'Nguyễn Thị A',
@@ -57,7 +64,7 @@ describe('PatientProfilePage API flow', () => {
         ),
       )
       .mockResolvedValueOnce(jsonResponse({ data: saved }, 201));
-    vi.stubGlobal('fetch', fetchMock);
+    stubProfileFetch(fetchMock);
     render(<AppRouter />);
     expect(
       await screen.findByRole('heading', {
@@ -107,7 +114,7 @@ describe('PatientProfilePage API flow', () => {
       .mockResolvedValueOnce(jsonResponse({ user: session.user }))
       .mockResolvedValueOnce(jsonResponse({ data: profile([]) }))
       .mockResolvedValueOnce(jsonResponse({ data: savedContact }, 201));
-    vi.stubGlobal('fetch', fetchMock);
+    stubProfileFetch(fetchMock);
     render(<AppRouter />);
     const user = userEvent.setup();
     await user.click(
@@ -145,7 +152,7 @@ describe('PatientProfilePage API flow', () => {
       .fn()
       .mockResolvedValueOnce(jsonResponse({ user: session.user }))
       .mockResolvedValueOnce(jsonResponse({ data: profile([contact]) }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubProfileFetch(fetchMock);
     const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<AppRouter />);
     const user = userEvent.setup();
@@ -183,7 +190,7 @@ describe('PatientProfilePage API flow', () => {
       .mockResolvedValueOnce(jsonResponse({ user: session.user }))
       .mockResolvedValueOnce(jsonResponse({ data: profile([first, second]) }))
       .mockResolvedValueOnce(jsonResponse({ data: reordered }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubProfileFetch(fetchMock);
     render(<AppRouter />);
     const user = userEvent.setup();
     await user.click(
@@ -208,8 +215,7 @@ describe('PatientProfilePage API flow', () => {
 
 describe('Patient profile form completeness & no-draft behavior', () => {
   it('disables save button when form is incomplete and does not restore unfinished drafts', async () => {
-    vi.stubGlobal(
-      'fetch',
+    stubProfileFetch(
       vi
         .fn()
         .mockResolvedValueOnce(jsonResponse({ user: session.user }))

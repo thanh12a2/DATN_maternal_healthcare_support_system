@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { AppRouter } from './AppRouter';
+import { navigate } from './navigation';
 
 const patientSession = {
   accessToken: 'access',
@@ -21,6 +22,15 @@ const receptionistSession = {
     email: 'demo.receptionist@antam.local',
     role: 'RECEPTIONIST',
   },
+  remember: true,
+};
+
+const adminSession = {
+  accessToken: 'access_admin',
+  refreshToken: 'refresh_admin',
+  tokenType: 'Bearer',
+  expiresIn: 900,
+  user: { userId: 'a1', email: 'admin@example.com', role: 'ADMIN' },
   remember: true,
 };
 
@@ -55,6 +65,29 @@ describe('AppRouter patient flow', () => {
     window.history.replaceState({}, '', '/tong-quan');
     render(<AppRouter />);
     await waitFor(() => expect(window.location.pathname).toBe('/'));
+  });
+});
+
+describe('AppRouter login routes', () => {
+  it('keeps both login paths available during an authenticated admin session', async () => {
+    window.localStorage.setItem('an-tam-admin-session', JSON.stringify(adminSession));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ user: adminSession.user }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )));
+    window.history.replaceState({}, '', '/admin/login');
+    render(<AppRouter />);
+
+    expect(await screen.findByTestId('admin-login-view')).toBeTruthy();
+    expect(window.location.pathname).toBe('/admin/login');
+
+    act(() => navigate('/dang-nhap'));
+    expect(await screen.findByTestId('login-view')).toBeTruthy();
+    expect(window.location.pathname).toBe('/dang-nhap');
+
+    act(() => navigate('/login'));
+    expect(await screen.findByTestId('login-view')).toBeTruthy();
+    expect(window.location.pathname).toBe('/login');
   });
 });
 

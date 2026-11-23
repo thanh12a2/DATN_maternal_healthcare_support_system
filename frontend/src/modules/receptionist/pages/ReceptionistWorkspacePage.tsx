@@ -3,6 +3,7 @@ import {
   LogoutOutlined,
   ReloadOutlined,
   UserAddOutlined,
+  CameraOutlined,
 } from '@ant-design/icons';
 import {
   Alert,
@@ -14,6 +15,7 @@ import {
   Dropdown,
   Select,
   Skeleton,
+  Modal,
 } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import dayjs from 'dayjs';
@@ -61,6 +63,8 @@ import { SearchResults } from '../components/SearchResults';
 import { StatsStrip } from '../components/StatsStrip';
 import { WalkInModal } from '../components/WalkInModal';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
+import { DoctorPhotoUpload } from '../../admin/components/DoctorPhotoUpload';
+import { dataUrlToImage, loadPrivateAvatar, uploadProfileImage } from '../../../services/profileImages';
 import { ReceptionWorkBell } from '../components/ReceptionWorkBell';
 import { useReceptionRealtime } from '../hooks/useReceptionRealtime';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
@@ -130,6 +134,40 @@ function Desk() {
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [walkInOpen, setWalkInOpen] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void loadPrivateAvatar(auth.stream, '/api/receptionists/me/avatar').then((url) => {
+      if (active) setAvatarPreview(url);
+      else if (url) URL.revokeObjectURL(url);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [auth.stream]);
+  useEffect(() => () => {
+    if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
+
+  const saveAvatar = async (value?: string) => {
+    setAvatarBusy(true);
+    try {
+      if (value) {
+        await uploadProfileImage(auth.request, '/api/receptionists/me/avatar', await dataUrlToImage(value));
+      } else {
+        await auth.request('/api/receptionists/me/avatar', { method: 'DELETE' });
+      }
+      const remote = value ? await loadPrivateAvatar(auth.stream, '/api/receptionists/me/avatar') : null;
+      setAvatarPreview(remote);
+      window.dispatchEvent(new Event('profile_avatar_updated'));
+      message.success(value ? 'Đã lưu ảnh đại diện trên server.' : 'Đã xóa ảnh đại diện.');
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Không thể cập nhật ảnh đại diện.');
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
 
   const dateStr = date.format('YYYY-MM-DD');
   const trimmed = query.trim();
@@ -913,8 +951,27 @@ function Desk() {
               showWorkspaceLink={false}
               onLogout={handleLogout}
             />
+            <Button icon={<CameraOutlined />} onClick={() => setAvatarModalOpen(true)}>
+              Ảnh đại diện
+            </Button>
           </div>
         </header>
+
+        <Modal
+          title="Ảnh đại diện lễ tân"
+          open={avatarModalOpen}
+          onCancel={() => setAvatarModalOpen(false)}
+          footer={null}
+          destroyOnClose
+          confirmLoading={avatarBusy}
+        >
+          <DoctorPhotoUpload
+            value={avatarPreview ?? undefined}
+            onChange={(value) => { void saveAvatar(value); }}
+            doctorName={userName}
+            subjectLabel="lễ tân"
+          />
+        </Modal>
 
         {error && (
           <Alert

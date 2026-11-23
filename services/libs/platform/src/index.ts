@@ -17,3 +17,5 @@ export * from './rabbitmq/rabbitmq.consumer';
 export * from './outbox/outbox-relay';
 export * from './outbox/notification-relay';
 export * from './outbox/reception-work-relay';
+export * from './media/profile-image-storage';
+export * from './media/profile-image.module';

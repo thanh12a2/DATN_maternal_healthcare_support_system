@@ -156,6 +156,10 @@ function Routes() {
         Đang khôi phục phiên đăng nhập…
       </main>
     );
+  if (path === '/admin/login' || path === '/admin/dang-nhap')
+    return <AdminLoginPage />;
+  if (path === '/dang-nhap' || path === '/login')
+    return isAdminPort ? <AdminLoginPage /> : <AuthPage mode="login" />;
   // 1. Phân quyền và cách ly Workspace độc lập cho Nhân viên y tế & Lễ tân:
   // Khi đã đăng nhập với vai trò không phải PATIENT (RECEPTIONIST, DOCTOR, NURSE, CLINIC_MANAGER, ADMIN),
   // toàn bộ phiên làm việc là độc lập, không cho phép truy cập hoặc quay lại Cổng Bệnh nhân (Portal).
@@ -205,20 +209,15 @@ function Routes() {
       return <Redirect to="/workspace/admin/overview" />;
     return <AdminLoginPage />;
   }
-  if (path === '/admin/login' || path === '/admin/dang-nhap') {
-    if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN')
-      return <Redirect to="/workspace/admin/overview" />;
-    return <AdminLoginPage />;
-  }
   if (path === '/admin') {
     if (auth.status === 'authenticated' && auth.user?.role === 'ADMIN')
       return <Redirect to="/workspace/admin/overview" />;
     return <Redirect to="/admin/login" />;
   }
-  if (path === '/dang-nhap' || path === '/dang-ky') {
+  if (path === '/dang-ky') {
     if (auth.status === 'authenticated')
       return <Redirect to={homeForRole(auth.user?.role as Role)} />;
-    return <AuthPage mode={path === '/dang-ky' ? 'register' : 'login'} />;
+    return <AuthPage mode="register" />;
   }
   if (
     path === '/cam-nang-thai-ky' ||

@@ -10,7 +10,15 @@ import {
   Post,
   Query,
   UseGuards,
+  Delete,
+  UploadedFile,
+  UseInterceptors,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { ProfileImageStorage, PROFILE_IMAGE_MAX_BYTES, type ProfileImageFile } from '@platform';
 import { CurrentAuth } from '../auth/current-auth.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -26,7 +34,36 @@ import { ReceptionistsService } from './receptionists.service';
 @Controller('receptionists')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ReceptionistsController {
-  constructor(private readonly receptionistsService: ReceptionistsService) {}
+  constructor(
+    private readonly receptionistsService: ReceptionistsService,
+    private readonly images: ProfileImageStorage,
+  ) {}
+
+  @Post('me/avatar')
+  @Roles('RECEPTIONIST')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: PROFILE_IMAGE_MAX_BYTES, files: 1 } }))
+  async uploadAvatar(@CurrentAuth() auth: AuthContext, @UploadedFile() file: ProfileImageFile) {
+    await this.images.save('receptionists', auth.userId, file, true);
+    return { data: { uploaded: true } };
+  }
+
+  @Get('me/avatar')
+  @Roles('RECEPTIONIST')
+  async getAvatar(@CurrentAuth() auth: AuthContext, @Res() response: Response) {
+    const content = await this.images.read(this.images.fixedKey('receptionists', auth.userId));
+    if (!content) throw new NotFoundException('RECEPTIONIST_AVATAR_NOT_FOUND');
+    response.setHeader('Content-Type', 'image/webp');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.send(content);
+  }
+
+  @Delete('me/avatar')
+  @Roles('RECEPTIONIST')
+  async deleteAvatar(@CurrentAuth() auth: AuthContext) {
+    await this.images.remove(this.images.fixedKey('receptionists', auth.userId));
+    return { data: { deleted: true } };
+  }
 
   @Get()
   @Roles('ADMIN', 'CLINIC_MANAGER')

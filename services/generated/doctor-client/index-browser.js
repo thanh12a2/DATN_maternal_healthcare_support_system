@@ -147,6 +147,7 @@ exports.Prisma.DoctorScalarFieldEnum = {
   consultationRank: 'consultationRank',
   status: 'status',
   version: 'version',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -158,6 +159,7 @@ exports.Prisma.DoctorProfileScalarFieldEnum = {
   practiceStartYear: 'practiceStartYear',
   languages: 'languages',
   photoUrl: 'photoUrl',
+  photoStorageKey: 'photoStorageKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

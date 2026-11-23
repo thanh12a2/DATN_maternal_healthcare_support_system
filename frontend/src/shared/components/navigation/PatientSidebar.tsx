@@ -22,6 +22,10 @@ type IconName =
   | 'clock'
   | 'notes'
   | 'report'
+  | 'specialties'
+  | 'services'
+  | 'audit'
+  | 'backup'
   | 'settings';
 type NavItem = { href: string; label: string; icon: IconName };
 
@@ -93,6 +97,33 @@ function PatientIcon({ name }: { name: IconName }) {
       <svg {...common}>
         <circle cx="9" cy="8" r="3" />
         <path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0 0-6M17 14a5 5 0 0 1 4 6" />
+      </svg>
+    );
+  if (name === 'specialties')
+    return (
+      <svg {...common}>
+        <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z" />
+      </svg>
+    );
+  if (name === 'services')
+    return (
+      <svg {...common}>
+        <path d="M3 5h10l8 7-8 7H3V5Z" />
+        <circle cx="8" cy="12" r="1.5" />
+      </svg>
+    );
+  if (name === 'audit')
+    return (
+      <svg {...common}>
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 8h8M8 12h5m-5 4 2 2 4-4" />
+      </svg>
+    );
+  if (name === 'backup')
+    return (
+      <svg {...common}>
+        <ellipse cx="12" cy="5" rx="8" ry="3" />
+        <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
       </svg>
     );
   if (name === 'clipboard' || name === 'notes')
@@ -196,11 +227,11 @@ const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
     { label: 'Dashboard', icon: 'home', href: 'overview' },
     { label: 'Người dùng', icon: 'users', href: 'users' },
     { label: 'Bác sĩ', icon: 'stethoscope', href: 'doctors' },
-    { label: 'Chuyên khoa', icon: 'clipboard', href: 'specialties' },
+    { label: 'Chuyên khoa', icon: 'specialties', href: 'specialties' },
     { label: 'Bệnh nhân', icon: 'search', href: 'patients' },
-    { label: 'Dịch vụ & giá', icon: 'clipboard', href: 'services' },
-    { label: 'Nhật ký & Kiểm toán', icon: 'notes', href: 'audit-log' },
-    { label: 'Giám sát & Sao lưu', icon: 'settings', href: 'system-health' },
+    { label: 'Dịch vụ & giá', icon: 'services', href: 'services' },
+    { label: 'Nhật ký & Kiểm toán', icon: 'audit', href: 'audit-log' },
+    { label: 'Giám sát & Sao lưu', icon: 'backup', href: 'system-health' },
   ],
 };
 function isActive(path: string, href: string) {
@@ -402,6 +433,8 @@ export function PatientSidebar({
                 key={item.href}
                 className="patient-nav-item"
                 href={item.href}
+                aria-label={isAdmin ? item.label : undefined}
+                title={isAdmin ? item.label : undefined}
                 aria-current={
                   isActive(pathname, item.href) ? 'page' : undefined
                 }
@@ -415,7 +448,13 @@ export function PatientSidebar({
             );
           })}
         </nav>
-        <button className="patient-logout" type="button" onClick={onLogout}>
+        <button
+          className="patient-logout"
+          type="button"
+          aria-label={isAdmin ? 'Đăng xuất' : undefined}
+          title={isAdmin ? 'Đăng xuất' : undefined}
+          onClick={onLogout}
+        >
           <span className="patient-nav-icon">
             <PatientIcon name="exit" />
           </span>

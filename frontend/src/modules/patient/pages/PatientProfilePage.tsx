@@ -53,6 +53,7 @@ import {
   type ValidationMap,
 } from '../../../schemas/patientProfile';
 import { ApiError } from '../../../services/api';
+import { dataUrlToImage, loadPrivateAvatar, uploadProfileImage } from '../../../services/profileImages';
 import type {
   EmergencyContact,
   PatientProfile,
@@ -142,6 +143,23 @@ export function PatientProfilePage() {
     }
     return null;
   });
+  useEffect(() => {
+    if (!auth.user?.userId) return;
+    let active = true;
+    void loadPrivateAvatar(auth.stream, '/api/patients/me/avatar')
+      .then((url) => {
+        if (!active) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        if (url) setAvatarUrl(url);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [auth.stream, auth.user?.userId]);
+  useEffect(() => () => {
+    if (avatarUrl?.startsWith('blob:')) URL.revokeObjectURL(avatarUrl);
+  }, [avatarUrl]);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +180,11 @@ export function PatientProfilePage() {
   function handleAvatarFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setAlert({ type: 'error', message: 'Chỉ hỗ trợ JPG, PNG hoặc WebP tối đa 5 MB.' });
+      e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -173,38 +196,19 @@ export function PatientProfilePage() {
     e.target.value = '';
   }
 
-  function handleSaveCroppedAvatar(croppedDataUrl: string) {
-    setAvatarUrl(croppedDataUrl);
-    if (auth.user?.userId) {
-      try {
-        localStorage.setItem(
-          `patient_avatar_${auth.user.userId}`,
-          croppedDataUrl,
-        );
-        if (auth.user.email) {
-          localStorage.setItem(
-            `patient_avatar_${auth.user.email}`,
-            croppedDataUrl,
-          );
-        }
-        localStorage.setItem('patient_avatar', croppedDataUrl);
-      } catch {
-        // ignore
-      }
-      try {
-        window.dispatchEvent(
-          new CustomEvent('patient_avatar_updated', {
-            detail: { avatarUrl: croppedDataUrl },
-          }),
-        );
-      } catch {
-        // ignore
-      }
+  async function handleSaveCroppedAvatar(croppedDataUrl: string) {
+    try {
+      await uploadProfileImage(auth.request, '/api/patients/me/avatar', await dataUrlToImage(croppedDataUrl));
+      const remote = await loadPrivateAvatar(auth.stream, '/api/patients/me/avatar');
+      setAvatarUrl(remote ?? croppedDataUrl);
+      if (auth.user?.userId) localStorage.removeItem(`patient_avatar_${auth.user.userId}`);
+      if (auth.user?.email) localStorage.removeItem(`patient_avatar_${auth.user.email}`);
+      localStorage.removeItem('patient_avatar');
+      window.dispatchEvent(new Event('profile_avatar_updated'));
+      setAlert({ type: 'success', message: 'Ảnh đại diện đã được lưu trên server.' });
+    } catch (error) {
+      setAlert({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải ảnh lên server.' });
     }
-    setAlert({
-      type: 'success',
-      message: 'Ảnh đại diện đã được cập nhật thành công.',
-    });
   }
 
   function handleStartEdit() {

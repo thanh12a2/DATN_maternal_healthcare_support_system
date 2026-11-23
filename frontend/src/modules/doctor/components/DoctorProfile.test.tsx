@@ -16,7 +16,7 @@ const doctor = {
     biography: 'Giới thiệu',
     practiceStartYear: 2010,
     languages: ['vi'],
-    photoUrl: 'https://example.com/doctor.jpg',
+    photoUrl: 'https://cdn.antam.local/doctor.jpg',
   },
   specialties: [{ name: 'Sản khoa', isPrimary: true }],
 };
@@ -33,12 +33,12 @@ describe('doctor profile', () => {
     expect(screen.getByText('2010')).toBeInTheDocument();
     expect(screen.getByText('Phòng 1')).toBeInTheDocument();
     fireEvent.error(avatar);
-    expect(
+    await waitFor(() => expect(
       screen.queryByRole('img', { name: 'Ảnh đại diện của Nguyễn Minh Anh' }),
-    ).not.toBeInTheDocument();
+    ).not.toBeInTheDocument());
   });
 
-  it('saves only editable fields using the current version', async () => {
+  it('saves editable fields and removes a managed photo separately', async () => {
     const request = vi
       .fn()
       .mockImplementation((_path: string, init?: RequestInit) =>
@@ -50,7 +50,7 @@ describe('doctor profile', () => {
                   version: 4,
                   profile: {
                     ...doctor.profile,
-                    photoUrl: 'https://example.com/new.jpg',
+                    photoUrl: doctor.profile.photoUrl,
                     languages: ['vi', 'en'],
                   },
                 }
@@ -61,9 +61,7 @@ describe('doctor profile', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /Đổi ảnh đại diện/ }),
     );
-    fireEvent.change(screen.getByLabelText('Ảnh đại diện'), {
-      target: { value: 'https://example.com/new.jpg' },
-    });
+    fireEvent.click(screen.getByText('Xóa ảnh').closest('button')!);
     fireEvent.change(screen.getByLabelText('Ngôn ngữ sử dụng'), {
       target: { value: 'vi, en' },
     });
@@ -77,11 +75,13 @@ describe('doctor profile', () => {
           body: JSON.stringify({
             biography: 'Giới thiệu',
             languages: ['vi', 'en'],
-            photoUrl: 'https://example.com/new.jpg',
           }),
         }),
       ),
     );
+    await waitFor(() => expect(request).toHaveBeenCalledWith(
+      '/api/doctors/doctor-id/photo', { method: 'DELETE' },
+    ));
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Đã lưu thông tin hồ sơ',
     );

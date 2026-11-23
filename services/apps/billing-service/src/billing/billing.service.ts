@@ -963,6 +963,9 @@ export class BillingDomainService {
             appointmentId: x.appointmentId,
             patientId: x.patientId,
             status: x.status,
+            ...(event === 'billing.payment_recorded.v1'
+              ? { amountMinor: x.paidMinor.toString(), currency: x.currency }
+              : {}),
           },
         },
       },

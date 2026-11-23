@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { AppLink, navigate } from '../../../app/navigation';
+import { loadPrivateAvatar } from '../../../services/profileImages';
 import type { Role } from './PatientSidebar';
 import '../../../styles/user-chip.css';
 
@@ -64,7 +65,8 @@ function roleHomeLabel(role?: Role): string {
   }
 }
 
-function getSavedAvatar(userId?: string, email?: string): string | null {
+function getSavedAvatar(role?: Role, userId?: string, email?: string): string | null {
+  if (role !== 'PATIENT') return null;
   if (typeof window === 'undefined') return null;
   if (userId) {
     const val = localStorage.getItem(`patient_avatar_${userId}`);
@@ -74,7 +76,7 @@ function getSavedAvatar(userId?: string, email?: string): string | null {
     const val = localStorage.getItem(`patient_avatar_${email}`);
     if (val) return val;
   }
-  return localStorage.getItem('patient_avatar') || null;
+  return null;
 }
 
 function getSavedName(userId?: string, email?: string): string | null {
@@ -112,8 +114,11 @@ export function UserChip({
   });
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
-    return getSavedAvatar(user?.userId, user?.email);
+    return getSavedAvatar(role, user?.userId, user?.email);
   });
+  useEffect(() => () => {
+    if (avatarUrl?.startsWith('blob:')) URL.revokeObjectURL(avatarUrl);
+  }, [avatarUrl]);
 
   // Tải thông tin hồ sơ bệnh nhân khi đã đăng nhập
   useEffect(() => {
@@ -125,9 +130,14 @@ export function UserChip({
     if (cachedName && active) {
       setPatientName(cachedName);
     }
-    const cachedAvatar = getSavedAvatar(user.userId, user.email);
-    if (cachedAvatar && active) {
-      setAvatarUrl(cachedAvatar);
+    setAvatarUrl(getSavedAvatar(role, user.userId, user.email));
+
+    if ((role === 'PATIENT' || role === 'RECEPTIONIST') && import.meta.env.MODE !== 'test') {
+      const path = role === 'PATIENT' ? '/api/patients/me/avatar' : '/api/receptionists/me/avatar';
+      void loadPrivateAvatar(auth.stream, path).then((url) => {
+        if (active && url) setAvatarUrl(url);
+        else if (url) URL.revokeObjectURL(url);
+      }).catch(() => undefined);
     }
 
     // Nếu là bệnh nhân, fetch thông tin mới nhất từ API /api/patients/me (tránh gọi trong unit test để không xung đột mock)
@@ -170,7 +180,7 @@ export function UserChip({
     return () => {
       active = false;
     };
-  }, [auth.request, user?.userId, user?.email, role]);
+  }, [auth.request, auth.stream, user?.userId, user?.email, role]);
 
   // Lắng nghe sự kiện cập nhật realtime khi bệnh nhân lưu hồ sơ hoặc đổi avatar
   useEffect(() => {
@@ -180,9 +190,14 @@ export function UserChip({
       }
     }
     function handleAvatarUpdate(e: any) {
-      if (e.detail?.avatarUrl !== undefined) {
+      if (e.detail?.avatarUrl !== undefined && role === 'PATIENT') {
         setAvatarUrl(e.detail.avatarUrl);
       }
+    }
+    function handleServerAvatarUpdate() {
+      if (role !== 'PATIENT' && role !== 'RECEPTIONIST') return;
+      const path = role === 'PATIENT' ? '/api/patients/me/avatar' : '/api/receptionists/me/avatar';
+      void loadPrivateAvatar(auth.stream, path).then(setAvatarUrl).catch(() => undefined);
     }
     function handleStorageChange(e: StorageEvent) {
       if (!e.key) return;
@@ -194,9 +209,10 @@ export function UserChip({
         if (e.newValue) setPatientName(e.newValue);
       }
       if (
-        e.key.startsWith('patient_avatar') ||
-        (user?.userId && e.key === `patient_avatar_${user.userId}`) ||
-        (user?.email && e.key === `patient_avatar_${user.email}`)
+        role === 'PATIENT' && (
+          (user?.userId && e.key === `patient_avatar_${user.userId}`) ||
+          (user?.email && e.key === `patient_avatar_${user.email}`)
+        )
       ) {
         setAvatarUrl(e.newValue);
       }
@@ -204,13 +220,15 @@ export function UserChip({
 
     window.addEventListener('patient_profile_updated', handleProfileUpdate);
     window.addEventListener('patient_avatar_updated', handleAvatarUpdate);
+    window.addEventListener('profile_avatar_updated', handleServerAvatarUpdate);
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('patient_profile_updated', handleProfileUpdate);
       window.removeEventListener('patient_avatar_updated', handleAvatarUpdate);
+      window.removeEventListener('profile_avatar_updated', handleServerAvatarUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [user?.userId, user?.email]);
+  }, [auth.stream, role, user?.userId, user?.email]);
 
   // Resolve display name & avatar: ưu tiên prop > tên hồ sơ > email prefix
   const fallbackEmailName = user?.email ? user.email.split('@')[0] : 'Người dùng';

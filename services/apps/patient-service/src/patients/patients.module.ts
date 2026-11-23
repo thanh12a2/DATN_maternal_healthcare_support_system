@@ -4,9 +4,10 @@ import { NationalIdCryptoService } from '../security/national-id-crypto.service'
 import { InternalPatientsController } from './internal-patients.controller';
 import { PatientsController } from './patients.controller';
 import { PatientsService } from './patients.service';
+import { ProfileImageModule } from '@platform';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ProfileImageModule],
   // Deprecated compatibility route; it is never exposed through Kong.
   // New callers must use PatientInternalService gRPC.
   controllers: [PatientsController, InternalPatientsController],

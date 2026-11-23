@@ -216,9 +216,11 @@ export async function deactivateDoctor(
 export async function deleteDoctor(
   request: Requester,
   doctorId: string,
+  version: number,
 ): Promise<void> {
   await request<void>(`/api/doctors/${encodeURIComponent(doctorId)}`, {
     method: 'DELETE',
+    headers: { 'if-match': String(version) },
   });
 }
 

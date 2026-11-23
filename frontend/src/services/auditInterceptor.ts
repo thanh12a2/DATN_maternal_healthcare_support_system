@@ -302,7 +302,12 @@ export function deriveAuditDetails(
         metadata.specialty = extraDocContext.specialtyName;
       }
 
-      if (normPath.endsWith('/activate')) {
+      if (normPath.endsWith('/photo')) {
+        action = upperMethod === 'DELETE' ? 'DOCTOR_PHOTO_DELETED' : 'DOCTOR_PHOTO_UPLOADED';
+        metadata.description = upperMethod === 'DELETE'
+          ? `Xóa ảnh bác sĩ: ${targetDoctorIdentifier}`
+          : `Tải ảnh bác sĩ: ${targetDoctorIdentifier}`;
+      } else if (normPath.endsWith('/activate')) {
         action = 'DOCTOR_ACTIVATED';
         metadata.description = `Kích hoạt bác sĩ: ${targetDoctorIdentifier}`;
         metadata.targetEmail = targetDoctorIdentifier;
@@ -323,7 +328,7 @@ export function deriveAuditDetails(
         metadata.targetEmail = targetDoctorIdentifier;
       } else if (upperMethod === 'DELETE') {
         action = 'DOCTOR_DELETED';
-        metadata.description = `Xóa hồ sơ bác sĩ: ${targetDoctorIdentifier}`;
+        metadata.description = `Ngừng hoạt động và lưu trữ hồ sơ bác sĩ: ${targetDoctorIdentifier}`;
         metadata.targetEmail = targetDoctorIdentifier;
       }
     }

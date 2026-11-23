@@ -68,7 +68,7 @@ describe('doctor specialty administration', () => {
 
     const adminList = await service.listDoctors({ limit: 10 }, admin);
     expect(prisma.doctor.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: { deletedAt: null } }),
     );
     expect(adminList.data[0]).toMatchObject({
       accountId: 'account-id', licenseNumber: 'QA-LICENSE', version: 2,
@@ -77,7 +77,7 @@ describe('doctor specialty administration', () => {
 
     const publicList = await service.listDoctors({ limit: 10 });
     expect(prisma.doctor.findMany).toHaveBeenLastCalledWith(
-      expect.objectContaining({ where: { status: 'ACTIVE' } }),
+      expect.objectContaining({ where: { status: 'ACTIVE', deletedAt: null } }),
     );
     expect(publicList.data[0]).not.toHaveProperty('accountId');
     expect(publicList.data[0].specialties).toHaveLength(0);

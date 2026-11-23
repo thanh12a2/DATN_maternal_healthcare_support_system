@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   Avatar,
   Button,
@@ -7,6 +7,7 @@ import {
   Space,
   Tooltip,
   Typography,
+  message,
 } from 'antd';
 import {
   CameraOutlined,
@@ -23,12 +24,14 @@ interface DoctorPhotoUploadProps {
   value?: string;
   onChange?: (value: string | undefined) => void;
   doctorName?: string;
+  subjectLabel?: string;
 }
 
 export function DoctorPhotoUpload({
   value,
   onChange,
   doctorName,
+  subjectLabel = 'bác sĩ',
 }: DoctorPhotoUploadProps) {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
@@ -42,7 +45,7 @@ export function DoctorPhotoUpload({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputId = useId();
   const mainCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -53,22 +56,33 @@ export function DoctorPhotoUpload({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      void message.error('Ảnh phải nhỏ hơn 5 MB.');
+      e.target.value = '';
+      return;
+    }
 
-    if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WEBP).');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      void message.error('Vui lòng chọn ảnh JPG, PNG hoặc WebP.');
+      e.target.value = '';
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const result = event.target?.result as string;
+      const result = event.target?.result;
+      if (typeof result !== 'string') {
+        void message.error('Không đọc được ảnh đã chọn. Vui lòng thử lại.');
+        return;
+      }
       setRawImageSrc(result);
       openCropper(result);
     };
+    reader.onerror = () => void message.error('Không đọc được ảnh đã chọn. Vui lòng thử lại.');
     reader.readAsDataURL(file);
 
     // Reset input so same file can be selected again
-    e.target.value = '';
+    reader.onloadend = () => { e.target.value = ''; };
   };
 
   const drawCanvases = useCallback(() => {
@@ -187,6 +201,7 @@ export function DoctorPhotoUpload({
       setRotation(0);
       setCropperOpen(true);
     };
+    img.onerror = () => void message.error('Ảnh đã chọn không mở được. Vui lòng chọn ảnh khác.');
     img.src = imageSrc;
   };
 
@@ -319,15 +334,6 @@ export function DoctorPhotoUpload({
         marginBottom: 16,
       }}
     >
-      {/* Hidden File Input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/png, image/jpeg, image/webp"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
-
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         {/* Avatar Preview Box */}
         <div style={{ position: 'relative' }}>
@@ -346,8 +352,8 @@ export function DoctorPhotoUpload({
           >
             {!hasPhoto && initial}
           </Avatar>
-          <div
-            onClick={() => fileInputRef.current?.click()}
+          <label
+            htmlFor={fileInputId}
             style={{
               position: 'absolute',
               bottom: 0,
@@ -367,13 +373,13 @@ export function DoctorPhotoUpload({
             title="Tải ảnh mới từ máy tính"
           >
             <CameraOutlined style={{ fontSize: 13 }} />
-          </div>
+          </label>
         </div>
 
         {/* Controls */}
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
-            Ảnh chân dung bác sĩ
+            Ảnh chân dung {subjectLabel}
           </div>
           <Typography.Paragraph
             type="secondary"
@@ -384,15 +390,41 @@ export function DoctorPhotoUpload({
           </Typography.Paragraph>
 
           <Space size={8} wrap>
-            <Button
-              type="primary"
-              ghost
-              size="small"
-              icon={<UploadOutlined />}
-              onClick={() => fileInputRef.current?.click()}
+            <label
+              htmlFor={fileInputId}
+              style={{
+                position: 'relative',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 24,
+                padding: '0 7px',
+                border: '1px solid #1677ff',
+                borderRadius: 6,
+                background: '#fff',
+                color: '#1677ff',
+                fontSize: 14,
+                cursor: 'pointer',
+              }}
             >
+              <UploadOutlined />
               {hasPhoto ? 'Đổi ảnh từ máy tính' : 'Tải ảnh từ máy tính'}
-            </Button>
+              <input
+                id={fileInputId}
+                type="file"
+                aria-label="Chọn ảnh từ máy tính"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleFileChange}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            </label>
 
             {hasPhoto && (
               <>
