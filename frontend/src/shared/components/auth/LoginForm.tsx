@@ -6,12 +6,14 @@ import {
 } from '../../../schemas/auth';
 import type { ValidationResult } from '../../../schemas/auth';
 import { login } from '../../../services/auth';
+import { ApiError } from '../../../services/api';
 import { FormField } from './FormField';
 import { PasswordField } from './PasswordField';
 import { MailIcon } from './icons';
 
 interface Props {
   onSwitchMode: () => void;
+  onForgotPassword: () => void;
   onSubmit?: (values: LoginFormValues, remember: boolean) => Promise<void>;
 }
 
@@ -19,7 +21,7 @@ type LoginField = keyof LoginFormValues;
 type ResultMap = Partial<Record<LoginField, ValidationResult>>;
 const initialValues: LoginFormValues = { email: '', password: '' };
 
-export function LoginForm({ onSwitchMode, onSubmit }: Props) {
+export function LoginForm({ onSwitchMode, onForgotPassword, onSubmit }: Props) {
   const [values, setValues] = useState(initialValues);
   const [results, setResults] = useState<ResultMap>({});
   const [touched, setTouched] = useState<Partial<Record<LoginField, boolean>>>(
@@ -74,7 +76,9 @@ export function LoginForm({ onSwitchMode, onSubmit }: Props) {
     } catch (error) {
       setAlert({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Đăng nhập thất bại.',
+        message: error instanceof ApiError && error.statusCode === 401
+          ? 'Email hoặc mật khẩu không đúng.'
+          : error instanceof Error ? error.message : 'Đăng nhập thất bại.',
       });
     } finally {
       setSubmitting(false);
@@ -148,13 +152,9 @@ export function LoginForm({ onSwitchMode, onSubmit }: Props) {
             />
             <span>Ghi nhớ đăng nhập</span>
           </label>
-          <span
-            className="text-link"
-            aria-disabled="true"
-            title="Backend chưa hỗ trợ khôi phục mật khẩu"
-          >
+          <button className="text-link" type="button" onClick={onForgotPassword}>
             Quên mật khẩu?
-          </span>
+          </button>
         </div>
         <button className="primary-button" type="submit" disabled={submitting}>
           {submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}

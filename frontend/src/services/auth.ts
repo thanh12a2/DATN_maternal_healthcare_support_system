@@ -46,6 +46,20 @@ export function register(
   });
 }
 
+export function requestPasswordReset(email: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+  });
+}
+
+export function resetPassword(token: string, newPassword: string): Promise<void> {
+  return apiRequest<void>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+}
+
 export function getCurrentUser(accessToken: string): Promise<MeResponse> {
   return apiRequest<MeResponse>('/auth/me', {}, accessToken);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { ApiError } from '../services/api';
 import { AuthSessionProvider, useAuthSession } from './AuthSessionProvider';
 import { navigate, usePathname } from './navigation';
@@ -27,11 +27,12 @@ import AdminWorkspacePage from '../modules/admin/AdminWorkspacePage';
 import { AdminLoginPage } from '../modules/admin/pages/AdminLoginPage';
 import { DoctorWorkspacePage } from '../modules/doctor/pages/DoctorWorkspacePage';
 import { ReceptionistWorkspacePage } from '../modules/receptionist/pages/ReceptionistWorkspacePage';
-import { ClinicManagerWorkspacePage } from '../modules/clinic-manager/pages/ClinicManagerWorkspacePage';
 import { NurseWorkspacePage } from '../modules/nurse/pages/NurseWorkspacePage';
 import { VnpayReturnPage } from '../modules/receptionist/pages/VnpayReturnPage';
 
 import { ChatbotLauncher } from '../modules/patient/components/chatbot/ChatbotLauncher';
+
+const ClinicManagerWorkspacePage = lazy(() => import('../modules/clinic-manager/pages/ClinicManagerWorkspacePage').then(module => ({ default: module.ClinicManagerWorkspacePage })));
 
 function Redirect({ to }: { to: string }) {
   useEffect(() => navigate(to, { replace: true }), [to]);
@@ -160,6 +161,10 @@ function Routes() {
     return <AdminLoginPage />;
   if (path === '/dang-nhap' || path === '/login')
     return isAdminPort ? <AdminLoginPage /> : <AuthPage mode="login" />;
+  if (path === '/quen-mat-khau' || path === '/forgot-password')
+    return <AuthPage mode="forgot" />;
+  if (path === '/reset-password' || path === '/dat-lai-mat-khau')
+    return <AuthPage mode="reset" />;
   // 1. Phân quyền và cách ly Workspace độc lập cho Nhân viên y tế & Lễ tân:
   // Khi đã đăng nhập với vai trò không phải PATIENT (RECEPTIONIST, DOCTOR, NURSE, CLINIC_MANAGER, ADMIN),
   // toàn bộ phiên làm việc là độc lập, không cho phép truy cập hoặc quay lại Cổng Bệnh nhân (Portal).
@@ -257,7 +262,9 @@ function Routes() {
     if (role === 'CLINIC_MANAGER')
       return (
         <WorkspaceProtected role={role}>
-          <ClinicManagerWorkspacePage />
+          <Suspense fallback={<main className="app-loading" role="status">Đang mở cổng quản lý phòng khám…</main>}>
+            <ClinicManagerWorkspacePage />
+          </Suspense>
         </WorkspaceProtected>
       );
     if (role === 'DOCTOR')

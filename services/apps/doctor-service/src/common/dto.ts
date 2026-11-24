@@ -19,6 +19,7 @@ import {
 import {
   AvailabilityReasonCode,
   AvailabilityType,
+  LeaveRequestStatus,
   DoctorConsultationRank,
   DoctorStatus,
   RoomStatus,
@@ -145,6 +146,21 @@ export class CreateAvailabilityDto {
   @IsOptional() @IsString() @MaxLength(500) note?: string;
   @IsOptional() @IsUUID() roomId?: string;
   @IsOptional() @IsString() @MaxLength(30) roomCode?: string;
+}
+export class CreateLeaveRequestDto {
+  @IsUUID() scheduleId!: string;
+  @IsDateString() workDate!: string;
+  @IsEnum(AvailabilityReasonCode) reasonCode!: AvailabilityReasonCode;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+export class LeaveRequestQueryDto {
+  @IsOptional() @IsEnum(LeaveRequestStatus) status?: LeaveRequestStatus;
+  @IsOptional() @IsUUID() doctorId?: string;
+  @IsOptional() @IsInt() @Min(1) @Max(100) @Type(() => Number) limit?: number;
+}
+export class ReviewLeaveRequestDto {
+  @IsInt() @Min(1) expectedVersion!: number;
+  @IsOptional() @IsString() @Length(3, 500) reason?: string;
 }
 export class AvailabilityQueryDto {
   @IsISO8601() from!: string;

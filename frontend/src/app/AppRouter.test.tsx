@@ -69,6 +69,16 @@ describe('AppRouter patient flow', () => {
 });
 
 describe('AppRouter login routes', () => {
+  it('opens the recovery pages from their public URLs', async () => {
+    window.history.replaceState({}, '', '/quen-mat-khau');
+    render(<AppRouter />);
+    expect(await screen.findByTestId('forgot-password-view')).toBeTruthy();
+
+    act(() => navigate('/reset-password?token=example-token'));
+    expect(await screen.findByTestId('reset-password-view')).toBeTruthy();
+    expect(window.location.search).toBe('?token=example-token');
+  });
+
   it('keeps both login paths available during an authenticated admin session', async () => {
     window.localStorage.setItem('an-tam-admin-session', JSON.stringify(adminSession));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(

@@ -216,11 +216,14 @@ const workspaceNav: Record<Exclude<Role, 'PATIENT'>, NavItem[]> = {
   ],
   CLINIC_MANAGER: [
     { label: 'Tổng quan', icon: 'home', href: 'overview' },
-    { label: 'Nhân sự vận hành', icon: 'users', href: 'staff' },
-    { label: 'Bác sĩ & lịch làm việc', icon: 'stethoscope', href: 'doctors' },
+    { label: 'Nhân sự', icon: 'users', href: 'staff' },
+    { label: 'Bác sĩ & ca làm', icon: 'stethoscope', href: 'doctors' },
     { label: 'Lễ tân', icon: 'clipboard', href: 'receptionists' },
     { label: 'Dịch vụ & giá', icon: 'settings', href: 'services' },
-    { label: 'Điều phối lịch hẹn', icon: 'calendar', href: 'appointments' },
+    { label: 'Lịch hẹn', icon: 'calendar', href: 'appointments' },
+    { label: 'Bệnh nhân', icon: 'search', href: 'patients' },
+    { label: 'Hóa đơn', icon: 'clipboard', href: 'billing' },
+    { label: 'Hồ sơ khám', icon: 'notes', href: 'encounters' },
     { label: 'Báo cáo', icon: 'report', href: 'reports' },
   ],
   ADMIN: [
@@ -323,7 +326,7 @@ export function PatientSidebar({
           {isAdmin
             ? 'Admin portal'
             : role === 'CLINIC_MANAGER'
-              ? 'Clinic manager portal'
+              ? 'Điều hành phòng khám'
               : 'Patient portal'}
         </span>
       </div>

@@ -19,6 +19,7 @@ import {
 import { getDoctorOccupancy } from '../../../services/appointment';
 import { dataUrlToImage, uploadProfileImage } from '../../../services/profileImages';
 import { DoctorPhotoUpload } from '../../admin/components/DoctorPhotoUpload';
+import { DoctorLeaveRequestPanel } from './DoctorLeaveRequestPanel';
 import '../../../styles/doctor-profile.css';
 
 const localDate = () => {
@@ -313,6 +314,7 @@ export function DoctorProfileSchedule({
             </p>
           )}
         </section>
+        <DoctorLeaveRequestPanel request={request} doctorId={doctor.id} />
       </>
     );
   const name = doctor.profile?.fullName || 'Bác sĩ';

@@ -47,6 +47,12 @@ enum AvailabilityReasonCode {
   EXTRA_SHIFT
   OTHER
 }
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
 enum RoomStatus {
   ACTIVE
   INACTIVE
@@ -94,6 +100,7 @@ model Doctor {
   specialties DoctorSpecialty[]
   schedules DoctorSchedule[]
   availabilities DoctorAvailability[]
+  leaveRequests DoctorLeaveRequest[]
   idempotencies IdempotencyRecord[]
   audits AuditRecord[]
   outboxEvents OutboxEvent[]
@@ -157,6 +164,7 @@ model DoctorSchedule {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   room ClinicRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  leaveRequests DoctorLeaveRequest[]
   @@index([doctorId, status, dayOfWeek, effectiveFrom, effectiveTo])
   @@index([roomId, status, dayOfWeek, effectiveFrom, effectiveTo], map: "doctor_schedules_room_lookup_idx")
   @@map("doctor_schedules")
@@ -177,8 +185,33 @@ model DoctorAvailability {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   room ClinicRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  leaveRequest DoctorLeaveRequest?
   @@index([doctorId, status, startAt, endAt])
   @@map("doctor_availabilities")
+}
+model DoctorLeaveRequest {
+  id String @id @default(uuid()) @db.Uuid
+  doctorId String @map("doctor_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
+  workDate DateTime @map("work_date") @db.Date
+  startAt DateTime @map("start_at") @db.Timestamptz(6)
+  endAt DateTime @map("end_at") @db.Timestamptz(6)
+  reasonCode AvailabilityReasonCode @map("reason_code")
+  note String? @db.VarChar(500)
+  status LeaveRequestStatus @default(PENDING)
+  version Int @default(1)
+  availabilityId String? @unique @map("availability_id") @db.Uuid
+  reviewedBy String? @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  reviewReason String? @map("review_reason") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  schedule DoctorSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  availability DoctorAvailability? @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
+  @@index([doctorId, status, workDate])
+  @@index([status, createdAt])
+  @@map("doctor_leave_requests")
 }
 model IdempotencyRecord {
   id String @id @default(uuid()) @db.Uuid

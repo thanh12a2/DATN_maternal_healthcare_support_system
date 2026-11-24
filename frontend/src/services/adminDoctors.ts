@@ -38,6 +38,17 @@ export interface DoctorScheduleItem {
   roomId?: string | null;
 }
 
+export interface DoctorAvailabilityItem {
+  id: string;
+  type: 'UNAVAILABLE' | 'EXTRA_AVAILABLE';
+  startAt: string;
+  endAt: string;
+  status: string;
+  reasonCode?: string;
+  note?: string;
+  version: number;
+}
+
 export interface DoctorItem {
   id: string;
   accountId: string;
@@ -50,6 +61,7 @@ export interface DoctorItem {
   profile: DoctorProfile;
   specialties: DoctorSpecialtyInfo[];
   schedules?: DoctorScheduleItem[];
+  availabilities?: DoctorAvailabilityItem[];
   createdAt?: string;
   updatedAt?: string;
 }

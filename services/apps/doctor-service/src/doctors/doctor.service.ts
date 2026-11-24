@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   AvailabilityStatus,
   AvailabilityType,
+  AvailabilityReasonCode,
+  LeaveRequestStatus,
   DoctorConsultationRank,
   DoctorStatus,
   Prisma,
@@ -17,6 +19,9 @@ import { Identity } from '../auth/auth.types';
 import {
   AvailabilityQueryDto,
   CreateAvailabilityDto,
+  CreateLeaveRequestDto,
+  LeaveRequestQueryDto,
+  ReviewLeaveRequestDto,
   CreateDoctorDto,
   CreateRoomDto,
   CreateScheduleDto,
@@ -1009,11 +1014,25 @@ export class DoctorDomainService {
         },
       };
     const result = await this.prisma.$transaction(async (tx) => {
+      await this.lockDoctor(tx, doctorId);
       const updated = await tx.doctorSchedule.updateMany({
         where: { id: scheduleId, version },
         data: { status: ScheduleStatus.CANCELLED, version: { increment: 1 } },
       });
       if (updated.count !== 1) this.fail(409, 'VERSION_CONFLICT');
+      const openLeaves = await tx.doctorLeaveRequest.findMany({
+        where: { scheduleId, status: { in: [LeaveRequestStatus.PENDING, LeaveRequestStatus.APPROVED] } },
+      });
+      for (const leave of openLeaves) {
+        await tx.doctorLeaveRequest.update({ where: { id: leave.id }, data: {
+          status: LeaveRequestStatus.CANCELLED, version: { increment: 1 },
+          reviewedBy: actor.userId, reviewedAt: new Date(), reviewReason: dto.reason.trim(),
+        } });
+        if (leave.availabilityId) await tx.doctorAvailability.updateMany({
+          where: { id: leave.availabilityId, status: AvailabilityStatus.ACTIVE },
+          data: { status: AvailabilityStatus.CANCELLED, version: { increment: 1 } },
+        });
+      }
       const value = await tx.doctorSchedule.findUnique({
         where: { id: scheduleId },
         include: { room: true },
@@ -1032,6 +1051,195 @@ export class DoctorDomainService {
     return { data: this.formatSchedule(result) };
   }
 
+  async requestLeave(
+    dto: CreateLeaveRequestDto,
+    actor: Identity,
+    key?: string,
+    requestId?: string,
+  ) {
+    if (actor.role !== 'DOCTOR') this.fail(403, 'FORBIDDEN');
+    this.requireKey(key);
+    if (dto.reasonCode === AvailabilityReasonCode.EXTRA_SHIFT)
+      this.fail(422, 'INVALID_LEAVE_REASON');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dto.workDate))
+      this.fail(400, 'INVALID_WORK_DATE');
+    const workDate = new Date(`${dto.workDate}T00:00:00.000Z`);
+    if (Number.isNaN(workDate.getTime()) || workDate.toISOString().slice(0, 10) !== dto.workDate)
+      this.fail(400, 'INVALID_WORK_DATE');
+    const doctor = await this.prisma.doctor.findUnique({ where: { accountId: actor.userId } });
+    if (!doctor || doctor.deletedAt || doctor.status !== DoctorStatus.ACTIVE)
+      this.fail(404, 'DOCTOR_NOT_ACTIVE');
+    const schedule = await this.prisma.doctorSchedule.findFirst({
+      where: { id: dto.scheduleId, doctorId: doctor.id, status: ScheduleStatus.ACTIVE },
+    });
+    if (!schedule || schedule.dayOfWeek !== this.weekday(workDate) ||
+        !this.dateInRange(workDate, schedule.effectiveFrom, schedule.effectiveTo))
+      this.fail(422, 'SHIFT_NOT_SCHEDULED');
+    const startAt = this.localToUtc(workDate, schedule.startTime);
+    const endAt = this.localToUtc(workDate, schedule.endTime);
+    if (startAt <= new Date()) this.fail(422, 'SHIFT_ALREADY_STARTED');
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.lockDoctor(tx, doctor.id);
+      const existing = await tx.doctorLeaveRequest.findFirst({
+        where: { scheduleId: schedule.id, workDate, status: { in: [LeaveRequestStatus.PENDING, LeaveRequestStatus.APPROVED] } },
+      });
+      if (existing) this.fail(409, 'LEAVE_REQUEST_EXISTS');
+      const row = await tx.doctorLeaveRequest.create({
+        data: { doctorId: doctor.id, scheduleId: schedule.id, workDate, startAt, endAt,
+          reasonCode: dto.reasonCode, note: dto.note?.trim() || null },
+        include: { doctor: { include: { profile: true } }, schedule: true },
+      });
+      await this.auditOutbox(tx, 'doctor.leave_requested', actor.userId, doctor.id,
+        doctor.version, requestId, { leaveRequestId: row.id, scheduleId: row.scheduleId, workDate: dto.workDate });
+      return row;
+    });
+    return { data: result };
+  }
+
+  async listLeaveRequests(query: LeaveRequestQueryDto, actor: Identity) {
+    const manager = this.isClinicOperator(actor);
+    if (!manager && actor.role !== 'DOCTOR') this.fail(403, 'FORBIDDEN');
+    const rows = await this.prisma.doctorLeaveRequest.findMany({
+      where: {
+        ...(manager ? (query.doctorId ? { doctorId: query.doctorId } : {}) : { doctor: { accountId: actor.userId } }),
+        ...(query.status ? { status: query.status } : {}),
+      },
+      include: { doctor: { include: { profile: true } }, schedule: true },
+      orderBy: { createdAt: 'desc' }, take: query.limit ?? 100,
+    });
+    return { data: rows };
+  }
+
+  async reviewLeave(
+    id: string,
+    approve: boolean,
+    dto: ReviewLeaveRequestDto,
+    actor: Identity,
+    authorization?: string,
+    requestId?: string,
+  ) {
+    this.requireClinicOperator(actor);
+    if (!approve && (!dto.reason || dto.reason.trim().length < 3))
+      this.fail(400, 'REVIEW_REASON_REQUIRED');
+    const row = await this.prisma.doctorLeaveRequest.findUnique({ where: { id }, include: { doctor: true, schedule: true } });
+    if (!row) this.fail(404, 'LEAVE_REQUEST_NOT_FOUND');
+    if (row.status !== LeaveRequestStatus.PENDING || row.version !== dto.expectedVersion)
+      this.fail(409, 'LEAVE_REQUEST_CHANGED');
+    if (approve) {
+      if (row.startAt <= new Date() || row.schedule.status !== ScheduleStatus.ACTIVE)
+        this.fail(409, 'SHIFT_NOT_AVAILABLE');
+      if (!authorization) this.fail(401, 'AUTHORIZATION_REQUIRED');
+      await this.assertNoAppointmentsInWindow(row.doctorId, row.startAt, row.endAt, authorization);
+    }
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.lockDoctor(tx, row.doctorId);
+      if (approve) {
+        const currentShift = await tx.doctorSchedule.findUnique({ where: { id: row.scheduleId } });
+        if (!currentShift || currentShift.status !== ScheduleStatus.ACTIVE ||
+            !this.dateInRange(row.workDate, currentShift.effectiveFrom, currentShift.effectiveTo) ||
+            this.localToUtc(row.workDate, currentShift.startTime).getTime() !== row.startAt.getTime() ||
+            this.localToUtc(row.workDate, currentShift.endTime).getTime() !== row.endAt.getTime())
+          this.fail(409, 'SHIFT_NOT_AVAILABLE');
+      }
+      const changed = await tx.doctorLeaveRequest.updateMany({
+        where: { id, status: LeaveRequestStatus.PENDING, version: dto.expectedVersion },
+        data: { status: approve ? LeaveRequestStatus.APPROVED : LeaveRequestStatus.REJECTED,
+          version: { increment: 1 }, reviewedBy: actor.userId, reviewedAt: new Date(),
+          reviewReason: dto.reason?.trim() || null },
+      });
+      if (changed.count !== 1) this.fail(409, 'LEAVE_REQUEST_CHANGED');
+      if (approve) {
+        const conflict = await tx.doctorAvailability.findFirst({
+          where: { doctorId: row.doctorId, type: AvailabilityType.UNAVAILABLE,
+            status: AvailabilityStatus.ACTIVE, startAt: { lt: row.endAt }, endAt: { gt: row.startAt } },
+        });
+        if (conflict) this.fail(409, 'AVAILABILITY_CONFLICT');
+        const block = await tx.doctorAvailability.create({
+          data: { doctorId: row.doctorId, type: AvailabilityType.UNAVAILABLE,
+            startAt: row.startAt, endAt: row.endAt, reasonCode: row.reasonCode,
+            note: row.note, createdBy: actor.userId },
+        });
+        await tx.doctorLeaveRequest.update({ where: { id }, data: { availabilityId: block.id } });
+      }
+      const decided = await tx.doctorLeaveRequest.findUniqueOrThrow({
+        where: { id }, include: { doctor: { include: { profile: true } }, schedule: true },
+      });
+      await this.auditOutbox(tx, approve ? 'doctor.leave_approved' : 'doctor.leave_rejected',
+        actor.userId, row.doctorId, row.doctor.version, requestId,
+        { leaveRequestId: id, scheduleId: row.scheduleId, workDate: row.workDate.toISOString().slice(0, 10) });
+      return decided;
+    });
+    return { data: result };
+  }
+
+  async cancelLeave(id: string, dto: ReviewLeaveRequestDto, actor: Identity, requestId?: string) {
+    const row = await this.prisma.doctorLeaveRequest.findUnique({ where: { id }, include: { doctor: true } });
+    if (!row) this.fail(404, 'LEAVE_REQUEST_NOT_FOUND');
+    const manager = this.isClinicOperator(actor);
+    if (!manager && (actor.role !== 'DOCTOR' || row.doctor.accountId !== actor.userId))
+      this.fail(403, 'FORBIDDEN');
+    if (row.version !== dto.expectedVersion ||
+        (row.status !== LeaveRequestStatus.PENDING && row.status !== LeaveRequestStatus.APPROVED))
+      this.fail(409, 'LEAVE_REQUEST_CHANGED');
+    if (row.status === LeaveRequestStatus.APPROVED && !manager)
+      this.fail(403, 'MANAGER_REVIEW_REQUIRED');
+    if (row.endAt <= new Date()) this.fail(409, 'SHIFT_ALREADY_ENDED');
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.lockDoctor(tx, row.doctorId);
+      const changed = await tx.doctorLeaveRequest.updateMany({
+        where: { id, version: dto.expectedVersion, status: row.status },
+        data: { status: LeaveRequestStatus.CANCELLED, version: { increment: 1 },
+          ...(manager ? { reviewedBy: actor.userId, reviewedAt: new Date(), reviewReason: dto.reason?.trim() || null } : {}) },
+      });
+      if (changed.count !== 1) this.fail(409, 'LEAVE_REQUEST_CHANGED');
+      if (row.availabilityId) await tx.doctorAvailability.updateMany({
+        where: { id: row.availabilityId, status: AvailabilityStatus.ACTIVE },
+        data: { status: AvailabilityStatus.CANCELLED, version: { increment: 1 } },
+      });
+      const cancelled = await tx.doctorLeaveRequest.findUniqueOrThrow({
+        where: { id }, include: { doctor: { include: { profile: true } }, schedule: true },
+      });
+      await this.auditOutbox(tx, 'doctor.leave_cancelled', actor.userId, row.doctorId,
+        row.doctor.version, requestId, { leaveRequestId: id });
+      return cancelled;
+    });
+    return { data: result };
+  }
+
+  private async assertNoAppointmentsInWindow(doctorId: string, from: Date, to: Date, authorization: string) {
+    const base = this.config.get<string>('APPOINTMENT_HTTP_BASE_URL') || 'http://appointment-service:5008';
+    const statuses = ['BOOKED', 'REASSIGNMENT_REQUIRED', 'CHECKED_IN', 'IN_CLINICAL_CARE'];
+    let conflict = false;
+    try {
+      const checks = await Promise.all(statuses.map(async (status) => {
+        let cursor: string | undefined;
+        const visited = new Set<string>();
+        // Appointments can start before the shift and still overlap it.
+        const searchFrom = new Date(from.getTime() - 31 * 86400000).toISOString();
+        for (let page = 0; page < 100; page++) {
+          const query = new URLSearchParams({ doctorId, status, from: searchFrom, to: to.toISOString(), limit: '100' });
+          if (cursor) query.set('cursor', cursor);
+          const response = await fetch(`${base.replace(/\/$/, '')}/appointments?${query}`, {
+            headers: { Authorization: authorization }, signal: AbortSignal.timeout(4000),
+          });
+          if (!response.ok) throw new Error(`APPOINTMENT_HTTP_${response.status}`);
+          const payload = await response.json() as { items?: Array<{ startAt?: string; endAt?: string }>; nextPageToken?: string | null };
+          if (!Array.isArray(payload.items)) throw new Error('INVALID_APPOINTMENT_RESPONSE');
+          if (payload.items.some(item => item.startAt && item.endAt && new Date(item.startAt) < to && new Date(item.endAt) > from)) return true;
+          if (!payload.nextPageToken) return false;
+          if (visited.has(payload.nextPageToken)) throw new Error('APPOINTMENT_PAGE_LOOP');
+          visited.add(payload.nextPageToken);
+          cursor = payload.nextPageToken;
+        }
+        throw new Error('APPOINTMENT_LIST_TOO_LARGE');
+      }));
+      conflict = checks.some(Boolean);
+    } catch {
+      this.fail(503, 'APPOINTMENT_DEPENDENCY_UNAVAILABLE');
+    }
+    if (conflict) this.fail(409, 'SHIFT_HAS_APPOINTMENTS');
+  }
+
   async createAvailability(
     doctorId: string,
     dto: CreateAvailabilityDto,
@@ -1046,12 +1254,9 @@ export class DoctorDomainService {
     if (!doctor) this.notFound();
     if (doctor.status !== DoctorStatus.ACTIVE)
       this.fail(422, 'DOCTOR_NOT_ACTIVE');
-    this.requireOwnerOrClinicOperator(actor, doctor.accountId);
-    if (
-      !this.isClinicOperator(actor) &&
-      dto.type !== AvailabilityType.UNAVAILABLE
-    )
-      this.fail(403, 'FORBIDDEN');
+    // A doctor requests leave through the approval workflow; only clinic operators
+    // may create an immediately effective availability override.
+    this.requireClinicOperator(actor);
     const startAt = new Date(dto.startAt),
       endAt = new Date(dto.endAt),
       now = new Date();
@@ -1251,6 +1456,9 @@ export class DoctorDomainService {
     this.requireOwnerOrClinicOperator(actor, doctor.accountId);
     if (!this.isClinicOperator(actor) && actor.userId !== old.createdBy)
       this.fail(403, 'FORBIDDEN');
+    const linkedLeave = await this.prisma.doctorLeaveRequest.findUnique({ where: { availabilityId: overrideId } });
+    if (linkedLeave?.status === LeaveRequestStatus.APPROVED && !this.isClinicOperator(actor))
+      this.fail(403, 'MANAGER_REVIEW_REQUIRED');
     if (old.status === AvailabilityStatus.CANCELLED)
       return { data: this.formatAvailability(old) };
     if (old.endAt <= new Date()) this.fail(409, 'AVAILABILITY_ALREADY_ENDED');
@@ -1263,6 +1471,14 @@ export class DoctorDomainService {
         },
       });
       if (updated.count !== 1) this.fail(409, 'VERSION_CONFLICT');
+      if (linkedLeave?.status === LeaveRequestStatus.APPROVED) {
+        const changed = await tx.doctorLeaveRequest.updateMany({
+          where: { id: linkedLeave.id, status: LeaveRequestStatus.APPROVED, version: linkedLeave.version },
+          data: { status: LeaveRequestStatus.CANCELLED, version: { increment: 1 }, reviewedBy: actor.userId,
+            reviewedAt: new Date(), reviewReason: dto.reason?.trim() || null },
+        });
+        if (changed.count !== 1) this.fail(409, 'LEAVE_REQUEST_CHANGED');
+      }
       const item = await tx.doctorAvailability.findUnique({
         where: { id: overrideId },
         include: { room: true },

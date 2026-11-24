@@ -21,6 +21,7 @@
     "prisma:migrate:receptionist:deploy": "prisma migrate deploy --schema=prisma/receptionist/schema.prisma",
     "prisma:seed": "prisma db seed",
     "seed:system": "node seed_system_data.js",
+    "seed:clinic-manager": "ts-node prisma/seed-clinic-manager.ts",
     "seed:all": "node seed_system_data.js",
     "test": "jest",
     "test:watch": "jest --watch",

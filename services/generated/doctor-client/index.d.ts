@@ -54,6 +54,11 @@ export type DoctorSchedule = $Result.DefaultSelection<Prisma.$DoctorSchedulePayl
  */
 export type DoctorAvailability = $Result.DefaultSelection<Prisma.$DoctorAvailabilityPayload>
 /**
+ * Model DoctorLeaveRequest
+ * 
+ */
+export type DoctorLeaveRequest = $Result.DefaultSelection<Prisma.$DoctorLeaveRequestPayload>
+/**
  * Model IdempotencyRecord
  * 
  */
@@ -140,6 +145,16 @@ export const AvailabilityReasonCode: {
 export type AvailabilityReasonCode = (typeof AvailabilityReasonCode)[keyof typeof AvailabilityReasonCode]
 
 
+export const LeaveRequestStatus: {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
+export type LeaveRequestStatus = (typeof LeaveRequestStatus)[keyof typeof LeaveRequestStatus]
+
+
 export const RoomStatus: {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE'
@@ -176,6 +191,10 @@ export const AvailabilityStatus: typeof $Enums.AvailabilityStatus
 export type AvailabilityReasonCode = $Enums.AvailabilityReasonCode
 
 export const AvailabilityReasonCode: typeof $Enums.AvailabilityReasonCode
+
+export type LeaveRequestStatus = $Enums.LeaveRequestStatus
+
+export const LeaveRequestStatus: typeof $Enums.LeaveRequestStatus
 
 export type RoomStatus = $Enums.RoomStatus
 
@@ -378,6 +397,16 @@ export class PrismaClient<
     * ```
     */
   get doctorAvailability(): Prisma.DoctorAvailabilityDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.doctorLeaveRequest`: Exposes CRUD operations for the **DoctorLeaveRequest** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DoctorLeaveRequests
+    * const doctorLeaveRequests = await prisma.doctorLeaveRequest.findMany()
+    * ```
+    */
+  get doctorLeaveRequest(): Prisma.DoctorLeaveRequestDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.idempotencyRecord`: Exposes CRUD operations for the **IdempotencyRecord** model.
@@ -856,6 +885,7 @@ export namespace Prisma {
     DoctorSpecialty: 'DoctorSpecialty',
     DoctorSchedule: 'DoctorSchedule',
     DoctorAvailability: 'DoctorAvailability',
+    DoctorLeaveRequest: 'DoctorLeaveRequest',
     IdempotencyRecord: 'IdempotencyRecord',
     AuditRecord: 'AuditRecord',
     OutboxEvent: 'OutboxEvent'
@@ -877,7 +907,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "consultationRank" | "clinicRoom" | "doctor" | "doctorProfile" | "specialty" | "doctorSpecialty" | "doctorSchedule" | "doctorAvailability" | "idempotencyRecord" | "auditRecord" | "outboxEvent"
+      modelProps: "consultationRank" | "clinicRoom" | "doctor" | "doctorProfile" | "specialty" | "doctorSpecialty" | "doctorSchedule" | "doctorAvailability" | "doctorLeaveRequest" | "idempotencyRecord" | "auditRecord" | "outboxEvent"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1473,6 +1503,80 @@ export namespace Prisma {
           }
         }
       }
+      DoctorLeaveRequest: {
+        payload: Prisma.$DoctorLeaveRequestPayload<ExtArgs>
+        fields: Prisma.DoctorLeaveRequestFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DoctorLeaveRequestFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DoctorLeaveRequestFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          findFirst: {
+            args: Prisma.DoctorLeaveRequestFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DoctorLeaveRequestFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          findMany: {
+            args: Prisma.DoctorLeaveRequestFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>[]
+          }
+          create: {
+            args: Prisma.DoctorLeaveRequestCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          createMany: {
+            args: Prisma.DoctorLeaveRequestCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DoctorLeaveRequestCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>[]
+          }
+          delete: {
+            args: Prisma.DoctorLeaveRequestDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          update: {
+            args: Prisma.DoctorLeaveRequestUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          deleteMany: {
+            args: Prisma.DoctorLeaveRequestDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DoctorLeaveRequestUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.DoctorLeaveRequestUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>[]
+          }
+          upsert: {
+            args: Prisma.DoctorLeaveRequestUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoctorLeaveRequestPayload>
+          }
+          aggregate: {
+            args: Prisma.DoctorLeaveRequestAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDoctorLeaveRequest>
+          }
+          groupBy: {
+            args: Prisma.DoctorLeaveRequestGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DoctorLeaveRequestGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DoctorLeaveRequestCountArgs<ExtArgs>
+            result: $Utils.Optional<DoctorLeaveRequestCountAggregateOutputType> | number
+          }
+        }
+      }
       IdempotencyRecord: {
         payload: Prisma.$IdempotencyRecordPayload<ExtArgs>
         fields: Prisma.IdempotencyRecordFieldRefs
@@ -1799,6 +1903,7 @@ export namespace Prisma {
     doctorSpecialty?: DoctorSpecialtyOmit
     doctorSchedule?: DoctorScheduleOmit
     doctorAvailability?: DoctorAvailabilityOmit
+    doctorLeaveRequest?: DoctorLeaveRequestOmit
     idempotencyRecord?: IdempotencyRecordOmit
     auditRecord?: AuditRecordOmit
     outboxEvent?: OutboxEventOmit
@@ -1956,6 +2061,7 @@ export namespace Prisma {
     specialties: number
     schedules: number
     availabilities: number
+    leaveRequests: number
     idempotencies: number
     audits: number
     outboxEvents: number
@@ -1965,6 +2071,7 @@ export namespace Prisma {
     specialties?: boolean | DoctorCountOutputTypeCountSpecialtiesArgs
     schedules?: boolean | DoctorCountOutputTypeCountSchedulesArgs
     availabilities?: boolean | DoctorCountOutputTypeCountAvailabilitiesArgs
+    leaveRequests?: boolean | DoctorCountOutputTypeCountLeaveRequestsArgs
     idempotencies?: boolean | DoctorCountOutputTypeCountIdempotenciesArgs
     audits?: boolean | DoctorCountOutputTypeCountAuditsArgs
     outboxEvents?: boolean | DoctorCountOutputTypeCountOutboxEventsArgs
@@ -2000,6 +2107,13 @@ export namespace Prisma {
    */
   export type DoctorCountOutputTypeCountAvailabilitiesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DoctorAvailabilityWhereInput
+  }
+
+  /**
+   * DoctorCountOutputType without action
+   */
+  export type DoctorCountOutputTypeCountLeaveRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DoctorLeaveRequestWhereInput
   }
 
   /**
@@ -2052,6 +2166,37 @@ export namespace Prisma {
    */
   export type SpecialtyCountOutputTypeCountDoctorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DoctorSpecialtyWhereInput
+  }
+
+
+  /**
+   * Count Type DoctorScheduleCountOutputType
+   */
+
+  export type DoctorScheduleCountOutputType = {
+    leaveRequests: number
+  }
+
+  export type DoctorScheduleCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    leaveRequests?: boolean | DoctorScheduleCountOutputTypeCountLeaveRequestsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DoctorScheduleCountOutputType without action
+   */
+  export type DoctorScheduleCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorScheduleCountOutputType
+     */
+    select?: DoctorScheduleCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DoctorScheduleCountOutputType without action
+   */
+  export type DoctorScheduleCountOutputTypeCountLeaveRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DoctorLeaveRequestWhereInput
   }
 
 
@@ -4552,6 +4697,7 @@ export namespace Prisma {
     specialties?: boolean | Doctor$specialtiesArgs<ExtArgs>
     schedules?: boolean | Doctor$schedulesArgs<ExtArgs>
     availabilities?: boolean | Doctor$availabilitiesArgs<ExtArgs>
+    leaveRequests?: boolean | Doctor$leaveRequestsArgs<ExtArgs>
     idempotencies?: boolean | Doctor$idempotenciesArgs<ExtArgs>
     audits?: boolean | Doctor$auditsArgs<ExtArgs>
     outboxEvents?: boolean | Doctor$outboxEventsArgs<ExtArgs>
@@ -4603,6 +4749,7 @@ export namespace Prisma {
     specialties?: boolean | Doctor$specialtiesArgs<ExtArgs>
     schedules?: boolean | Doctor$schedulesArgs<ExtArgs>
     availabilities?: boolean | Doctor$availabilitiesArgs<ExtArgs>
+    leaveRequests?: boolean | Doctor$leaveRequestsArgs<ExtArgs>
     idempotencies?: boolean | Doctor$idempotenciesArgs<ExtArgs>
     audits?: boolean | Doctor$auditsArgs<ExtArgs>
     outboxEvents?: boolean | Doctor$outboxEventsArgs<ExtArgs>
@@ -4623,6 +4770,7 @@ export namespace Prisma {
       specialties: Prisma.$DoctorSpecialtyPayload<ExtArgs>[]
       schedules: Prisma.$DoctorSchedulePayload<ExtArgs>[]
       availabilities: Prisma.$DoctorAvailabilityPayload<ExtArgs>[]
+      leaveRequests: Prisma.$DoctorLeaveRequestPayload<ExtArgs>[]
       idempotencies: Prisma.$IdempotencyRecordPayload<ExtArgs>[]
       audits: Prisma.$AuditRecordPayload<ExtArgs>[]
       outboxEvents: Prisma.$OutboxEventPayload<ExtArgs>[]
@@ -5036,6 +5184,7 @@ export namespace Prisma {
     specialties<T extends Doctor$specialtiesArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$specialtiesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorSpecialtyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     schedules<T extends Doctor$schedulesArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$schedulesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorSchedulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     availabilities<T extends Doctor$availabilitiesArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$availabilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorAvailabilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    leaveRequests<T extends Doctor$leaveRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$leaveRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     idempotencies<T extends Doctor$idempotenciesArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$idempotenciesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$IdempotencyRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     audits<T extends Doctor$auditsArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$auditsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     outboxEvents<T extends Doctor$outboxEventsArgs<ExtArgs> = {}>(args?: Subset<T, Doctor$outboxEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OutboxEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -5580,6 +5729,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DoctorAvailabilityScalarFieldEnum | DoctorAvailabilityScalarFieldEnum[]
+  }
+
+  /**
+   * Doctor.leaveRequests
+   */
+  export type Doctor$leaveRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    where?: DoctorLeaveRequestWhereInput
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DoctorLeaveRequestScalarFieldEnum | DoctorLeaveRequestScalarFieldEnum[]
   }
 
   /**
@@ -9272,6 +9445,8 @@ export namespace Prisma {
     updatedAt?: boolean
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
     room?: boolean | DoctorSchedule$roomArgs<ExtArgs>
+    leaveRequests?: boolean | DoctorSchedule$leaveRequestsArgs<ExtArgs>
+    _count?: boolean | DoctorScheduleCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["doctorSchedule"]>
 
   export type DoctorScheduleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -9336,6 +9511,8 @@ export namespace Prisma {
   export type DoctorScheduleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
     room?: boolean | DoctorSchedule$roomArgs<ExtArgs>
+    leaveRequests?: boolean | DoctorSchedule$leaveRequestsArgs<ExtArgs>
+    _count?: boolean | DoctorScheduleCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type DoctorScheduleIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
@@ -9351,6 +9528,7 @@ export namespace Prisma {
     objects: {
       doctor: Prisma.$DoctorPayload<ExtArgs>
       room: Prisma.$ClinicRoomPayload<ExtArgs> | null
+      leaveRequests: Prisma.$DoctorLeaveRequestPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -9764,6 +9942,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     doctor<T extends DoctorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DoctorDefaultArgs<ExtArgs>>): Prisma__DoctorClient<$Result.GetResult<Prisma.$DoctorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     room<T extends DoctorSchedule$roomArgs<ExtArgs> = {}>(args?: Subset<T, DoctorSchedule$roomArgs<ExtArgs>>): Prisma__ClinicRoomClient<$Result.GetResult<Prisma.$ClinicRoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    leaveRequests<T extends DoctorSchedule$leaveRequestsArgs<ExtArgs> = {}>(args?: Subset<T, DoctorSchedule$leaveRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10223,6 +10402,30 @@ export namespace Prisma {
   }
 
   /**
+   * DoctorSchedule.leaveRequests
+   */
+  export type DoctorSchedule$leaveRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    where?: DoctorLeaveRequestWhereInput
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DoctorLeaveRequestScalarFieldEnum | DoctorLeaveRequestScalarFieldEnum[]
+  }
+
+  /**
    * DoctorSchedule without action
    */
   export type DoctorScheduleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10505,6 +10708,7 @@ export namespace Prisma {
     updatedAt?: boolean
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
     room?: boolean | DoctorAvailability$roomArgs<ExtArgs>
+    leaveRequest?: boolean | DoctorAvailability$leaveRequestArgs<ExtArgs>
   }, ExtArgs["result"]["doctorAvailability"]>
 
   export type DoctorAvailabilitySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -10563,6 +10767,7 @@ export namespace Prisma {
   export type DoctorAvailabilityInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
     room?: boolean | DoctorAvailability$roomArgs<ExtArgs>
+    leaveRequest?: boolean | DoctorAvailability$leaveRequestArgs<ExtArgs>
   }
   export type DoctorAvailabilityIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     doctor?: boolean | DoctorDefaultArgs<ExtArgs>
@@ -10578,6 +10783,7 @@ export namespace Prisma {
     objects: {
       doctor: Prisma.$DoctorPayload<ExtArgs>
       room: Prisma.$ClinicRoomPayload<ExtArgs> | null
+      leaveRequest: Prisma.$DoctorLeaveRequestPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -10989,6 +11195,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     doctor<T extends DoctorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DoctorDefaultArgs<ExtArgs>>): Prisma__DoctorClient<$Result.GetResult<Prisma.$DoctorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     room<T extends DoctorAvailability$roomArgs<ExtArgs> = {}>(args?: Subset<T, DoctorAvailability$roomArgs<ExtArgs>>): Prisma__ClinicRoomClient<$Result.GetResult<Prisma.$ClinicRoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    leaveRequest<T extends DoctorAvailability$leaveRequestArgs<ExtArgs> = {}>(args?: Subset<T, DoctorAvailability$leaveRequestArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11446,6 +11653,25 @@ export namespace Prisma {
   }
 
   /**
+   * DoctorAvailability.leaveRequest
+   */
+  export type DoctorAvailability$leaveRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    where?: DoctorLeaveRequestWhereInput
+  }
+
+  /**
    * DoctorAvailability without action
    */
   export type DoctorAvailabilityDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -11461,6 +11687,1276 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: DoctorAvailabilityInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DoctorLeaveRequest
+   */
+
+  export type AggregateDoctorLeaveRequest = {
+    _count: DoctorLeaveRequestCountAggregateOutputType | null
+    _avg: DoctorLeaveRequestAvgAggregateOutputType | null
+    _sum: DoctorLeaveRequestSumAggregateOutputType | null
+    _min: DoctorLeaveRequestMinAggregateOutputType | null
+    _max: DoctorLeaveRequestMaxAggregateOutputType | null
+  }
+
+  export type DoctorLeaveRequestAvgAggregateOutputType = {
+    version: number | null
+  }
+
+  export type DoctorLeaveRequestSumAggregateOutputType = {
+    version: number | null
+  }
+
+  export type DoctorLeaveRequestMinAggregateOutputType = {
+    id: string | null
+    doctorId: string | null
+    scheduleId: string | null
+    workDate: Date | null
+    startAt: Date | null
+    endAt: Date | null
+    reasonCode: $Enums.AvailabilityReasonCode | null
+    note: string | null
+    status: $Enums.LeaveRequestStatus | null
+    version: number | null
+    availabilityId: string | null
+    reviewedBy: string | null
+    reviewedAt: Date | null
+    reviewReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DoctorLeaveRequestMaxAggregateOutputType = {
+    id: string | null
+    doctorId: string | null
+    scheduleId: string | null
+    workDate: Date | null
+    startAt: Date | null
+    endAt: Date | null
+    reasonCode: $Enums.AvailabilityReasonCode | null
+    note: string | null
+    status: $Enums.LeaveRequestStatus | null
+    version: number | null
+    availabilityId: string | null
+    reviewedBy: string | null
+    reviewedAt: Date | null
+    reviewReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DoctorLeaveRequestCountAggregateOutputType = {
+    id: number
+    doctorId: number
+    scheduleId: number
+    workDate: number
+    startAt: number
+    endAt: number
+    reasonCode: number
+    note: number
+    status: number
+    version: number
+    availabilityId: number
+    reviewedBy: number
+    reviewedAt: number
+    reviewReason: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DoctorLeaveRequestAvgAggregateInputType = {
+    version?: true
+  }
+
+  export type DoctorLeaveRequestSumAggregateInputType = {
+    version?: true
+  }
+
+  export type DoctorLeaveRequestMinAggregateInputType = {
+    id?: true
+    doctorId?: true
+    scheduleId?: true
+    workDate?: true
+    startAt?: true
+    endAt?: true
+    reasonCode?: true
+    note?: true
+    status?: true
+    version?: true
+    availabilityId?: true
+    reviewedBy?: true
+    reviewedAt?: true
+    reviewReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DoctorLeaveRequestMaxAggregateInputType = {
+    id?: true
+    doctorId?: true
+    scheduleId?: true
+    workDate?: true
+    startAt?: true
+    endAt?: true
+    reasonCode?: true
+    note?: true
+    status?: true
+    version?: true
+    availabilityId?: true
+    reviewedBy?: true
+    reviewedAt?: true
+    reviewReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DoctorLeaveRequestCountAggregateInputType = {
+    id?: true
+    doctorId?: true
+    scheduleId?: true
+    workDate?: true
+    startAt?: true
+    endAt?: true
+    reasonCode?: true
+    note?: true
+    status?: true
+    version?: true
+    availabilityId?: true
+    reviewedBy?: true
+    reviewedAt?: true
+    reviewReason?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DoctorLeaveRequestAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DoctorLeaveRequest to aggregate.
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoctorLeaveRequests to fetch.
+     */
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoctorLeaveRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoctorLeaveRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DoctorLeaveRequests
+    **/
+    _count?: true | DoctorLeaveRequestCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DoctorLeaveRequestAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DoctorLeaveRequestSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DoctorLeaveRequestMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DoctorLeaveRequestMaxAggregateInputType
+  }
+
+  export type GetDoctorLeaveRequestAggregateType<T extends DoctorLeaveRequestAggregateArgs> = {
+        [P in keyof T & keyof AggregateDoctorLeaveRequest]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDoctorLeaveRequest[P]>
+      : GetScalarType<T[P], AggregateDoctorLeaveRequest[P]>
+  }
+
+
+
+
+  export type DoctorLeaveRequestGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DoctorLeaveRequestWhereInput
+    orderBy?: DoctorLeaveRequestOrderByWithAggregationInput | DoctorLeaveRequestOrderByWithAggregationInput[]
+    by: DoctorLeaveRequestScalarFieldEnum[] | DoctorLeaveRequestScalarFieldEnum
+    having?: DoctorLeaveRequestScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DoctorLeaveRequestCountAggregateInputType | true
+    _avg?: DoctorLeaveRequestAvgAggregateInputType
+    _sum?: DoctorLeaveRequestSumAggregateInputType
+    _min?: DoctorLeaveRequestMinAggregateInputType
+    _max?: DoctorLeaveRequestMaxAggregateInputType
+  }
+
+  export type DoctorLeaveRequestGroupByOutputType = {
+    id: string
+    doctorId: string
+    scheduleId: string
+    workDate: Date
+    startAt: Date
+    endAt: Date
+    reasonCode: $Enums.AvailabilityReasonCode
+    note: string | null
+    status: $Enums.LeaveRequestStatus
+    version: number
+    availabilityId: string | null
+    reviewedBy: string | null
+    reviewedAt: Date | null
+    reviewReason: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: DoctorLeaveRequestCountAggregateOutputType | null
+    _avg: DoctorLeaveRequestAvgAggregateOutputType | null
+    _sum: DoctorLeaveRequestSumAggregateOutputType | null
+    _min: DoctorLeaveRequestMinAggregateOutputType | null
+    _max: DoctorLeaveRequestMaxAggregateOutputType | null
+  }
+
+  type GetDoctorLeaveRequestGroupByPayload<T extends DoctorLeaveRequestGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DoctorLeaveRequestGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DoctorLeaveRequestGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DoctorLeaveRequestGroupByOutputType[P]>
+            : GetScalarType<T[P], DoctorLeaveRequestGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DoctorLeaveRequestSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    doctorId?: boolean
+    scheduleId?: boolean
+    workDate?: boolean
+    startAt?: boolean
+    endAt?: boolean
+    reasonCode?: boolean
+    note?: boolean
+    status?: boolean
+    version?: boolean
+    availabilityId?: boolean
+    reviewedBy?: boolean
+    reviewedAt?: boolean
+    reviewReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }, ExtArgs["result"]["doctorLeaveRequest"]>
+
+  export type DoctorLeaveRequestSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    doctorId?: boolean
+    scheduleId?: boolean
+    workDate?: boolean
+    startAt?: boolean
+    endAt?: boolean
+    reasonCode?: boolean
+    note?: boolean
+    status?: boolean
+    version?: boolean
+    availabilityId?: boolean
+    reviewedBy?: boolean
+    reviewedAt?: boolean
+    reviewReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }, ExtArgs["result"]["doctorLeaveRequest"]>
+
+  export type DoctorLeaveRequestSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    doctorId?: boolean
+    scheduleId?: boolean
+    workDate?: boolean
+    startAt?: boolean
+    endAt?: boolean
+    reasonCode?: boolean
+    note?: boolean
+    status?: boolean
+    version?: boolean
+    availabilityId?: boolean
+    reviewedBy?: boolean
+    reviewedAt?: boolean
+    reviewReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }, ExtArgs["result"]["doctorLeaveRequest"]>
+
+  export type DoctorLeaveRequestSelectScalar = {
+    id?: boolean
+    doctorId?: boolean
+    scheduleId?: boolean
+    workDate?: boolean
+    startAt?: boolean
+    endAt?: boolean
+    reasonCode?: boolean
+    note?: boolean
+    status?: boolean
+    version?: boolean
+    availabilityId?: boolean
+    reviewedBy?: boolean
+    reviewedAt?: boolean
+    reviewReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DoctorLeaveRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "doctorId" | "scheduleId" | "workDate" | "startAt" | "endAt" | "reasonCode" | "note" | "status" | "version" | "availabilityId" | "reviewedBy" | "reviewedAt" | "reviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["doctorLeaveRequest"]>
+  export type DoctorLeaveRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }
+  export type DoctorLeaveRequestIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }
+  export type DoctorLeaveRequestIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    doctor?: boolean | DoctorDefaultArgs<ExtArgs>
+    schedule?: boolean | DoctorScheduleDefaultArgs<ExtArgs>
+    availability?: boolean | DoctorLeaveRequest$availabilityArgs<ExtArgs>
+  }
+
+  export type $DoctorLeaveRequestPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DoctorLeaveRequest"
+    objects: {
+      doctor: Prisma.$DoctorPayload<ExtArgs>
+      schedule: Prisma.$DoctorSchedulePayload<ExtArgs>
+      availability: Prisma.$DoctorAvailabilityPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      doctorId: string
+      scheduleId: string
+      workDate: Date
+      startAt: Date
+      endAt: Date
+      reasonCode: $Enums.AvailabilityReasonCode
+      note: string | null
+      status: $Enums.LeaveRequestStatus
+      version: number
+      availabilityId: string | null
+      reviewedBy: string | null
+      reviewedAt: Date | null
+      reviewReason: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["doctorLeaveRequest"]>
+    composites: {}
+  }
+
+  type DoctorLeaveRequestGetPayload<S extends boolean | null | undefined | DoctorLeaveRequestDefaultArgs> = $Result.GetResult<Prisma.$DoctorLeaveRequestPayload, S>
+
+  type DoctorLeaveRequestCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<DoctorLeaveRequestFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: DoctorLeaveRequestCountAggregateInputType | true
+    }
+
+  export interface DoctorLeaveRequestDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DoctorLeaveRequest'], meta: { name: 'DoctorLeaveRequest' } }
+    /**
+     * Find zero or one DoctorLeaveRequest that matches the filter.
+     * @param {DoctorLeaveRequestFindUniqueArgs} args - Arguments to find a DoctorLeaveRequest
+     * @example
+     * // Get one DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DoctorLeaveRequestFindUniqueArgs>(args: SelectSubset<T, DoctorLeaveRequestFindUniqueArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one DoctorLeaveRequest that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {DoctorLeaveRequestFindUniqueOrThrowArgs} args - Arguments to find a DoctorLeaveRequest
+     * @example
+     * // Get one DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DoctorLeaveRequestFindUniqueOrThrowArgs>(args: SelectSubset<T, DoctorLeaveRequestFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DoctorLeaveRequest that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestFindFirstArgs} args - Arguments to find a DoctorLeaveRequest
+     * @example
+     * // Get one DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DoctorLeaveRequestFindFirstArgs>(args?: SelectSubset<T, DoctorLeaveRequestFindFirstArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DoctorLeaveRequest that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestFindFirstOrThrowArgs} args - Arguments to find a DoctorLeaveRequest
+     * @example
+     * // Get one DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DoctorLeaveRequestFindFirstOrThrowArgs>(args?: SelectSubset<T, DoctorLeaveRequestFindFirstOrThrowArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more DoctorLeaveRequests that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DoctorLeaveRequests
+     * const doctorLeaveRequests = await prisma.doctorLeaveRequest.findMany()
+     * 
+     * // Get first 10 DoctorLeaveRequests
+     * const doctorLeaveRequests = await prisma.doctorLeaveRequest.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const doctorLeaveRequestWithIdOnly = await prisma.doctorLeaveRequest.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DoctorLeaveRequestFindManyArgs>(args?: SelectSubset<T, DoctorLeaveRequestFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a DoctorLeaveRequest.
+     * @param {DoctorLeaveRequestCreateArgs} args - Arguments to create a DoctorLeaveRequest.
+     * @example
+     * // Create one DoctorLeaveRequest
+     * const DoctorLeaveRequest = await prisma.doctorLeaveRequest.create({
+     *   data: {
+     *     // ... data to create a DoctorLeaveRequest
+     *   }
+     * })
+     * 
+     */
+    create<T extends DoctorLeaveRequestCreateArgs>(args: SelectSubset<T, DoctorLeaveRequestCreateArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many DoctorLeaveRequests.
+     * @param {DoctorLeaveRequestCreateManyArgs} args - Arguments to create many DoctorLeaveRequests.
+     * @example
+     * // Create many DoctorLeaveRequests
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DoctorLeaveRequestCreateManyArgs>(args?: SelectSubset<T, DoctorLeaveRequestCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DoctorLeaveRequests and returns the data saved in the database.
+     * @param {DoctorLeaveRequestCreateManyAndReturnArgs} args - Arguments to create many DoctorLeaveRequests.
+     * @example
+     * // Create many DoctorLeaveRequests
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DoctorLeaveRequests and only return the `id`
+     * const doctorLeaveRequestWithIdOnly = await prisma.doctorLeaveRequest.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DoctorLeaveRequestCreateManyAndReturnArgs>(args?: SelectSubset<T, DoctorLeaveRequestCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a DoctorLeaveRequest.
+     * @param {DoctorLeaveRequestDeleteArgs} args - Arguments to delete one DoctorLeaveRequest.
+     * @example
+     * // Delete one DoctorLeaveRequest
+     * const DoctorLeaveRequest = await prisma.doctorLeaveRequest.delete({
+     *   where: {
+     *     // ... filter to delete one DoctorLeaveRequest
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DoctorLeaveRequestDeleteArgs>(args: SelectSubset<T, DoctorLeaveRequestDeleteArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one DoctorLeaveRequest.
+     * @param {DoctorLeaveRequestUpdateArgs} args - Arguments to update one DoctorLeaveRequest.
+     * @example
+     * // Update one DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DoctorLeaveRequestUpdateArgs>(args: SelectSubset<T, DoctorLeaveRequestUpdateArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more DoctorLeaveRequests.
+     * @param {DoctorLeaveRequestDeleteManyArgs} args - Arguments to filter DoctorLeaveRequests to delete.
+     * @example
+     * // Delete a few DoctorLeaveRequests
+     * const { count } = await prisma.doctorLeaveRequest.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DoctorLeaveRequestDeleteManyArgs>(args?: SelectSubset<T, DoctorLeaveRequestDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DoctorLeaveRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DoctorLeaveRequests
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DoctorLeaveRequestUpdateManyArgs>(args: SelectSubset<T, DoctorLeaveRequestUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DoctorLeaveRequests and returns the data updated in the database.
+     * @param {DoctorLeaveRequestUpdateManyAndReturnArgs} args - Arguments to update many DoctorLeaveRequests.
+     * @example
+     * // Update many DoctorLeaveRequests
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more DoctorLeaveRequests and only return the `id`
+     * const doctorLeaveRequestWithIdOnly = await prisma.doctorLeaveRequest.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends DoctorLeaveRequestUpdateManyAndReturnArgs>(args: SelectSubset<T, DoctorLeaveRequestUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one DoctorLeaveRequest.
+     * @param {DoctorLeaveRequestUpsertArgs} args - Arguments to update or create a DoctorLeaveRequest.
+     * @example
+     * // Update or create a DoctorLeaveRequest
+     * const doctorLeaveRequest = await prisma.doctorLeaveRequest.upsert({
+     *   create: {
+     *     // ... data to create a DoctorLeaveRequest
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DoctorLeaveRequest we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DoctorLeaveRequestUpsertArgs>(args: SelectSubset<T, DoctorLeaveRequestUpsertArgs<ExtArgs>>): Prisma__DoctorLeaveRequestClient<$Result.GetResult<Prisma.$DoctorLeaveRequestPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of DoctorLeaveRequests.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestCountArgs} args - Arguments to filter DoctorLeaveRequests to count.
+     * @example
+     * // Count the number of DoctorLeaveRequests
+     * const count = await prisma.doctorLeaveRequest.count({
+     *   where: {
+     *     // ... the filter for the DoctorLeaveRequests we want to count
+     *   }
+     * })
+    **/
+    count<T extends DoctorLeaveRequestCountArgs>(
+      args?: Subset<T, DoctorLeaveRequestCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DoctorLeaveRequestCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DoctorLeaveRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DoctorLeaveRequestAggregateArgs>(args: Subset<T, DoctorLeaveRequestAggregateArgs>): Prisma.PrismaPromise<GetDoctorLeaveRequestAggregateType<T>>
+
+    /**
+     * Group by DoctorLeaveRequest.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoctorLeaveRequestGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DoctorLeaveRequestGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DoctorLeaveRequestGroupByArgs['orderBy'] }
+        : { orderBy?: DoctorLeaveRequestGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DoctorLeaveRequestGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDoctorLeaveRequestGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DoctorLeaveRequest model
+   */
+  readonly fields: DoctorLeaveRequestFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DoctorLeaveRequest.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DoctorLeaveRequestClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    doctor<T extends DoctorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DoctorDefaultArgs<ExtArgs>>): Prisma__DoctorClient<$Result.GetResult<Prisma.$DoctorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    schedule<T extends DoctorScheduleDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DoctorScheduleDefaultArgs<ExtArgs>>): Prisma__DoctorScheduleClient<$Result.GetResult<Prisma.$DoctorSchedulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    availability<T extends DoctorLeaveRequest$availabilityArgs<ExtArgs> = {}>(args?: Subset<T, DoctorLeaveRequest$availabilityArgs<ExtArgs>>): Prisma__DoctorAvailabilityClient<$Result.GetResult<Prisma.$DoctorAvailabilityPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DoctorLeaveRequest model
+   */
+  interface DoctorLeaveRequestFieldRefs {
+    readonly id: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly doctorId: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly scheduleId: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly workDate: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+    readonly startAt: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+    readonly endAt: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+    readonly reasonCode: FieldRef<"DoctorLeaveRequest", 'AvailabilityReasonCode'>
+    readonly note: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly status: FieldRef<"DoctorLeaveRequest", 'LeaveRequestStatus'>
+    readonly version: FieldRef<"DoctorLeaveRequest", 'Int'>
+    readonly availabilityId: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly reviewedBy: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly reviewedAt: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+    readonly reviewReason: FieldRef<"DoctorLeaveRequest", 'String'>
+    readonly createdAt: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+    readonly updatedAt: FieldRef<"DoctorLeaveRequest", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DoctorLeaveRequest findUnique
+   */
+  export type DoctorLeaveRequestFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which DoctorLeaveRequest to fetch.
+     */
+    where: DoctorLeaveRequestWhereUniqueInput
+  }
+
+  /**
+   * DoctorLeaveRequest findUniqueOrThrow
+   */
+  export type DoctorLeaveRequestFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which DoctorLeaveRequest to fetch.
+     */
+    where: DoctorLeaveRequestWhereUniqueInput
+  }
+
+  /**
+   * DoctorLeaveRequest findFirst
+   */
+  export type DoctorLeaveRequestFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which DoctorLeaveRequest to fetch.
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoctorLeaveRequests to fetch.
+     */
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DoctorLeaveRequests.
+     */
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoctorLeaveRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoctorLeaveRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DoctorLeaveRequests.
+     */
+    distinct?: DoctorLeaveRequestScalarFieldEnum | DoctorLeaveRequestScalarFieldEnum[]
+  }
+
+  /**
+   * DoctorLeaveRequest findFirstOrThrow
+   */
+  export type DoctorLeaveRequestFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which DoctorLeaveRequest to fetch.
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoctorLeaveRequests to fetch.
+     */
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DoctorLeaveRequests.
+     */
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoctorLeaveRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoctorLeaveRequests.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DoctorLeaveRequests.
+     */
+    distinct?: DoctorLeaveRequestScalarFieldEnum | DoctorLeaveRequestScalarFieldEnum[]
+  }
+
+  /**
+   * DoctorLeaveRequest findMany
+   */
+  export type DoctorLeaveRequestFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter, which DoctorLeaveRequests to fetch.
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoctorLeaveRequests to fetch.
+     */
+    orderBy?: DoctorLeaveRequestOrderByWithRelationInput | DoctorLeaveRequestOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DoctorLeaveRequests.
+     */
+    cursor?: DoctorLeaveRequestWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoctorLeaveRequests from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoctorLeaveRequests.
+     */
+    skip?: number
+    distinct?: DoctorLeaveRequestScalarFieldEnum | DoctorLeaveRequestScalarFieldEnum[]
+  }
+
+  /**
+   * DoctorLeaveRequest create
+   */
+  export type DoctorLeaveRequestCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DoctorLeaveRequest.
+     */
+    data: XOR<DoctorLeaveRequestCreateInput, DoctorLeaveRequestUncheckedCreateInput>
+  }
+
+  /**
+   * DoctorLeaveRequest createMany
+   */
+  export type DoctorLeaveRequestCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DoctorLeaveRequests.
+     */
+    data: DoctorLeaveRequestCreateManyInput | DoctorLeaveRequestCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DoctorLeaveRequest createManyAndReturn
+   */
+  export type DoctorLeaveRequestCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * The data used to create many DoctorLeaveRequests.
+     */
+    data: DoctorLeaveRequestCreateManyInput | DoctorLeaveRequestCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DoctorLeaveRequest update
+   */
+  export type DoctorLeaveRequestUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DoctorLeaveRequest.
+     */
+    data: XOR<DoctorLeaveRequestUpdateInput, DoctorLeaveRequestUncheckedUpdateInput>
+    /**
+     * Choose, which DoctorLeaveRequest to update.
+     */
+    where: DoctorLeaveRequestWhereUniqueInput
+  }
+
+  /**
+   * DoctorLeaveRequest updateMany
+   */
+  export type DoctorLeaveRequestUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DoctorLeaveRequests.
+     */
+    data: XOR<DoctorLeaveRequestUpdateManyMutationInput, DoctorLeaveRequestUncheckedUpdateManyInput>
+    /**
+     * Filter which DoctorLeaveRequests to update
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * Limit how many DoctorLeaveRequests to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * DoctorLeaveRequest updateManyAndReturn
+   */
+  export type DoctorLeaveRequestUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * The data used to update DoctorLeaveRequests.
+     */
+    data: XOR<DoctorLeaveRequestUpdateManyMutationInput, DoctorLeaveRequestUncheckedUpdateManyInput>
+    /**
+     * Filter which DoctorLeaveRequests to update
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * Limit how many DoctorLeaveRequests to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DoctorLeaveRequest upsert
+   */
+  export type DoctorLeaveRequestUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DoctorLeaveRequest to update in case it exists.
+     */
+    where: DoctorLeaveRequestWhereUniqueInput
+    /**
+     * In case the DoctorLeaveRequest found by the `where` argument doesn't exist, create a new DoctorLeaveRequest with this data.
+     */
+    create: XOR<DoctorLeaveRequestCreateInput, DoctorLeaveRequestUncheckedCreateInput>
+    /**
+     * In case the DoctorLeaveRequest was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DoctorLeaveRequestUpdateInput, DoctorLeaveRequestUncheckedUpdateInput>
+  }
+
+  /**
+   * DoctorLeaveRequest delete
+   */
+  export type DoctorLeaveRequestDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
+    /**
+     * Filter which DoctorLeaveRequest to delete.
+     */
+    where: DoctorLeaveRequestWhereUniqueInput
+  }
+
+  /**
+   * DoctorLeaveRequest deleteMany
+   */
+  export type DoctorLeaveRequestDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DoctorLeaveRequests to delete
+     */
+    where?: DoctorLeaveRequestWhereInput
+    /**
+     * Limit how many DoctorLeaveRequests to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * DoctorLeaveRequest.availability
+   */
+  export type DoctorLeaveRequest$availabilityArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorAvailability
+     */
+    select?: DoctorAvailabilitySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorAvailability
+     */
+    omit?: DoctorAvailabilityOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorAvailabilityInclude<ExtArgs> | null
+    where?: DoctorAvailabilityWhereInput
+  }
+
+  /**
+   * DoctorLeaveRequest without action
+   */
+  export type DoctorLeaveRequestDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoctorLeaveRequest
+     */
+    select?: DoctorLeaveRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoctorLeaveRequest
+     */
+    omit?: DoctorLeaveRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DoctorLeaveRequestInclude<ExtArgs> | null
   }
 
 
@@ -15027,6 +16523,28 @@ export namespace Prisma {
   export type DoctorAvailabilityScalarFieldEnum = (typeof DoctorAvailabilityScalarFieldEnum)[keyof typeof DoctorAvailabilityScalarFieldEnum]
 
 
+  export const DoctorLeaveRequestScalarFieldEnum: {
+    id: 'id',
+    doctorId: 'doctorId',
+    scheduleId: 'scheduleId',
+    workDate: 'workDate',
+    startAt: 'startAt',
+    endAt: 'endAt',
+    reasonCode: 'reasonCode',
+    note: 'note',
+    status: 'status',
+    version: 'version',
+    availabilityId: 'availabilityId',
+    reviewedBy: 'reviewedBy',
+    reviewedAt: 'reviewedAt',
+    reviewReason: 'reviewReason',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DoctorLeaveRequestScalarFieldEnum = (typeof DoctorLeaveRequestScalarFieldEnum)[keyof typeof DoctorLeaveRequestScalarFieldEnum]
+
+
   export const IdempotencyRecordScalarFieldEnum: {
     id: 'id',
     key: 'key',
@@ -15301,6 +16819,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'LeaveRequestStatus'
+   */
+  export type EnumLeaveRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LeaveRequestStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'LeaveRequestStatus[]'
+   */
+  export type ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LeaveRequestStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -15470,6 +17002,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyListRelationFilter
     schedules?: DoctorScheduleListRelationFilter
     availabilities?: DoctorAvailabilityListRelationFilter
+    leaveRequests?: DoctorLeaveRequestListRelationFilter
     idempotencies?: IdempotencyRecordListRelationFilter
     audits?: AuditRecordListRelationFilter
     outboxEvents?: OutboxEventListRelationFilter
@@ -15490,6 +17023,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyOrderByRelationAggregateInput
     schedules?: DoctorScheduleOrderByRelationAggregateInput
     availabilities?: DoctorAvailabilityOrderByRelationAggregateInput
+    leaveRequests?: DoctorLeaveRequestOrderByRelationAggregateInput
     idempotencies?: IdempotencyRecordOrderByRelationAggregateInput
     audits?: AuditRecordOrderByRelationAggregateInput
     outboxEvents?: OutboxEventOrderByRelationAggregateInput
@@ -15513,6 +17047,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyListRelationFilter
     schedules?: DoctorScheduleListRelationFilter
     availabilities?: DoctorAvailabilityListRelationFilter
+    leaveRequests?: DoctorLeaveRequestListRelationFilter
     idempotencies?: IdempotencyRecordListRelationFilter
     audits?: AuditRecordListRelationFilter
     outboxEvents?: OutboxEventListRelationFilter
@@ -15777,6 +17312,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"DoctorSchedule"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
     room?: XOR<ClinicRoomNullableScalarRelationFilter, ClinicRoomWhereInput> | null
+    leaveRequests?: DoctorLeaveRequestListRelationFilter
   }
 
   export type DoctorScheduleOrderByWithRelationInput = {
@@ -15797,6 +17333,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     doctor?: DoctorOrderByWithRelationInput
     room?: ClinicRoomOrderByWithRelationInput
+    leaveRequests?: DoctorLeaveRequestOrderByRelationAggregateInput
   }
 
   export type DoctorScheduleWhereUniqueInput = Prisma.AtLeast<{
@@ -15820,6 +17357,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"DoctorSchedule"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
     room?: XOR<ClinicRoomNullableScalarRelationFilter, ClinicRoomWhereInput> | null
+    leaveRequests?: DoctorLeaveRequestListRelationFilter
   }, "id">
 
   export type DoctorScheduleOrderByWithAggregationInput = {
@@ -15885,6 +17423,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"DoctorAvailability"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
     room?: XOR<ClinicRoomNullableScalarRelationFilter, ClinicRoomWhereInput> | null
+    leaveRequest?: XOR<DoctorLeaveRequestNullableScalarRelationFilter, DoctorLeaveRequestWhereInput> | null
   }
 
   export type DoctorAvailabilityOrderByWithRelationInput = {
@@ -15903,6 +17442,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     doctor?: DoctorOrderByWithRelationInput
     room?: ClinicRoomOrderByWithRelationInput
+    leaveRequest?: DoctorLeaveRequestOrderByWithRelationInput
   }
 
   export type DoctorAvailabilityWhereUniqueInput = Prisma.AtLeast<{
@@ -15924,6 +17464,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"DoctorAvailability"> | Date | string
     doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
     room?: XOR<ClinicRoomNullableScalarRelationFilter, ClinicRoomWhereInput> | null
+    leaveRequest?: XOR<DoctorLeaveRequestNullableScalarRelationFilter, DoctorLeaveRequestWhereInput> | null
   }, "id">
 
   export type DoctorAvailabilityOrderByWithAggregationInput = {
@@ -15964,6 +17505,124 @@ export namespace Prisma {
     version?: IntWithAggregatesFilter<"DoctorAvailability"> | number
     createdAt?: DateTimeWithAggregatesFilter<"DoctorAvailability"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"DoctorAvailability"> | Date | string
+  }
+
+  export type DoctorLeaveRequestWhereInput = {
+    AND?: DoctorLeaveRequestWhereInput | DoctorLeaveRequestWhereInput[]
+    OR?: DoctorLeaveRequestWhereInput[]
+    NOT?: DoctorLeaveRequestWhereInput | DoctorLeaveRequestWhereInput[]
+    id?: UuidFilter<"DoctorLeaveRequest"> | string
+    doctorId?: UuidFilter<"DoctorLeaveRequest"> | string
+    scheduleId?: UuidFilter<"DoctorLeaveRequest"> | string
+    workDate?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    startAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    endAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFilter<"DoctorLeaveRequest"> | $Enums.AvailabilityReasonCode
+    note?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    status?: EnumLeaveRequestStatusFilter<"DoctorLeaveRequest"> | $Enums.LeaveRequestStatus
+    version?: IntFilter<"DoctorLeaveRequest"> | number
+    availabilityId?: UuidNullableFilter<"DoctorLeaveRequest"> | string | null
+    reviewedBy?: UuidNullableFilter<"DoctorLeaveRequest"> | string | null
+    reviewedAt?: DateTimeNullableFilter<"DoctorLeaveRequest"> | Date | string | null
+    reviewReason?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    createdAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
+    schedule?: XOR<DoctorScheduleScalarRelationFilter, DoctorScheduleWhereInput>
+    availability?: XOR<DoctorAvailabilityNullableScalarRelationFilter, DoctorAvailabilityWhereInput> | null
+  }
+
+  export type DoctorLeaveRequestOrderByWithRelationInput = {
+    id?: SortOrder
+    doctorId?: SortOrder
+    scheduleId?: SortOrder
+    workDate?: SortOrder
+    startAt?: SortOrder
+    endAt?: SortOrder
+    reasonCode?: SortOrder
+    note?: SortOrderInput | SortOrder
+    status?: SortOrder
+    version?: SortOrder
+    availabilityId?: SortOrderInput | SortOrder
+    reviewedBy?: SortOrderInput | SortOrder
+    reviewedAt?: SortOrderInput | SortOrder
+    reviewReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    doctor?: DoctorOrderByWithRelationInput
+    schedule?: DoctorScheduleOrderByWithRelationInput
+    availability?: DoctorAvailabilityOrderByWithRelationInput
+  }
+
+  export type DoctorLeaveRequestWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    availabilityId?: string
+    AND?: DoctorLeaveRequestWhereInput | DoctorLeaveRequestWhereInput[]
+    OR?: DoctorLeaveRequestWhereInput[]
+    NOT?: DoctorLeaveRequestWhereInput | DoctorLeaveRequestWhereInput[]
+    doctorId?: UuidFilter<"DoctorLeaveRequest"> | string
+    scheduleId?: UuidFilter<"DoctorLeaveRequest"> | string
+    workDate?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    startAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    endAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFilter<"DoctorLeaveRequest"> | $Enums.AvailabilityReasonCode
+    note?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    status?: EnumLeaveRequestStatusFilter<"DoctorLeaveRequest"> | $Enums.LeaveRequestStatus
+    version?: IntFilter<"DoctorLeaveRequest"> | number
+    reviewedBy?: UuidNullableFilter<"DoctorLeaveRequest"> | string | null
+    reviewedAt?: DateTimeNullableFilter<"DoctorLeaveRequest"> | Date | string | null
+    reviewReason?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    createdAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    doctor?: XOR<DoctorScalarRelationFilter, DoctorWhereInput>
+    schedule?: XOR<DoctorScheduleScalarRelationFilter, DoctorScheduleWhereInput>
+    availability?: XOR<DoctorAvailabilityNullableScalarRelationFilter, DoctorAvailabilityWhereInput> | null
+  }, "id" | "availabilityId">
+
+  export type DoctorLeaveRequestOrderByWithAggregationInput = {
+    id?: SortOrder
+    doctorId?: SortOrder
+    scheduleId?: SortOrder
+    workDate?: SortOrder
+    startAt?: SortOrder
+    endAt?: SortOrder
+    reasonCode?: SortOrder
+    note?: SortOrderInput | SortOrder
+    status?: SortOrder
+    version?: SortOrder
+    availabilityId?: SortOrderInput | SortOrder
+    reviewedBy?: SortOrderInput | SortOrder
+    reviewedAt?: SortOrderInput | SortOrder
+    reviewReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DoctorLeaveRequestCountOrderByAggregateInput
+    _avg?: DoctorLeaveRequestAvgOrderByAggregateInput
+    _max?: DoctorLeaveRequestMaxOrderByAggregateInput
+    _min?: DoctorLeaveRequestMinOrderByAggregateInput
+    _sum?: DoctorLeaveRequestSumOrderByAggregateInput
+  }
+
+  export type DoctorLeaveRequestScalarWhereWithAggregatesInput = {
+    AND?: DoctorLeaveRequestScalarWhereWithAggregatesInput | DoctorLeaveRequestScalarWhereWithAggregatesInput[]
+    OR?: DoctorLeaveRequestScalarWhereWithAggregatesInput[]
+    NOT?: DoctorLeaveRequestScalarWhereWithAggregatesInput | DoctorLeaveRequestScalarWhereWithAggregatesInput[]
+    id?: UuidWithAggregatesFilter<"DoctorLeaveRequest"> | string
+    doctorId?: UuidWithAggregatesFilter<"DoctorLeaveRequest"> | string
+    scheduleId?: UuidWithAggregatesFilter<"DoctorLeaveRequest"> | string
+    workDate?: DateTimeWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string
+    startAt?: DateTimeWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string
+    endAt?: DateTimeWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeWithAggregatesFilter<"DoctorLeaveRequest"> | $Enums.AvailabilityReasonCode
+    note?: StringNullableWithAggregatesFilter<"DoctorLeaveRequest"> | string | null
+    status?: EnumLeaveRequestStatusWithAggregatesFilter<"DoctorLeaveRequest"> | $Enums.LeaveRequestStatus
+    version?: IntWithAggregatesFilter<"DoctorLeaveRequest"> | number
+    availabilityId?: UuidNullableWithAggregatesFilter<"DoctorLeaveRequest"> | string | null
+    reviewedBy?: UuidNullableWithAggregatesFilter<"DoctorLeaveRequest"> | string | null
+    reviewedAt?: DateTimeNullableWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string | null
+    reviewReason?: StringNullableWithAggregatesFilter<"DoctorLeaveRequest"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DoctorLeaveRequest"> | Date | string
   }
 
   export type IdempotencyRecordWhereInput = {
@@ -16362,6 +18021,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -16381,6 +18041,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -16400,6 +18061,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -16419,6 +18081,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -16693,6 +18356,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     doctor: DoctorCreateNestedOneWithoutSchedulesInput
     room?: ClinicRoomCreateNestedOneWithoutSchedulesInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleUncheckedCreateInput = {
@@ -16711,6 +18375,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleUpdateInput = {
@@ -16729,6 +18394,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     doctor?: DoctorUpdateOneRequiredWithoutSchedulesNestedInput
     room?: ClinicRoomUpdateOneWithoutSchedulesNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleUncheckedUpdateInput = {
@@ -16747,6 +18413,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleCreateManyInput = {
@@ -16815,6 +18482,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     doctor: DoctorCreateNestedOneWithoutAvailabilitiesInput
     room?: ClinicRoomCreateNestedOneWithoutAvailabilitiesInput
+    leaveRequest?: DoctorLeaveRequestCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityUncheckedCreateInput = {
@@ -16831,6 +18499,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityUpdateInput = {
@@ -16847,6 +18516,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     doctor?: DoctorUpdateOneRequiredWithoutAvailabilitiesNestedInput
     room?: ClinicRoomUpdateOneWithoutAvailabilitiesNestedInput
+    leaveRequest?: DoctorLeaveRequestUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityUncheckedUpdateInput = {
@@ -16863,6 +18533,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityCreateManyInput = {
@@ -16907,6 +18578,136 @@ export namespace Prisma {
     status?: EnumAvailabilityStatusFieldUpdateOperationsInput | $Enums.AvailabilityStatus
     createdBy?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestCreateInput = {
+    id?: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    doctor: DoctorCreateNestedOneWithoutLeaveRequestsInput
+    schedule: DoctorScheduleCreateNestedOneWithoutLeaveRequestsInput
+    availability?: DoctorAvailabilityCreateNestedOneWithoutLeaveRequestInput
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateInput = {
+    id?: string
+    doctorId: string
+    scheduleId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    doctor?: DoctorUpdateOneRequiredWithoutLeaveRequestsNestedInput
+    schedule?: DoctorScheduleUpdateOneRequiredWithoutLeaveRequestsNestedInput
+    availability?: DoctorAvailabilityUpdateOneWithoutLeaveRequestNestedInput
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    scheduleId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestCreateManyInput = {
+    id?: string
+    doctorId: string
+    scheduleId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    scheduleId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17440,6 +19241,12 @@ export namespace Prisma {
     none?: DoctorSpecialtyWhereInput
   }
 
+  export type DoctorLeaveRequestListRelationFilter = {
+    every?: DoctorLeaveRequestWhereInput
+    some?: DoctorLeaveRequestWhereInput
+    none?: DoctorLeaveRequestWhereInput
+  }
+
   export type IdempotencyRecordListRelationFilter = {
     every?: IdempotencyRecordWhereInput
     some?: IdempotencyRecordWhereInput
@@ -17464,6 +19271,10 @@ export namespace Prisma {
   }
 
   export type DoctorSpecialtyOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DoctorLeaveRequestOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -17942,6 +19753,11 @@ export namespace Prisma {
     not?: NestedEnumAvailabilityStatusFilter<$PrismaModel> | $Enums.AvailabilityStatus
   }
 
+  export type DoctorLeaveRequestNullableScalarRelationFilter = {
+    is?: DoctorLeaveRequestWhereInput | null
+    isNot?: DoctorLeaveRequestWhereInput | null
+  }
+
   export type DoctorAvailabilityCountOrderByAggregateInput = {
     id?: SortOrder
     doctorId?: SortOrder
@@ -18026,6 +19842,98 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumAvailabilityStatusFilter<$PrismaModel>
     _max?: NestedEnumAvailabilityStatusFilter<$PrismaModel>
+  }
+
+  export type EnumLeaveRequestStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.LeaveRequestStatus | EnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumLeaveRequestStatusFilter<$PrismaModel> | $Enums.LeaveRequestStatus
+  }
+
+  export type DoctorScheduleScalarRelationFilter = {
+    is?: DoctorScheduleWhereInput
+    isNot?: DoctorScheduleWhereInput
+  }
+
+  export type DoctorAvailabilityNullableScalarRelationFilter = {
+    is?: DoctorAvailabilityWhereInput | null
+    isNot?: DoctorAvailabilityWhereInput | null
+  }
+
+  export type DoctorLeaveRequestCountOrderByAggregateInput = {
+    id?: SortOrder
+    doctorId?: SortOrder
+    scheduleId?: SortOrder
+    workDate?: SortOrder
+    startAt?: SortOrder
+    endAt?: SortOrder
+    reasonCode?: SortOrder
+    note?: SortOrder
+    status?: SortOrder
+    version?: SortOrder
+    availabilityId?: SortOrder
+    reviewedBy?: SortOrder
+    reviewedAt?: SortOrder
+    reviewReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoctorLeaveRequestAvgOrderByAggregateInput = {
+    version?: SortOrder
+  }
+
+  export type DoctorLeaveRequestMaxOrderByAggregateInput = {
+    id?: SortOrder
+    doctorId?: SortOrder
+    scheduleId?: SortOrder
+    workDate?: SortOrder
+    startAt?: SortOrder
+    endAt?: SortOrder
+    reasonCode?: SortOrder
+    note?: SortOrder
+    status?: SortOrder
+    version?: SortOrder
+    availabilityId?: SortOrder
+    reviewedBy?: SortOrder
+    reviewedAt?: SortOrder
+    reviewReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoctorLeaveRequestMinOrderByAggregateInput = {
+    id?: SortOrder
+    doctorId?: SortOrder
+    scheduleId?: SortOrder
+    workDate?: SortOrder
+    startAt?: SortOrder
+    endAt?: SortOrder
+    reasonCode?: SortOrder
+    note?: SortOrder
+    status?: SortOrder
+    version?: SortOrder
+    availabilityId?: SortOrder
+    reviewedBy?: SortOrder
+    reviewedAt?: SortOrder
+    reviewReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoctorLeaveRequestSumOrderByAggregateInput = {
+    version?: SortOrder
+  }
+
+  export type EnumLeaveRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LeaveRequestStatus | EnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumLeaveRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.LeaveRequestStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLeaveRequestStatusFilter<$PrismaModel>
+    _max?: NestedEnumLeaveRequestStatusFilter<$PrismaModel>
   }
   export type JsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -18390,6 +20298,13 @@ export namespace Prisma {
     connect?: DoctorAvailabilityWhereUniqueInput | DoctorAvailabilityWhereUniqueInput[]
   }
 
+  export type DoctorLeaveRequestCreateNestedManyWithoutDoctorInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput> | DoctorLeaveRequestCreateWithoutDoctorInput[] | DoctorLeaveRequestUncheckedCreateWithoutDoctorInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutDoctorInput | DoctorLeaveRequestCreateOrConnectWithoutDoctorInput[]
+    createMany?: DoctorLeaveRequestCreateManyDoctorInputEnvelope
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+  }
+
   export type IdempotencyRecordCreateNestedManyWithoutDoctorInput = {
     create?: XOR<IdempotencyRecordCreateWithoutDoctorInput, IdempotencyRecordUncheckedCreateWithoutDoctorInput> | IdempotencyRecordCreateWithoutDoctorInput[] | IdempotencyRecordUncheckedCreateWithoutDoctorInput[]
     connectOrCreate?: IdempotencyRecordCreateOrConnectWithoutDoctorInput | IdempotencyRecordCreateOrConnectWithoutDoctorInput[]
@@ -18436,6 +20351,13 @@ export namespace Prisma {
     connectOrCreate?: DoctorAvailabilityCreateOrConnectWithoutDoctorInput | DoctorAvailabilityCreateOrConnectWithoutDoctorInput[]
     createMany?: DoctorAvailabilityCreateManyDoctorInputEnvelope
     connect?: DoctorAvailabilityWhereUniqueInput | DoctorAvailabilityWhereUniqueInput[]
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput> | DoctorLeaveRequestCreateWithoutDoctorInput[] | DoctorLeaveRequestUncheckedCreateWithoutDoctorInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutDoctorInput | DoctorLeaveRequestCreateOrConnectWithoutDoctorInput[]
+    createMany?: DoctorLeaveRequestCreateManyDoctorInputEnvelope
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
   }
 
   export type IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput = {
@@ -18527,6 +20449,20 @@ export namespace Prisma {
     update?: DoctorAvailabilityUpdateWithWhereUniqueWithoutDoctorInput | DoctorAvailabilityUpdateWithWhereUniqueWithoutDoctorInput[]
     updateMany?: DoctorAvailabilityUpdateManyWithWhereWithoutDoctorInput | DoctorAvailabilityUpdateManyWithWhereWithoutDoctorInput[]
     deleteMany?: DoctorAvailabilityScalarWhereInput | DoctorAvailabilityScalarWhereInput[]
+  }
+
+  export type DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput> | DoctorLeaveRequestCreateWithoutDoctorInput[] | DoctorLeaveRequestUncheckedCreateWithoutDoctorInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutDoctorInput | DoctorLeaveRequestCreateOrConnectWithoutDoctorInput[]
+    upsert?: DoctorLeaveRequestUpsertWithWhereUniqueWithoutDoctorInput | DoctorLeaveRequestUpsertWithWhereUniqueWithoutDoctorInput[]
+    createMany?: DoctorLeaveRequestCreateManyDoctorInputEnvelope
+    set?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    disconnect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    delete?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    update?: DoctorLeaveRequestUpdateWithWhereUniqueWithoutDoctorInput | DoctorLeaveRequestUpdateWithWhereUniqueWithoutDoctorInput[]
+    updateMany?: DoctorLeaveRequestUpdateManyWithWhereWithoutDoctorInput | DoctorLeaveRequestUpdateManyWithWhereWithoutDoctorInput[]
+    deleteMany?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
   }
 
   export type IdempotencyRecordUpdateManyWithoutDoctorNestedInput = {
@@ -18621,6 +20557,20 @@ export namespace Prisma {
     update?: DoctorAvailabilityUpdateWithWhereUniqueWithoutDoctorInput | DoctorAvailabilityUpdateWithWhereUniqueWithoutDoctorInput[]
     updateMany?: DoctorAvailabilityUpdateManyWithWhereWithoutDoctorInput | DoctorAvailabilityUpdateManyWithWhereWithoutDoctorInput[]
     deleteMany?: DoctorAvailabilityScalarWhereInput | DoctorAvailabilityScalarWhereInput[]
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput> | DoctorLeaveRequestCreateWithoutDoctorInput[] | DoctorLeaveRequestUncheckedCreateWithoutDoctorInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutDoctorInput | DoctorLeaveRequestCreateOrConnectWithoutDoctorInput[]
+    upsert?: DoctorLeaveRequestUpsertWithWhereUniqueWithoutDoctorInput | DoctorLeaveRequestUpsertWithWhereUniqueWithoutDoctorInput[]
+    createMany?: DoctorLeaveRequestCreateManyDoctorInputEnvelope
+    set?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    disconnect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    delete?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    update?: DoctorLeaveRequestUpdateWithWhereUniqueWithoutDoctorInput | DoctorLeaveRequestUpdateWithWhereUniqueWithoutDoctorInput[]
+    updateMany?: DoctorLeaveRequestUpdateManyWithWhereWithoutDoctorInput | DoctorLeaveRequestUpdateManyWithWhereWithoutDoctorInput[]
+    deleteMany?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
   }
 
   export type IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput = {
@@ -18790,6 +20740,20 @@ export namespace Prisma {
     connect?: ClinicRoomWhereUniqueInput
   }
 
+  export type DoctorLeaveRequestCreateNestedManyWithoutScheduleInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput> | DoctorLeaveRequestCreateWithoutScheduleInput[] | DoctorLeaveRequestUncheckedCreateWithoutScheduleInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutScheduleInput | DoctorLeaveRequestCreateOrConnectWithoutScheduleInput[]
+    createMany?: DoctorLeaveRequestCreateManyScheduleInputEnvelope
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateNestedManyWithoutScheduleInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput> | DoctorLeaveRequestCreateWithoutScheduleInput[] | DoctorLeaveRequestUncheckedCreateWithoutScheduleInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutScheduleInput | DoctorLeaveRequestCreateOrConnectWithoutScheduleInput[]
+    createMany?: DoctorLeaveRequestCreateManyScheduleInputEnvelope
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+  }
+
   export type EnumScheduleStatusFieldUpdateOperationsInput = {
     set?: $Enums.ScheduleStatus
   }
@@ -18812,6 +20776,34 @@ export namespace Prisma {
     update?: XOR<XOR<ClinicRoomUpdateToOneWithWhereWithoutSchedulesInput, ClinicRoomUpdateWithoutSchedulesInput>, ClinicRoomUncheckedUpdateWithoutSchedulesInput>
   }
 
+  export type DoctorLeaveRequestUpdateManyWithoutScheduleNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput> | DoctorLeaveRequestCreateWithoutScheduleInput[] | DoctorLeaveRequestUncheckedCreateWithoutScheduleInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutScheduleInput | DoctorLeaveRequestCreateOrConnectWithoutScheduleInput[]
+    upsert?: DoctorLeaveRequestUpsertWithWhereUniqueWithoutScheduleInput | DoctorLeaveRequestUpsertWithWhereUniqueWithoutScheduleInput[]
+    createMany?: DoctorLeaveRequestCreateManyScheduleInputEnvelope
+    set?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    disconnect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    delete?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    update?: DoctorLeaveRequestUpdateWithWhereUniqueWithoutScheduleInput | DoctorLeaveRequestUpdateWithWhereUniqueWithoutScheduleInput[]
+    updateMany?: DoctorLeaveRequestUpdateManyWithWhereWithoutScheduleInput | DoctorLeaveRequestUpdateManyWithWhereWithoutScheduleInput[]
+    deleteMany?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput> | DoctorLeaveRequestCreateWithoutScheduleInput[] | DoctorLeaveRequestUncheckedCreateWithoutScheduleInput[]
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutScheduleInput | DoctorLeaveRequestCreateOrConnectWithoutScheduleInput[]
+    upsert?: DoctorLeaveRequestUpsertWithWhereUniqueWithoutScheduleInput | DoctorLeaveRequestUpsertWithWhereUniqueWithoutScheduleInput[]
+    createMany?: DoctorLeaveRequestCreateManyScheduleInputEnvelope
+    set?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    disconnect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    delete?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    connect?: DoctorLeaveRequestWhereUniqueInput | DoctorLeaveRequestWhereUniqueInput[]
+    update?: DoctorLeaveRequestUpdateWithWhereUniqueWithoutScheduleInput | DoctorLeaveRequestUpdateWithWhereUniqueWithoutScheduleInput[]
+    updateMany?: DoctorLeaveRequestUpdateManyWithWhereWithoutScheduleInput | DoctorLeaveRequestUpdateManyWithWhereWithoutScheduleInput[]
+    deleteMany?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
+  }
+
   export type DoctorCreateNestedOneWithoutAvailabilitiesInput = {
     create?: XOR<DoctorCreateWithoutAvailabilitiesInput, DoctorUncheckedCreateWithoutAvailabilitiesInput>
     connectOrCreate?: DoctorCreateOrConnectWithoutAvailabilitiesInput
@@ -18822,6 +20814,18 @@ export namespace Prisma {
     create?: XOR<ClinicRoomCreateWithoutAvailabilitiesInput, ClinicRoomUncheckedCreateWithoutAvailabilitiesInput>
     connectOrCreate?: ClinicRoomCreateOrConnectWithoutAvailabilitiesInput
     connect?: ClinicRoomWhereUniqueInput
+  }
+
+  export type DoctorLeaveRequestCreateNestedOneWithoutAvailabilityInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutAvailabilityInput
+    connect?: DoctorLeaveRequestWhereUniqueInput
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateNestedOneWithoutAvailabilityInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutAvailabilityInput
+    connect?: DoctorLeaveRequestWhereUniqueInput
   }
 
   export type EnumAvailabilityTypeFieldUpdateOperationsInput = {
@@ -18852,6 +20856,74 @@ export namespace Prisma {
     delete?: ClinicRoomWhereInput | boolean
     connect?: ClinicRoomWhereUniqueInput
     update?: XOR<XOR<ClinicRoomUpdateToOneWithWhereWithoutAvailabilitiesInput, ClinicRoomUpdateWithoutAvailabilitiesInput>, ClinicRoomUncheckedUpdateWithoutAvailabilitiesInput>
+  }
+
+  export type DoctorLeaveRequestUpdateOneWithoutAvailabilityNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutAvailabilityInput
+    upsert?: DoctorLeaveRequestUpsertWithoutAvailabilityInput
+    disconnect?: DoctorLeaveRequestWhereInput | boolean
+    delete?: DoctorLeaveRequestWhereInput | boolean
+    connect?: DoctorLeaveRequestWhereUniqueInput
+    update?: XOR<XOR<DoctorLeaveRequestUpdateToOneWithWhereWithoutAvailabilityInput, DoctorLeaveRequestUpdateWithoutAvailabilityInput>, DoctorLeaveRequestUncheckedUpdateWithoutAvailabilityInput>
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateOneWithoutAvailabilityNestedInput = {
+    create?: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+    connectOrCreate?: DoctorLeaveRequestCreateOrConnectWithoutAvailabilityInput
+    upsert?: DoctorLeaveRequestUpsertWithoutAvailabilityInput
+    disconnect?: DoctorLeaveRequestWhereInput | boolean
+    delete?: DoctorLeaveRequestWhereInput | boolean
+    connect?: DoctorLeaveRequestWhereUniqueInput
+    update?: XOR<XOR<DoctorLeaveRequestUpdateToOneWithWhereWithoutAvailabilityInput, DoctorLeaveRequestUpdateWithoutAvailabilityInput>, DoctorLeaveRequestUncheckedUpdateWithoutAvailabilityInput>
+  }
+
+  export type DoctorCreateNestedOneWithoutLeaveRequestsInput = {
+    create?: XOR<DoctorCreateWithoutLeaveRequestsInput, DoctorUncheckedCreateWithoutLeaveRequestsInput>
+    connectOrCreate?: DoctorCreateOrConnectWithoutLeaveRequestsInput
+    connect?: DoctorWhereUniqueInput
+  }
+
+  export type DoctorScheduleCreateNestedOneWithoutLeaveRequestsInput = {
+    create?: XOR<DoctorScheduleCreateWithoutLeaveRequestsInput, DoctorScheduleUncheckedCreateWithoutLeaveRequestsInput>
+    connectOrCreate?: DoctorScheduleCreateOrConnectWithoutLeaveRequestsInput
+    connect?: DoctorScheduleWhereUniqueInput
+  }
+
+  export type DoctorAvailabilityCreateNestedOneWithoutLeaveRequestInput = {
+    create?: XOR<DoctorAvailabilityCreateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedCreateWithoutLeaveRequestInput>
+    connectOrCreate?: DoctorAvailabilityCreateOrConnectWithoutLeaveRequestInput
+    connect?: DoctorAvailabilityWhereUniqueInput
+  }
+
+  export type EnumLeaveRequestStatusFieldUpdateOperationsInput = {
+    set?: $Enums.LeaveRequestStatus
+  }
+
+  export type DoctorUpdateOneRequiredWithoutLeaveRequestsNestedInput = {
+    create?: XOR<DoctorCreateWithoutLeaveRequestsInput, DoctorUncheckedCreateWithoutLeaveRequestsInput>
+    connectOrCreate?: DoctorCreateOrConnectWithoutLeaveRequestsInput
+    upsert?: DoctorUpsertWithoutLeaveRequestsInput
+    connect?: DoctorWhereUniqueInput
+    update?: XOR<XOR<DoctorUpdateToOneWithWhereWithoutLeaveRequestsInput, DoctorUpdateWithoutLeaveRequestsInput>, DoctorUncheckedUpdateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorScheduleUpdateOneRequiredWithoutLeaveRequestsNestedInput = {
+    create?: XOR<DoctorScheduleCreateWithoutLeaveRequestsInput, DoctorScheduleUncheckedCreateWithoutLeaveRequestsInput>
+    connectOrCreate?: DoctorScheduleCreateOrConnectWithoutLeaveRequestsInput
+    upsert?: DoctorScheduleUpsertWithoutLeaveRequestsInput
+    connect?: DoctorScheduleWhereUniqueInput
+    update?: XOR<XOR<DoctorScheduleUpdateToOneWithWhereWithoutLeaveRequestsInput, DoctorScheduleUpdateWithoutLeaveRequestsInput>, DoctorScheduleUncheckedUpdateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorAvailabilityUpdateOneWithoutLeaveRequestNestedInput = {
+    create?: XOR<DoctorAvailabilityCreateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedCreateWithoutLeaveRequestInput>
+    connectOrCreate?: DoctorAvailabilityCreateOrConnectWithoutLeaveRequestInput
+    upsert?: DoctorAvailabilityUpsertWithoutLeaveRequestInput
+    disconnect?: DoctorAvailabilityWhereInput | boolean
+    delete?: DoctorAvailabilityWhereInput | boolean
+    connect?: DoctorAvailabilityWhereUniqueInput
+    update?: XOR<XOR<DoctorAvailabilityUpdateToOneWithWhereWithoutLeaveRequestInput, DoctorAvailabilityUpdateWithoutLeaveRequestInput>, DoctorAvailabilityUncheckedUpdateWithoutLeaveRequestInput>
   }
 
   export type DoctorCreateNestedOneWithoutIdempotenciesInput = {
@@ -19309,6 +21381,23 @@ export namespace Prisma {
     _min?: NestedEnumAvailabilityStatusFilter<$PrismaModel>
     _max?: NestedEnumAvailabilityStatusFilter<$PrismaModel>
   }
+
+  export type NestedEnumLeaveRequestStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.LeaveRequestStatus | EnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumLeaveRequestStatusFilter<$PrismaModel> | $Enums.LeaveRequestStatus
+  }
+
+  export type NestedEnumLeaveRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.LeaveRequestStatus | EnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.LeaveRequestStatus[] | ListEnumLeaveRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumLeaveRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.LeaveRequestStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumLeaveRequestStatusFilter<$PrismaModel>
+    _max?: NestedEnumLeaveRequestStatusFilter<$PrismaModel>
+  }
   export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -19346,6 +21435,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -19364,6 +21454,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -19425,6 +21516,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     doctor: DoctorCreateNestedOneWithoutSchedulesInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleUncheckedCreateWithoutRoomInput = {
@@ -19442,6 +21534,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleCreateOrConnectWithoutRoomInput = {
@@ -19467,6 +21560,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     doctor: DoctorCreateNestedOneWithoutAvailabilitiesInput
+    leaveRequest?: DoctorLeaveRequestCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityUncheckedCreateWithoutRoomInput = {
@@ -19482,6 +21576,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityCreateOrConnectWithoutRoomInput = {
@@ -19657,6 +21752,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     room?: ClinicRoomCreateNestedOneWithoutSchedulesInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleUncheckedCreateWithoutDoctorInput = {
@@ -19674,6 +21770,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutScheduleInput
   }
 
   export type DoctorScheduleCreateOrConnectWithoutDoctorInput = {
@@ -19699,6 +21796,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     room?: ClinicRoomCreateNestedOneWithoutAvailabilitiesInput
+    leaveRequest?: DoctorLeaveRequestCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityUncheckedCreateWithoutDoctorInput = {
@@ -19714,6 +21812,7 @@ export namespace Prisma {
     version?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedCreateNestedOneWithoutAvailabilityInput
   }
 
   export type DoctorAvailabilityCreateOrConnectWithoutDoctorInput = {
@@ -19723,6 +21822,52 @@ export namespace Prisma {
 
   export type DoctorAvailabilityCreateManyDoctorInputEnvelope = {
     data: DoctorAvailabilityCreateManyDoctorInput | DoctorAvailabilityCreateManyDoctorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type DoctorLeaveRequestCreateWithoutDoctorInput = {
+    id?: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    schedule: DoctorScheduleCreateNestedOneWithoutLeaveRequestsInput
+    availability?: DoctorAvailabilityCreateNestedOneWithoutLeaveRequestInput
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateWithoutDoctorInput = {
+    id?: string
+    scheduleId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestCreateOrConnectWithoutDoctorInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    create: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput>
+  }
+
+  export type DoctorLeaveRequestCreateManyDoctorInputEnvelope = {
+    data: DoctorLeaveRequestCreateManyDoctorInput | DoctorLeaveRequestCreateManyDoctorInput[]
     skipDuplicates?: boolean
   }
 
@@ -19946,6 +22091,44 @@ export namespace Prisma {
     data: XOR<DoctorAvailabilityUpdateManyMutationInput, DoctorAvailabilityUncheckedUpdateManyWithoutDoctorInput>
   }
 
+  export type DoctorLeaveRequestUpsertWithWhereUniqueWithoutDoctorInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    update: XOR<DoctorLeaveRequestUpdateWithoutDoctorInput, DoctorLeaveRequestUncheckedUpdateWithoutDoctorInput>
+    create: XOR<DoctorLeaveRequestCreateWithoutDoctorInput, DoctorLeaveRequestUncheckedCreateWithoutDoctorInput>
+  }
+
+  export type DoctorLeaveRequestUpdateWithWhereUniqueWithoutDoctorInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    data: XOR<DoctorLeaveRequestUpdateWithoutDoctorInput, DoctorLeaveRequestUncheckedUpdateWithoutDoctorInput>
+  }
+
+  export type DoctorLeaveRequestUpdateManyWithWhereWithoutDoctorInput = {
+    where: DoctorLeaveRequestScalarWhereInput
+    data: XOR<DoctorLeaveRequestUpdateManyMutationInput, DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorInput>
+  }
+
+  export type DoctorLeaveRequestScalarWhereInput = {
+    AND?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
+    OR?: DoctorLeaveRequestScalarWhereInput[]
+    NOT?: DoctorLeaveRequestScalarWhereInput | DoctorLeaveRequestScalarWhereInput[]
+    id?: UuidFilter<"DoctorLeaveRequest"> | string
+    doctorId?: UuidFilter<"DoctorLeaveRequest"> | string
+    scheduleId?: UuidFilter<"DoctorLeaveRequest"> | string
+    workDate?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    startAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    endAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFilter<"DoctorLeaveRequest"> | $Enums.AvailabilityReasonCode
+    note?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    status?: EnumLeaveRequestStatusFilter<"DoctorLeaveRequest"> | $Enums.LeaveRequestStatus
+    version?: IntFilter<"DoctorLeaveRequest"> | number
+    availabilityId?: UuidNullableFilter<"DoctorLeaveRequest"> | string | null
+    reviewedBy?: UuidNullableFilter<"DoctorLeaveRequest"> | string | null
+    reviewedAt?: DateTimeNullableFilter<"DoctorLeaveRequest"> | Date | string | null
+    reviewReason?: StringNullableFilter<"DoctorLeaveRequest"> | string | null
+    createdAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+    updatedAt?: DateTimeFilter<"DoctorLeaveRequest"> | Date | string
+  }
+
   export type IdempotencyRecordUpsertWithWhereUniqueWithoutDoctorInput = {
     where: IdempotencyRecordWhereUniqueInput
     update: XOR<IdempotencyRecordUpdateWithoutDoctorInput, IdempotencyRecordUncheckedUpdateWithoutDoctorInput>
@@ -20052,6 +22235,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -20070,6 +22254,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -20104,6 +22289,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -20122,6 +22308,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20178,6 +22365,7 @@ export namespace Prisma {
     rank?: ConsultationRankCreateNestedOneWithoutDoctorsInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -20196,6 +22384,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -20259,6 +22448,7 @@ export namespace Prisma {
     rank?: ConsultationRankUpdateOneWithoutDoctorsNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -20277,6 +22467,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20330,6 +22521,7 @@ export namespace Prisma {
     rank?: ConsultationRankCreateNestedOneWithoutDoctorsInput
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -20348,6 +22540,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -20383,6 +22576,52 @@ export namespace Prisma {
     create: XOR<ClinicRoomCreateWithoutSchedulesInput, ClinicRoomUncheckedCreateWithoutSchedulesInput>
   }
 
+  export type DoctorLeaveRequestCreateWithoutScheduleInput = {
+    id?: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    doctor: DoctorCreateNestedOneWithoutLeaveRequestsInput
+    availability?: DoctorAvailabilityCreateNestedOneWithoutLeaveRequestInput
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateWithoutScheduleInput = {
+    id?: string
+    doctorId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestCreateOrConnectWithoutScheduleInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    create: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput>
+  }
+
+  export type DoctorLeaveRequestCreateManyScheduleInputEnvelope = {
+    data: DoctorLeaveRequestCreateManyScheduleInput | DoctorLeaveRequestCreateManyScheduleInput[]
+    skipDuplicates?: boolean
+  }
+
   export type DoctorUpsertWithoutSchedulesInput = {
     update: XOR<DoctorUpdateWithoutSchedulesInput, DoctorUncheckedUpdateWithoutSchedulesInput>
     create: XOR<DoctorCreateWithoutSchedulesInput, DoctorUncheckedCreateWithoutSchedulesInput>
@@ -20407,6 +22646,7 @@ export namespace Prisma {
     rank?: ConsultationRankUpdateOneWithoutDoctorsNestedInput
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -20425,6 +22665,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20461,6 +22702,22 @@ export namespace Prisma {
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutRoomNestedInput
   }
 
+  export type DoctorLeaveRequestUpsertWithWhereUniqueWithoutScheduleInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    update: XOR<DoctorLeaveRequestUpdateWithoutScheduleInput, DoctorLeaveRequestUncheckedUpdateWithoutScheduleInput>
+    create: XOR<DoctorLeaveRequestCreateWithoutScheduleInput, DoctorLeaveRequestUncheckedCreateWithoutScheduleInput>
+  }
+
+  export type DoctorLeaveRequestUpdateWithWhereUniqueWithoutScheduleInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    data: XOR<DoctorLeaveRequestUpdateWithoutScheduleInput, DoctorLeaveRequestUncheckedUpdateWithoutScheduleInput>
+  }
+
+  export type DoctorLeaveRequestUpdateManyWithWhereWithoutScheduleInput = {
+    where: DoctorLeaveRequestScalarWhereInput
+    data: XOR<DoctorLeaveRequestUpdateManyMutationInput, DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleInput>
+  }
+
   export type DoctorCreateWithoutAvailabilitiesInput = {
     id?: string
     accountId: string
@@ -20474,6 +22731,7 @@ export namespace Prisma {
     rank?: ConsultationRankCreateNestedOneWithoutDoctorsInput
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
@@ -20492,6 +22750,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
@@ -20527,6 +22786,47 @@ export namespace Prisma {
     create: XOR<ClinicRoomCreateWithoutAvailabilitiesInput, ClinicRoomUncheckedCreateWithoutAvailabilitiesInput>
   }
 
+  export type DoctorLeaveRequestCreateWithoutAvailabilityInput = {
+    id?: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    doctor: DoctorCreateNestedOneWithoutLeaveRequestsInput
+    schedule: DoctorScheduleCreateNestedOneWithoutLeaveRequestsInput
+  }
+
+  export type DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput = {
+    id?: string
+    doctorId: string
+    scheduleId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestCreateOrConnectWithoutAvailabilityInput = {
+    where: DoctorLeaveRequestWhereUniqueInput
+    create: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+  }
+
   export type DoctorUpsertWithoutAvailabilitiesInput = {
     update: XOR<DoctorUpdateWithoutAvailabilitiesInput, DoctorUncheckedUpdateWithoutAvailabilitiesInput>
     create: XOR<DoctorCreateWithoutAvailabilitiesInput, DoctorUncheckedCreateWithoutAvailabilitiesInput>
@@ -20551,6 +22851,7 @@ export namespace Prisma {
     rank?: ConsultationRankUpdateOneWithoutDoctorsNestedInput
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -20569,6 +22870,7 @@ export namespace Prisma {
     profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20605,6 +22907,313 @@ export namespace Prisma {
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutRoomNestedInput
   }
 
+  export type DoctorLeaveRequestUpsertWithoutAvailabilityInput = {
+    update: XOR<DoctorLeaveRequestUpdateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedUpdateWithoutAvailabilityInput>
+    create: XOR<DoctorLeaveRequestCreateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedCreateWithoutAvailabilityInput>
+    where?: DoctorLeaveRequestWhereInput
+  }
+
+  export type DoctorLeaveRequestUpdateToOneWithWhereWithoutAvailabilityInput = {
+    where?: DoctorLeaveRequestWhereInput
+    data: XOR<DoctorLeaveRequestUpdateWithoutAvailabilityInput, DoctorLeaveRequestUncheckedUpdateWithoutAvailabilityInput>
+  }
+
+  export type DoctorLeaveRequestUpdateWithoutAvailabilityInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    doctor?: DoctorUpdateOneRequiredWithoutLeaveRequestsNestedInput
+    schedule?: DoctorScheduleUpdateOneRequiredWithoutLeaveRequestsNestedInput
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateWithoutAvailabilityInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    scheduleId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorCreateWithoutLeaveRequestsInput = {
+    id?: string
+    accountId: string
+    licenseNumber: string
+    status?: $Enums.DoctorStatus
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    profile?: DoctorProfileCreateNestedOneWithoutDoctorInput
+    rank?: ConsultationRankCreateNestedOneWithoutDoctorsInput
+    specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
+    schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
+    availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
+    audits?: AuditRecordCreateNestedManyWithoutDoctorInput
+    outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
+  }
+
+  export type DoctorUncheckedCreateWithoutLeaveRequestsInput = {
+    id?: string
+    accountId: string
+    licenseNumber: string
+    consultationRank?: $Enums.DoctorConsultationRank
+    status?: $Enums.DoctorStatus
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    profile?: DoctorProfileUncheckedCreateNestedOneWithoutDoctorInput
+    specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
+    schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
+    availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
+    audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
+    outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
+  }
+
+  export type DoctorCreateOrConnectWithoutLeaveRequestsInput = {
+    where: DoctorWhereUniqueInput
+    create: XOR<DoctorCreateWithoutLeaveRequestsInput, DoctorUncheckedCreateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorScheduleCreateWithoutLeaveRequestsInput = {
+    id?: string
+    dayOfWeek: number
+    startTime: string
+    endTime: string
+    slotDurationMinutes?: number
+    effectiveFrom: Date | string
+    effectiveTo?: Date | string | null
+    timezone?: string
+    departmentId?: string | null
+    status?: $Enums.ScheduleStatus
+    version?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    doctor: DoctorCreateNestedOneWithoutSchedulesInput
+    room?: ClinicRoomCreateNestedOneWithoutSchedulesInput
+  }
+
+  export type DoctorScheduleUncheckedCreateWithoutLeaveRequestsInput = {
+    id?: string
+    doctorId: string
+    dayOfWeek: number
+    startTime: string
+    endTime: string
+    slotDurationMinutes?: number
+    effectiveFrom: Date | string
+    effectiveTo?: Date | string | null
+    timezone?: string
+    departmentId?: string | null
+    roomId?: string | null
+    status?: $Enums.ScheduleStatus
+    version?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorScheduleCreateOrConnectWithoutLeaveRequestsInput = {
+    where: DoctorScheduleWhereUniqueInput
+    create: XOR<DoctorScheduleCreateWithoutLeaveRequestsInput, DoctorScheduleUncheckedCreateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorAvailabilityCreateWithoutLeaveRequestInput = {
+    id?: string
+    type: $Enums.AvailabilityType
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.AvailabilityStatus
+    createdBy: string
+    version?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    doctor: DoctorCreateNestedOneWithoutAvailabilitiesInput
+    room?: ClinicRoomCreateNestedOneWithoutAvailabilitiesInput
+  }
+
+  export type DoctorAvailabilityUncheckedCreateWithoutLeaveRequestInput = {
+    id?: string
+    doctorId: string
+    type: $Enums.AvailabilityType
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    roomId?: string | null
+    status?: $Enums.AvailabilityStatus
+    createdBy: string
+    version?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorAvailabilityCreateOrConnectWithoutLeaveRequestInput = {
+    where: DoctorAvailabilityWhereUniqueInput
+    create: XOR<DoctorAvailabilityCreateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedCreateWithoutLeaveRequestInput>
+  }
+
+  export type DoctorUpsertWithoutLeaveRequestsInput = {
+    update: XOR<DoctorUpdateWithoutLeaveRequestsInput, DoctorUncheckedUpdateWithoutLeaveRequestsInput>
+    create: XOR<DoctorCreateWithoutLeaveRequestsInput, DoctorUncheckedCreateWithoutLeaveRequestsInput>
+    where?: DoctorWhereInput
+  }
+
+  export type DoctorUpdateToOneWithWhereWithoutLeaveRequestsInput = {
+    where?: DoctorWhereInput
+    data: XOR<DoctorUpdateWithoutLeaveRequestsInput, DoctorUncheckedUpdateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorUpdateWithoutLeaveRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    licenseNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    profile?: DoctorProfileUpdateOneWithoutDoctorNestedInput
+    rank?: ConsultationRankUpdateOneWithoutDoctorsNestedInput
+    specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
+    schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
+    availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
+    audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
+    outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
+  }
+
+  export type DoctorUncheckedUpdateWithoutLeaveRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    licenseNumber?: StringFieldUpdateOperationsInput | string
+    consultationRank?: EnumDoctorConsultationRankFieldUpdateOperationsInput | $Enums.DoctorConsultationRank
+    status?: EnumDoctorStatusFieldUpdateOperationsInput | $Enums.DoctorStatus
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    profile?: DoctorProfileUncheckedUpdateOneWithoutDoctorNestedInput
+    specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
+    schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
+    availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
+    audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
+    outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
+  }
+
+  export type DoctorScheduleUpsertWithoutLeaveRequestsInput = {
+    update: XOR<DoctorScheduleUpdateWithoutLeaveRequestsInput, DoctorScheduleUncheckedUpdateWithoutLeaveRequestsInput>
+    create: XOR<DoctorScheduleCreateWithoutLeaveRequestsInput, DoctorScheduleUncheckedCreateWithoutLeaveRequestsInput>
+    where?: DoctorScheduleWhereInput
+  }
+
+  export type DoctorScheduleUpdateToOneWithWhereWithoutLeaveRequestsInput = {
+    where?: DoctorScheduleWhereInput
+    data: XOR<DoctorScheduleUpdateWithoutLeaveRequestsInput, DoctorScheduleUncheckedUpdateWithoutLeaveRequestsInput>
+  }
+
+  export type DoctorScheduleUpdateWithoutLeaveRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dayOfWeek?: IntFieldUpdateOperationsInput | number
+    startTime?: StringFieldUpdateOperationsInput | string
+    endTime?: StringFieldUpdateOperationsInput | string
+    slotDurationMinutes?: IntFieldUpdateOperationsInput | number
+    effectiveFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    effectiveTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    departmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumScheduleStatusFieldUpdateOperationsInput | $Enums.ScheduleStatus
+    version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    doctor?: DoctorUpdateOneRequiredWithoutSchedulesNestedInput
+    room?: ClinicRoomUpdateOneWithoutSchedulesNestedInput
+  }
+
+  export type DoctorScheduleUncheckedUpdateWithoutLeaveRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    dayOfWeek?: IntFieldUpdateOperationsInput | number
+    startTime?: StringFieldUpdateOperationsInput | string
+    endTime?: StringFieldUpdateOperationsInput | string
+    slotDurationMinutes?: IntFieldUpdateOperationsInput | number
+    effectiveFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    effectiveTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    departmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumScheduleStatusFieldUpdateOperationsInput | $Enums.ScheduleStatus
+    version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorAvailabilityUpsertWithoutLeaveRequestInput = {
+    update: XOR<DoctorAvailabilityUpdateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedUpdateWithoutLeaveRequestInput>
+    create: XOR<DoctorAvailabilityCreateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedCreateWithoutLeaveRequestInput>
+    where?: DoctorAvailabilityWhereInput
+  }
+
+  export type DoctorAvailabilityUpdateToOneWithWhereWithoutLeaveRequestInput = {
+    where?: DoctorAvailabilityWhereInput
+    data: XOR<DoctorAvailabilityUpdateWithoutLeaveRequestInput, DoctorAvailabilityUncheckedUpdateWithoutLeaveRequestInput>
+  }
+
+  export type DoctorAvailabilityUpdateWithoutLeaveRequestInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: EnumAvailabilityTypeFieldUpdateOperationsInput | $Enums.AvailabilityType
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumAvailabilityStatusFieldUpdateOperationsInput | $Enums.AvailabilityStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    doctor?: DoctorUpdateOneRequiredWithoutAvailabilitiesNestedInput
+    room?: ClinicRoomUpdateOneWithoutAvailabilitiesNestedInput
+  }
+
+  export type DoctorAvailabilityUncheckedUpdateWithoutLeaveRequestInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    type?: EnumAvailabilityTypeFieldUpdateOperationsInput | $Enums.AvailabilityType
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    roomId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumAvailabilityStatusFieldUpdateOperationsInput | $Enums.AvailabilityStatus
+    createdBy?: StringFieldUpdateOperationsInput | string
+    version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DoctorCreateWithoutIdempotenciesInput = {
     id?: string
     accountId: string
@@ -20619,6 +23228,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
   }
@@ -20637,6 +23247,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
   }
@@ -20671,6 +23282,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
   }
@@ -20689,6 +23301,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
   }
@@ -20707,6 +23320,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventCreateNestedManyWithoutDoctorInput
   }
@@ -20725,6 +23339,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     outboxEvents?: OutboxEventUncheckedCreateNestedManyWithoutDoctorInput
   }
@@ -20759,6 +23374,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
   }
@@ -20777,6 +23393,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
   }
@@ -20795,6 +23412,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordCreateNestedManyWithoutDoctorInput
   }
@@ -20813,6 +23431,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedCreateNestedManyWithoutDoctorInput
     schedules?: DoctorScheduleUncheckedCreateNestedManyWithoutDoctorInput
     availabilities?: DoctorAvailabilityUncheckedCreateNestedManyWithoutDoctorInput
+    leaveRequests?: DoctorLeaveRequestUncheckedCreateNestedManyWithoutDoctorInput
     idempotencies?: IdempotencyRecordUncheckedCreateNestedManyWithoutDoctorInput
     audits?: AuditRecordUncheckedCreateNestedManyWithoutDoctorInput
   }
@@ -20847,6 +23466,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
   }
@@ -20865,6 +23485,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
   }
@@ -20893,6 +23514,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUpdateManyWithoutDoctorNestedInput
@@ -20911,6 +23533,7 @@ export namespace Prisma {
     specialties?: DoctorSpecialtyUncheckedUpdateManyWithoutDoctorNestedInput
     schedules?: DoctorScheduleUncheckedUpdateManyWithoutDoctorNestedInput
     availabilities?: DoctorAvailabilityUncheckedUpdateManyWithoutDoctorNestedInput
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorNestedInput
     idempotencies?: IdempotencyRecordUncheckedUpdateManyWithoutDoctorNestedInput
     audits?: AuditRecordUncheckedUpdateManyWithoutDoctorNestedInput
     outboxEvents?: OutboxEventUncheckedUpdateManyWithoutDoctorNestedInput
@@ -20974,6 +23597,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     doctor?: DoctorUpdateOneRequiredWithoutSchedulesNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleUncheckedUpdateWithoutRoomInput = {
@@ -20991,6 +23615,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleUncheckedUpdateManyWithoutRoomInput = {
@@ -21023,6 +23648,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     doctor?: DoctorUpdateOneRequiredWithoutAvailabilitiesNestedInput
+    leaveRequest?: DoctorLeaveRequestUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityUncheckedUpdateWithoutRoomInput = {
@@ -21038,6 +23664,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityUncheckedUpdateManyWithoutRoomInput = {
@@ -21089,6 +23716,24 @@ export namespace Prisma {
     status?: $Enums.AvailabilityStatus
     createdBy: string
     version?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestCreateManyDoctorInput = {
+    id?: string
+    scheduleId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -21159,6 +23804,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     room?: ClinicRoomUpdateOneWithoutSchedulesNestedInput
+    leaveRequests?: DoctorLeaveRequestUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleUncheckedUpdateWithoutDoctorInput = {
@@ -21176,6 +23822,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequests?: DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleNestedInput
   }
 
   export type DoctorScheduleUncheckedUpdateManyWithoutDoctorInput = {
@@ -21208,6 +23855,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     room?: ClinicRoomUpdateOneWithoutAvailabilitiesNestedInput
+    leaveRequest?: DoctorLeaveRequestUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityUncheckedUpdateWithoutDoctorInput = {
@@ -21223,6 +23871,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaveRequest?: DoctorLeaveRequestUncheckedUpdateOneWithoutAvailabilityNestedInput
   }
 
   export type DoctorAvailabilityUncheckedUpdateManyWithoutDoctorInput = {
@@ -21236,6 +23885,60 @@ export namespace Prisma {
     status?: EnumAvailabilityStatusFieldUpdateOperationsInput | $Enums.AvailabilityStatus
     createdBy?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestUpdateWithoutDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    schedule?: DoctorScheduleUpdateOneRequiredWithoutLeaveRequestsNestedInput
+    availability?: DoctorAvailabilityUpdateOneWithoutLeaveRequestNestedInput
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateWithoutDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    scheduleId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateManyWithoutDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    scheduleId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -21361,6 +24064,78 @@ export namespace Prisma {
     doctorId?: StringFieldUpdateOperationsInput | string
     isPrimary?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestCreateManyScheduleInput = {
+    id?: string
+    doctorId: string
+    workDate: Date | string
+    startAt: Date | string
+    endAt: Date | string
+    reasonCode: $Enums.AvailabilityReasonCode
+    note?: string | null
+    status?: $Enums.LeaveRequestStatus
+    version?: number
+    availabilityId?: string | null
+    reviewedBy?: string | null
+    reviewedAt?: Date | string | null
+    reviewReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoctorLeaveRequestUpdateWithoutScheduleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    doctor?: DoctorUpdateOneRequiredWithoutLeaveRequestsNestedInput
+    availability?: DoctorAvailabilityUpdateOneWithoutLeaveRequestNestedInput
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateWithoutScheduleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoctorLeaveRequestUncheckedUpdateManyWithoutScheduleInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    doctorId?: StringFieldUpdateOperationsInput | string
+    workDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    startAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reasonCode?: EnumAvailabilityReasonCodeFieldUpdateOperationsInput | $Enums.AvailabilityReasonCode
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumLeaveRequestStatusFieldUpdateOperationsInput | $Enums.LeaveRequestStatus
+    version?: IntFieldUpdateOperationsInput | number
+    availabilityId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reviewReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

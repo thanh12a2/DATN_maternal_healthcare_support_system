@@ -25,6 +25,9 @@ import { Public } from '../auth/public.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   CreateAvailabilityDto,
+  CreateLeaveRequestDto,
+  LeaveRequestQueryDto,
+  ReviewLeaveRequestDto,
   AvailabilityQueryDto,
   CreateDoctorDto,
   CreateRoomDto,
@@ -135,6 +138,53 @@ export class DoctorController {
   @Roles('DOCTOR')
   me(@Req() req: AuthenticatedRequest) {
     return this.service.getMyDoctor(this.identity(req));
+  }
+  @Post('me/leave-requests')
+  @Roles('DOCTOR')
+  requestLeave(
+    @Body() dto: CreateLeaveRequestDto,
+    @Headers('idempotency-key') key: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.requestLeave(dto, this.identity(req), key, req.requestId);
+  }
+  @Get('me/leave-requests')
+  @Roles('DOCTOR')
+  myLeaveRequests(@Req() req: AuthenticatedRequest) {
+    return this.service.listLeaveRequests({}, this.identity(req));
+  }
+  @Get('leave-requests')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
+  leaveRequests(@Query() query: LeaveRequestQueryDto, @Req() req: AuthenticatedRequest) {
+    return this.service.listLeaveRequests(query, this.identity(req));
+  }
+  @Post('leave-requests/:requestId/approve')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
+  approveLeave(
+    @Param('requestId', ParseUUIDPipe) id: string,
+    @Body() dto: ReviewLeaveRequestDto,
+    @Headers('authorization') authorization: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.reviewLeave(id, true, dto, this.identity(req), authorization, req.requestId);
+  }
+  @Post('leave-requests/:requestId/reject')
+  @Roles('ADMIN', 'CLINIC_MANAGER')
+  rejectLeave(
+    @Param('requestId', ParseUUIDPipe) id: string,
+    @Body() dto: ReviewLeaveRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.reviewLeave(id, false, dto, this.identity(req), undefined, req.requestId);
+  }
+  @Post('leave-requests/:requestId/cancel')
+  @Roles('DOCTOR', 'ADMIN', 'CLINIC_MANAGER')
+  cancelLeave(
+    @Param('requestId', ParseUUIDPipe) id: string,
+    @Body() dto: ReviewLeaveRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.cancelLeave(id, dto, this.identity(req), req.requestId);
   }
   @Patch('rooms/:roomId')
   @Roles('ADMIN', 'CLINIC_MANAGER')

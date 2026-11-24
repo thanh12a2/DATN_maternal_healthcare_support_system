@@ -436,6 +436,21 @@
   width: min(100%, 820px);
   border-radius: 42px 18px 42px 42px;
 }
+.auth-page .auth-card[data-mode='forgot'] {
+  height: 420px;
+  min-height: 420px;
+  max-height: 420px;
+}
+.auth-page .auth-card[data-mode='reset'] {
+  height: 540px;
+  min-height: 540px;
+  max-height: 540px;
+  overflow-y: auto;
+}
+.auth-page .recovery-view { justify-content: center; gap: 20px; }
+.auth-page .recovery-view .auth-header { margin-bottom: 0; }
+.auth-page .recovery-view form { display: grid; gap: 20px; }
+.auth-page .recovery-view .switch-copy { margin-top: 0; }
 
 /* Hiệu ứng chuyển form mượt mà */
 .auth-page .form-view {
@@ -908,7 +923,9 @@
     justify-content: center;
   }
   .auth-page .auth-card,
-  .auth-page .auth-card[data-mode='register'] {
+  .auth-page .auth-card[data-mode='register'],
+  .auth-page .auth-card[data-mode='forgot'],
+  .auth-page .auth-card[data-mode='reset'] {
     width: 100%;
     height: auto;
     min-height: auto;

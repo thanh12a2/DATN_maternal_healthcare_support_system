@@ -407,3 +407,21 @@
   font-weight: 700;
   color: #0f172a;
 }
+
+@media (max-width: 1040px) {
+  .doctor-desk-header { flex-wrap: wrap; }
+  .doctor-header-actions { width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+}
+
+@media (max-width: 600px) {
+  .doctor-desk-header { display: grid; grid-template-columns: minmax(0, 1fr); padding: 12px; }
+  .doctor-desk-header .portal-brand { min-width: 0; flex-shrink: 1; }
+  .doctor-desk-header .portal-brand-slogan-text { white-space: normal; }
+  .doctor-header-actions { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; }
+  .doctor-header-room-chip { grid-column: 1; }
+  .doctor-header-live-chip { grid-column: 2; justify-self: start; }
+  .doctor-header-actions .notification-bell-wrap { grid-column: 3; justify-self: end; }
+  .doctor-header-actions .doctor-btn-call-next { grid-column: 1 / 3; grid-row: 2; width: 100%; }
+  .doctor-header-actions .user-chip-container { grid-column: 3; grid-row: 2; }
+  .doctor-desk-container .notification-popover { position: fixed; top: 12px; right: 12px; left: 12px; width: auto; max-height: calc(100vh - 24px); }
+}

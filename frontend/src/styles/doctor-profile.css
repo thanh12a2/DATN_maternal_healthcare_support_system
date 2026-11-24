@@ -346,6 +346,18 @@
   opacity: 0.6;
   cursor: wait;
 }
+.doctor-leave-panel { margin-top: 18px; padding: 20px; }
+.doctor-leave-panel h2, .doctor-leave-panel h3 { margin: 0 0 10px; color: #153b5d; }
+.doctor-leave-panel > p { color: #59758f; }
+.doctor-leave-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.doctor-leave-form label { display: grid; gap: 5px; color: #315674; font-size: 12px; font-weight: 650; }
+.doctor-leave-form input, .doctor-leave-form select { width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #dce8f2; border-radius: 8px; font: inherit; }
+.doctor-leave-form button { justify-self: start; }
+.doctor-leave-notice { padding: 10px 12px; border-radius: 8px; background: #eef6ff; color: #174f7f; }
+.doctor-leave-list { display: grid; }
+.doctor-leave-list .doctor-schedule-row { gap: 12px; flex-wrap: wrap; }
+.doctor-leave-list button { border: 1px solid #cbdff0; background: #fff; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
+@media (max-width: 600px) { .doctor-leave-form { grid-template-columns: 1fr; } }
 @media (max-width: 860px) {
   .doctor-account-grid {
     grid-template-columns: 1fr;

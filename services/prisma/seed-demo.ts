@@ -12,6 +12,7 @@ const ids = {
   doctorAccount: '00000000-0000-4000-8000-000000000002',
   receptionistAccount: '00000000-0000-4000-8000-000000000003',
   adminAccount: '00000000-0000-4000-8000-000000000004',
+  clinicManagerAccount: '00000000-0000-4000-8000-000000000005',
   patient: '10000000-0000-4000-8000-000000000001',
   doctor: '20000000-0000-4000-8000-000000000001',
   specialty: '21000000-0000-4000-8000-000000000001',
@@ -108,6 +109,11 @@ async function seedAuth(passwordHash: string) {
       id: ids.adminAccount,
       email: 'demo.admin@antam.local',
       role: AuthRoleCode.ADMIN,
+    },
+    {
+      id: ids.clinicManagerAccount,
+      email: 'clinic.manager@antam.local',
+      role: AuthRoleCode.CLINIC_MANAGER,
     },
   ];
 

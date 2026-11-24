@@ -217,6 +217,25 @@ exports.Prisma.DoctorAvailabilityScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.DoctorLeaveRequestScalarFieldEnum = {
+  id: 'id',
+  doctorId: 'doctorId',
+  scheduleId: 'scheduleId',
+  workDate: 'workDate',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  reasonCode: 'reasonCode',
+  note: 'note',
+  status: 'status',
+  version: 'version',
+  availabilityId: 'availabilityId',
+  reviewedBy: 'reviewedBy',
+  reviewedAt: 'reviewedAt',
+  reviewReason: 'reviewReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.IdempotencyRecordScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -333,6 +352,13 @@ exports.AvailabilityStatus = exports.$Enums.AvailabilityStatus = {
   CANCELLED: 'CANCELLED'
 };
 
+exports.LeaveRequestStatus = exports.$Enums.LeaveRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
 exports.Prisma.ModelName = {
   ConsultationRank: 'ConsultationRank',
   ClinicRoom: 'ClinicRoom',
@@ -342,6 +368,7 @@ exports.Prisma.ModelName = {
   DoctorSpecialty: 'DoctorSpecialty',
   DoctorSchedule: 'DoctorSchedule',
   DoctorAvailability: 'DoctorAvailability',
+  DoctorLeaveRequest: 'DoctorLeaveRequest',
   IdempotencyRecord: 'IdempotencyRecord',
   AuditRecord: 'AuditRecord',
   OutboxEvent: 'OutboxEvent'

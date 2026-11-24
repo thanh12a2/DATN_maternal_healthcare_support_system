@@ -63,8 +63,11 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     <AuthShell
       initialMode={mode}
       onModeChange={(next) => {
-        const search = window.location.search;
-        navigate((next === 'login' ? '/dang-nhap' : '/dang-ky') + search);
+        const params = new URLSearchParams(window.location.search);
+        params.delete('token');
+        const search = params.size ? `?${params.toString()}` : '';
+        const path = next === 'register' ? '/dang-ky' : next === 'forgot' ? '/quen-mat-khau' : '/dang-nhap';
+        navigate(path + search);
       }}
       onLogin={login}
       onRegister={register}

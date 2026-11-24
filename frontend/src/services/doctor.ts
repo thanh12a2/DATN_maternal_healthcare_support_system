@@ -118,3 +118,58 @@ export async function listMyAvailability(
     )
   ).data;
 }
+
+export interface DoctorShift {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  roomCode?: string | null;
+  status: string;
+}
+
+export interface DoctorLeaveRequest {
+  id: string;
+  doctorId: string;
+  scheduleId: string;
+  workDate: string;
+  startAt: string;
+  endAt: string;
+  reasonCode: string;
+  note?: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  version: number;
+  reviewReason?: string | null;
+  doctor?: { profile?: { fullName?: string } };
+  schedule?: DoctorShift;
+}
+
+export async function listMyDoctorShifts(request: Requester, doctorId: string) {
+  const raw = await request<{ data: DoctorShift[] }>(`/api/doctors/${doctorId}/schedules?limit=100`);
+  return raw.data ?? [];
+}
+
+export async function listDoctorLeaveRequests(request: Requester, own = false) {
+  const raw = await request<{ data: DoctorLeaveRequest[] }>(own ? '/api/doctors/me/leave-requests' : '/api/doctors/leave-requests?limit=100');
+  return raw.data ?? [];
+}
+
+export async function requestDoctorLeave(request: Requester, body: { scheduleId: string; workDate: string; reasonCode: string; note?: string }) {
+  return request('/api/doctors/me/leave-requests', {
+    method: 'POST', headers: { 'idempotency-key': crypto.randomUUID() }, body: JSON.stringify(body),
+  });
+}
+
+export async function reviewDoctorLeave(request: Requester, item: DoctorLeaveRequest, approve: boolean, reason?: string) {
+  return request(`/api/doctors/leave-requests/${item.id}/${approve ? 'approve' : 'reject'}`, {
+    method: 'POST', body: JSON.stringify({ expectedVersion: item.version, ...(reason ? { reason } : {}) }),
+  });
+}
+
+export async function cancelDoctorLeave(request: Requester, item: DoctorLeaveRequest, reason?: string) {
+  return request(`/api/doctors/leave-requests/${item.id}/cancel`, {
+    method: 'POST', body: JSON.stringify({ expectedVersion: item.version, ...(reason ? { reason } : {}) }),
+  });
+}

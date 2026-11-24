@@ -6,6 +6,7 @@ import {
 } from '../../../schemas/auth';
 import type { ValidationResult } from '../../../schemas/auth';
 import { login, register as registerRequest } from '../../../services/auth';
+import { ApiError } from '../../../services/api';
 import { FormField } from './FormField';
 import { PasswordField } from './PasswordField';
 import { MailIcon } from './icons';
@@ -86,7 +87,9 @@ export function RegisterForm({ onSwitchMode, onSubmit }: Props) {
       setAlert({
         type: 'error',
         message:
-          error instanceof Error ? error.message : 'Tạo tài khoản thất bại.',
+          error instanceof ApiError && error.statusCode === 409
+            ? 'Email này đã được đăng ký. Hãy đăng nhập hoặc dùng email khác.'
+            : error instanceof Error ? error.message : 'Tạo tài khoản thất bại.',
       });
     } finally {
       setSubmitting(false);

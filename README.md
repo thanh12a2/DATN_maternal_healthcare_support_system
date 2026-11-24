@@ -137,7 +137,7 @@ Không dùng `docker compose down -v` trừ khi chủ động xóa toàn bộ d�
 - Nếu `.env` bị hỏng hoặc lớn bất thường, setup script sẽ lưu bản cũ thành `.env.corrupt.<timestamp>` rồi tạo lại từ `.env.example`.
 - Không sửa trực tiếp private key PEM thành nhiều dòng trong `.env`; script tự encode newline thành `\n`.
 
-Sau `PrepareOnly`, có thể chỉnh SMTP trong `.env` nếu cần password reset:
+Sau `PrepareOnly`, cấu hình SMTP trong `.env` cho xác minh email/đặt lại mật khẩu và email thông báo:
 
 ```env
 AUTH_SMTP_HOST=smtp.example.com
@@ -146,9 +146,15 @@ AUTH_SMTP_SECURE=false
 AUTH_SMTP_USER=<smtp-user>
 AUTH_SMTP_PASSWORD=<smtp-password>
 AUTH_EMAIL_FROM=no-reply@example.com
+NOTIFICATION_SMTP_HOST=smtp.example.com
+NOTIFICATION_SMTP_PORT=587
+NOTIFICATION_SMTP_SECURE=false
+NOTIFICATION_SMTP_USER=<smtp-user>
+NOTIFICATION_SMTP_PASSWORD=<smtp-password>
+NOTIFICATION_EMAIL_FROM=no-reply@example.com
 ```
 
-Trong Docker, SMTP host phải truy cập được từ container; không dùng `localhost` cho SMTP chạy ngoài container.
+Sau khi đổi `.env`, chạy `docker compose up -d --no-deps --force-recreate auth-service notification-service` để hai container nhận cấu hình mới. SMTP host phải truy cập được từ container; không dùng `localhost` cho SMTP chạy ngoài container. Email thông báo lịch hẹn/thanh toán/kết quả chỉ gửi đến tài khoản bệnh nhân đã xác minh email; trạng thái `SENT` nghĩa là SMTP đã nhận thư, không xác nhận thư đã vào hộp thư đến.
 
 ## 5. Port mặc định
 
@@ -255,6 +261,9 @@ Tài khoản demo mặc định dùng password `Demo@123456`:
 - Doctor: `demo.doctor@antam.local`
 - Receptionist: `demo.receptionist@antam.local`
 - Admin: `demo.admin@antam.local`
+- Clinic Manager: `clinic.manager@antam.local`
+
+Để chỉ thêm tài khoản Clinic Manager vào Auth DB hiện có, chạy `npm.cmd run seed:clinic-manager` trong thư mục `services`. Seed này không thay đổi các tài khoản khác và có thể chạy lại; mặc định dùng email `clinic.manager@antam.local` và mật khẩu `Demo@123456`. Có thể đặt `CLINIC_MANAGER_SEED_EMAIL`, `CLINIC_MANAGER_SEED_PASSWORD` và `AUTH_DATABASE_URL` trước khi chạy.
 
 ## 8. Build và test
 

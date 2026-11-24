@@ -283,6 +283,7 @@ async function main() {
     ['DOCTOR', 'Bác sĩ chuyên khoa'],
     ['RECEPTIONIST', 'Nhân viên lễ tân / Tiếp đón'],
     ['NURSE', 'Y tá / Hộ sinh phòng khám'],
+    ['CLINIC_MANAGER', 'Clinic operations manager'],
     ['ADMIN', 'Quản trị viên toàn hệ thống'],
   ];
   for (const [code, desc] of rolesDef) {
@@ -298,6 +299,7 @@ async function main() {
     'manager@antam.local',
     'ADMIN',
   );
+  await createAuthAccount('clinic.manager@antam.local', 'CLINIC_MANAGER');
   const nurseAccountId = await createAuthAccount(
     'nurse.huong@antam.local',
     'NURSE',
@@ -5409,13 +5411,14 @@ async function main() {
   console.log(
     '----------------------------------------------------------------',
   );
-  console.log('1. Quản trị viên & Nhân viên y tế (ADMIN / NURSE):');
+  console.log('1. Quản trị viên & Nhân viên y tế (ADMIN / CLINIC_MANAGER / NURSE):');
   console.log(
     '   - Email: admin@antam.local            (Quản trị viên toàn hệ thống)',
   );
   console.log(
-    '   - Email: manager@antam.local          (Quản lý vận hành phòng khám)',
+    '   - Email: manager@antam.local          (ADMIN / quản lý vận hành)',
   );
+  console.log('   - Email: clinic.manager@antam.local   (CLINIC_MANAGER)');
   console.log(
     '   - Email: nurse.huong@antam.local      (Hộ sinh / Y tá trưởng)',
   );

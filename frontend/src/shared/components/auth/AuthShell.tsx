@@ -7,6 +7,8 @@ import type {
 import { BackgroundShapes } from './BackgroundShapes';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
+import { ForgotPasswordForm } from './ForgotPasswordForm';
+import { ResetPasswordForm } from './ResetPasswordForm';
 import { ShieldIcon } from './icons';
 import '../../../styles/auth.css';
 
@@ -42,13 +44,18 @@ export function AuthShell({
             {mode === 'login' ? (
               <LoginForm
                 onSwitchMode={() => change('register')}
+                onForgotPassword={() => change('forgot')}
                 onSubmit={onLogin}
               />
-            ) : (
+            ) : mode === 'register' ? (
               <RegisterForm
                 onSwitchMode={() => change('login')}
                 onSubmit={onRegister}
               />
+            ) : mode === 'forgot' ? (
+              <ForgotPasswordForm onBack={() => change('login')} />
+            ) : (
+              <ResetPasswordForm onLogin={() => change('login')} onRequestNew={() => change('forgot')} />
             )}
           </div>
 

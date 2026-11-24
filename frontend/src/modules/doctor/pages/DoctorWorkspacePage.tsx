@@ -50,6 +50,7 @@ import {
 } from '../../../services/operations';
 import { getMyDoctor, type MyDoctor } from '../../../services/doctor';
 import { UserChip } from '../../../shared/components/navigation/UserChip';
+import { NotificationBell } from '../../../shared/components/notifications/NotificationBell';
 import { DoctorDeskStatsStrip } from '../components/DoctorDeskStatsStrip';
 import { DoctorDeskTable, type DoctorDeskRow } from '../components/DoctorDeskTable';
 import { DoctorConsultationDetail, type PatientDemographic } from '../components/DoctorConsultationDetail';
@@ -449,6 +450,8 @@ function DoctorDesk() {
               >
                 Gọi số tiếp theo
               </Button>
+
+              <NotificationBell />
 
               {/* UserChip với ảnh thật của bác sĩ và ẩn link trang chủ */}
               <UserChip
