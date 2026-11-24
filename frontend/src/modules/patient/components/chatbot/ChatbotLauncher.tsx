@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ChatbotWidget } from './ChatbotWidget';
 import { useAuthSession } from '../../../../app/AuthSessionProvider';
 import '../../../../styles/portal-landing.css';
+import '../../../../styles/chatbot-launcher.css';
 
 function ChatBubbleIcon() {
   return (

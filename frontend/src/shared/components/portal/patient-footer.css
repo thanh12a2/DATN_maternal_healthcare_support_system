@@ -1,0 +1,42 @@
+.ta-footer {
+  --f: 'Be Vietnam Pro', sans-serif;
+  --but: #ffd47a;
+  --tom: #ef4a23;
+  position: relative;
+  overflow: hidden;
+  background: #141110;
+  color: #faf3e4;
+  text-align: left;
+  padding: 4.8rem 3rem 1.6rem;
+}
+.ta-footer::before { content: ''; position: absolute; top: -17rem; right: -11rem; width: 37rem; height: 37rem; border-radius: 50%; background: radial-gradient(closest-side, #ef4a233d, transparent); pointer-events: none; }
+.ta-footer .ta-footer__inner { position: relative; z-index: 1; max-width: 80rem; margin: 0 auto; }
+.ta-footer .ta-footer__grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.1fr; gap: 4rem; }
+.ta-footer p { margin: 0; }
+.ta-footer .ta-footer__desc { max-width: 24rem; margin-top: 1rem; color: #faf3e4aa; font-family: var(--f); font-size: 1.05rem; line-height: 1.45; }
+.ta-footer h4 { margin: 0 0 1rem; color: var(--but); font-size: .84rem; font-weight: 800; font-variation-settings: 'wght' 800, 'wdth' 75; letter-spacing: .07em; text-transform: uppercase; }
+.ta-footer .ta-footer__links { display: grid; gap: .7rem; }
+.ta-footer .ta-footer__links a { width: max-content; max-width: 100%; color: #faf3e4b8; font-family: var(--f); font-size: 1.08rem; line-height: 1.25; text-decoration: none; transition: color .2s, transform .2s; }
+.ta-footer .ta-footer__links a:hover { color: #fff; transform: translateX(4px); }
+.ta-footer .ta-footer__contact { display: grid; gap: .95rem; color: #faf3e4b8; font-family: var(--f); font-size: 1.05rem; line-height: 1.35; }
+.ta-footer .ta-footer__contact small { display: block; margin-bottom: .18rem; color: #faf3e480; font-family: var(--f); font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.ta-footer .ta-footer__bottom { display: flex; align-items: center; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap; margin-top: 3.8rem; padding-top: 1.15rem; border-top: 1px solid #faf3e422; color: #faf3e47d; font-size: .78rem; line-height: 1.45; }
+.ta-footer .ta-footer__legal { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+.ta-footer .landing-footer-brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.ta-footer .landing-footer-brand img { width: 48px; height: 48px; object-fit: contain; }
+.ta-footer .landing-footer-brand span { display: grid; gap: 4px; }
+.ta-footer .landing-footer-brand b { font-size: 1.2rem; }
+.ta-footer .landing-footer-brand small, .ta-footer .landing-footer-badges { font-size: .85rem; color: #faf3e4b8; }
+.ta-footer .landing-footer-badges { margin-top: 1rem; line-height: 1.4; }
+@media (max-width: 991px) {
+  .ta-footer { padding: 4rem 1.5rem 1.4rem; }
+  .ta-footer .ta-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem 2rem; }
+  .ta-footer .ta-footer__brand { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .ta-footer { padding: 3.4rem 1.25rem 1.25rem; }
+  .ta-footer .ta-footer__grid { grid-template-columns: 1fr; gap: 2.3rem; }
+  .ta-footer .ta-footer__brand { grid-column: auto; }
+  .ta-footer .ta-footer__bottom { margin-top: 2.8rem; align-items: flex-start; flex-direction: column; }
+  .ta-footer .ta-footer__legal { gap: .5rem 1rem; }
+}
