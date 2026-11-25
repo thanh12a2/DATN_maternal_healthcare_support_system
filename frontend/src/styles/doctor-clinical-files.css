@@ -188,14 +188,6 @@
   padding-right: 4px;
 }
 
-.clinical-files-scroll-list::-webkit-scrollbar {
-  width: 5px;
-}
-
-.clinical-files-scroll-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
 
 /* Individual File Item */
 .clinical-file-item {

@@ -8,16 +8,16 @@
   color: var(--guide-ink);
 }
 
-.pregnancy-guide-page .portal-container {
+.pregnancy-guide-page main .portal-container {
   width: min(1200px, calc(100% - 64px));
 }
 
 .pg-photo-story { background: #f2f6f0; }
-.pg-story-intro {
+.pregnancy-guide-page .pg-story-intro.portal-container {
   min-height: min(760px, calc(100svh - 120px));
   grid-template-columns: minmax(0, 1fr) minmax(0, .9fr);
   gap: clamp(48px, 7vw, 108px);
-  padding-block: 64px 72px;
+  padding-block: clamp(64px, 6vw, 96px) 72px;
 }
 .pg-intro-copy { max-width: 610px; }
 .pg-intro-label {
@@ -156,14 +156,14 @@
 .pregnancy-guide-page :is(a, button, input):focus-visible { outline: 3px solid #bd8050; outline-offset: 3px; }
 
 @media (max-width: 960px) {
-  .pg-story-intro { min-height: auto; gap: 36px; }
+  .pregnancy-guide-page .pg-story-intro.portal-container { min-height: auto; gap: 36px; }
   .pg-section { padding-block: 64px; }
   .pg-chapter-container { gap: 64px; }
   .pg-photo-margin .pg-story-images { border-radius: 8px; }
 }
 @media (max-width: 680px) {
-  .pregnancy-guide-page .portal-container { width: calc(100% - 36px); }
-  .pg-story-intro { padding-block: 48px; }
+  .pregnancy-guide-page main .portal-container { width: calc(100% - 36px); }
+  .pregnancy-guide-page .pg-story-intro.portal-container { padding-block: 48px; }
   .pregnancy-guide-page .pg-intro-copy h1 { font-size: clamp(37px, 10vw, 52px); }
   .pg-intro-actions { flex-direction: column; }
   .pg-intro-actions .pg-btn { width: 100%; }

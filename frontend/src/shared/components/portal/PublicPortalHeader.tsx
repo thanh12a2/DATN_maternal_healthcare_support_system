@@ -62,7 +62,12 @@ function ArrowRightIcon() {
   );
 }
 
-export function PublicPortalHeader() {
+interface PublicPortalHeaderProps {
+  specialties?: Pick<SpecialtyItem, 'slug' | 'name'>[] | null;
+  onHomeClick?: () => void;
+}
+
+export function PublicPortalHeader({ specialties: suppliedSpecialties, onHomeClick }: PublicPortalHeaderProps = {}) {
   const auth = useAuthSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
@@ -84,7 +89,7 @@ export function PublicPortalHeader() {
 
   // Fetch specialties on mount to ensure immediate responsiveness
   useEffect(() => {
-    if (import.meta.env.MODE === 'test') return;
+    if (suppliedSpecialties !== undefined || import.meta.env.MODE === 'test') return;
     let active = true;
     fetchSpecialties()
       .then((data) => {
@@ -101,7 +106,7 @@ export function PublicPortalHeader() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [suppliedSpecialties]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -133,6 +138,10 @@ export function PublicPortalHeader() {
     e.preventDefault();
     setMobileMenuOpen(false);
     setIsSpecialtyOpen(false);
+    if (onHomeClick) {
+      onHomeClick();
+      return;
+    }
     navigate('/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -248,6 +257,7 @@ export function PublicPortalHeader() {
             <AppLink
               href="/"
               className={`portal-nav-item ${isHomePage ? 'active' : ''}`}
+              aria-current={isHomePage ? 'page' : undefined}
               onClick={handleNavigateHome}
             >
               Trang chủ
@@ -259,6 +269,12 @@ export function PublicPortalHeader() {
               ref={dropdownContainerRef}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && isSpecialtyOpen) {
+                  setIsSpecialtyOpen(false);
+                  dropdownContainerRef.current?.querySelector('button')?.focus();
+                }
+              }}
             >
               <button
                 type="button"
@@ -280,7 +296,7 @@ export function PublicPortalHeader() {
                 >
                   {/* Danh sách 2 cột cân đối lấy trực tiếp từ database */}
                   <div className="portal-specialties-body">
-                    {loadingSpecialties ? (
+                    {(suppliedSpecialties === undefined ? loadingSpecialties : suppliedSpecialties === null) ? (
                       <div className="portal-specialties-grid portal-specialties-loading">
                         {Array.from({ length: 6 }).map((_, idx) => (
                           <div
@@ -291,11 +307,11 @@ export function PublicPortalHeader() {
                           </div>
                         ))}
                       </div>
-                    ) : specialties.length > 0 ? (
+                    ) : (suppliedSpecialties ?? specialties).length > 0 ? (
                       <div className="portal-specialties-grid">
-                        {specialties.map((item) => (
+                        {(suppliedSpecialties ?? specialties).map((item) => (
                           <AppLink
-                            key={item.id || item.slug}
+                            key={item.slug}
                             href={`/chuyen-khoa/${item.slug}`}
                             className="portal-specialty-item"
                             role="menuitem"

@@ -25,7 +25,13 @@ vi.mock('../../../app/AuthSessionProvider', () => ({
 }));
 vi.mock('../../../app/navigation', () => ({
   navigate: mocks.navigate,
-  AppLink: ({ href, children }: any) => <a href={href}>{children}</a>,
+  AppLink: ({ href, children, onClick, ...props }: React.ComponentProps<'a'>) => (
+    <a {...props} href={href} onClick={(event) => {
+      onClick?.(event);
+      if (!event.defaultPrevented) mocks.navigate(href);
+      event.preventDefault();
+    }}>{children}</a>
+  ),
 }));
 vi.mock('../../../shared/components/notifications/NotificationBell', () => ({
   NotificationBell: () => <button>Thông báo</button>,
@@ -83,11 +89,11 @@ describe('patient landing integration', () => {
     render(<PortalLandingPage />);
     const { doc } = await mountDocument();
     expect(
-      within(doc.body).getByRole('link', { name: 'Đăng nhập' }),
+      screen.getByRole('link', { name: 'Đăng nhập' }),
     ).toBeInTheDocument();
-    const navigation = within(doc.body).getByRole('navigation', {
-      name: 'Danh mục cổng bệnh nhân',
-    });
+    expect(doc.querySelector('body > nav')).toBeNull();
+    const navigation = screen.getByRole('navigation', { name: 'Thanh điều hướng chính' });
+    expect(within(navigation).getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('aria-current', 'page');
     for (const [name, href] of [
       ['Trang chủ', '/'],
       ['Đội ngũ Bác sĩ', '/bac-si'],
@@ -104,17 +110,17 @@ describe('patient landing integration', () => {
     expect(
       within(navigation).queryByRole('link', { name: 'Lịch hẹn của tôi' }),
     ).toBeNull();
-    const specialties = navigation.querySelector('details')!;
-    specialties.open = true;
+    const specialties = within(navigation).getByRole('button', { name: 'Chuyên khoa' });
+    fireEvent.click(specialties);
     fireEvent.click(
-      within(specialties).getByRole('link', { name: 'Sản khoa' }),
+      within(navigation).getByRole('menuitem', { name: 'Sản khoa' }),
     );
     expect(mocks.navigate).toHaveBeenCalledWith('/chuyen-khoa/san-khoa');
-    expect(specialties.open).toBe(false);
-    specialties.open = true;
+    expect(specialties).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(specialties);
     fireEvent.keyDown(specialties, { key: 'Escape' });
-    expect(specialties.open).toBe(false);
-    fireEvent.click(doc.querySelector('body > nav > .bk')!);
+    expect(specialties).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(screen.getByRole('link', { name: 'Đặt lịch khám' }));
     expect(mocks.navigate).toHaveBeenCalledWith(
       '/dang-nhap?returnUrl=/dat-lich',
     );
@@ -124,6 +130,11 @@ describe('patient landing integration', () => {
     );
     fireEvent.click(doc.querySelector('#ag a')!);
     expect(mocks.navigate).toHaveBeenCalledWith('/chuyen-khoa/san-khoa');
+    const footer = doc.querySelector<HTMLElement>('footer.ta-footer')!;
+    expect(footer).toHaveTextContent('Dịch vụ & Gói thai sản');
+    expect(footer).toHaveTextContent('Hỗ trợ & Khẩn cấp');
+    fireEvent.click(within(footer).getByRole('link', { name: 'Cẩm nang kiến thức cho mẹ bầu' }));
+    expect(mocks.navigate).toHaveBeenCalledWith('/cam-nang-thai-ky');
     expect(screen.getByRole('button', { name: 'Chatbot' })).toBeInTheDocument();
   });
 
@@ -140,9 +151,7 @@ describe('patient landing integration', () => {
     view.rerender(<PortalLandingPage />);
     expect(frame.contentDocument).toBe(doc);
     expect(frame.srcdoc).toBe(original);
-    const navigation = within(doc.body).getByRole('navigation', {
-      name: 'Danh mục cổng bệnh nhân',
-    });
+    const navigation = screen.getByRole('navigation', { name: 'Thanh điều hướng chính' });
     const appointments = within(navigation).getByRole('link', {
       name: 'Lịch hẹn của tôi',
     });
@@ -150,19 +159,20 @@ describe('patient landing integration', () => {
     fireEvent.click(appointments);
     expect(mocks.navigate).toHaveBeenCalledWith('/lich-hen');
     expect(
-      within(doc.body).getByRole('button', { name: 'Thông báo' }),
+      screen.getByRole('button', { name: 'Thông báo' }),
     ).toBeInTheDocument();
     fireEvent.click(doc.querySelector('#vas')!);
     expect(mocks.navigate).toHaveBeenCalledWith('/dat-lich');
-    fireEvent.click(
-      within(doc.body).getByRole('button', { name: 'Đăng xuất' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /Menu tài khoản/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất tài khoản' }));
     expect(mocks.auth.signOut).toHaveBeenCalledOnce();
   });
 
   it('keeps the homepage available when public APIs fail and allows a retry', async () => {
     mocks.api.mockRejectedValue(new Error('Offline'));
     render(<PortalLandingPage />);
+    const frame = (await screen.findByTitle('Cổng bệnh nhân Tâm An')) as HTMLIFrameElement;
+    await waitFor(() => expect(frame.srcdoc).toContain('retry-public'));
     const { doc } = await mountDocument();
     expect(doc.querySelector('#retry-public')).not.toBeNull();
     expect(doc.querySelector('#hero')).not.toBeNull();

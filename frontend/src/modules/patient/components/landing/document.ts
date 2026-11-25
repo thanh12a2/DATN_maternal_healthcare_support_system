@@ -3,7 +3,7 @@ import additions from './landing.css?raw';
 import surfaceStyles from './landing-surfaces.css?raw';
 import journeyStyles from './journey-ring.css?raw';
 import journeyScript from './journey-ring.js?raw';
-import noticeStyles from '../../../../styles/notification-inbox.css?raw';
+import footerStyles from '../../../../shared/components/portal/patient-footer.css?raw';
 
 // Free Unsplash images used only when an API record has no image of its own.
 // They depict care settings rather than purporting to be portraits of staff.
@@ -61,7 +61,7 @@ const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
 export function buildLandingDocument(data: LandingData) {
   const doc = new DOMParser().parseFromString(template, 'text/html');
   const style = doc.createElement('style');
-  style.textContent = [noticeStyles, additions, surfaceStyles, journeyStyles].join('\n');
+  style.textContent = [additions, surfaceStyles, journeyStyles, footerStyles].join('\n');
   doc.head.append(style);
   const heroVideo = doc.querySelector<HTMLVideoElement>('#hero .vv');
   if (heroVideo) {
@@ -73,32 +73,6 @@ export function buildLandingDocument(data: LandingData) {
     videoControls.textContent = `(function(){var v=document.querySelector('#hero .vv'),b=document.querySelector('.landing-video-toggle');if(!v||!b)return;function sync(){b.textContent=v.paused?'Phát video':'Tạm dừng video';b.setAttribute('aria-label',b.textContent);b.setAttribute('aria-pressed',String(v.paused))}v.addEventListener('play',sync);v.addEventListener('pause',sync);b.addEventListener('click',function(){if(v.paused){v.play().catch(sync)}else v.pause()});sync()})();`;
     doc.body.append(videoControls);
   }
-  const nav = doc.querySelector('body > nav')!;
-  nav.setAttribute('aria-label', 'Điều hướng cổng bệnh nhân');
-  const logo = nav.querySelector('.logo')!;
-  logo.setAttribute('aria-label', 'Tâm An — về đầu trang');
-  logo.innerHTML = '<img src="/brand/logo-symbol-clean.png" alt=""><span class="landing-brand-text"><span class="landing-brand-name">TÂM AN <small>HOSPITAL</small></span><span class="landing-brand-slogan">Trọn vẹn yêu thương, vẹn toàn <strong>yên tâm</strong></span></span>';
-  const primary = nav.querySelector('.pill')!;
-  primary.classList.add('landing-primary-nav');
-  primary.setAttribute('role', 'navigation');
-  primary.setAttribute('aria-label', 'Danh mục cổng bệnh nhân');
-  primary.innerHTML = `
-    <a href="/" aria-current="page">Trang chủ</a>
-    <details class="landing-specialties">
-      <summary>Chuyên khoa <span aria-hidden="true">⌄</span></summary>
-      <div class="landing-specialties-panel">
-        ${data.specialties.length ? data.specialties.map((s) => `<a href="/chuyen-khoa/${encodeURIComponent(s.slug)}">${esc(s.name)}</a>`).join('') : '<p>Đang cập nhật danh mục chuyên khoa.</p>'}
-        <a class="landing-specialties-all" href="/dich-vu">Xem tất cả dịch vụ & bảng giá →</a>
-      </div>
-    </details>
-    <a href="/bac-si">Đội ngũ Bác sĩ</a>
-    <a href="/cam-nang-thai-ky">Cẩm nang thai kỳ</a>
-    <a href="/dich-vu">Bảng giá dịch vụ</a>
-    <a href="/lich-hen" data-patient-only hidden>Lịch hẹn của tôi</a>`;
-  const booking = nav.querySelector('.bk')!;
-  booking.setAttribute('href', '/dat-lich');
-  booking.innerHTML = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg>Đặt lịch khám';
-  nav.insertAdjacentHTML('beforeend', '<div id="patient-actions"></div>');
   doc
     .querySelector('#hero')!
     .insertAdjacentHTML('afterend', '<div id="patient-summary"></div>');
@@ -210,17 +184,6 @@ export function buildLandingDocument(data: LandingData) {
   doc.querySelector('#vas')!.lastChild!.textContent = 'Đặt lịch khám';
   doc.querySelector('#fb .p')!.textContent =
     'Các lời chia sẻ dưới đây là nội dung minh họa của thiết kế.';
-  const footer = doc.querySelector('.ta-footer')!;
-  footer.querySelector('.ta-footer__brand')!.innerHTML = `<a class="landing-footer-brand" href="/"><img src="/brand/logo-symbol-clean.png" alt=""><span><b>TÂM AN HOSPITAL</b><small>Trọn vẹn yêu thương, vẹn toàn yên tâm</small></span></a><p class="ta-footer__desc">Hệ thống Bệnh viện Phụ sản &amp; Y học Bào thai Tâm An – Trọn vẹn yêu thương, vẹn toàn yên tâm. Đồng hành cùng mẹ và bé trên hành trình chăm sóc sức khỏe.</p><p class="landing-footer-badges">Giấy phép hoạt động y tế giả định · Chăm sóc Sản khoa Toàn diện</p>`;
-  const servicesSection = footer.querySelector('.ta-footer__links')!.parentElement!;
-  servicesSection.querySelector('h4')!.textContent = 'Dịch vụ & Gói thai sản';
-  servicesSection.querySelector('.ta-footer__links')!.innerHTML = `<a data-dl href="/dich-vu">Gói sinh thường trọn gói Hạnh Phúc</a><a data-dl href="/dich-vu">Gói sinh mổ chủ động Bình An</a><a data-dl href="/dich-vu">Siêu âm hình thái học thai nhi 5D</a><a data-dl href="/dich-vu">Sàng lọc dị tật trước sinh (NIPT, Double Test)</a><a data-dl href="/dich-vu">Khám &amp; Điều trị Phụ khoa kỹ thuật số</a><a data-dl href="/dich-vu">Chăm sóc mẹ và bé sau sinh toàn diện</a>`;
-  servicesSection.insertAdjacentHTML('afterend', `<section><h4>Tiện ích Bệnh nhân</h4><div class="ta-footer__links" role="navigation" aria-label="Tiện ích bệnh nhân"><a data-dl href="/dat-lich">Đặt lịch khám trực tuyến</a><a data-dl href="/lich-hen">Tra cứu lịch hẹn khám bệnh</a><a data-dl href="/ho-so/hoan-thien">Cổng hồ sơ sức khỏe thai kỳ</a><a data-dl href="/dich-vu">Bảng giá dịch vụ niêm yết</a><a data-dl href="/bac-si">Danh bạ Chuyên gia &amp; Bác sĩ</a><a data-dl href="/cam-nang-thai-ky">Cẩm nang kiến thức cho mẹ bầu</a></div></section>`);
-  const contact = footer.querySelector('.ta-footer__contact')!;
-  contact.parentElement!.querySelector('h4')!.textContent = 'Hỗ trợ & Khẩn cấp';
-  contact.innerHTML = `<p><small>Cấp cứu Sản khoa (24/7) — số giả định</small>1900 6868</p><p><small>Tổng đài tư vấn &amp; Đặt hẹn — số giả định</small>(024) 3999 8888</p><p><small>Địa chỉ cơ sở chính — giả định</small>Tòa nhà Bệnh viện Phụ sản Tâm An, 45 Phố Yersin, Hai Bà Trưng, Hà Nội</p><p><small>Email hỗ trợ — giả định</small>chamsockhachhang@taman.local</p>`;
-  footer.querySelector('.ta-footer__bottom p')!.innerHTML = '© 2026 Bệnh viện Phụ sản Tâm An. Trọn vẹn yêu thương, vẹn toàn yên tâm.<br>Website minh họa phục vụ đồ án tốt nghiệp. Bệnh viện, bác sĩ và số liệu là giả định.';
-  footer.querySelector('.ta-footer__legal')!.innerHTML = '<span title="Nội dung đang được cập nhật">Chính sách bảo mật y tế</span><span title="Nội dung đang được cập nhật">Quy định khám chữa bệnh</span><span title="Nội dung đang được cập nhật">Hướng dẫn đón tiếp bệnh nhân</span>';
   if (data.errors.length)
     doc
       .querySelector('#about')!
@@ -268,7 +231,7 @@ export function buildLandingDocument(data: LandingData) {
     code = code.replace(
       'el.insertBefore(c,el.firstChild);return c',
       () =>
-        `var photo=${json(data.doctors.map((d) => d.profile?.photoUrl || ''))}[i],isProfile=!!photo;if(!photo)photo=${json(stockCarePhotos)}[i%${stockCarePhotos.length}];if(photo&&/^(https?:\\/\\/|\\/(?!\\/))/.test(photo)){var img=document.createElement('img');img.src=photo;img.alt=isProfile?d[0]:'Ảnh minh họa chăm sóc y tế';img.loading='lazy';img.referrerPolicy='no-referrer';img.onerror=function(){img.remove()};c.appendChild(img)}el.insertBefore(c,el.firstChild);return c`,
+        `var photo=${json(data.doctors.map((d) => d.profile?.photoUrl || ''))}[i],isProfile=!!photo;if(!photo)photo=${json(stockCarePhotos)}[i%${stockCarePhotos.length}];if(photo&&/^(https?:\\/\\/|\\/(?!\\/))/.test(photo)){var img=document.createElement('img');img.draggable=false;img.src=photo;img.alt=isProfile?d[0]:'Ảnh minh họa chăm sóc y tế';img.loading='lazy';img.referrerPolicy='no-referrer';img.onerror=function(){img.remove()};c.appendChild(img)}el.insertBefore(c,el.firstChild);return c`,
     );
     code = code.replace(
       'href="#lienhe">Liên hệ tư vấn</a></div>',
