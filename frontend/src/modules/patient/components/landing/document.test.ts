@@ -42,13 +42,13 @@ describe('patient landing document adapter', () => {
         doc.querySelectorAll('.landing-doctor-fallback article'),
       ).toHaveLength(count);
       if (!count) {
-        expect(scripts.join('')).not.toContain('cyl();row();wk();');
+        expect(scripts.join('')).not.toContain(' row();');
         expect(scripts.join('')).not.toContain(' acc();');
       }
     },
   );
 
-  it('keeps original animation assets, CSS, video and tween timings', () => {
+  it('keeps original animation assets, CSS and tween timings alongside the patient hero video', () => {
     const original = parse(template);
     const doc = parse(buildLandingDocument(fixture(5)));
     expect(doc.querySelector('style')!.textContent).toBe(
@@ -63,8 +63,8 @@ describe('patient landing document adapter', () => {
         s.getAttribute('src'),
       ),
     );
-    expect(doc.querySelector('video')?.outerHTML).toBe(
-      original.querySelector('video')?.outerHTML,
+    expect(doc.querySelector('#hero video source')?.getAttribute('src')).toBe(
+      '/videos/patient-home-pexels-7089369.mp4',
     );
     const timings = (d: Document) =>
       Array.from(d.querySelectorAll('script:not([src])'), (s) => s.textContent)
@@ -110,7 +110,7 @@ describe('patient landing document adapter', () => {
     expect(doc.querySelector('#dv h3')?.textContent).toBe(hostile);
     expect(doc.querySelectorAll('[onerror]')).toHaveLength(0);
     expect(doc.querySelectorAll('script')).toHaveLength(
-      parse(template).querySelectorAll('script').length,
+      parse(buildLandingDocument(fixture(1))).querySelectorAll('script').length,
     );
     Array.from(doc.querySelectorAll('script:not([src])')).forEach((s) =>
       expect(() => new Function(s.textContent!)).not.toThrow(),

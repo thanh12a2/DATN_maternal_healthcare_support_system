@@ -1,0 +1,29 @@
+/* Quiet surfaces around the existing Tâm An homepage animations. */
+:root { --landing-paper:#fafaf7; --landing-line:#d7e3e2; }
+.landing-video-toggle { position:absolute; z-index:5; right:24px; bottom:24px; min-height:44px; padding:8px 14px; border:1px solid rgba(255,255,255,.85); border-radius:6px; color:#fff; background:#143d50; font:600 13px 'Be Vietnam Pro',sans-serif; cursor:pointer; }
+.landing-video-toggle:focus-visible { outline:3px solid #f5b66c; outline-offset:3px; }
+#about, #hk, #ts, #faq { background-color:#fafaf7 !important; }
+#spec, #fb { background-color:#f2f6f5 !important; }
+#dv { background-color:#eaf2f2 !important; }
+#why { background-color:#f7f5f0 !important; }
+#about, #spec, #dv, #hk, #bs, #why, #ts, #fb, #faq { border-top:1px solid var(--landing-line) !important; }
+.patient-summary { background:#fff !important; border:1px solid #ccdeda !important; border-radius:16px !important; box-shadow:0 8px 24px rgb(25 54 57 / 5%) !important; }
+.patient-summary::before { background:#bc7b42 !important; }
+.patient-summary > div:not([class]) { border-color:var(--landing-line) !important; border-radius:8px !important; background-color:#f5f8f6 !important; }
+.patient-summary-links a, .patient-summary-links button { border-radius:8px !important; border-color:#cbdeda !important; }
+#about .ac { border-top:1px solid #cbdeda !important; background:transparent !important; }
+#about .ac i, #why .cd i { border-radius:8px !important; background:#edf4f1 !important; }
+#why .cd { background:#fff !important; border:1px solid #dedfd6 !important; border-radius:16px !important; box-shadow:none !important; }
+#why .cd::before { background:#bc7b42 !important; }
+#dv .service-photo-card { border:1px solid #cadcdb !important; border-radius:16px !important; }
+#dv .service-photo-card::before { border-radius:10px !important; }
+#bs .dc { border:1px solid #c7d9d6 !important; border-radius:16px !important; outline-color:#e0ebe6 !important; box-shadow:none !important; }
+#hk .st { background:#fff !important; border:1px solid var(--landing-line) !important; border-radius:12px !important; box-shadow:none !important; }
+#fb .fc { background:#fff !important; border:1px solid var(--landing-line) !important; border-radius:16px !important; box-shadow:none !important; }
+#faq .fq { border-top:1px solid #cbdeda; }
+#faq .fq details { margin:0 !important; padding:20px 4px !important; background:transparent !important; border:0 !important; border-bottom:1px solid #cbdeda !important; border-radius:0 !important; box-shadow:none !important; }
+#faq .fq details[open] { background:#f2f7f3 !important; }
+@media (max-width:760px) {
+  .patient-summary, #why .cd, #fb .fc { border-radius:12px !important; }
+  #faq .fq details { padding-inline:8px !important; }
+}

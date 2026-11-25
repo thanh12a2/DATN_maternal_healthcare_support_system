@@ -1,5 +1,8 @@
 import template from './template.html?raw';
 import additions from './landing.css?raw';
+import surfaceStyles from './landing-surfaces.css?raw';
+import journeyStyles from './journey-ring.css?raw';
+import journeyScript from './journey-ring.js?raw';
 import noticeStyles from '../../../../styles/notification-inbox.css?raw';
 
 // Free Unsplash images used only when an API record has no image of its own.
@@ -58,8 +61,18 @@ const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
 export function buildLandingDocument(data: LandingData) {
   const doc = new DOMParser().parseFromString(template, 'text/html');
   const style = doc.createElement('style');
-  style.textContent = noticeStyles + '\n' + additions;
+  style.textContent = [noticeStyles, additions, surfaceStyles, journeyStyles].join('\n');
   doc.head.append(style);
+  const heroVideo = doc.querySelector<HTMLVideoElement>('#hero .vv');
+  if (heroVideo) {
+    // Pexels / MART PRODUCTION, video 7089369 (illustrative stock footage).
+    heroVideo.innerHTML = '<source src="/videos/patient-home-pexels-7089369.mp4" type="video/mp4">';
+    heroVideo.preload = 'metadata';
+    heroVideo.insertAdjacentHTML('afterend', '<button class="landing-video-toggle" type="button" aria-label="Tạm dừng video" aria-pressed="false">Tạm dừng video</button>');
+    const videoControls = doc.createElement('script');
+    videoControls.textContent = `(function(){var v=document.querySelector('#hero .vv'),b=document.querySelector('.landing-video-toggle');if(!v||!b)return;function sync(){b.textContent=v.paused?'Phát video':'Tạm dừng video';b.setAttribute('aria-label',b.textContent);b.setAttribute('aria-pressed',String(v.paused))}v.addEventListener('play',sync);v.addEventListener('pause',sync);b.addEventListener('click',function(){if(v.paused){v.play().catch(sync)}else v.pause()});sync()})();`;
+    doc.body.append(videoControls);
+  }
   const nav = doc.querySelector('body > nav')!;
   nav.setAttribute('aria-label', 'Điều hướng cổng bệnh nhân');
   const logo = nav.querySelector('.logo')!;
@@ -182,9 +195,12 @@ export function buildLandingDocument(data: LandingData) {
     .querySelector('#ts .p')!
     .insertAdjacentHTML(
       'afterend',
-      '<p class="landing-note">Thanh tuần thai bên dưới dùng để khám phá nội dung tham khảo, không thay đổi hồ sơ của bạn. <a href="/cam-nang-thai-ky">Mở cẩm nang thai kỳ →</a></p>',
+      '<p class="landing-note"><a href="/cam-nang-thai-ky">Mở cẩm nang thai kỳ →</a></p>',
     );
   doc.querySelector('#cylCta')!.setAttribute('href', '/dat-lich');
+  doc.querySelectorAll<HTMLElement>('.journey-entries article').forEach((entry, index) => {
+    entry.dataset.photo = stockPregnancyPhotos[index];
+  });
   // Replace About section SVG illustrations with real photos.
   const aboutMain = doc.querySelector('#about .am')!;
   aboutMain.innerHTML = `<img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=900&q=80" alt="Quầy lễ tân phòng khám Tâm An" style="width:100%;height:100%;object-fit:cover;display:block">`;
@@ -247,20 +263,6 @@ export function buildLandingDocument(data: LandingData) {
         `var DI=${json(data.doctors.map((d) => ({ y: d.profile?.practiceStartYear ? Math.max(0, new Date().getFullYear() - d.profile.practiceStartYear) : '', e: d.profile?.professionalTitle || '', b: d.profile?.biography || 'Thông tin đang được cập nhật.', s: d.specialties?.map((s) => esc(s.name)) || [], t: 'Xem khung giờ còn trống tại trang đặt lịch.' })))};`,
     );
     code = code.replace("d.y+'+'", "d.y===''?'—':d.y+'+'");
-    code = code.replace(
-      "c.style.background='linear-gradient(135deg,'+P[i][0]+','+P[i][1]+')';",
-      "c.style.background='#071e3d';",
-    );
-    code = code.replace(
-      'c.firstChild.style.opacity=',
-      "var sh=c.querySelector('i');if(sh)sh.style.opacity=",
-    );
-    code = code.replace(
-      "c.innerHTML='<i></i><span><u>'+G[i]+'</u><b>'+t+'</b><small>'+D[i]+'</small></span>';",
-      () =>
-        `var pregImg=${json(stockPregnancyPhotos)}[i%${stockPregnancyPhotos.length}];c.innerHTML='<img class="cc-bg" src="'+pregImg+'" alt="'+t+'" loading="eager"><i class="cc-shadow"></i><span><u>'+G[i]+'</u><b>'+t+'</b><small>'+D[i]+'</small></span>';`,
-    );
-    code = code.replace('c.firstChild.style.opacity=', "c.querySelector('.cc-shadow').style.opacity=");
     // Preserve carousel transforms; use the profile image first, then a clearly
     // decorative care-scene fallback when a record has no photo.
     code = code.replace(
@@ -285,10 +287,7 @@ export function buildLandingDocument(data: LandingData) {
     code = code
       .replaceAll('P[i][', 'P[i%P.length][')
       .replaceAll("+' / 06'", "+' / '+String(N).padStart(2,'0')");
-    code = code.replace(
-      'cyl();row();wk();',
-      `cyl();${data.doctors.length ? 'row();' : ''}wk();`,
-    );
+    if (!data.doctors.length) code = code.replace(' row();', '');
     script.textContent = code;
   }
   if (!data.doctors.length) {
@@ -296,5 +295,8 @@ export function buildLandingDocument(data: LandingData) {
       '<p>Chưa có dữ liệu bác sĩ để hiển thị.</p>';
     doc.querySelector('#row')!.classList.add('landing-empty');
   }
+  const journey = doc.createElement('script');
+  journey.textContent = journeyScript;
+  doc.body.append(journey);
   return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 }

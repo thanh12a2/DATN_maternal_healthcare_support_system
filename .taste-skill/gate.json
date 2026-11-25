@@ -1,0 +1,51 @@
+{
+ "start": "2026-11-23T16:50:53.077Z",
+ "round": 0,
+ "idle": 0,
+ "errors": 1,
+ "status": "error",
+ "history": [
+  {
+   "at": "2026-11-23T16:56:00.112Z",
+   "mode": "manual",
+   "status": "error",
+   "fails": 0,
+   "round": 0,
+   "reused": false,
+   "stopHookActive": false
+  }
+ ],
+ "max": 3,
+ "marker": {
+  "page": null,
+  "url": "http://127.0.0.1:3001/cam-nang-thai-ky",
+  "root": null,
+  "kind": "service",
+  "category": "Cẩm nang thai kỳ",
+  "primary": "Tra cứu tuần thai",
+  "rounds": 3,
+  "start": "2026-11-23T16:50:53.077Z",
+  "by": "gate.mjs --start"
+ },
+ "manual": true,
+ "fp": "4b236574a9d39eb5",
+ "page": "http://127.0.0.1:3001/cam-nang-thai-ky",
+ "found": {
+  "fails": [],
+  "warns": [],
+  "crashed": [
+   "the copy (the page showed no <main>, <section> or <h1> to lint)",
+   "consistency.mjs could not walk 1440, 390",
+   "check.mjs could not run (exit 2: check: timed out)"
+  ],
+  "seconds": {
+   "consistency": 6,
+   "layout": 241
+  }
+ },
+ "open": [],
+ "waived": [],
+ "warnCount": 0,
+ "note": "the copy (the page showed no <main>, <section> or <h1> to lint); consistency.mjs could not walk 1440, 390; check.mjs could not run (exit 2: check: timed out)",
+ "at": "2026-11-23T16:56:00.126Z"
+}

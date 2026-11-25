@@ -1,0 +1,357 @@
+/* A quieter editorial layer for the existing Tâm An pregnancy guide. */
+.pregnancy-guide-page {
+  --guide-ink: #153f45;
+  --guide-muted: #526b68;
+  --guide-line: #cfddd5;
+  --guide-paper: #f5f7f2;
+  background: var(--guide-paper);
+  color: var(--guide-ink);
+}
+
+.pregnancy-guide-page .portal-container {
+  width: min(1200px, calc(100% - 64px));
+}
+
+.pg-photo-story { background: #f2f6f0; }
+.pg-story-intro {
+  min-height: min(760px, calc(100svh - 120px));
+  grid-template-columns: minmax(0, 1fr) minmax(0, .9fr);
+  gap: clamp(48px, 7vw, 108px);
+  padding-block: 64px 72px;
+}
+.pg-intro-copy { max-width: 610px; }
+.pg-intro-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #52736a;
+  letter-spacing: .1em;
+  font-size: 12px;
+}
+.pg-intro-label::before { content: ''; width: 32px; height: 2px; background: #c99460; }
+.pregnancy-guide-page .pg-intro-copy h1 {
+  color: #173f45;
+  font-size: clamp(42px, 5vw, 70px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+.pg-intro-copy h1 em { color: #628478; font-style: normal; }
+.pg-intro-lead { max-width: 47ch; margin: 26px 0 30px; color: #4c6561; font-size: 16px; line-height: 1.8; }
+.pg-intro-actions { gap: 12px; }
+.pg-intro-actions .pg-btn { min-height: 52px; padding: 13px 20px; border-radius: 6px; font-size: 14px; }
+.pg-intro-actions .pg-btn-primary { background: #1e5354; border-color: #1e5354; }
+.pg-intro-warning { display: block; width: fit-content; margin-top: 26px; font-size: 14px; font-weight: 600; }
+.pg-intro-note { margin-top: 12px; }
+.pg-story-intro .pg-story-frame { position: relative; padding: 0 0 22px 22px; }
+.pg-story-intro .pg-story-frame::before { content: ''; position: absolute; inset: 22px 22px 0 0; border: 1px solid #b8cfc0; }
+.pg-story-intro .pg-story-images { aspect-ratio: 4 / 4.3; max-height: 590px; border-radius: 220px 220px 8px 8px; }
+.pg-story-intro .pg-story-images::after { display: none; }
+.pg-hero-video-frame .pg-story-images video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  object-position: center;
+}
+.pg-video-toggle {
+  position: absolute;
+  z-index: 3;
+  right: 16px;
+  bottom: 38px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid rgb(255 255 255 / .8);
+  border-radius: 6px;
+  color: #fff;
+  background: #173f45;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pg-week-journey {
+  max-width: none;
+  margin: 0 0 70px;
+  padding: clamp(28px, 4vw, 52px);
+  border: 1px solid var(--guide-line);
+  border-radius: 12px;
+  box-shadow: 0 18px 55px rgb(29 70 60 / 6%);
+}
+.pg-week-journey-top { margin-bottom: 30px; }
+.pg-week-journey-question svg { width: 42px; height: 42px; stroke: #bc8151; }
+.pregnancy-guide-page .pg-week-journey-question h2 { color: var(--guide-ink); font-size: clamp(24px, 2.5vw, 34px); line-height: 1.2; }
+.pg-week-play { min-height: 44px; border-color: #b5cbc0; color: #245756; }
+.pg-week-play:hover, .pg-week-play[aria-pressed='true'] { background: #245756; border-color: #245756; }
+.pg-week-pill { background: #eaf2eb; color: #245756; }
+.pg-week-journey-range input { accent-color: #2f6b63; }
+.pg-week-journey-labels button { min-height: 44px; }
+.pg-week-journey-labels button.active { color: #1e6058; }
+.pg-week-journal-layout { margin-top: 26px; padding-top: 26px; gap: clamp(28px, 4vw, 52px); }
+.pg-week-journal-layout .pg-story-images { max-height: none; aspect-ratio: 1 / .83; border-radius: 6px; }
+.pg-week-journey-heading h3 { color: var(--guide-ink); }
+.pg-week-journey-heading span { background: #e5efe8; color: #275b50; }
+.pg-week-journey-columns { gap: 12px; margin-top: 20px; }
+.pg-week-journey-columns article { padding: 18px; background: #f4f7f2; border-color: #9ab7a5; }
+.pg-week-journey-columns h4 { color: #245756; }
+.pg-week-journey-milestones span.active { background: #245756; border-color: #245756; }
+.pg-story-read { font-weight: 700; }
+
+.pg-sticky-nav { border-block: 1px solid #dce7df; box-shadow: 0 8px 25px rgb(24 61 50 / 5%); }
+.pg-section { padding-block: 90px; }
+.pg-chapter-container { gap: 100px; }
+.pg-photo-chapter, .pg-photo-chapter:nth-child(2) { gap: clamp(30px, 5vw, 74px); }
+.pg-photo-margin .pg-story-images { border-radius: 180px 180px 8px 8px; }
+/* Give the sticky photo enough chapter height to remain in view while reading. */
+@media (min-width: 961px) {
+  .pg-photo-chapter { min-height: 110svh; }
+  .pg-photo-chapter > .pg-chapter-card { align-self: stretch; }
+  .pg-photo-chapter > .pg-photo-margin { align-self: start; }
+}
+.pg-photo-story .pg-story-frame figcaption { padding-top: 20px; }
+.pg-story-frame strong { color: var(--guide-ink); }
+.pg-chapter-card, .pg-chapter-card.t1, .pg-chapter-card.t2, .pg-chapter-card.t3 {
+  padding: clamp(26px, 3vw, 44px);
+  border: 1px solid #d8e4da;
+  border-radius: 12px;
+  background: #fff;
+  transform: none;
+}
+.pg-chapter-card::before { display: none; }
+.pg-chapter-header { margin-bottom: 28px; padding-bottom: 26px; border-bottom: 1px solid #e0e9e1; }
+.pg-arch-badge, .pg-arch-badge.t1, .pg-arch-badge.t2, .pg-arch-badge.t3 { background: #245756 !important; border: 0 !important; box-shadow: none; }
+.pg-arch-label { color: #d6e6db; }
+.pregnancy-guide-page .pg-chapter-title-group h2 { color: var(--guide-ink); font-size: clamp(28px, 3vw, 40px); }
+.pg-approx-pill { padding: 0; border: 0; background: none; color: var(--guide-muted); }
+.pg-quad-grid { gap: 0 24px; }
+.pg-quad-cell, .pg-quad-cell:nth-child(n) { min-height: 0; padding: 22px 0; border: 0; border-top: 1px solid #e0e9e1; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+.pg-quad-cell:hover { transform: none; box-shadow: none; }
+.pg-quad-cell-header { color: #245756; }
+.pg-quad-cell-header svg, .pg-quad-cell.t1 .pg-quad-cell-header svg, .pg-quad-cell.t2 .pg-quad-cell-header svg, .pg-quad-cell.t3 .pg-quad-cell-header svg { color: #b77b4d; }
+.pg-cell-tag { margin-top: 14px; background: #edf4ee; border: 0; color: #365f52; }
+
+.pg-timeline-section, .pg-birth-section { background: #edf3ed; }
+.pg-timeline-section, .pg-topics-section, .pg-emergency-section, .pg-birth-section, .pg-faq-section { padding-block: clamp(70px, 8vw, 110px); }
+.pg-section-title-wrap { max-width: 760px; margin-bottom: 52px; }
+.pregnancy-guide-page .pg-section-title-wrap h2 { color: var(--guide-ink); font-size: clamp(30px, 3.4vw, 46px); line-height: 1.2; }
+.pg-section-title-wrap p { line-height: 1.8; }
+.pg-gantt-wrapper { background: #fff; border: 1px solid #d7e3da; border-radius: 10px; }
+.pg-milestones-list { gap: 16px; }
+.pg-milestone-card, .pg-birth-card, .pg-birth-card:nth-child(n) { border: 1px solid #d9e4db; border-radius: 10px; background: #fff; box-shadow: none; }
+.pg-milestone-card.highlighted { border-color: #6e9a83; background: #f8fbf7; }
+.pg-milestone-badge { background: #e8f1e9; color: #285e50; }
+.pg-clinical-card { border-color: #cfdfd2; background: #fff; }
+.pg-topics-section { background: #214d4d; }
+.pregnancy-guide-page .pg-topics-section .pg-section-title-wrap h2 { color: #fff; }
+.pg-tab-btn { min-height: 48px; border-radius: 6px; }
+.pg-tab-content { border-radius: 10px; }
+.pg-topic-box, .pg-topic-box:nth-child(n), .pg-discomfort-card { background: #f4f8f3; border-color: #dce9dd; border-radius: 8px; }
+.pg-emergency-box { border-radius: 10px; }
+.pg-faq-item, .pg-faq-item.is-open { border-radius: 8px; background: #f7faf6; border-color: #dce8de; }
+.pg-cta-section { background: #214d4d; }
+.pregnancy-guide-page :is(a, button) { transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease; }
+.pregnancy-guide-page .pg-btn:hover { transform: translateY(-2px); }
+.pregnancy-guide-page :is(a, button, input):focus-visible { outline: 3px solid #bd8050; outline-offset: 3px; }
+
+@media (max-width: 960px) {
+  .pg-story-intro { min-height: auto; gap: 36px; }
+  .pg-section { padding-block: 64px; }
+  .pg-chapter-container { gap: 64px; }
+  .pg-photo-margin .pg-story-images { border-radius: 8px; }
+}
+@media (max-width: 680px) {
+  .pregnancy-guide-page .portal-container { width: calc(100% - 36px); }
+  .pg-story-intro { padding-block: 48px; }
+  .pregnancy-guide-page .pg-intro-copy h1 { font-size: clamp(37px, 10vw, 52px); }
+  .pg-intro-actions { flex-direction: column; }
+  .pg-intro-actions .pg-btn { width: 100%; }
+  .pg-story-intro .pg-story-frame { padding: 0 0 12px 12px; }
+  .pg-story-intro .pg-story-images { aspect-ratio: 4 / 3; border-radius: 120px 120px 6px 6px; }
+  .pg-week-journey { margin-bottom: 48px; padding: 22px; }
+  .pg-week-journey-top { align-items: flex-start; }
+  .pg-week-journey-actions { width: 100%; }
+  .pg-week-journey-labels { gap: 0; }
+  .pg-week-journey-labels button { font-size: 12px; }
+  .pg-photo-margin .pg-story-frame { display: block; }
+  .pg-photo-margin .pg-story-images { height: 240px; }
+  .pg-quad-grid { grid-template-columns: 1fr; }
+  .pg-chapter-card, .pg-chapter-card.t1, .pg-chapter-card.t2, .pg-chapter-card.t3 { padding: 24px; }
+  .pg-chapter-header { gap: 14px; }
+  .pg-arch-badge { width: 48px; height: 64px; }
+  .pg-gantt-wrapper { overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pregnancy-guide-page :is(a, button) { transition: none; }
+  .pregnancy-guide-page .pg-btn:hover { transform: none; }
+}
+
+/* Frame and card system: one quiet outer edge, with lighter internal dividers. */
+.pregnancy-guide-page {
+  --guide-frame: #cbdcd1;
+  --guide-divider: #e1ebe3;
+  --guide-card-radius: 16px;
+}
+.pregnancy-guide-page :is(.pg-week-journey, .pg-chapter-card, .pg-gantt-wrapper,
+  .pg-milestone-card, .pg-clinical-card, .pg-birth-card, .pg-tab-content) {
+  border: 1px solid var(--guide-frame);
+  border-radius: var(--guide-card-radius);
+  box-shadow: none;
+}
+.pregnancy-guide-page .pg-week-journey {
+  background: #fff;
+  border-top: 4px solid #709b84;
+}
+.pg-week-journal-layout { border-top: 1px solid var(--guide-divider); }
+.pg-week-journey-columns article {
+  border: 0;
+  border-top: 2px solid #90b19d;
+  border-radius: 0 0 8px 8px;
+  padding: 20px;
+}
+.pg-week-journey-milestones span {
+  border-color: #d0dfd4;
+  background: #fff;
+}
+.pregnancy-guide-page .pg-chapter-card {
+  border-top: 4px solid #a8c2ad;
+  background: #fff;
+}
+.pregnancy-guide-page .pg-chapter-card.highlighted {
+  border-color: #8aaf98;
+  border-top-color: #376f5f;
+}
+.pg-chapter-header { border-color: var(--guide-divider); }
+.pg-quad-grid { gap: 0 28px; }
+.pg-quad-cell, .pg-quad-cell:nth-child(n) { border-top-color: var(--guide-divider); }
+.pg-cell-tag { border-radius: 5px; }
+.pregnancy-guide-page .pg-gantt-wrapper { padding: clamp(24px, 3vw, 36px); }
+.pg-gantt-track { background: #edf3ee; }
+.pg-milestone-card, .pg-birth-card, .pg-birth-card:nth-child(n) {
+  padding: clamp(24px, 2.5vw, 32px);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.pregnancy-guide-page .pg-milestone-card.highlighted {
+  border-color: #729d82;
+  background: #f5faf5;
+  box-shadow: inset 0 3px #729d82;
+}
+.pg-milestone-note {
+  border-left: 2px solid #b9d0bd;
+  border-radius: 0;
+  background: #f5f8f4;
+}
+.pg-clinical-card { border-left: 4px solid #8cb19a !important; }
+.pg-tab-content { padding: clamp(24px, 3.5vw, 44px); }
+.pg-topic-box, .pg-topic-box:nth-child(n), .pg-discomfort-card {
+  border: 0;
+  border-top: 2px solid #b5ceba;
+  border-radius: 0 0 8px 8px;
+  box-shadow: none;
+  padding: 24px;
+}
+.pg-emergency-box {
+  border: 1px solid #e1c3bc;
+  border-top: 4px solid #b95e4f;
+  border-radius: var(--guide-card-radius);
+  background: #fff;
+  box-shadow: none;
+}
+.pg-tier-card { border-radius: 8px; box-shadow: none; }
+.pg-tier-1 { background: #fff3f0; border: 1px solid #ecc7be; }
+.pg-tier-2 { background: #fff9ed; border: 1px solid #ead9b6; }
+.pg-emergency-hotline-bar { border-radius: 8px; background: #a33930; box-shadow: none; }
+.pg-faq-list { gap: 0; border-block: 1px solid var(--guide-frame); }
+.pg-faq-item, .pg-faq-item.is-open {
+  border: 0;
+  border-bottom: 1px solid var(--guide-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.pg-faq-item:last-child { border-bottom: 0; }
+.pg-faq-item.is-open { background: #f5f9f5; }
+.pg-faq-question { min-height: 68px; }
+.pg-faq-chevron { color: #55816a; }
+@media (max-width: 680px) {
+  .pregnancy-guide-page { --guide-card-radius: 12px; }
+  .pg-week-journey-columns article { padding: 18px; }
+  .pg-milestone-card, .pg-birth-card, .pg-birth-card:nth-child(n) { padding: 24px; }
+  .pg-faq-question { padding-inline: 16px; }
+  .pg-faq-answer { padding-inline: 16px; }
+}
+
+/* Prenatal schedule: keep every name and range readable outside the bars. */
+.pregnancy-guide-page .pg-gantt-wrapper {
+  --schedule-label-width: minmax(260px, 36%);
+  padding: clamp(20px, 3vw, 36px);
+  overflow: visible;
+}
+.pg-gantt-header, .pg-gantt-item {
+  display: grid;
+  grid-template-columns: var(--schedule-label-width) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+}
+.pg-gantt-header {
+  margin: 0;
+  padding: 0 0 16px;
+  border-bottom: 1px solid #dbe7dd;
+  color: #526b68;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.pg-gantt-scale { position: relative; height: 20px; color: #526b68; font-variant-numeric: tabular-nums; }
+.pg-gantt-scale span { position: absolute; top: 0; transform: translateX(-50%); }
+.pg-gantt-scale span:nth-child(1) { left: 0; transform: none; }
+.pg-gantt-scale span:nth-child(2) { left: 30%; }
+.pg-gantt-scale span:nth-child(3) { left: 65%; }
+.pg-gantt-scale span:nth-child(4) { right: 0; transform: none; }
+.pg-gantt-row { gap: 0; }
+.pg-gantt-item { min-height: 76px; padding: 14px 0; border-bottom: 1px solid #e8efea; }
+.pg-gantt-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.pg-gantt-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: #214c53; font-size: 14px; line-height: 1.45; white-space: normal; }
+.pg-gantt-range { color: #607773; font-size: 12px; font-weight: 500; }
+.pg-gantt-track { height: 10px; overflow: visible; background: #e9f1eb; }
+.pg-gantt-bar { top: 0; bottom: 0; min-width: 0; background: #78a995; border-radius: 99px; box-shadow: none; }
+.pg-gantt-bar.highlighted { background: #245f53; box-shadow: 0 0 0 2px #c2ded0; transform: none; }
+.pregnancy-guide-page .pg-milestone-card { background: #fff; border-color: var(--guide-frame); box-shadow: none; }
+@media (max-width: 680px) {
+  .pg-gantt-header { grid-template-columns: 1fr; gap: 12px; }
+  .pg-gantt-item { grid-template-columns: 1fr; gap: 12px; padding: 16px 0; }
+  .pg-gantt-track { margin-bottom: 4px; }
+}
+
+/* A chapter-like timeline keeps the original clinical details together. */
+.pg-schedule-journey { margin: 0 0 40px; padding: clamp(24px, 4vw, 48px); border: 1px solid #d1e0d4; border-radius: 16px; background: #fff; }
+.pg-schedule-stops { display: grid; grid-template-columns: repeat(7, minmax(112px, 1fr)); gap: 4px; overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 4px; }
+.pg-schedule-stop { display: block; min-height: 52px; padding: 8px 4px 14px; border: 0; border-bottom: 2px solid #d7e2db; border-radius: 0; background: transparent; color: #637a73; font: 600 13px/1.35 'Be Vietnam Pro', sans-serif; text-align: left; white-space: nowrap; cursor: pointer; transition: color .2s ease, border-color .2s ease; }
+.pg-schedule-stop:hover { color: #214c53; border-color: #8fb19f; }
+.pg-schedule-stop[aria-pressed='true'] { color: #214c53; border-bottom-color: #214c53; }
+.pg-schedule-stop:focus-visible { outline: 3px solid #ba7b42; outline-offset: -3px; }
+.pg-schedule-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: start; gap: clamp(32px, 5vw, 72px); padding-top: clamp(32px, 4vw, 52px); }
+.pg-schedule-copy { min-width: 0; }
+.pg-schedule-number { margin: 0 0 12px; color: #245756; font-size: clamp(32px, 4vw, 54px); font-weight: 700; line-height: 1.12; letter-spacing: -.035em; }
+.pregnancy-guide-page .pg-schedule-copy h3 { margin: 0 0 24px; color: #173f45; font-size: clamp(20px, 2vw, 26px); line-height: 1.35; }
+.pg-schedule-details { padding: 8px 24px; border-radius: 12px; background: #f1f6f1; }
+.pg-schedule-details p { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 16px; margin: 0; padding: 16px 0; color: #405c58; font-size: 14px; line-height: 1.7; }
+.pg-schedule-details p + p { border-top: 1px solid #d9e6dc; }
+.pg-schedule-details strong { color: #28574f; font-weight: 600; }
+.pg-schedule-image { position: relative; min-width: 0; min-height: 460px; height: 100%; max-height: 680px; overflow: hidden; border-radius: 12px; background: #e0e9e1; }
+.pg-schedule-image img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
+@media (prefers-reduced-motion: no-preference) {
+  .pg-schedule-copy, .pg-schedule-image { animation: pg-schedule-enter .35s ease both; }
+  @keyframes pg-schedule-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+}
+@media (max-width: 800px) {
+  .pg-schedule-journey { padding: 24px; }
+  .pg-schedule-layout { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
+  .pg-schedule-image { min-height: 0; height: auto; aspect-ratio: 4 / 3; }
+}
+@media (max-width: 480px) {
+  .pg-schedule-journey { padding: 20px; }
+  .pg-schedule-details { padding: 8px 16px; }
+  .pg-schedule-details p { grid-template-columns: 1fr; gap: 4px; }
+}

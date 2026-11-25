@@ -1320,60 +1320,6 @@ body > nav > #patient-actions { order: 2; margin-left: 0; }
   opacity: 1 !important;
 }
 
-/* 9. Hành trình thai sản Cockpit (.wkc & .wk-cols) */
-.wkc {
-  background: #ffffff !important;
-  border: 1.5px solid #dce8f5 !important;
-  border-radius: 26px !important;
-  box-shadow: 0 18px 46px rgba(11, 79, 156, 0.08) !important;
-  padding: 34px 38px !important;
-}
-
-.wk-q h3 {
-  color: #07376e !important;
-  font-size: 1.4rem !important;
-  font-weight: 850 !important;
-  letter-spacing: -0.01em !important;
-}
-
-.wk-pill {
-  border: 1.5px solid #f3c2d4 !important;
-  box-shadow: 0 2px 8px rgba(246, 169, 194, 0.25) !important;
-}
-
-.wk-cols {
-  gap: 1.2rem !important;
-}
-
-.wk-cols article {
-  background: #f8fbfe !important;
-  border: 1.5px solid #e1ecf6 !important;
-  border-radius: 18px !important;
-  padding: 22px !important;
-  box-shadow: 0 4px 14px rgba(11, 79, 156, 0.03) !important;
-  transition: all 0.22s ease !important;
-}
-
-.wk-cols article:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 10px 26px rgba(11, 79, 156, 0.08) !important;
-  border-color: #aed1f5 !important;
-}
-
-.wk-cols h4 {
-  color: #0b4f9c !important;
-  font-size: 0.95rem !important;
-  font-weight: 850 !important;
-  letter-spacing: 0.06em !important;
-  margin-bottom: 10px !important;
-}
-
-.wk-cols p, .wk-cols li {
-  color: #2b4560 !important;
-  font-size: 0.98rem !important;
-  line-height: 1.6 !important;
-}
-
 /* 10. FAQ Card Accordion (#faq .fq) */
 .fq {
   max-width: 52rem !important;
@@ -1950,10 +1896,6 @@ main > .vs .vq { min-height: 110px; }
 }
 .st:before { background: #145d83 !important; box-shadow: none !important; }
 .st h3 { font-size: 20px !important; font-weight: 650 !important; }
-.wkc { padding: clamp(24px, 3vw, 36px) !important; border: 1px solid #d9e5e9 !important; border-radius: 16px !important; box-shadow: none !important; }
-.wk-cols { gap: 0 !important; }
-.wk-cols article { border: 0 !important; border-left: 2px solid #ccdde4 !important; border-radius: 0 !important; background: #f6f9fa !important; box-shadow: none !important; padding: 20px !important; }
-.wk-cols h4 { letter-spacing: 0 !important; font-weight: 650 !important; }
 .fc { border: 1px solid #dce6eb !important; border-radius: 12px !important; box-shadow: none !important; }
 .fq { margin-top: 32px !important; }
 .fq details { padding: 18px 20px !important; margin-bottom: 8px !important; border: 1px solid #dce6eb !important; border-radius: 10px !important; box-shadow: none !important; }
@@ -1962,7 +1904,6 @@ main > .vs .vq { min-height: 110px; }
   .sec, .sec0, #hk, #fb { padding: 48px 20px !important; }
   .gr3 { margin-top: 24px !important; }
   #dv .service-photo-card { min-height: 320px !important; }
-  .wk-cols { gap: 8px !important; }
 }
 
 /* Chỉ ảnh và nội dung bên trong chuyển động; khung card không dịch chuyển. */

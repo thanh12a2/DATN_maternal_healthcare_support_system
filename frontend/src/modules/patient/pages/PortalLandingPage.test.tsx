@@ -65,6 +65,20 @@ beforeEach(() => {
 });
 
 describe('patient landing integration', () => {
+  it('opens the six maternity milestones without the week slider', async () => {
+    render(<PortalLandingPage />);
+    const { doc } = await mountDocument();
+    const journey = doc.querySelector('#ts')!;
+    expect(journey.querySelector('[role="slider"]')).toBeNull();
+    const milestones = journey.querySelectorAll<HTMLButtonElement>('.journey-thumbs button');
+    expect(milestones).toHaveLength(6);
+    fireEvent.click(journey.querySelector('.journey-caption')!);
+    fireEvent.click(milestones[5]);
+    expect(journey.querySelector('.journey-copy h3')).toHaveTextContent('Chuẩn bị chuyển dạ');
+    fireEvent.click(journey.querySelector('.journey-back')!);
+    expect(journey.querySelector('.journey-caption')).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('mounts account controls and sends guest booking to the existing login flow', async () => {
     render(<PortalLandingPage />);
     const { doc } = await mountDocument();

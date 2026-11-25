@@ -1,0 +1,503 @@
+{
+ "start": "2026-11-23T17:12:09.060Z",
+ "round": 1,
+ "idle": 0,
+ "errors": 3,
+ "status": "fail",
+ "history": [
+  {
+   "at": "2026-11-23T17:16:24.605Z",
+   "mode": "manual",
+   "status": "error",
+   "fails": 0,
+   "round": 0,
+   "reused": false,
+   "stopHookActive": false
+  },
+  {
+   "at": "2026-11-23T17:48:20.290Z",
+   "mode": "manual",
+   "status": "error",
+   "fails": 0,
+   "round": 0,
+   "reused": false,
+   "stopHookActive": false
+  },
+  {
+   "at": "2026-11-23T18:47:37.888Z",
+   "mode": "manual",
+   "status": "fail",
+   "fails": 12,
+   "round": 1,
+   "reused": false,
+   "stopHookActive": false
+  }
+ ],
+ "max": 3,
+ "marker": {
+  "page": null,
+  "url": "http://127.0.0.1:3172/",
+  "root": null,
+  "kind": "service",
+  "category": "Chăm sóc thai sản",
+  "primary": "Đặt lịch khám",
+  "rounds": 3,
+  "start": "2026-11-23T17:12:09.060Z",
+  "by": "gate.mjs --start"
+ },
+ "manual": true,
+ "fp": "e643f80725af6777",
+ "page": "http://127.0.0.1:3172/",
+ "found": {
+  "fails": [
+   {
+    "check": "cta",
+    "where": "div#root",
+    "msg": "the hero has no button (the nav's does not count)",
+    "fix": "add the action: a button in the hero, one on every priced item, one in the closing section",
+    "widths": [
+     1440,
+     390
+    ],
+    "from": "consistency",
+    "ids": [
+     "cta"
+    ],
+    "wheres": [
+     "div#root"
+    ]
+   },
+   {
+    "check": "copy-headline",
+    "where": "(the page)",
+    "msg": "the page has no visible h1",
+    "fix": "put the category noun in the h1 (and who it is for, or where), in 2 to 8 words",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "copy-headline"
+    ],
+    "wheres": [
+     "(the page)"
+    ]
+   },
+   {
+    "check": "copy-fact",
+    "where": "(the page)",
+    "msg": "the first screen holds no number, price, date, place, platform or genre",
+    "fix": "put one hard fact from the brief on the first screen: a number, a price, a date, the place, the platforms it runs on or a game's genre; take it from the brief or remove the claim",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "copy-fact"
+    ],
+    "wheres": [
+     "(the page)"
+    ]
+   },
+   {
+    "check": "effect-kind",
+    "where": "(the page)",
+    "msg": "a service page (--type) moves with the scroll: scroll libraries or timelines (Lenis, ScrollTrigger, ScrollSmoother): effects fit tech, gaming and software pages and a product with a technical subject, never a place, shop or service page (house rule)",
+    "fix": "take the scroll-driven motion off: on a place, shop or service page the page scrolls plainly and the parts sit still",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "effect-kind"
+    ],
+    "wheres": [
+     "(the page)"
+    ]
+   },
+   {
+    "check": "phone-number",
+    "where": "div#root > iframe \"(024) 3999 8888\"",
+    "msg": "a phone number with its area code in its frame: \"(024) 3999 8888\"; a visitor can dial it and reach a stranger",
+    "fix": "drop the number and its tel: link (a \"Request a call\" form may stand in), unless the brief gives the number",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "phone-number"
+    ],
+    "wheres": [
+     "div#root > iframe \"(024) 3999 8888\""
+    ]
+   },
+   {
+    "check": "focus-ring",
+    "where": ".user-chip-button:focus, .user-chip-button:focus-visible",
+    "msg": "\".user-chip-button:focus, .user-chip-button:focus-visible\" in the page removes the focus outline and sets nothing in its place",
+    "fix": "keep the kit's :focus-visible ring, or put a change of the same strength (a 2px line in --action) in the rule that removes it",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "focus-ring"
+    ],
+    "wheres": [
+     ".user-chip-button:focus, .user-chip-button:focus-visible"
+    ]
+   },
+   {
+    "check": "focus-visible",
+    "where": "div#root > iframe \"Cổng bệnh nhân Tâm An\"",
+    "msg": "Tab stop 1, iframe \"Cổng bệnh nhân Tâm An\": it shows no change when focused",
+    "fix": "keep the kit's ring (system.css :focus-visible, 2px in --action, there at once); a control that hides itself shows on focus",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "focus-visible"
+    ],
+    "wheres": [
+     "div#root > iframe \"Cổng bệnh nhân Tâm An\""
+    ]
+   },
+   {
+    "check": "moment-none",
+    "where": "(the page)",
+    "msg": "a service page (--type) deals no moment: every kind carries one, two on a long page (moments.md)",
+    "fix": "deal one (moments.mjs pick --page service --photo) and mount it in its own section",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "moment-none"
+    ],
+    "wheres": [
+     "(the page)"
+    ]
+   },
+   {
+    "check": "container-edges",
+    "where": "div#root \"Trợ lý ảo\"",
+    "msg": "a <div> at the top of the page, outside header.nav, main, footer.closing and nav.actionbar (SR-6)",
+    "fix": "build the page as header.nav, a main of sections (each one in-flow .wrap plus background layers) and footer.closing",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "container-edges"
+    ],
+    "wheres": [
+     "div#root \"Trợ lý ảo\""
+    ]
+   },
+   {
+    "check": "container-edges",
+    "where": "button#patient-chatbot-launcher-btn \"Trợ lý ảo\"",
+    "msg": "a child of section 1 beside its .wrap is no valid background layer: not img, picture, video or canvas; position fixed, not absolute; does not span the screen from 0 to 1440px; z-index 10000, not 0; a hero layer with neither alt nor aria-hidden=\"true\" (SR-6)",
+    "fix": "build the page as header.nav, a main of sections (each one in-flow .wrap plus background layers) and footer.closing",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "container-edges"
+    ],
+    "wheres": [
+     "button#patient-chatbot-launcher-btn \"Trợ lý ảo\""
+    ]
+   },
+   {
+    "check": "container-edges",
+    "where": "div#root > iframe",
+    "msg": "a box over half the container wide runs 0-1430px, not on the container's lines at 0-1440px (SR-6)",
+    "fix": "run the picture or box from the container's left line to its right line, or put it in a row or a split",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "container-edges"
+    ],
+    "wheres": [
+     "div#root > iframe"
+    ]
+   },
+   {
+    "check": "container",
+    "where": "page",
+    "msg": "no .wrap",
+    "fix": "put the content in one .wrap",
+    "widths": [
+     1440,
+     390
+    ],
+    "from": "layout",
+    "ids": [
+     "container"
+    ],
+    "wheres": [
+     "page"
+    ]
+   }
+  ],
+  "warns": [
+   {
+    "check": "assets",
+    "where": "(the page)",
+    "msg": "the data file http://localhost:8080/api/doctors/specialties did not load (ERR_FAILED)",
+    "fix": "fix the path, or remove the reference",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "heading-scale",
+    "where": "(the page)",
+    "msg": "the page has no visible h1",
+    "fix": "size headings by level: the h1 largest, one size per level, each level below the one above",
+    "widths": [
+     1440,
+     390
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "skip-link",
+    "where": "div#root > iframe \"Cổng bệnh nhân Tâm An\"",
+    "msg": "the first Tab stop is \"Cổng bệnh nhân Tâm An\", not a skip link: a keyboard user tabs through the whole nav on every visit",
+    "fix": "add the starter's skip link as the header's first child: <a class=\"skip-link\" href=\"#top\">Skip to content</a>",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "share-meta",
+    "where": "head",
+    "msg": "the head lacks og:title, og:description, og:image, twitter:card, theme-color: a shared link shows no picture or title of its own",
+    "fix": "copy the head block of starter.html: og tags, twitter:card, the icon and theme-color (references/system.md, Head)",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   }
+  ],
+  "crashed": [
+   "the copy (the page showed no <main>, <section> or <h1> to lint)"
+  ],
+  "seconds": {
+   "consistency": 72,
+   "layout": 20
+  }
+ },
+ "open": [
+  {
+   "check": "cta",
+   "where": "div#root",
+   "msg": "the hero has no button (the nav's does not count)",
+   "fix": "add the action: a button in the hero, one on every priced item, one in the closing section",
+   "widths": [
+    1440,
+    390
+   ],
+   "from": "consistency",
+   "ids": [
+    "cta"
+   ],
+   "wheres": [
+    "div#root"
+   ]
+  },
+  {
+   "check": "copy-headline",
+   "where": "(the page)",
+   "msg": "the page has no visible h1",
+   "fix": "put the category noun in the h1 (and who it is for, or where), in 2 to 8 words",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "copy-headline"
+   ],
+   "wheres": [
+    "(the page)"
+   ]
+  },
+  {
+   "check": "copy-fact",
+   "where": "(the page)",
+   "msg": "the first screen holds no number, price, date, place, platform or genre",
+   "fix": "put one hard fact from the brief on the first screen: a number, a price, a date, the place, the platforms it runs on or a game's genre; take it from the brief or remove the claim",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "copy-fact"
+   ],
+   "wheres": [
+    "(the page)"
+   ]
+  },
+  {
+   "check": "effect-kind",
+   "where": "(the page)",
+   "msg": "a service page (--type) moves with the scroll: scroll libraries or timelines (Lenis, ScrollTrigger, ScrollSmoother): effects fit tech, gaming and software pages and a product with a technical subject, never a place, shop or service page (house rule)",
+   "fix": "take the scroll-driven motion off: on a place, shop or service page the page scrolls plainly and the parts sit still",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "effect-kind"
+   ],
+   "wheres": [
+    "(the page)"
+   ]
+  },
+  {
+   "check": "phone-number",
+   "where": "div#root > iframe \"(024) 3999 8888\"",
+   "msg": "a phone number with its area code in its frame: \"(024) 3999 8888\"; a visitor can dial it and reach a stranger",
+   "fix": "drop the number and its tel: link (a \"Request a call\" form may stand in), unless the brief gives the number",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "phone-number"
+   ],
+   "wheres": [
+    "div#root > iframe \"(024) 3999 8888\""
+   ]
+  },
+  {
+   "check": "focus-ring",
+   "where": ".user-chip-button:focus, .user-chip-button:focus-visible",
+   "msg": "\".user-chip-button:focus, .user-chip-button:focus-visible\" in the page removes the focus outline and sets nothing in its place",
+   "fix": "keep the kit's :focus-visible ring, or put a change of the same strength (a 2px line in --action) in the rule that removes it",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "focus-ring"
+   ],
+   "wheres": [
+    ".user-chip-button:focus, .user-chip-button:focus-visible"
+   ]
+  },
+  {
+   "check": "focus-visible",
+   "where": "div#root > iframe \"Cổng bệnh nhân Tâm An\"",
+   "msg": "Tab stop 1, iframe \"Cổng bệnh nhân Tâm An\": it shows no change when focused",
+   "fix": "keep the kit's ring (system.css :focus-visible, 2px in --action, there at once); a control that hides itself shows on focus",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "focus-visible"
+   ],
+   "wheres": [
+    "div#root > iframe \"Cổng bệnh nhân Tâm An\""
+   ]
+  },
+  {
+   "check": "moment-none",
+   "where": "(the page)",
+   "msg": "a service page (--type) deals no moment: every kind carries one, two on a long page (moments.md)",
+   "fix": "deal one (moments.mjs pick --page service --photo) and mount it in its own section",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "moment-none"
+   ],
+   "wheres": [
+    "(the page)"
+   ]
+  },
+  {
+   "check": "container-edges",
+   "where": "div#root \"Trợ lý ảo\"",
+   "msg": "a <div> at the top of the page, outside header.nav, main, footer.closing and nav.actionbar (SR-6)",
+   "fix": "build the page as header.nav, a main of sections (each one in-flow .wrap plus background layers) and footer.closing",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "container-edges"
+   ],
+   "wheres": [
+    "div#root \"Trợ lý ảo\""
+   ]
+  },
+  {
+   "check": "container-edges",
+   "where": "button#patient-chatbot-launcher-btn \"Trợ lý ảo\"",
+   "msg": "a child of section 1 beside its .wrap is no valid background layer: not img, picture, video or canvas; position fixed, not absolute; does not span the screen from 0 to 1440px; z-index 10000, not 0; a hero layer with neither alt nor aria-hidden=\"true\" (SR-6)",
+   "fix": "build the page as header.nav, a main of sections (each one in-flow .wrap plus background layers) and footer.closing",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "container-edges"
+   ],
+   "wheres": [
+    "button#patient-chatbot-launcher-btn \"Trợ lý ảo\""
+   ]
+  },
+  {
+   "check": "container-edges",
+   "where": "div#root > iframe",
+   "msg": "a box over half the container wide runs 0-1430px, not on the container's lines at 0-1440px (SR-6)",
+   "fix": "run the picture or box from the container's left line to its right line, or put it in a row or a split",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "container-edges"
+   ],
+   "wheres": [
+    "div#root > iframe"
+   ]
+  },
+  {
+   "check": "container",
+   "where": "page",
+   "msg": "no .wrap",
+   "fix": "put the content in one .wrap",
+   "widths": [
+    1440,
+    390
+   ],
+   "from": "layout",
+   "ids": [
+    "container"
+   ],
+   "wheres": [
+    "page"
+   ]
+  }
+ ],
+ "waived": [],
+ "warnCount": 4,
+ "note": "the copy (the page showed no <main>, <section> or <h1> to lint); consistency.mjs could not walk 1440, 390; check.mjs could not run (exit 2: [1124/004813.848:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: Access is denied. (0x5))",
+ "at": "2026-11-23T18:47:37.889Z",
+ "roundKey": "e643f80725af6777:da39a3ee",
+ "roundFree": false,
+ "idleFree": false,
+ "blockKey": null
+}
