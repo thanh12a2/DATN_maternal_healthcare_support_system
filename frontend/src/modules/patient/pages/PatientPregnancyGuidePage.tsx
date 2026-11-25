@@ -11,7 +11,9 @@ import { PublicPortalFooter } from '../../../shared/components/portal/PublicPort
 import { ChatbotLauncher } from '../components/chatbot/ChatbotLauncher';
 import { PregnancyWeekNavigator } from '../components/PregnancyWeekNavigator';
 import { PregnancyStoryFrame } from '../components/PregnancyStoryFrame';
+import { PregnancyHeroVideo } from '../components/PregnancyHeroVideo';
 import '../../../styles/pregnancy-guide.css';
+import '../../../styles/pregnancy-guide-redesign.css';
 
 // --- ICONS Y KHOA NỘI BỘ (SVG CHUẨN) ---
 function StethoscopeIcon() {
@@ -225,24 +227,6 @@ function HeartHandIcon({ className }: { className?: string }) {
   );
 }
 
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
 // --- DỮ LIỆU CỐT LÕI (A3 - MỐC KHÁM) ---
 interface Milestone {
   id: string;
@@ -340,6 +324,17 @@ const MILESTONES: Milestone[] = [
   },
 ];
 
+const SCHEDULE_VISUALS = [
+  { src: '/images/pregnancy-7055918.jpg', alt: 'Mẹ cầm hình ảnh siêu âm' },
+  { src: '/images/pregnancy-7089337.jpg', alt: 'Bác sĩ chuẩn bị siêu âm cho mẹ bầu' },
+  { src: '/images/pregnancy-7089337.jpg', alt: 'Bác sĩ chuẩn bị siêu âm cho mẹ bầu' },
+  { src: '/images/pregnancy-7089337.jpg', alt: 'Mẹ bầu trong buổi thăm khám' },
+  { src: '/images/pregnancy-7089337.jpg', alt: 'Mẹ bầu trong buổi thăm khám' },
+  { src: '/images/pregnancy-7055910.jpg', alt: 'Mẹ xem ảnh siêu âm bên đồ chuẩn bị cho bé' },
+  { src: '/images/pregnancy-7055910.jpg', alt: 'Mẹ xem ảnh siêu âm bên đồ chuẩn bị cho bé' },
+] as const;
+const SCHEDULE_STOPS = ['Tuần 5–8', 'Tuần 10–22', 'Tuần 18–22', 'Tuần 24–28', 'Tuần 27–36', 'Tuần 36–38', 'Tuần 36–40'];
+
 // --- DỮ LIỆU HỎI ĐÁP (A10) ---
 const FAQ_ITEMS = [
   {
@@ -391,6 +386,11 @@ const FAQ_ITEMS = [
 export const PatientPregnancyGuidePage: React.FC = () => {
   // Trạng thái bộ chọn tuần thai (1 - 40)
   const [selectedWeek, setSelectedWeek] = useState<number>(12);
+  const [activeMilestone, setActiveMilestone] = useState(0);
+  useEffect(() => {
+    const match = MILESTONES.findIndex((item) => selectedWeek >= item.startWeek && selectedWeek <= item.endWeek);
+    if (match !== -1) setActiveMilestone(match);
+  }, [selectedWeek]);
   const story = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
   useEffect(() => {
@@ -518,7 +518,7 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             <a className="pg-intro-warning" href="#emergency-warning">Dấu hiệu cần đi khám ngay</a>
             <p className="pg-intro-note">Thông tin mang tính tham khảo và không thay thế tư vấn của bác sĩ.</p>
           </AnimatedContent>
-          <PregnancyStoryFrame trimester={1} showCaption={false} />
+          <PregnancyHeroVideo />
         </header>
         <div className="portal-container" id="pregnancy-weeks">
           <PregnancyWeekNavigator week={selectedWeek} onWeekChange={setSelectedWeek} />
@@ -856,82 +856,32 @@ export const PatientPregnancyGuidePage: React.FC = () => {
             </p>
           </div>
 
-          {/* Thước đo Gantt thể hiện bản chất khoảng tuần */}
-          <div className="pg-gantt-wrapper">
-            <div className="pg-gantt-header">
-              <span>Mốc khám lâm sàng</span>
-              <span>
-                Thước đo tuần thai (1 ────────── 13 ────────── 27 ────────── 40)
-              </span>
-            </div>
-            <div className="pg-gantt-row">
-              {MILESTONES.map((item) => {
-                const isItemActive =
-                  selectedWeek >= item.startWeek &&
-                  selectedWeek <= item.endWeek;
-                const leftPercent = ((item.startWeek - 1) / 40) * 100;
-                const widthPercent = Math.max(
-                  ((item.endWeek - item.startWeek + 1) / 40) * 100,
-                  8,
-                );
-
-                return (
-                  <div key={item.id} className="pg-gantt-item">
-                    <span className="pg-gantt-label">{item.name}</span>
-                    <div className="pg-gantt-track">
-                      <div
-                        className={`pg-gantt-bar ${isItemActive ? 'highlighted' : ''}`}
-                        style={{
-                          left: `${leftPercent}%`,
-                          width: `${widthPercent}%`,
-                          backgroundColor: item.color,
-                        }}
-                      >
-                        {item.rangeLabel}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Danh mục chi tiết các mốc khám */}
-          <div className="pg-milestones-list">
-            {MILESTONES.map((item, idx) => {
-              const isItemActive =
-                selectedWeek >= item.startWeek && selectedWeek <= item.endWeek;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`pg-milestone-card ${isItemActive ? 'highlighted' : ''}`}
-                >
-                  <div className="pg-milestone-head">
-                    <div className="pg-milestone-title-wrap">
-                      <span className="pg-milestone-step-node">0{idx + 1}</span>
-                      <h3>{item.name}</h3>
-                    </div>
-                    <span className="pg-milestone-badge">
-                      {item.rangeLabel}
-                    </span>
-                  </div>
-
-                  <div className="pg-milestone-body">
-                    <p>
-                      <strong>Mục đích:</strong> {item.purpose}
-                    </p>
-                    <div className="pg-milestone-note">{item.note}</div>
-                    {item.hospitalNote && (
-                      <p className="pg-milestone-hospital-note">
-                        <CheckCircleIcon />
-                        <span>{item.hospitalNote}</span>
-                      </p>
-                    )}
-                  </div>
+          <div className="pg-schedule-journey">
+            <nav className="pg-schedule-stops" aria-label="Chọn mốc thăm khám tiền sản">
+              {MILESTONES.map((item, index) => (
+                <button key={item.id} type="button" className="pg-schedule-stop"
+                  aria-pressed={activeMilestone === index} aria-controls="pg-schedule-detail"
+                  aria-label={`${SCHEDULE_STOPS[index]}: ${item.name}`}
+                  onClick={() => setActiveMilestone(index)}>
+                  {SCHEDULE_STOPS[index]}
+                </button>
+              ))}
+            </nav>
+            <div className="pg-schedule-layout" id="pg-schedule-detail" aria-live="polite">
+              <div className="pg-schedule-copy" key={MILESTONES[activeMilestone].id}>
+                <p className="pg-schedule-number">{SCHEDULE_STOPS[activeMilestone]}</p>
+                <h3>{MILESTONES[activeMilestone].name.replace(/^\d+\.\s*/, '')}</h3>
+                <div className="pg-schedule-details">
+                  <p><strong>Thời điểm</strong><span>{MILESTONES[activeMilestone].rangeLabel}</span></p>
+                  <p><strong>Mục đích</strong><span>{MILESTONES[activeMilestone].purpose}</span></p>
+                  <p><strong>Lưu ý</strong><span>{MILESTONES[activeMilestone].note}</span></p>
+                  {MILESTONES[activeMilestone].hospitalNote && <p><strong>Tâm An</strong><span>{MILESTONES[activeMilestone].hospitalNote}</span></p>}
                 </div>
-              );
-            })}
+              </div>
+              <div className="pg-schedule-image" key={SCHEDULE_VISUALS[activeMilestone].src}>
+                <img src={SCHEDULE_VISUALS[activeMilestone].src} alt={SCHEDULE_VISUALS[activeMilestone].alt} loading="lazy" />
+              </div>
+            </div>
           </div>
 
           {/* Hộp lưu ý lâm sàng */}

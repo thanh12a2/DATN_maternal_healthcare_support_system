@@ -21,6 +21,7 @@ body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-s
 a{color:inherit;text-decoration:none}
 main{visibility:hidden}html[data-ready] main{visibility:visible}
 [data-r]{visibility:hidden}
+[data-reveal-on-view] > [data-r]{visibility:visible}
 .h{font-weight:700;font-variation-settings:"wght" 700,"wdth" 75;font-size:8rem;line-height:.9;text-transform:uppercase;letter-spacing:-.02em}
 .h .char{font-variation-settings:"wght" var(--w,700),"wdth" 75}
 .alt{font-family:var(--f);font-weight:300;letter-spacing:-.035em;font-variation-settings:"wght" 300,"wdth" 87.5,"opsz" 96}
@@ -156,56 +157,11 @@ section{position:relative}
 @keyframes rollm{0%{top:-1.3rem;opacity:1}88%{opacity:1}100%{top:calc(100% - 1.3rem);opacity:0}}
 @media(prefers-reduced-motion:reduce){#dv .cd.rv{clip-path:none;animation:none!important}#dv .cd.rv::after{display:none}}
 
-/* hanh trinh thai san: noi dung the + thanh tuan thai */
+/* hanh trinh thai san: noi dung the */
 .cc span{padding:4.2rem 1rem 1rem;background:linear-gradient(#0000,#0008 55%)}
 .cc u{display:inline-block;text-decoration:none;font-size:.72rem;font-weight:700;letter-spacing:.02em;padding:.2rem .6rem;border-radius:99px;background:#ffffff38;margin-bottom:.5rem}
 .cc b{display:block;font-size:1.2rem;font-weight:700;line-height:1.15}
 .cc small{display:block;font-size:.8rem;line-height:1.35;margin-top:.3rem;opacity:.92}
-.wkc{--zc:#f6a9c2;max-width:60rem;margin:2.5rem auto 0;text-align:left;border-radius:1.2rem;padding:1.6rem 1.8rem 1.5rem;background:color-mix(in srgb,var(--fg) 4%,var(--page));border:1px solid color-mix(in srgb,var(--fg) 12%,transparent);box-shadow:0 1rem 2.5rem -1.6rem #0005}
-.wk-top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:2.4rem}
-.wk-q{display:flex;align-items:center;gap:.9rem}
-.wk-q svg{width:3.4rem;height:3.4rem;flex:none;stroke:var(--tom);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.wk-q h3{font-size:1.15rem;line-height:1.25;font-weight:700}
-.wk-r{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
-.wk-pill{padding:.45rem 1rem;border-radius:99px;font-size:.95rem;font-weight:600;white-space:nowrap;background:color-mix(in srgb,var(--zc) 45%,transparent);transition:background-color .5s}
-.wk-pill b{display:inline-block;min-width:1.2em;text-align:center;font-weight:800}
-.wk-play{display:flex;align-items:center;gap:.45rem;height:2.2rem;padding:0 1rem;border-radius:99px;border:1px solid color-mix(in srgb,var(--fg) 25%,transparent);background:transparent;color:inherit;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:background-color .25s,color .25s}
-.wk-play:hover,.wk-play[aria-pressed=true]{background:var(--tom);border-color:var(--tom);color:#fff}
-.wk-play svg{width:.8rem;height:.8rem;fill:currentColor}
-.wk-bar{padding:0 .9rem}
-.wk-track{position:relative;height:.7rem;border-radius:99px;cursor:pointer;touch-action:pan-y;background:linear-gradient(90deg,color-mix(in srgb,#f6a9c2 60%,transparent) 0 32.05%,color-mix(in srgb,#b9c48a 60%,transparent) 32.05% 67.95%,color-mix(in srgb,#ffd46e 65%,transparent) 67.95% 100%)}
-.wk-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;background:var(--tom)}
-.wk-tick{position:absolute;top:-.4rem;bottom:-.4rem;width:2px;transform:translateX(-50%);background:color-mix(in srgb,var(--fg) 28%,transparent);pointer-events:none}
-.wk-th{position:absolute;top:50%;left:0;width:1.7rem;height:1.7rem;margin:-.85rem 0 0 -.85rem;padding:0;border-radius:50%;background:var(--tom);border:.3rem solid var(--page);box-shadow:0 0 0 2px var(--tom),0 .4rem 1rem #0004;cursor:grab;outline:none;touch-action:none}
-.wk-th:active{cursor:grabbing}
-.wk-th:focus-visible{box-shadow:0 0 0 2px var(--tom),0 0 0 .5rem color-mix(in srgb,var(--tom) 35%,transparent)}
-.wk-th:after{content:"";position:absolute;inset:-.55rem;border-radius:50%;border:2px solid var(--tom);opacity:0;animation:wkp 2.2s ease-out infinite;pointer-events:none}
-@keyframes wkp{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.5);opacity:0}}
-.wk-lab{position:relative;height:1.8rem;margin-top:1.1rem;font-size:.85rem}
-.wk-lab>*{position:absolute;top:0;white-space:nowrap;border:0;background:none;color:inherit;font:inherit;padding:.1rem .25rem;opacity:.65;transition:opacity .3s,color .3s}
-.wk-lab .e1{left:-.5rem}.wk-lab .e2{right:-.5rem}
-.wk-lab button{cursor:pointer;transform:translateX(-50%)}
-.wk-lab button:hover{opacity:1}
-.wk-lab button.on{opacity:1;color:var(--tom);font-weight:700}
-.wk-pan{margin-top:1.6rem;padding-top:1.6rem;border-top:1px dashed color-mix(in srgb,var(--fg) 22%,transparent)}
-.wk-head{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap}
-.wk-badge{display:inline-block;padding:.25rem .8rem;border-radius:99px;font-size:.8rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#141110;background:var(--zc);transition:background-color .5s}
-.wk-head h3{font-size:2rem;line-height:1;font-weight:700;font-variation-settings:"wght" 700,"wdth" 75;text-transform:uppercase;letter-spacing:-.01em}
-.wk-sub{margin-top:.6rem;opacity:.7;font-size:1rem}
-.wk-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.3rem}
-.wk-cols article{padding:1.1rem 1.1rem 1.2rem;border-radius:1rem;background:color-mix(in srgb,var(--fg) 5%,transparent);border-top:3px solid var(--zc);transition:border-color .5s}
-.wk-cols h4{font-size:.8rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tom);margin-bottom:.5rem}
-.wk-cols p,.wk-cols li{font-size:.95rem;line-height:1.45}
-.wk-cols ul{list-style:none;padding:0;margin:0;display:grid;gap:.4rem}
-.wk-cols li{position:relative;padding-left:1.1rem}
-.wk-cols li:before{content:"";position:absolute;left:0;top:.5em;width:.45rem;height:.45rem;border-radius:50%;background:var(--zc)}
-.wk-ms{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.3rem}
-.wk-ms span{padding:.4rem .85rem;border-radius:99px;font-size:.85rem;border:1px solid color-mix(in srgb,var(--fg) 22%,transparent);opacity:.6;transition:background-color .35s,color .35s,opacity .35s,border-color .35s}
-.wk-ms span.on{opacity:1;background:var(--tom);border-color:var(--tom);color:#fff}
-.wk-note{margin-top:1.2rem;font-size:.8rem;opacity:.5}
-@media(max-width:991px){.wk-cols{grid-template-columns:1fr}.wk-head h3{font-size:1.7rem}}
-@media(max-width:600px){.wkc{padding:1.2rem 1rem 1.2rem}.wk-top{margin-bottom:1.8rem}.wk-lab{height:3.4rem}.wk-lab .e1,.wk-lab .e2{top:1.7rem}.wk-lab button{font-size:.78rem}}
-@media(prefers-reduced-motion:reduce){.wk-th:after{animation:none}}
 </style>
 </head>
 <body>
@@ -253,24 +209,86 @@ section{position:relative}
 <p class="p" data-r>Đội ngũ bác sĩ giàu kinh nghiệm, luôn dành thời gian lắng nghe và đồng hành cùng từng gia đình.</p>
 <div class="row" id="row" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Đội ngũ bác sĩ"><div class="cap" aria-live="polite"><b></b><small></small><em></em></div></div>
 <p class="p" style="font-size:.95rem;opacity:.55;margin-top:1rem">Kéo hoặc cuộn để xem · Bấm vào thẻ để xem hồ sơ bác sĩ · Lướt đi để quay lại dải thẻ</p></section>
-<section id="why" class="sec"><p class="eb" data-r>Vì sao chọn Tâm An</p>
+<section id="why" class="sec" data-reveal-on-view><p class="eb" data-r>Vì sao chọn Tâm An</p>
 <h2 class="h" data-r="c" data-fw>Chăm sóc <span class="alt">đủ đầy</span></h2>
 <p class="p" data-r>Bốn điều làm nên sự an tâm của các mẹ bầu khi chọn Tâm An đồng hành suốt thai kỳ và hành trình đón bé.</p>
 <div class="gr3 gr2"><div class="cd rv" style="--c:#ef4a23"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></svg></i><h3>Chuyên gia giàu kinh nghiệm</h3><p>Quy tụ các bác sĩ chuyên khoa II và tiến sĩ đầu ngành về Sản phụ khoa. Đội ngũ y tế đồng hành tận tâm, thăm khám 1:1 và theo dõi sát sao từng cột mốc phát triển của thai nhi.</p></div><div class="cd rv" style="--c:#8fc6e8"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></i><h3>Chất lượng quốc tế</h3><p>Quy trình kiểm soát nhiễm khuẩn một chiều nghiêm ngặt cùng hệ thống phòng sinh khép kín. Áp dụng tiêu chuẩn an toàn sản khoa hiện đại, mang lại sự an tâm tuyệt đối cho mẹ và bé.</p></div><div class="cd rv" style="--c:#f6a9c2"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/></svg></i><h3>Công nghệ tiên tiến</h3><p>Trang bị hệ thống máy siêu âm 5D hình thái học chuyên sâu và xét nghiệm sàng lọc trước sinh chính xác. Hỗ trợ chẩn đoán sớm và xây dựng phác đồ theo dõi thai kỳ cá thể hóa.</p></div><div class="cd rv" style="--c:#ffd46e"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></i><h3>Nghiên cứu &amp; Đổi mới</h3><p>Liên tục ứng dụng kỹ thuật giảm đau sản khoa đa tầng, hỗ trợ nuôi con bằng sữa mẹ và theo dõi sức khỏe liên tục, giúp trải nghiệm vượt cạn nhẹ nhàng và trọn vẹn yêu thương.</p></div></div></section>
-<section id="ts" class="sec"><p class="eb" data-r>Chúng tôi luôn đồng hành cùng mẹ và bé qua từng giai đoạn</p>
+<section id="ts" class="sec" data-reveal-on-view><p class="eb" data-r>Chúng tôi luôn đồng hành cùng mẹ và bé qua từng giai đoạn</p>
 <h2 class="h" data-r="c" data-fw>Hành trình <span class="alt">thai sản</span></h2>
-<p class="p" data-r>6 mốc khám quan trọng mà mẹ bầu nào cũng cần biết, từ lần khám đầu tiên đến ngày chuẩn bị đón bé. Kéo thẻ hoặc dùng thanh tuần thai bên dưới để xem từng mốc.</p>
-<div class="cyl" id="cyl" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Các mốc khám thai"><div class="stg"><div class="ring"></div></div><div class="cap" aria-live="polite"><b></b><small></small></div></div>
+<p class="p" data-r>6 mốc khám quan trọng mà mẹ bầu nào cũng cần biết, từ lần khám đầu tiên đến ngày chuẩn bị đón bé. Kéo ngang để xoay vòng ảnh, kéo dọc để nghiêng và bấm vào ảnh để xem mốc khám.</p>
+<div class="journey" id="cyl" role="region" aria-roledescription="bộ sưu tập ảnh" aria-label="Các mốc khám thai">
+  <div class="journey-stage" tabindex="0" aria-label="Dùng phím trái, phải để xoay, lên, xuống để nghiêng. Nhấn Enter để xem mốc khám.">
+    <div class="journey-scene" aria-hidden="true"></div>
+    <div class="journey-marker" aria-hidden="true"></div>
+    <div class="journey-layout" inert>
+      <div class="journey-media">
+        <div class="journey-photo-slot"></div>
+        <div class="journey-thumbs" role="group" aria-label="Chọn mốc khám"></div>
+      </div>
+      <div class="journey-detail">
+        <button type="button" class="journey-back">← Quay lại vòng ảnh</button>
+        <div id="journey-info" class="journey-copy"></div>
+      </div>
+    </div>
+  </div>
+  <div class="journey-controls">
+    <button type="button" class="journey-prev" aria-label="Mốc trước">←</button>
+    <button type="button" class="journey-caption" aria-expanded="false" aria-controls="journey-info"><small></small><strong></strong><span>Xem mốc khám ↗</span></button>
+    <button type="button" class="journey-next" aria-label="Mốc tiếp theo">→</button>
+  </div>
+  <div class="journey-entries" hidden>
+    <article>
+      <small>Tuần 6–8</small>
+      <h3>Xác nhận thai &amp; nghe tim thai</h3>
+      <p>Bác sĩ siêu âm để xác định vị trí thai, ước tính tuổi thai và kiểm tra xem đã thấy hoạt động tim của phôi chưa.</p>
+      <p>Nếu thai còn quá sớm, hình ảnh ở lần đầu có thể chưa rõ. Bác sĩ sẽ giải thích những gì đã thấy và hẹn siêu âm lại nếu cần. Tuổi thai ước tính giúp mẹ biết ngày dự sinh và thời điểm nên đi sàng lọc tiếp theo.</p>
+      <p><strong>Trước khi đi khám.</strong> Mẹ có thể ghi lại ngày đầu của kỳ kinh gần nhất, các thuốc và vitamin đang dùng. Mang danh sách này đến để bác sĩ tư vấn về axit folic và lập hồ sơ theo dõi cho mẹ.</p>
+      <p>Theo kết quả hôm nay, mẹ nên quay lại khi nào và lần tới bác sĩ sẽ kiểm tra điều gì?</p>
+    </article>
+    <article>
+      <small>Tuần 11–13</small>
+      <h3>Độ mờ da gáy &amp; sàng lọc</h3>
+      <p>Độ mờ da gáy là bề dày lớp dịch dưới da ở phía sau gáy bé. Bác sĩ đo lớp dịch này qua siêu âm trong một khoảng thời gian nhất định của thai kỳ.</p>
+      <p>Khi mẹ chọn sàng lọc kết hợp, bác sĩ dùng số đo siêu âm cùng kết quả xét nghiệm máu của mẹ để ước tính khả năng bé có một số bất thường nhiễm sắc thể, chẳng hạn hội chứng Down.</p>
+      <p><strong>Khi nhận kết quả.</strong> Nếu kết quả cho thấy khả năng cao, bác sĩ sẽ giải thích mức nguy cơ và trao đổi về các xét nghiệm tiếp theo để làm rõ. Riêng kết quả sàng lọc chưa đủ để kết luận bé mắc bệnh.</p>
+      <p>Mức nguy cơ ghi trên phiếu có ý nghĩa gì với thai kỳ của mẹ, và mẹ có những lựa chọn nào tiếp theo?</p>
+    </article>
+    <article>
+      <small>Tuần 18–22</small>
+      <h3>Siêu âm hình thái thai nhi</h3>
+      <p>Ở lần siêu âm này, bác sĩ quan sát từng phần cơ thể bé, từ não, tim và cột sống đến tay, chân. Bác sĩ cũng kiểm tra vị trí bánh nhau và lượng nước ối quanh bé.</p>
+      <p>Mỗi cơ quan cần được quan sát ở một số góc nhất định. Chẳng hạn, nếu bé quay lưng hoặc che mặt, bác sĩ có thể hẹn xem lại phần hình ảnh còn thiếu. Mẹ có thể hỏi ngay phần nào đã xem rõ và phần nào cần kiểm tra lại.</p>
+      <p><strong>Sau buổi siêu âm.</strong> Mẹ nên giữ phiếu kết quả cùng hồ sơ thai kỳ. Nếu có lịch hẹn bổ sung, hãy ghi lại ngày hẹn và lý do để tiện trao đổi ở lần khám sau.</p>
+      <p>Bác sĩ đã quan sát rõ những cơ quan nào của bé? Có phần nào cần siêu âm lại không?</p>
+    </article>
+    <article>
+      <small>Tuần 24–28</small>
+      <h3>Tầm soát tiểu đường thai kỳ</h3>
+      <p>Đường huyết là lượng đường trong máu. Đường huyết có thể tăng trong thai kỳ dù mẹ vẫn cảm thấy khỏe, nên bác sĩ có thể chỉ định nghiệm pháp dung nạp glucose để kiểm tra.</p>
+      <p>Trong buổi xét nghiệm, nhân viên y tế lấy máu lúc đói, cho mẹ uống dung dịch glucose rồi lấy máu lại theo giờ hẹn. Các mẫu máu cho biết cơ thể mẹ xử lý lượng đường vừa uống như thế nào.</p>
+      <p><strong>Chuẩn bị cho buổi xét nghiệm.</strong> Khi đặt lịch, mẹ hãy hỏi cơ sở khám về thời gian nhịn ăn, việc uống nước và thời gian cần ở lại. Nếu kết quả cao, bác sĩ sẽ trao đổi với mẹ về chế độ ăn và cách theo dõi đường huyết.</p>
+      <p>Mẹ sẽ nhận kết quả khi nào? Nếu đường huyết cao, ai sẽ hướng dẫn mẹ theo dõi tại nhà?</p>
+    </article>
+    <article>
+      <small>Tuần 32–36</small>
+      <h3>Theo dõi tăng trưởng &amp; ngôi thai</h3>
+      <p>Ở những tuần cuối, bác sĩ theo dõi sự phát triển của bé, đo huyết áp cho mẹ và kiểm tra ngôi thai. Ngôi thai cho biết phần nào của bé đang hướng xuống phía cổ tử cung, chẳng hạn đầu hoặc mông.</p>
+      <p>Khi cần siêu âm, bác sĩ dùng các số đo để ước tính cân nặng của bé và đánh giá nước ối. So sánh với những lần khám trước giúp bác sĩ xem bé đang lớn lên như thế nào và có cần theo dõi sát hơn hay không.</p>
+      <p><strong>Chuẩn bị cho các tuần cuối.</strong> Mẹ nên mang theo các phiếu siêu âm trước và hỏi về lịch xét nghiệm liên cầu khuẩn nhóm B (GBS). Kết quả này giúp ê-kíp sinh biết mẹ có cần dùng kháng sinh trong chuyển dạ để bảo vệ bé hay không.</p>
+      <p>Hiện bé đang ở ngôi nào? Với kết quả hôm nay, mẹ nên tái khám và làm xét nghiệm GBS khi nào?</p>
+    </article>
+    <article>
+      <small>Từ tuần 37</small>
+      <h3>Chuẩn bị chuyển dạ</h3>
+      <p>Từ tuần 37, mẹ và bác sĩ có thể thống nhất kế hoạch đi sinh dựa trên sức khỏe của mẹ, tình trạng của bé và mong muốn của gia đình. Mẹ cũng có thể trao đổi về các cách giảm đau khi chuyển dạ.</p>
+      <p>Hãy hỏi khoa sản cách nhận biết cơn gò chuyển dạ và cách liên hệ khi nghi vỡ ối. Nếu thấy bé cử động ít hơn thường lệ, ra máu âm đạo hoặc nghi vỡ ối, mẹ nên liên hệ ngay với khoa sản để được hướng dẫn.</p>
+      <p><strong>Cùng người thân chuẩn bị.</strong> Lưu số điện thoại khoa sản, xác định lối vào viện ngoài giờ và để hồ sơ khám thai cùng giấy tờ ở nơi dễ lấy. Người đưa mẹ đi sinh cũng nên biết những thông tin này.</p>
+      <p>Nếu có dấu hiệu chuyển dạ vào ban đêm, gia đình nên gọi số nào và đến khu vực nào của bệnh viện?</p>
+    </article>
+  </div>
+</div>
 <a class="cyl-cta" id="cylCta" href="#lienhe">Đặt lịch khám theo mốc</a>
-<div class="wkc" id="wk" role="group" aria-label="Thanh thời gian thai kỳ">
-<div class="wk-top"><div class="wk-q"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6c-1.5-3 1-5 4-3"/><circle cx="24" cy="26" r="16"/><path d="M8.5 24c-3.5-1-4.5 4-1.5 6.5M39.5 24c3.5-1 4.5 4 1.5 6.5"/><circle cx="18" cy="24" r="1.3"/><circle cx="30" cy="24" r="1.3"/><path d="M19 32c3 3 7 3 10 0"/></svg><h3>Mẹ đang ở<br>tuần thai nào?</h3></div>
-<div class="wk-r"><button class="wk-play" id="wkPlay" type="button" aria-pressed="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg><span>Xem hành trình</span></button><div class="wk-pill" id="wkPill" aria-live="polite">Tuần <b id="wkN">12</b> · <span id="wkT">Tam cá nguyệt 1</span></div></div></div>
-<div class="wk-bar"><div class="wk-track" id="wkTrack"><div class="wk-fill" id="wkFill"></div><i class="wk-tick" style="left:32.05%"></i><i class="wk-tick" style="left:67.95%"></i><button class="wk-th" id="wkTh" type="button" role="slider" aria-label="Tuần thai" aria-valuemin="1" aria-valuemax="40" aria-valuenow="12" aria-valuetext="Tuần 12"></button></div>
-<div class="wk-lab"><span class="e1">Tuần 1</span><button type="button" data-z="0" style="left:15.4%">TCN 1 (1–13)</button><button type="button" data-z="1" style="left:50%">TCN 2 (14–27)</button><button type="button" data-z="2" style="left:84.6%">TCN 3 (28–40)</button><span class="e2">Tuần 40</span></div></div>
-<div class="wk-pan" id="wkPan"><div class="wk-head"><span class="wk-badge" id="wkBadge">Tam cá nguyệt 1</span><h3 id="wkTitle">Hình thành nền tảng</h3></div><p class="wk-sub" id="wkSub"></p>
-<div class="wk-cols"><article><h4>Em bé</h4><p id="wkBaby"></p></article><article><h4>Cơ thể mẹ</h4><p id="wkMom"></p></article><article><h4>Việc nên làm</h4><ul id="wkTodo"></ul></article></div>
-<div class="wk-ms" id="wkMs" aria-label="Các mốc quan trọng"></div></div>
-<p class="wk-note">Thông tin mang tính tham khảo. Mỗi thai kỳ có nhịp độ riêng, hãy theo lịch khám và hướng dẫn của bác sĩ.</p></div></section>
+</section>
 <section id="fb"><div class="sec" style="padding:0 3rem"><p class="eb" data-r>Khách hàng nói gì</p>
 <h2 class="h" data-r="c" data-fw>Lời <span class="alt">cảm ơn</span></h2>
 <p class="p" data-r>Những lời chia sẻ chân thành từ các mẹ, các bé và gia đình đã tin tưởng Tâm An.</p></div>
@@ -319,75 +337,7 @@ function rev(el,delay,st){var c=el.dataset.r==='c',sp=SplitText.create(el,{type:
 var D=['M4.99805 20.9998C65.6267 17.4649 126.268 13.845 187.208 12.8887C226.483 12.2723 265.751 13.2796 304.998 13.9998','M5 20.9999C26.7762 16.2245 49.5532 11.5572 71.7979 14.6666C84.9553 16.5057 97.0392 21.8432 109.987 24.3888C116.413 25.6523 123.012 25.5143 129.042 22.6388C135.981 19.3303 142.586 15.1422 150.092 13.3333C156.799 11.7168 161.702 14.6225 167.887 16.8333C181.562 21.7212 194.975 22.6234 209.252 21.3888C224.678 20.0548 239.912 17.991 255.42 18.3055C272.027 18.6422 288.409 18.867 305 17.9999'],di=0;
 function line(box,always){var s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 310 40');s.setAttribute('preserveAspectRatio','none');s.innerHTML='<path d="'+D[di++%2]+'" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>';box.innerHTML='';box.appendChild(s);var p=s.firstChild;return gsap.fromTo(p,{drawSVG:'0%'},{drawSVG:'100%',duration:always?.6:.5,ease:'power2.inOut'})}
 function underlines(){qa('[data-dl]').forEach(function(a){var b=document.createElement('span');b.className='ub';a.style.position='relative';a.appendChild(b);var tw;a.addEventListener('mouseenter',function(){tw=line(b)});a.addEventListener('mouseleave',function(){var p=b.querySelector('path');if(!p)return;(tw&&tw.isActive()?tw.then(function(){return 1}):Promise.resolve()).then(function(){gsap.to(p,{drawSVG:'100% 100%',duration:.5,ease:'power2.inOut',onComplete:function(){b.innerHTML=''}})})})})}
-/* cylinder carousel (thai san) */
-function cyl(){var el=q('#cyl'),ring=el.querySelector('.ring'),N=6,S=360/N,T=['Xác nhận thai & nghe tim thai','Độ mờ da gáy & sàng lọc','Siêu âm hình thái thai nhi','Tầm soát tiểu đường thai kỳ','Theo dõi tăng trưởng & ngôi thai','Chuẩn bị chuyển dạ'],U=['Lần khám đầu tiên: xác định tuổi thai, ngày dự sinh, tư vấn bổ sung axit folic và lập hồ sơ theo dõi thai kỳ.','Giúp sàng lọc sớm nguy cơ bất thường nhiễm sắc thể. Bác sĩ giải thích kết quả và hướng theo dõi tiếp theo.','Mốc quan trọng để phát hiện sớm bất thường hình thái, đồng thời đánh giá vị trí nhau thai và lượng nước ối.','Phát hiện sớm tiểu đường thai kỳ để mẹ điều chỉnh ăn uống và theo dõi, giúp mẹ và bé an toàn hơn.','Đánh giá bé tăng cân đủ chưa, ngôi thai ra sao, kèm xét nghiệm GBS ở tuần 35–37 và theo dõi huyết áp của mẹ.','Bác sĩ cùng mẹ chốt phương án sinh, giảm đau, đồ đi sinh và những dấu hiệu cần đến viện ngay.'],G=['Tuần 6–8','Tuần 11–13','Tuần 18–22','Tuần 24–28','Tuần 32–36','Từ tuần 37'],D=['Siêu âm xác định thai trong tử cung, nghe tim thai','Siêu âm đo độ mờ da gáy, xét nghiệm máu sàng lọc','Kiểm tra tim, não, cột sống, tay chân của bé','Nghiệm pháp dung nạp glucose, đo huyết áp, cân nặng','Siêu âm ước tính cân nặng, ngôi thai, nước ối','Khám dày hơn, trao đổi kế hoạch sinh cùng bác sĩ'],lk=0,cw,R,ang=0,vel=0,dr=0,hov=0,tg=null,px=0,pa=0,sm=[],ix=-1,cb=el.querySelector('.cap b'),cs2=el.querySelector('.cap small');
- var cs=T.map(function(t,i){var c=document.createElement('div');c.className='cc';c.style.background='linear-gradient(135deg,'+P[i][0]+','+P[i][1]+')';c.innerHTML='<i></i><span><u>'+G[i]+'</u><b>'+t+'</b><small>'+D[i]+'</small></span>';ring.appendChild(c);return c});
- function rs(){cw=parseFloat(getComputedStyle(H).fontSize)*16;R=Math.round((cw+25)/(2*Math.tan(Math.PI/N)));cs.forEach(function(c){c.style.width=cw+'px';c.style.height=cw*1.25+'px';c.style.left=-cw/2+'px';c.style.top=-cw*.625+'px'})}rs();addEventListener('resize',rs);
- el.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')hov=1});el.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse')hov=0});
- el.addEventListener('pointerdown',function(e){if(e.button>0)return;dr=1;lk=0;px=e.clientX;pa=ang;tg=null;vel=0;sm=[{a:ang,t:performance.now()}];try{el.setPointerCapture(e.pointerId)}catch(_){}});
- el.addEventListener('pointermove',function(e){if(!dr)return;ang=pa+(e.clientX-px)*180/(Math.PI*R);var n=performance.now();sm.push({a:ang,t:n});while(sm.length>2&&n-sm[0].t>110)sm.shift()});
- function up(){if(!dr)return;dr=0;var a=sm[0],b=sm[sm.length-1],s=(b.t-a.t)/1000;vel=s>.008&&performance.now()-b.t<80?Math.max(-1400,Math.min(1400,(b.a-a.a)/s)):0}
- el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
- el.addEventListener('keydown',function(e){if(e.key==='ArrowRight'){tg=(tg===null?Math.round(ang/S)*S:tg)-S}else if(e.key==='ArrowLeft'){tg=(tg===null?Math.round(ang/S)*S:tg)+S}else return;e.preventDefault()});
- gsap.ticker.add(function(t,d){d=Math.min(d/1000,.05)||.016;
-  if(!dr){if(tg!==null){ang+=(tg-ang)*(1-Math.exp(-d*8));if(Math.abs(tg-ang)<.01){ang=tg;tg=null}}else{vel+=(((hov||lk||reduce)?0:-10)-vel)*(1-Math.exp(-d/1.1));ang+=vel*d;if(hov&&Math.abs(vel)<9)tg=Math.round(ang/S)*S}}
-  ring.style.transform='translateZ('+(-R)+'px) rotateX(-5deg) rotateY('+ang+'deg)';
-  cs.forEach(function(c,i){c.style.transform='rotateY('+i*S+'deg) translateZ('+R+'px)';var w=((i*S+ang+180)%360+360)%360-180;c.firstChild.style.opacity=(.55*Math.pow((1-Math.cos(w*Math.PI/180))/2,1.25)).toFixed(3)});
-  var k=((Math.round(-ang/S)%N)+N)%N;if(k!==ix){ix=k;cb.textContent=T[k];cs2.textContent=U[k];var ct=q('#cylCta');if(ct)ct.textContent='Đặt lịch khám mốc '+G[k].toLowerCase()}});
- window.__cyl={focus:function(k){var b=-k*S,n=Math.round((ang-b)/360);tg=b+n*360;vel=0;lk=1}};
- if(!reduce)gsap.from(el,{autoAlpha:0,y:80,duration:1.2,ease:'expo.out',scrollTrigger:{trigger:el,start:'top 85%',once:true}})}
 
-/* thanh tuan thai */
-function wk(){var box=q('#wk');if(!box)return;
- var track=q('#wkTrack'),fill=q('#wkFill'),th=q('#wkTh'),nEl=q('#wkN'),tEl=q('#wkT'),pl=q('#wkPlay'),pc=pl.querySelector('span'),
- bd=q('#wkBadge'),ti=q('#wkTitle'),sb=q('#wkSub'),by=q('#wkBaby'),mo=q('#wkMom'),td=q('#wkTodo'),ms=q('#wkMs'),labs=qa('.wk-lab button'),
- Z=[
- {a:1,b:13,n:'Tam cá nguyệt 1',c:'#f6a9c2',t:'Hình thành nền tảng',s:'Tuần 1–13 · Mọi cơ quan chính của bé bắt đầu hình thành',
-  baby:'Phôi thai làm tổ và phát triển nhanh. Tim bắt đầu đập, ống thần kinh khép lại, tay chân và các cơ quan chính dần thành hình. Cuối giai đoạn, bé đã có hình hài rõ ràng.',
-  mom:'Mẹ có thể buồn nôn, mệt mỏi, ngực căng và dễ thay đổi tâm trạng. Đây là phản ứng bình thường khi nội tiết tố thay đổi.',
-  todo:['Bổ sung axit folic theo hướng dẫn','Khám thai lần đầu, siêu âm xác định tim thai','Xét nghiệm máu và nước tiểu cơ bản','Ăn nhiều bữa nhỏ, uống đủ nước'],
-  ms:[[6,'Có thể thấy tim thai'],[8,'Khám thai và xét nghiệm đầu tiên'],[11,'Đo độ mờ da gáy (tuần 11–13)'],[12,'Các cơ quan chính đã hình thành']]},
- {a:14,b:27,n:'Tam cá nguyệt 2',c:'#b9c48a',t:'Giai đoạn dễ chịu',s:'Tuần 14–27 · Bé lớn nhanh, mẹ khỏe và có nhiều năng lượng hơn',
-  baby:'Bé lớn nhanh, bắt đầu cử động và phản ứng với âm thanh. Các chi tiết trên khuôn mặt, ngón tay, ngón chân rõ dần và có thể quan sát qua siêu âm.',
-  mom:'Ốm nghén giảm, bụng bầu rõ hơn, mẹ thấy khỏe hơn. Một số mẹ bị đau lưng, chuột rút hoặc táo bón nhẹ.',
-  todo:['Siêu âm hình thái học chi tiết','Sàng lọc tiểu đường thai kỳ','Tiêm phòng theo chỉ định của bác sĩ','Tập yoga bầu nhẹ nhàng, ăn đủ canxi và sắt'],
-  ms:[[16,'Có thể bắt đầu cảm nhận thai máy'],[18,'Siêu âm hình thái học (tuần 18–22)'],[20,'Đi được nửa chặng đường'],[24,'Nghiệm pháp dung nạp glucose (24–28)']]},
- {a:28,b:40,n:'Tam cá nguyệt 3',c:'#ffd46e',t:'Chặng nước rút',s:'Tuần 28–40 · Bé hoàn thiện và mẹ chuẩn bị đón con chào đời',
-  baby:'Bé tăng cân nhanh, phổi và các cơ quan hoàn thiện dần. Về cuối thai kỳ, bé thường xoay đầu xuống thấp, sẵn sàng cho ngày chào đời.',
-  mom:'Mẹ dễ mệt, khó ngủ, đi tiểu nhiều, ợ nóng và có thể có những cơn gò nhẹ. Hãy nghỉ ngơi và lắng nghe cơ thể.',
-  todo:['Khám thai dày hơn, theo lịch của bác sĩ','Đếm cử động thai mỗi ngày','Chuẩn bị đồ đi sinh, học dấu hiệu chuyển dạ','Trao đổi kế hoạch sinh và giảm đau với bác sĩ'],
-  ms:[[28,'Bắt đầu tam cá nguyệt cuối'],[32,'Chuẩn bị đồ đi sinh'],[35,'Xét nghiệm GBS (tuần 35–37)'],[37,'Thai đủ tháng'],[40,'Ngày dự sinh']]}],
- st={w:12},cur=0,zi=-1,auto=null,drag=0,act=0,lk0=-1,Ks=[1,10,16,23,30,37];
- function pos(w){return(w-1)/39*100}
- function zOf(w){return w<=13?0:w<=27?1:2}
- function fillZone(z){var d=Z[z];box.style.setProperty('--zc',d.c);bd.textContent=d.n;ti.textContent=d.t;sb.textContent=d.s;by.textContent=d.baby;mo.textContent=d.mom;
-  td.innerHTML=d.todo.map(function(x){return'<li>'+x+'</li>'}).join('');
-  ms.innerHTML=d.ms.map(function(m){return'<span data-w="'+m[0]+'">Tuần '+m[0]+' · '+m[1]+'</span>'}).join('');
-  labs.forEach(function(b){b.classList.toggle('on',+b.dataset.z===z)})}
- function setWeek(w){if(w===cur)return;var prev=cur;cur=w;var z=zOf(w);
-  nEl.textContent=w;th.setAttribute('aria-valuenow',w);th.setAttribute('aria-valuetext','Tuần '+w+', '+Z[z].n);
-  if(!reduce&&prev)gsap.fromTo(nEl,{y:-6,opacity:.4},{y:0,opacity:1,duration:.25,overwrite:true});
-  if(z!==zi){zi=z;tEl.textContent=Z[z].n;fillZone(z);
-   if(!reduce&&prev)gsap.fromTo(['#wkBadge','#wkTitle','#wkSub','.wk-cols article','.wk-ms span'],{autoAlpha:0,y:16},{autoAlpha:1,y:0,duration:.55,stagger:.05,ease:'power3.out',overwrite:true,clearProps:'opacity,visibility,transform'})}
-  qa('#wkMs span').forEach(function(s){s.classList.toggle('on',w>=+s.dataset.w)});
-  if(act&&window.__cyl){var kk=0;Ks.forEach(function(x,j){if(w>=x)kk=j});if(kk!==lk0){lk0=kk;window.__cyl.focus(kk)}}}
- function render(){var v=Math.max(1,Math.min(40,st.w));fill.style.width=pos(v)+'%';th.style.left=pos(v)+'%';setWeek(Math.round(v))}
- function go(w,d){gsap.killTweensOf(st);if(reduce){st.w=w;render();return}gsap.to(st,{w:w,duration:d||.5,ease:'power3.out',onUpdate:render})}
- function stop(){if(auto){auto.kill();auto=null}pl.setAttribute('aria-pressed','false');pc.textContent='Xem hành trình'}
- function wAt(x){var r=track.getBoundingClientRect();return 1+Math.max(0,Math.min(1,(x-r.left)/r.width))*39}
- track.addEventListener('pointerdown',function(e){if(e.button>0)return;stop();act=1;drag=1;try{track.setPointerCapture(e.pointerId)}catch(_){}go(wAt(e.clientX),.35)});
- track.addEventListener('pointermove',function(e){if(drag)go(wAt(e.clientX),.3)});
- function up(){if(!drag)return;drag=0;go(Math.round(st.w),.3)}
- track.addEventListener('pointerup',up);track.addEventListener('pointercancel',up);
- th.addEventListener('keydown',function(e){var k=e.key,w=cur,n=null;if(k==='ArrowRight'||k==='ArrowUp')n=w+1;else if(k==='ArrowLeft'||k==='ArrowDown')n=w-1;else if(k==='PageUp')n=w+4;else if(k==='PageDown')n=w-4;else if(k==='Home')n=1;else if(k==='End')n=40;else return;e.preventDefault();stop();act=1;go(Math.max(1,Math.min(40,n)),.35)});
- labs.forEach(function(b){b.addEventListener('click',function(){stop();act=1;go(Z[+b.dataset.z].a,.8)})});
- pl.addEventListener('click',function(){act=1;if(auto){stop();return}
-  gsap.killTweensOf(st);if(st.w>=39.5){st.w=1;render()}
-  pl.setAttribute('aria-pressed','true');pc.textContent='Tạm dừng';
-  auto=gsap.to(st,{w:40,duration:(40-st.w)*.4,ease:'none',onUpdate:render,onComplete:stop})});
- st.w=reduce?12:1;render();
- if(reduce){return}
- gsap.from(box,{autoAlpha:0,y:60,duration:1.1,ease:'expo.out',scrollTrigger:{trigger:box,start:'top 88%',once:true,onEnter:function(){go(12,1.8)}}})}
 /* doctor row (flex carousel lite) */
 function row(){var el=q('#row'),Dn=[['BS. Nguyễn Lan Anh','Sản phụ khoa'],['BS. Trần Minh Đức','Siêu âm thai'],['BS. Lê Thu Hà','Sơ sinh'],['BS. Phạm Quốc Bảo','Hỗ trợ sinh sản'],['BS. Hoàng Ngọc Mai','Dinh dưỡng thai kỳ'],['BS. Vũ Thanh Tùng','Gây mê hồi sức']],N=6,G=12,cw,ch,W,L,pos=0,goal=0,dr=0,mv=0,px=0,pp=0,op=-1,fo=0,ix=-1,wt,cb=el.querySelector('.cap b'),cs2=el.querySelector('.cap small'),ce=el.querySelector('.cap em');
  function wrp(v){return(((v+L/2)%L)+L)%L-L/2}
@@ -488,7 +438,24 @@ function acc(){var el=q('#ag'),ps=qa('#ag .ag-p'),n=ps.length,r=.52,gr=(r*(n-1))
  if(!reduce)gsap.from(el,{autoAlpha:0,y:80,duration:1.2,ease:'expo.out',scrollTrigger:{trigger:el,start:'top 85%',once:true}})}
 /* page init */
 function init(){heroInit();statsCount();
- qa('[data-r]').forEach(function(e){if(e.closest('#hero'))rev(e,.6,false);else rev(e,0,true)});
+ // Keep these headings readable until the text itself enters the iframe viewport.
+ // Splitting on entry also measures lines after the sections above have settled.
+ var headingObserver;
+ if (!reduce && 'IntersectionObserver' in window) {
+   headingObserver = new IntersectionObserver(function(entries) {
+     entries.forEach(function(entry) {
+       if (!entry.isIntersecting) return;
+       headingObserver.unobserve(entry.target);
+       rev(entry.target, 0, false);
+     });
+   });
+ }
+ qa('[data-r]').forEach(function(el) {
+   if (el.parentElement.hasAttribute('data-reveal-on-view')) {
+     if (headingObserver) headingObserver.observe(el);
+   } else if (el.closest('#hero')) rev(el, .6, false);
+   else rev(el, 0, true);
+ });
  underlines();
  /* font weight follows cursor */
  if(fw.length){var mx=-999,my=-999,dy=0;addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;dy=1});
@@ -506,7 +473,8 @@ function init(){heroInit();statsCount();
  var F=[['Hạnh Nguyên','Mẹ bầu 32 tuần','“Bác sĩ giải thích từng kết quả siêu âm rất kỹ, mình yên tâm hẳn.”'],['Quang Huy','Ba của bé Bông','“Con sốt đêm, phòng khám phản hồi ngay. Cả nhà biết ơn đội ngũ.”'],['Thu Trang','Mẹ sau sinh','“Không gian ấm áp, chị điều dưỡng hướng dẫn cho con bú rất nhẹ nhàng.”'],['Minh Châu','Khám tổng quát','“Đặt lịch nhanh, không phải xếp hàng, kết quả có trong ngày.”'],['Bảo Ngọc','Mẹ bé 2 tuổi','“Bác sĩ nhi dành nhiều thời gian trò chuyện cùng cả mẹ và bé.”'],['Đức Anh','Khám da liễu','“Được tư vấn tận tình, phác đồ rõ ràng và dễ làm theo.”']],mt=q('#mt'),h='';
  F.forEach(function(f,i){h+='<div class="fc"><p>'+f[2]+'</p><div><i style="background:linear-gradient(135deg,'+P[i][0]+','+P[i][1]+')"></i><span>'+f[0]+'<small>'+f[1]+'</small></span></div></div>'});mt.innerHTML=h+h;
  if(!reduce){var tw=gsap.to(mt,{xPercent:-50,duration:50,ease:'none',repeat:-1});ScrollTrigger.create({trigger:'#fb',start:'top bottom',end:'bottom top',onUpdate:function(s){tw.timeScale(s.direction)}})}
- cyl();row();wk();var hv=q('.vv');if(hv&&reduce){hv.removeAttribute('autoplay');hv.pause()}
+ row();
+ var hv=q('.vv');if(hv&&reduce){hv.removeAttribute('autoplay');hv.pause()}
  /* journey line */
  gsap.to('.ln',{scaleY:1,ease:'none',scrollTrigger:{trigger:'.steps',start:'top 70%',end:'bottom 70%',scrub:true}});
  /* dark theme switch */

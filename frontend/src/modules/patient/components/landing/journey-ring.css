@@ -1,0 +1,190 @@
+#ts {
+  --journey-gutter: clamp(20px, 4vw, 48px);
+  padding-inline: var(--journey-gutter) !important;
+}
+#ts > .h { font-size: clamp(36px, 4.2vw, 64px) !important; }
+#ts > .p { color: #344b60 !important; font-size: clamp(17px, 1.3vw, 20px) !important; }
+.journey {
+  --paper: #f5f5ed;
+  --ink: #07376e;
+  --muted: #445c68;
+  --accent: #994610;
+  margin: clamp(1.75rem, 4vw, 3.5rem) calc(0px - var(--journey-gutter)) 0;
+  background: var(--paper);
+  border-block: 1px solid #d1ded5;
+  color: var(--ink);
+  text-align: left;
+}
+.journey button { font: inherit; color: inherit; cursor: pointer; }
+.journey :focus-visible { outline: 2px solid #246753; outline-offset: -3px; }
+.journey-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: clamp(340px, 39vw, 590px);
+  cursor: grab;
+  user-select: none;
+}
+.journey-stage.is-dragging { cursor: grabbing; }
+.journey-scene {
+  position: absolute;
+  inset: 0;
+  perspective: var(--perspective, 1100px);
+  transform-style: preserve-3d;
+  touch-action: none;
+}
+.journey-print, .journey-strip, .journey-rail, .journey-no {
+  position: absolute;
+  transform-origin: 0 0;
+}
+.journey-print {
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  width: var(--photo-width);
+  height: var(--photo-height);
+}
+.journey-strip {
+  top: 0;
+  height: 100%;
+  width: calc(100% / var(--slices) + .55px);
+  overflow: hidden;
+  background: #d5e2d9;
+  clip-path: inset(0 0 var(--roll, 0%) 0);
+}
+.journey-strip img {
+  display: block;
+  position: absolute;
+  top: 0;
+  width: var(--photo-width);
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.journey-strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  opacity: var(--wash);
+}
+.journey-rail {
+  top: -9px;
+  width: 124%;
+  border-top: 3px dotted #adc2b8;
+  pointer-events: none;
+}
+.journey-no, .journey-caption small, .journey-copy small {
+  font: 650 12px/1.5 'Be Vietnam Pro', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+.journey-caption small, .journey-copy small {
+  color: var(--accent);
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 700;
+}
+.journey-no { left: 0; top: -34px; }
+.journey-marker {
+  position: absolute;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.journey-layout {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(20px, 5vw, 80px);
+  padding: clamp(24px, 4vw, 60px);
+  padding-inline: max(var(--journey-gutter), calc((100% - 1180px) / 2));
+  pointer-events: none;
+}
+.journey:is(.is-open, .is-closing) .journey-layout { position: relative; min-height: inherit; }
+.journey-photo-slot { width: 100%; height: clamp(280px, 32vw, 420px); }
+.journey-detail { visibility: hidden; user-select: text; }
+.journey.is-open .journey-detail { visibility: visible; pointer-events: auto; }
+.journey.is-open .journey-stage { cursor: default; }
+.journey-back {
+  background: transparent;
+  border: 0;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  font-size: 14px !important;
+}
+.journey-copy h3 {
+  margin: 8px 0 18px;
+  font-size: clamp(30px, 3vw, 48px);
+  font-weight: 750;
+  line-height: 1.16;
+  letter-spacing: -.035em;
+  color: var(--ink);
+}
+.journey-copy p { margin: 12px 0; color: #30485b; font-size: clamp(16px, 1.25vw, 19px); line-height: 1.65; }
+.journey-copy h3 + p { color: var(--ink); font-weight: 600; }
+.journey-copy p:last-child { margin-top: 20px; padding-left: 16px; border-left: 3px solid #d67b33; }
+.journey-copy p:last-child b { display: block; margin-bottom: 4px; font-size: 14px; color: var(--accent); }
+.journey-thumbs { display: flex; visibility: hidden; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 12px; }
+.journey.is-open .journey-thumbs { visibility: visible; pointer-events: auto; }
+.journey-thumbs button { border: none; background: transparent; padding: 3px; opacity: .6; }
+.journey-thumbs [aria-pressed="true"] { box-shadow: inset 0 -2px var(--ink); opacity: 1; }
+.journey-thumbs img { display: block; width: clamp(31px, 3.2vw, 48px); height: 34px; object-fit: cover; }
+.journey-controls {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 640px) 48px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3vw, 44px);
+  padding: clamp(20px, 2.5vw, 36px) var(--journey-gutter);
+  background: #fff;
+  border-top: 1px solid #d1ded5;
+}
+.journey-caption { display: grid; gap: 8px; justify-items: center; border: 0; background: transparent; }
+.journey-caption strong { color: var(--ink); font-size: clamp(22px, 2.5vw, 40px); font-weight: 750; letter-spacing: -.025em; line-height: 1.2; text-wrap: balance; }
+.journey-caption span { color: var(--ink); font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.journey-prev, .journey-next {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  background: transparent;
+  border: 1px solid #91a6af;
+  border-radius: 50%;
+}
+.journey-controls button:hover, .journey-back:hover { color: #12674f; }
+.journey.is-open .journey-controls { display: none; }
+@media (max-width: 680px) {
+  .journey-stage { min-height: clamp(275px, 80vw, 360px); }
+  .journey-layout { grid-template-columns: 1fr; gap: 8px; padding: 20px; }
+  .journey-photo-slot { height: clamp(170px, 52vw, 260px); }
+  .journey-detail { min-width: 0; }
+  .journey-controls { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; padding-inline: 12px; }
+  .journey-prev, .journey-next { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .journey.is-closing :is(.journey-detail, .journey-thumbs) {
+    visibility: visible;
+    animation: journey-unroll .24s ease-in reverse both;
+  }
+  .journey-copy > *, .journey.is-open .journey-back {
+    animation: journey-reveal .65s cubic-bezier(.22,1,.36,1) both;
+    animation-delay: calc(var(--line, 0) * 55ms + var(--intro, 0ms));
+  }
+  .journey.is-open .journey-thumbs button {
+    animation: journey-unroll .7s cubic-bezier(.22,1,.36,1) both;
+    animation-delay: calc(var(--index) * 45ms + var(--intro, 0ms));
+  }
+  .journey-caption strong { animation: journey-reveal .45s ease-out; }
+  @keyframes journey-reveal {
+    from { clip-path: inset(0 0 100% 0); transform: translateY(12px); }
+    to { clip-path: inset(0); transform: none; }
+  }
+  @keyframes journey-unroll { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+}

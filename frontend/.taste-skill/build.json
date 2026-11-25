@@ -1,0 +1,11 @@
+{
+ "page": null,
+ "url": "http://127.0.0.1:3172/",
+ "root": null,
+ "kind": "service",
+ "category": "Chăm sóc thai sản",
+ "primary": "Đặt lịch khám",
+ "rounds": 3,
+ "start": "2026-11-23T17:12:09.060Z",
+ "by": "gate.mjs --start"
+}
