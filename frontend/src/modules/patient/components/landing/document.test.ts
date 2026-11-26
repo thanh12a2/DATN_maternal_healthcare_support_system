@@ -89,7 +89,7 @@ describe('patient landing document adapter', () => {
     );
     expect(doc.querySelector('#dv')?.textContent).toContain('250.000');
     expect(doc.querySelector('#retry-public')).not.toBeNull();
-    expect(doc.querySelector('#patient-actions')).not.toBeNull();
+    expect(doc.querySelector('body > nav')).toBeNull();
     expect(doc.querySelector('#patient-summary')).not.toBeNull();
     expect(doc.querySelectorAll('[data-count-to]')).toHaveLength(3);
     expect(doc.querySelector('.ag-m')?.getAttribute('style')).toContain(

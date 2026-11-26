@@ -51,8 +51,24 @@
   color: var(--pg-ink);
   font-family: 'Be Vietnam Pro', sans-serif;
   line-height: 1.65;
-  padding-bottom: 90px; /* Chừa khoảng trống cho floating emergency bar */
   position: relative;
+}
+
+/* Reserve space for the fixed emergency bar within the footer background. */
+.pregnancy-guide-page .ta-footer {
+  padding-bottom: calc(1.6rem + 90px);
+}
+
+@media (max-width: 991px) {
+  .pregnancy-guide-page .ta-footer {
+    padding-bottom: calc(1.4rem + 90px);
+  }
+}
+
+@media (max-width: 600px) {
+  .pregnancy-guide-page .ta-footer {
+    padding-bottom: calc(1.25rem + 90px);
+  }
 }
 
 /* ==========================================================================
@@ -1491,7 +1507,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.pregnancy-guide-page .portal-container {
+.pregnancy-guide-page main .portal-container {
   width: min(1180px, calc(100% - 40px));
 }
 
@@ -2697,7 +2713,7 @@
 
 /* --- Responsive Media Queries --- */
 @media (max-width: 860px) {
-  .pregnancy-guide-page .portal-container {
+  .pregnancy-guide-page main .portal-container {
     width: min(100% - 28px, 1180px);
   }
   .pg-hero-section {
@@ -2772,7 +2788,7 @@
   background: var(--pg-bg);
   color: var(--pg-ink);
 }
-.pregnancy-guide-page .portal-container { width: min(1200px, calc(100% - 48px)); margin-inline: auto; }
+.pregnancy-guide-page main .portal-container { width: min(1200px, calc(100% - 48px)); margin-inline: auto; }
 .pg-hero-section {
   background: #0b3656;
   padding: 80px 0 88px;
@@ -2863,7 +2879,7 @@
   @keyframes pg-guide-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 }
 @media (max-width: 800px) {
-  .pregnancy-guide-page .portal-container { width: calc(100% - 32px); }
+  .pregnancy-guide-page main .portal-container { width: calc(100% - 32px); }
   .pg-hero-section { padding: 48px 0 64px; }
   .pg-hero-grid { grid-template-columns: 1fr; gap: 40px; }
   .pg-hero-art-col { order: initial; }
@@ -3095,8 +3111,7 @@ body:has(.pregnancy-guide-page) { overflow-x: clip; overflow-y: visible; }
 .pg-week-journey-milestones { margin-top: 12px; }
 .pg-week-journey-note { margin-top: 12px; }
 
-.pg-sticky-nav .portal-container { overflow-x: auto; scrollbar-width: none; }
-.pg-sticky-nav .portal-container::-webkit-scrollbar { display: none; }
+.pg-sticky-nav .portal-container { overflow-x: auto; }
 .pg-sticky-nav .pill-nav { margin: 8px auto; }
 .pg-sticky-nav .pill-nav__item { font-family: 'Be Vietnam Pro', sans-serif; font-weight: 600; }
 .pg-sticky-nav .pill-nav__face-alt { color: #fff; }

@@ -18,6 +18,8 @@
 #dv .service-photo-card { border:1px solid #cadcdb !important; border-radius:16px !important; }
 #dv .service-photo-card::before { border-radius:10px !important; }
 #bs .dc { border:1px solid #c7d9d6 !important; border-radius:16px !important; outline-color:#e0ebe6 !important; box-shadow:none !important; }
+#bs #row:not(.landing-empty) { border:1px solid #c7d9d6; border-radius:16px; background:#f9fbfa; }
+#bs #row .dc img { -webkit-user-drag:none; user-select:none; }
 #hk .st { background:#fff !important; border:1px solid var(--landing-line) !important; border-radius:12px !important; box-shadow:none !important; }
 #fb .fc { background:#fff !important; border:1px solid var(--landing-line) !important; border-radius:16px !important; box-shadow:none !important; }
 #faq .fq { border-top:1px solid #cbdeda; }

@@ -387,6 +387,7 @@ export const PatientPregnancyGuidePage: React.FC = () => {
   // Trạng thái bộ chọn tuần thai (1 - 40)
   const [selectedWeek, setSelectedWeek] = useState<number>(12);
   const [activeMilestone, setActiveMilestone] = useState(0);
+  const [visibleTrimester, setVisibleTrimester] = useState(1);
   useEffect(() => {
     const match = MILESTONES.findIndex((item) => selectedWeek >= item.startWeek && selectedWeek <= item.endWeek);
     if (match !== -1) setActiveMilestone(match);
@@ -411,6 +412,31 @@ export const PatientPregnancyGuidePage: React.FC = () => {
       motion.removeEventListener('change', configure);
       lenis?.destroy();
       lenisRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    const chapters = [1, 2, 3].map((number) => document.getElementById(`chapter-t${number}`));
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const sticky = document.querySelector<HTMLElement>('.pg-sticky-nav');
+      const boundary = Math.max(sticky?.getBoundingClientRect().bottom ?? 0, window.innerHeight * 0.35);
+      let active = 1;
+      chapters.forEach((chapter, index) => {
+        if (chapter && chapter.getBoundingClientRect().top <= boundary) active = index + 1;
+      });
+      setVisibleTrimester(active);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
   useEffect(() => {
@@ -535,7 +561,7 @@ export const PatientPregnancyGuidePage: React.FC = () => {
               { label: 'Tam cá nguyệt 2 (tuần 14–27)', href: '#chapter-t2' },
               { label: 'Tam cá nguyệt 3 (tuần 28–40)', href: '#chapter-t3' },
             ]}
-            activeHref={`#chapter-t${currentTrimester}`}
+            activeHref={`#chapter-t${visibleTrimester}`}
             onItemClick={(item, _index, event) => {
               if (!item.href) return;
               event.preventDefault();

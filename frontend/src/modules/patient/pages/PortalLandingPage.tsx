@@ -1,9 +1,10 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
-import { AppLink, navigate } from '../../../app/navigation';
+import { navigate } from '../../../app/navigation';
 import { apiRequest } from '../../../services/api';
-import { NotificationBell } from '../../../shared/components/notifications/NotificationBell';
+import { PublicPortalHeader } from '../../../shared/components/portal/PublicPortalHeader';
+import { PublicPortalFooter } from '../../../shared/components/portal/PublicPortalFooter';
 import { ChatbotLauncher } from '../components/chatbot/ChatbotLauncher';
 import { PatientSummary } from '../components/landing/PatientSummary';
 import {
@@ -33,14 +34,16 @@ async function loadSpecialties(signal: AbortSignal) {
 export function PortalLandingPage() {
   const auth = useAuthSession();
   const frame = useRef<HTMLIFrameElement>(null);
+  const savedScroll = useRef(0);
   const [content, setContent] = useState<{
     html: string;
     data: LandingData;
-  } | null>(null);
-  const [slots, setSlots] = useState<{
-    actions: Element;
-    summary: Element;
-  } | null>(null);
+  }>(() => {
+    const data: LandingData = { specialties: [], services: [], doctors: [], errors: [] };
+    return { html: buildLandingDocument(data), data };
+  });
+  const [summary, setSummary] = useState<Element | null>(null);
+  const [footer, setFooter] = useState<Element | null>(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
@@ -65,7 +68,9 @@ export function PortalLandingPage() {
         if (specialties.status === 'rejected') data.errors.push('chuyên khoa');
         if (services.status === 'rejected') data.errors.push('dịch vụ');
         if (doctors.status === 'rejected') data.errors.push('bác sĩ');
-        setSlots(null);
+        savedScroll.current = frame.current?.contentWindow?.scrollY ?? 0;
+        setSummary(null);
+        setFooter(null);
         setContent({ html: buildLandingDocument(data), data });
       })
       .finally(() => clearTimeout(timer));
@@ -78,27 +83,22 @@ export function PortalLandingPage() {
   const loaded = useCallback(() => {
     const doc = frame.current?.contentDocument;
     if (!doc) return;
-    const actions = doc.getElementById('patient-actions'),
-      summary = doc.getElementById('patient-summary');
-    if (actions && summary) setSlots({ actions, summary });
+    if (savedScroll.current > 0) {
+      frame.current?.contentWindow?.scrollTo({ top: savedScroll.current, behavior: 'instant' });
+      savedScroll.current = 0;
+    }
+    setSummary(doc.getElementById('patient-summary'));
+    setFooter(doc.getElementById('lienhe'));
   }, []);
+  const scrollHome = () => {
+    frame.current?.contentWindow?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   useEffect(() => {
-    const doc = slots?.actions.ownerDocument;
+    const doc = summary?.ownerDocument;
     if (!doc) return;
-    doc.querySelectorAll<HTMLElement>('[data-patient-only]').forEach((link) => {
-      link.hidden =
-        auth.status !== 'authenticated' || auth.user?.role !== 'PATIENT';
-    });
-    const closeMenus = (event: PointerEvent | KeyboardEvent) => {
-      doc
-        .querySelectorAll<HTMLDetailsElement>('body > nav details[open]')
-        .forEach((menu) => {
-          if (event.type === 'keydown') {
-            if ((event as KeyboardEvent).key !== 'Escape') return;
-            menu.open = false;
-            menu.querySelector('summary')?.focus();
-          } else if (!menu.contains(event.target as Node)) menu.open = false;
-        });
+    // Pointer events inside an iframe do not reach the shared header's outside-click listeners.
+    const notifyOutside = (event: Event) => {
+      frame.current?.dispatchEvent(new Event(event.type, { bubbles: true }));
     };
     // Async React content can move the template's scroll-triggered sections.
     const refresh = () =>
@@ -110,7 +110,7 @@ export function PortalLandingPage() {
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(refresh)
         : null;
-    if (slots) observer?.observe(slots.summary);
+    observer?.observe(summary);
     const click = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target?.closest) return;
@@ -120,7 +120,6 @@ export function PortalLandingPage() {
       }
       const link = target.closest('a');
       const href = link?.getAttribute('href');
-      if (link) link.closest('details')?.removeAttribute('open');
       if (
         !href?.startsWith('/') ||
         href.startsWith('//') ||
@@ -134,8 +133,7 @@ export function PortalLandingPage() {
         return;
       event.preventDefault();
       if (href === '/') {
-        // The template's logo already uses its original Lenis scroll animation.
-        doc.querySelector<HTMLAnchorElement>('body > nav > .logo')?.click();
+        scrollHome();
         return;
       }
       navigate(
@@ -145,22 +143,18 @@ export function PortalLandingPage() {
       );
     };
     doc.addEventListener('click', click);
-    doc.addEventListener('pointerdown', closeMenus);
-    doc.addEventListener('keydown', closeMenus);
+    doc.addEventListener('pointerdown', notifyOutside, true);
+    doc.addEventListener('mousedown', notifyOutside, true);
     return () => {
       doc.removeEventListener('click', click);
-      doc.removeEventListener('pointerdown', closeMenus);
-      doc.removeEventListener('keydown', closeMenus);
+      doc.removeEventListener('pointerdown', notifyOutside, true);
+      doc.removeEventListener('mousedown', notifyOutside, true);
       observer?.disconnect();
     };
-  }, [slots, auth.status, auth.user?.role]);
+  }, [summary, auth.status]);
   return (
-    <>
-      {!content ? (
-        <div role="status" style={{ padding: 48 }}>
-          Đang chuẩn bị cổng bệnh nhân Tâm An…
-        </div>
-      ) : (
+    <div className="portal-landing-shell">
+      <PublicPortalHeader specialties={content.data.specialties} onHomeClick={scrollHome} />
         <iframe
           ref={frame}
           title="Cổng bệnh nhân Tâm An"
@@ -169,51 +163,18 @@ export function PortalLandingPage() {
           style={{
             display: 'block',
             width: '100%',
-            height: '100dvh',
+            height: '100%',
+            minHeight: 0,
             border: 0,
             background: '#faf3e4',
           }}
         />
+      {summary && createPortal(
+        <PatientSummary doctors={content.data.doctors} />,
+        summary,
       )}
-      {slots &&
-        createPortal(
-          <>
-            {auth.status === 'authenticated' &&
-              auth.user?.role === 'PATIENT' && <NotificationBell />}
-            {auth.status === 'authenticated' ? (
-              <details className="patient-menu">
-                <summary aria-label="Mở menu tài khoản">
-                  <span className="patient-menu-avatar" aria-hidden="true">
-                    {auth.user?.email.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span>Tài khoản</span>
-                </summary>
-                <div className="patient-menu-panel">
-                  <span>{auth.user?.email}</span>
-                  <AppLink href="/ho-so/hoan-thien">Hồ sơ bệnh nhân</AppLink>
-                  <AppLink href="/lich-hen">Lịch hẹn</AppLink>
-                  <AppLink href="/thong-bao-hoa-don">
-                    Thông báo & hóa đơn
-                  </AppLink>
-                  <button onClick={() => void auth.signOut()}>Đăng xuất</button>
-                </div>
-              </details>
-            ) : (
-              <div className="landing-auth-links">
-                <AppLink href="/dang-nhap">Đăng nhập</AppLink>
-                <AppLink href="/dang-ky">Đăng ký</AppLink>
-              </div>
-            )}
-          </>,
-          slots.actions,
-        )}
-      {slots &&
-        content &&
-        createPortal(
-          <PatientSummary doctors={content.data.doctors} />,
-          slots.summary,
-        )}
+      {footer && createPortal(<PublicPortalFooter onHomeClick={scrollHome} />, footer)}
       <ChatbotLauncher />
-    </>
+    </div>
   );
 }

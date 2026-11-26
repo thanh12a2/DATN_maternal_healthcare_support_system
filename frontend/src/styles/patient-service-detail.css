@@ -466,11 +466,6 @@
   overflow-x: auto;
   white-space: nowrap;
   padding: 10px 0;
-  scrollbar-width: none;
-}
-
-.sticky-nav-inner::-webkit-scrollbar {
-  display: none;
 }
 
 .sticky-nav-item {

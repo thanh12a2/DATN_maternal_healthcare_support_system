@@ -158,9 +158,6 @@
   flex-direction: column;
   gap: 12px;
   scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--accent, #6a8de6) 20%, transparent)
-    transparent;
 }
 
 .chatbot-msg {

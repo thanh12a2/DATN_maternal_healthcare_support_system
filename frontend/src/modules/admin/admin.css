@@ -108,7 +108,6 @@
   gap: 5px;
   align-content: start;
   overflow-y: auto;
-  scrollbar-width: thin;
 }
 .admin-shell .patient-nav-label {
   height: auto;

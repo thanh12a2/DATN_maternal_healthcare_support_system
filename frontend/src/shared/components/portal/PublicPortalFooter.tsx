@@ -18,13 +18,13 @@ const links = [
   ['/cam-nang-thai-ky', 'Cẩm nang kiến thức cho mẹ bầu'],
 ];
 
-export function PublicPortalFooter() {
+export function PublicPortalFooter({ onHomeClick }: { onHomeClick?: () => void } = {}) {
   return (
     <footer className="ta-footer">
       <div className="ta-footer__inner">
         <div className="ta-footer__grid">
           <section className="ta-footer__brand">
-            <AppLink className="landing-footer-brand" href="/">
+            <AppLink className="landing-footer-brand" href="/" onClick={onHomeClick ? (event) => { event.preventDefault(); onHomeClick(); } : undefined}>
               <img src="/brand/logo-symbol-clean.png" alt="" />
               <span><b>TÂM AN HOSPITAL</b><small>Trọn vẹn yêu thương, vẹn toàn yên tâm</small></span>
             </AppLink>
