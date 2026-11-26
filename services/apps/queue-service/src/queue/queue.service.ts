@@ -204,7 +204,7 @@ export class QueueDomainService {
         await tx.queueOutbox.create({ data: {
           eventType: 'queue.ticket_created.v1', aggregateId: ticket.id, aggregateVersion: ticket.version,
           payload: { eventVersion: 1, aggregateType: 'queue_ticket', aggregateId: ticket.id,
-            data: { patientId: journey.patientId, journeyId: journey.id } },
+            data: { patientId: journey.patientId, journeyId: journey.id, appointmentId: journey.appointmentId, stageCode: ticket.stage.code } },
         } });
         return {
           journey: this.viewJourney(journey),

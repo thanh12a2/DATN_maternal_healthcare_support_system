@@ -3,15 +3,15 @@ import { BellOutlined } from '@ant-design/icons';
 import { Badge, Button, Popover } from 'antd';
 import { useAuthSession } from '../../../app/AuthSessionProvider';
 import { subscribeToRealtimeStream } from '../../../services/realtimeStream';
-import { useReceptionCaseWork } from './ReceptionCaseWork';
+import { useReceptionCaseWork, type Item } from './ReceptionCaseWork';
 import '../../../styles/reception-work.css';
 
-export function ReceptionWorkBell({ onFindAppointment = () => undefined }: { onFindAppointment?: (code: string) => void }) {
+export function ReceptionWorkBell({ onOpenCase = () => undefined }: { onOpenCase?: (item: Item) => void }) {
   const { stream } = useAuthSession();
   const [open, setOpen] = useState(false);
   const [arrival, setArrival] = useState(0);
   const onArrival = useCallback(() => setArrival(n => n + 1), []);
-  const cases = useReceptionCaseWork(onArrival, onFindAppointment);
+  const cases = useReceptionCaseWork(onArrival, item => { setOpen(false); onOpenCase(item); });
   useEffect(() => {
     if (!stream) return;
     const signal = (category: string) => window.dispatchEvent(new CustomEvent('reception-work-changed', { detail: category }));

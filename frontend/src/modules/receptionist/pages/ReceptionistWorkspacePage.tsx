@@ -66,6 +66,7 @@ import { UserChip } from '../../../shared/components/navigation/UserChip';
 import { DoctorPhotoUpload } from '../../admin/components/DoctorPhotoUpload';
 import { dataUrlToImage, loadPrivateAvatar, uploadProfileImage } from '../../../services/profileImages';
 import { ReceptionWorkBell } from '../components/ReceptionWorkBell';
+import type { Item as ReceptionWorkItem } from '../components/ReceptionCaseWork';
 import { useReceptionRealtime } from '../hooks/useReceptionRealtime';
 import { sortByStart, sourceMeta, statusMeta } from '../utils/appointmentMeta';
 
@@ -111,6 +112,8 @@ function Desk() {
   );
   const [search, setSearch] = useState<SearchState | null>(null);
   const [searching, setSearching] = useState(false);
+  const [workCase, setWorkCase] = useState<ReceptionWorkItem | null>(null);
+  const caseSelectionSequence = useRef(0);
   const [resetSignal, setResetSignal] = useState(0);
   const [targetAppointmentId, setTargetAppointmentId] = useState<string | null>(
     null,
@@ -789,11 +792,41 @@ function Desk() {
   };
 
   const clear = useCallback(() => {
+    caseSelectionSequence.current++;
+    setWorkCase(null);
     setQuery('');
     setTargetAppointmentId(null);
     setSearch(null);
     setResetSignal((n) => n + 1);
   }, []);
+
+  const openWorkCase = async (item: ReceptionWorkItem) => {
+    const sequence = ++caseSelectionSequence.current;
+    setWorkCase(item);
+    setSearch(null);
+    setTargetAppointmentId(item.appointmentId);
+    setQuery('');
+    if (!catalog) {
+      message.error('Chưa tải được dữ liệu tiếp đón. Vui lòng thử lại.');
+      return;
+    }
+    setSearching(true);
+    try {
+      const result = await loadPatientWorkspace(request, catalog, item.patientId);
+      if (sequence !== caseSelectionSequence.current) return;
+      if (!result.found.length) throw new Error('Không tìm thấy hồ sơ bệnh nhân của case.');
+      skipSearchRef.current = true;
+      setSearch(result);
+      setQuery(result.found[0].phone || result.found[0].fullName);
+      if (!item.appointmentId || !result.appointments.some(a => a.id === item.appointmentId)) {
+        message.warning('Không tìm thấy lịch liên kết. Hãy kiểm tra hồ sơ bệnh nhân trước khi tiếp tục.');
+      }
+    } catch (err) {
+      if (sequence === caseSelectionSequence.current) message.error(errText(err));
+    } finally {
+      if (sequence === caseSelectionSequence.current) setSearching(false);
+    }
+  };
 
   return (
     <div
@@ -881,7 +914,7 @@ function Desk() {
             {/* Compact Search Bar */}
             <div style={{ maxWidth: 440, width: '100%' }}>
               <PatientSearchBar
-                onSearch={setQuery}
+                onSearch={value => { caseSelectionSequence.current++; setWorkCase(null); setQuery(value); }}
                 resetSignal={resetSignal}
                 value={query}
               />
@@ -897,7 +930,7 @@ function Desk() {
               flexShrink: 0,
             }}
           >
-            <ReceptionWorkBell onFindAppointment={setQuery} />
+            <ReceptionWorkBell onOpenCase={item => void openWorkCase(item)} />
             <span
               style={{
                 display: 'inline-flex',
@@ -999,6 +1032,8 @@ function Desk() {
               catalog={catalog}
               busy={busy}
               targetAppointmentId={targetAppointmentId}
+              workCase={workCase}
+              onWorkUpdated={replace}
               autoPrintAppointment={vnpayPrintAppointment}
               onOpen={handleOpenAppointment}
               onCheckIn={checkIn}

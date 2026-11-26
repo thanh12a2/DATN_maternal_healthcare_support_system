@@ -79,6 +79,8 @@ import {
 } from '../utils/appointmentMeta';
 import { EditPatientModal } from './EditPatientModal';
 import { RescheduleModal } from './RescheduleModal';
+import type { Item as ReceptionWorkItem } from './ReceptionCaseWork';
+import { WorkTransferActions } from './WorkTransferActions';
 
 interface Props {
   patient: DeskPatient;
@@ -88,6 +90,8 @@ interface Props {
   request?: Requester;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  workCase?: ReceptionWorkItem | null;
+  onWorkUpdated?: (appointment: DeskAppointment) => void;
   autoPrintAppointment?: DeskAppointment | null;
   onOpen?: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
@@ -105,6 +109,8 @@ export function PatientCard({
   request: propRequest,
   busy,
   targetAppointmentId,
+  workCase,
+  onWorkUpdated,
   autoPrintAppointment,
   onOpen,
   onCheckIn,
@@ -1857,6 +1863,7 @@ export function PatientCard({
                       <div>
                         <Divider style={{ margin: '10px 0' }} />
                         <Space size={8} wrap>
+                          {workCase?.appointmentId === a.id && <WorkTransferActions item={workCase} request={request} onUpdated={() => { if (catalog) void refreshAppointment(request, catalog, a).then(updated => onWorkUpdated?.(updated)).catch(() => undefined); }} />}
                           {(() => {
                             const baseInvoice =
                               a.invoices?.find((i) => i.type === 'BASE') ??

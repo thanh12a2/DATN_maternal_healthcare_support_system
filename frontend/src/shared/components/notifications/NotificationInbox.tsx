@@ -36,6 +36,7 @@ export function NotificationInbox() {
     if (item.resourceType === 'appointment') navigate(user?.role === 'DOCTOR' ? '/workspace/doctor/appointments' : '/lich-hen');
     if (item.resourceType === 'consultation' && user?.role === 'DOCTOR') navigate('/workspace/doctor/consultations');
     if (item.resourceType === 'queue' && user?.role === 'PATIENT') navigate('/lich-hen');
+    if (item.resourceType === 'queue' && user?.role === 'DOCTOR') navigate('/workspace/doctor/appointments');
   };
   return <section className="notification-inbox" aria-label="Thông báo">
     <header><div><h2>Thông báo</h2><p>Các cập nhật mới từ phòng khám.</p></div><button type="button" disabled={busy || !unread} onClick={() => void read()}>Đánh dấu tất cả đã đọc</button></header>

@@ -11,6 +11,15 @@ describe('notification inbox ownership', () => {
     expect(notification.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { recipientAccountId: 'account-a' } }));
     expect(notification.count).toHaveBeenLastCalledWith({ where: { recipientAccountId: 'account-a', readAt: null } });
   });
+  it('hides old appointment notices from doctors without hiding them from patients', async () => {
+    notification.findMany.mockResolvedValue([]); notification.count.mockResolvedValue(0);
+    await inbox.list('doctor', '1', 'DOCTOR'); await inbox.unreadCount('doctor', 'DOCTOR');
+    const excluded = { eventType: { startsWith: 'appointment.' } };
+    expect(notification.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { recipientAccountId: 'doctor', NOT: excluded } }));
+    expect(notification.count).toHaveBeenLastCalledWith({ where: { recipientAccountId: 'doctor', readAt: null, NOT: excluded } });
+    await inbox.list('patient', '1', 'PATIENT');
+    expect(notification.findMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: { recipientAccountId: 'patient' } }));
+  });
   it('cannot mark another account notification as read', async () => {
     notification.findFirst.mockResolvedValue(null);
     await expect(inbox.read('account-a', 'other-id')).rejects.toBeInstanceOf(NotFoundException);

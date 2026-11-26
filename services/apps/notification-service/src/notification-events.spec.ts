@@ -27,11 +27,11 @@ describe('notification delivery', () => {
   const db = { notificationPendingEvent: { findMany, updateMany }, $transaction: async (fn: any) => fn({ notification: { upsert }, notificationPendingEvent: { updateMany } }) };
   const service = new NotificationService(db as any, {} as any, { get: () => undefined } as any, { client: () => ({}), metadata: () => ({}), unary } as any);
   beforeEach(() => { jest.clearAllMocks(); unary.mockImplementation(async (_client, _method, request) => ({ found: true, accountId: request.patientId ? patientId : doctorId })); });
-  it('delivers a booking to the linked patient and assigned doctor with a stable deduplication key', async () => {
+  it('delivers a booking to the patient, not the doctor', async () => {
     findMany.mockResolvedValue([{ eventId, eventType: 'appointment.booked.v1', attempts: 0, payload: { aggregateId, data: { patientId, doctorId } } }]);
     await service.flush();
-    expect(upsert).toHaveBeenCalledTimes(2);
-    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { sourceEventId_recipientAccountId_templateCode: { sourceEventId: eventId, recipientAccountId: doctorId, templateCode: 'appointment_booked_v1' } } }));
+    expect(upsert).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { sourceEventId_recipientAccountId_templateCode: { sourceEventId: eventId, recipientAccountId: patientId, templateCode: 'appointment_booked_v1' } } }));
     expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'DELIVERED', lastError: null } }));
   });
   it('does not deliver an expired queue call', async () => {
@@ -44,6 +44,20 @@ describe('notification delivery', () => {
     findMany.mockResolvedValue([{ eventId, eventType: 'queue.ticket_created.v1', attempts: 0, payload: { aggregateId, data: { patientId } } }]);
     await service.flush();
     expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ create: expect.objectContaining({ recipientAccountId: patientId, resourceType: 'queue', title: 'Đã check-in và tạo lượt chờ' }) }));
+  });
+  it('notifies the assigned doctor only after a queue ticket is created', async () => {
+    const appointmentId = '50000000-0000-4000-8000-000000000001';
+    findMany.mockResolvedValue([{ eventId, eventType: 'queue.ticket_created.v1', attempts: 0, payload: { aggregateId, data: { patientId, appointmentId, stageCode: 'CONSULTATION' } } }]);
+    unary.mockImplementation(async (_client, method, request) => method === 'getAppointment' ? { appointment: { patientId, assignedDoctorId: doctorId } } : { found: true, accountId: request.patientId ? patientId : doctorId });
+    await service.flush();
+    expect(upsert).toHaveBeenCalledTimes(2);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ create: expect.objectContaining({ recipientAccountId: doctorId, resourceType: 'queue', title: 'Bệnh nhân mới vào hàng đợi' }) }));
+  });
+  it('does not notify the doctor when the appointment belongs to another patient', async () => {
+    findMany.mockResolvedValue([{ eventId, eventType: 'queue.ticket_created.v1', attempts: 0, payload: { aggregateId, data: { patientId, appointmentId: '50000000-0000-4000-8000-000000000001', stageCode: 'CONSULTATION' } } }]);
+    unary.mockImplementation(async (_client, method) => method === 'getAppointment' ? { appointment: { patientId: doctorId, assignedDoctorId: doctorId } } : { found: true, accountId: patientId });
+    await service.flush();
+    expect(upsert).toHaveBeenCalledTimes(1);
   });
   it('retries without committing notifications when a recipient service is unavailable', async () => {
     findMany.mockResolvedValue([{ eventId, eventType: 'billing.payment_recorded.v1', attempts: 0, payload: { aggregateId, data: { patientId } } }]);

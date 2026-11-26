@@ -143,6 +143,12 @@ function DoctorDesk() {
     loadData();
   }, [loadData, reloadTrigger]);
 
+  useEffect(() => {
+    const refresh = () => { void loadData(); };
+    window.addEventListener('notifications:arrived', refresh);
+    return () => window.removeEventListener('notifications:arrived', refresh);
+  }, [loadData]);
+
   // 3. Tích hợp SSE Realtime Stream (đồng bộ 2 chiều tức thì khi Lễ tân check-in)
   const { isLive } = useDoctorRealtime({
     doctorId: doctor?.id,

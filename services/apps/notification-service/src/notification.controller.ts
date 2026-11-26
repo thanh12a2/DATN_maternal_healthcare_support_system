@@ -99,12 +99,12 @@ export class NotificationController {
     @CurrentAuth() auth: PublicAuthContext,
     @Query('page') page?: string,
   ) {
-    return this.inbox.list(auth.userId, page);
+    return this.inbox.list(auth.userId, page, auth.role);
   }
   @UseGuards(PublicJwtGuard) @Get('notifications/in-app/unread-count') count(
     @CurrentAuth() auth: PublicAuthContext,
   ) {
-    return this.inbox.unreadCount(auth.userId);
+    return this.inbox.unreadCount(auth.userId, auth.role);
   }
   @UseGuards(PublicJwtGuard) @Post('notifications/in-app/read-all') readAll(
     @CurrentAuth() auth: PublicAuthContext,

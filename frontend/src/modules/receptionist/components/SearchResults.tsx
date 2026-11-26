@@ -6,6 +6,7 @@ import type {
   PatientMap,
 } from '../../../services/receptionDesk';
 import { PatientCard } from './PatientCard';
+import type { Item } from './ReceptionCaseWork';
 
 interface Props {
   query: string;
@@ -15,6 +16,8 @@ interface Props {
   catalog?: DeskCatalog | null;
   busy?: boolean;
   targetAppointmentId?: string | null;
+  workCase?: Item | null;
+  onWorkUpdated?: (appointment: DeskAppointment) => void;
   autoPrintAppointment?: DeskAppointment | null;
   onOpen: (a: DeskAppointment) => void;
   onCheckIn: (a: DeskAppointment) => void;
@@ -34,6 +37,8 @@ export function SearchResults({
   catalog,
   busy,
   targetAppointmentId,
+  workCase,
+  onWorkUpdated,
   autoPrintAppointment,
   onOpen,
   onCheckIn,
@@ -82,6 +87,8 @@ export function SearchResults({
             catalog={catalog}
             busy={busy}
             targetAppointmentId={targetAppointmentId}
+            workCase={workCase?.patientId === p.id ? workCase : null}
+            onWorkUpdated={onWorkUpdated}
             autoPrintAppointment={autoPrintAppointment}
             onOpen={onOpen}
             onCheckIn={onCheckIn}

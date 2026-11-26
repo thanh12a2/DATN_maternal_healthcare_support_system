@@ -13,7 +13,7 @@ describe('queue notification event', () => {
 
   it('records the patient event in the same transaction as the new ticket', async () => {
     await service.create(input);
-    expect(outbox).toHaveBeenCalledWith({ data: expect.objectContaining({ eventType: 'queue.ticket_created.v1', aggregateId: ticket.id, payload: expect.objectContaining({ data: { patientId: journey.patientId, journeyId: journey.id } }) }) });
+    expect(outbox).toHaveBeenCalledWith({ data: expect.objectContaining({ eventType: 'queue.ticket_created.v1', aggregateId: ticket.id, payload: expect.objectContaining({ data: { patientId: journey.patientId, journeyId: journey.id, appointmentId: journey.appointmentId, stageCode: 'CONSULTATION' } }) }) });
   });
 
   it('does not create a second notification when admission is retried', async () => {

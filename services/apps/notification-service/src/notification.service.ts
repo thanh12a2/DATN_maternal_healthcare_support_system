@@ -114,6 +114,8 @@ export class NotificationService implements OnModuleInit, OnModuleDestroy {
           const event = item.payload as unknown as DomainEventEnvelope<{
             patientId?: string;
             doctorId?: string;
+            appointmentId?: string;
+            stageCode?: string;
             previousDoctorId?: string;
             expiresAt?: string;
           }>;
@@ -187,10 +189,22 @@ export class NotificationService implements OnModuleInit, OnModuleDestroy {
                     : 'Vui lòng liên hệ quầy tiếp nhận để biết chi tiết hóa đơn.',
               });
           }
-          if (isAppointment || isConsultation) {
+          let queueDoctorId: string | undefined;
+          if (item.eventType === 'queue.ticket_created.v1' && event.data?.stageCode === 'CONSULTATION' && validUuid(event.data?.appointmentId)) {
+            const client = this.grpc.client({
+              key: 'notification-appointment',
+              target: this.cfg.get<string>('APPOINTMENT_GRPC_TARGET') ?? 'appointment-service:6008',
+              proto: 'appointment/v1/appointment_internal.proto',
+              package: 'maternal.appointment.v1',
+              service: 'AppointmentInternalService',
+            });
+            const result = await this.grpc.unary<any, any>(client, 'getAppointment', { appointmentId: event.data.appointmentId }, this.grpc.metadata('appointment-service', ['appointment:internal:read']));
+            if (result.appointment?.patientId === event.data.patientId && validUuid(result.appointment.assignedDoctorId)) queueDoctorId = result.appointment.assignedDoctorId;
+          }
+          if (isConsultation || queueDoctorId) {
             const ids = [
               ...new Set(
-                [event.data?.doctorId, event.data?.previousDoctorId].filter(
+                [isConsultation ? event.data?.doctorId : queueDoctorId].filter(
                   validUuid,
                 ),
               ),
@@ -216,15 +230,10 @@ export class NotificationService implements OnModuleInit, OnModuleDestroy {
               if (doctor.found && doctor.accountId)
                 recipients.push({
                   accountId: doctor.accountId,
-                  title: isConsultation
-                    ? titles[item.eventType]
-                    : doctorId === event.data.previousDoctorId &&
-                        doctorId !== event.data.doctorId
-                      ? 'Lịch khám không còn được phân công cho bạn'
-                      : 'Lịch khám được phân công đã cập nhật',
+                  title: isConsultation ? titles[item.eventType] : 'Bệnh nhân mới vào hàng đợi',
                   body: isConsultation
                     ? 'Mở mục tư vấn để xem cuộc hội thoại.'
-                    : 'Mở lịch khám để xem thông tin mới nhất.',
+                    : 'Bệnh nhân đã được tiếp nhận và có lượt chờ khám.',
                 });
             }
           }
